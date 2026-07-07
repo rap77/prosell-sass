@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, func
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prosell.infrastructure.database.base import Base
@@ -27,8 +27,14 @@ class ProductOwnershipModel(Base):
         primary_key=True,
     )
     owner_id: Mapped[UUID] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"),
+        # ponytail: no FK constraint — owner_id can be org OR user UUID
         primary_key=True,
+    )
+    # Discriminator: "organization" | "user"
+    owner_type: Mapped[str] = mapped_column(
+        String(20),
+        default="organization",
+        nullable=False,
     )
     percentage: Mapped[Decimal] = mapped_column(
         Numeric(5, 2),

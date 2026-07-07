@@ -6,12 +6,20 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, StringConstraints
 
 
+class BrokerInput(BaseModel):
+    """Broker to add at org creation time."""
+
+    name: str
+    email: EmailStr
+
+
 class CreateDealerRequest(BaseModel):
     """Request body for POST /admin/dealers."""
 
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
     vertical_ids: list[UUID]
     owner_email: EmailStr
+    brokers: list[BrokerInput] = []  # Optional: add brokers at creation time
 
 
 class CreateDealerResponse(BaseModel):

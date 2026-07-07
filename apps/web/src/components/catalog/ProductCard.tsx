@@ -114,7 +114,7 @@ export function ProductCard({
           alt={product.title}
           fill
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-          className={imageUrl ? "object-cover" : "object-contain p-6"}
+          className="object-cover"
           unoptimized={unoptimized}
           priority={false}
         />

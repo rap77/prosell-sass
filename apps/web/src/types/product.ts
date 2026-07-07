@@ -19,8 +19,8 @@ export interface Product {
 
   // Basic info
   title: string;
-  slug?: string;
-  description?: string;
+  slug?: string | null;
+  description?: string | null;
 
   // Pricing (in cents)
   price_cents: number;
@@ -53,9 +53,9 @@ export interface Product {
   cover_image_key?: string | null;
 
   // Location
-  location_city?: string;
-  location_state?: string;
-  location_zip?: string;
+  location_city?: string | null;
+  location_state?: string | null;
+  location_zip?: string | null;
 
   // Visibility
   is_featured: boolean;
@@ -64,16 +64,16 @@ export interface Product {
   favorite_count: number;
 
   // Approval workflow
-  submitted_for_approval_at?: string;
-  submitted_by?: string;
-  approved_at?: string;
-  approved_by?: string;
-  rejection_reason?: string;
+  submitted_for_approval_at?: string | null;
+  submitted_by?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  rejection_reason?: string | null;
 
   // Publication
-  published_at?: string;
-  sold_at?: string;
-  archived_at?: string;
+  published_at?: string | null;
+  sold_at?: string | null;
+  archived_at?: string | null;
 
   // Timestamps
   created_at: string;

@@ -58,8 +58,8 @@ const productSchema = z.object({
   organization_id: z.string(),
   category_id: z.string(),
   title: z.string(),
-  slug: z.string().optional(),
-  description: z.string().optional(),
+  slug: z.string().nullish(),
+  description: z.string().nullish(),
   price_cents: z.number(),
   currency: z.string(),
   condition: z.enum(["new", "used", "refurbished"]),
@@ -75,22 +75,22 @@ const productSchema = z.object({
   ]),
   attributes: z.custom<ProductAttributes>(isProductAttributes),
   image_urls: z.array(z.string()).optional(),
-  cover_image_key: z.string().nullable().optional(),
-  location_city: z.string().optional(),
-  location_state: z.string().optional(),
-  location_zip: z.string().optional(),
+  cover_image_key: z.string().nullish(),
+  location_city: z.string().nullish(),
+  location_state: z.string().nullish(),
+  location_zip: z.string().nullish(),
   is_featured: z.boolean(),
   published_to_marketplace: z.boolean().optional(),
   view_count: z.number(),
   favorite_count: z.number(),
-  submitted_for_approval_at: z.string().optional(),
-  submitted_by: z.string().optional(),
-  approved_at: z.string().optional(),
-  approved_by: z.string().optional(),
-  rejection_reason: z.string().optional(),
-  published_at: z.string().optional(),
-  sold_at: z.string().optional(),
-  archived_at: z.string().optional(),
+  submitted_for_approval_at: z.string().nullish(),
+  submitted_by: z.string().nullish(),
+  approved_at: z.string().nullish(),
+  approved_by: z.string().nullish(),
+  rejection_reason: z.string().nullish(),
+  published_at: z.string().nullish(),
+  sold_at: z.string().nullish(),
+  archived_at: z.string().nullish(),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -883,6 +883,7 @@ export async function downloadSchemaTemplate(
 
 export interface OwnerShare {
   owner_id: string;
+  owner_type: "organization" | "user";
   percentage: string;
   created_at?: string;
 }
@@ -894,6 +895,7 @@ export interface ProductOwnership {
 
 const ownerShareSchema = z.object({
   owner_id: z.string(),
+  owner_type: z.enum(["organization", "user"]).default("organization"),
   percentage: z.string(),
   created_at: z.string().optional(),
 });
@@ -936,15 +938,25 @@ export function useSetProductOwnership() {
     Error,
     {
       productId: string;
-      owners: Array<{ owner_id: string; percentage: string }>;
+      owners: Array<{
+        owner_id: string;
+        owner_type?: "organization" | "user";
+        percentage: string;
+      }>;
     }
   >({
     mutationFn: async ({ productId, owners }) => {
+      // Include owner_type in payload
+      const payload = owners.map((o) => ({
+        owner_id: o.owner_id,
+        owner_type: o.owner_type ?? "organization",
+        percentage: o.percentage,
+      }));
       const res = await fetch(`/api/v1/products/${productId}/ownership`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owners }),
+        body: JSON.stringify({ owners: payload }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

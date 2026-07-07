@@ -22,6 +22,7 @@ export const DealerSchema = z
     description: z.string().nullable().optional(),
     created_at: z.string(),
     updated_at: z.string(),
+    broker_count: z.number().nullable().optional(),
   })
   .passthrough();
 
@@ -64,3 +65,21 @@ export const CreateDealerResponseSchema = z.object({
 });
 
 export type CreateDealerResponse = z.infer<typeof CreateDealerResponseSchema>;
+
+// Broker schemas
+export const BrokerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  user_id: z.string().nullable(),
+  status: z.enum(["pending", "verified"]),
+  created_at: z.string(),
+  verified_at: z.string().nullable(),
+});
+
+export type Broker = z.infer<typeof BrokerSchema>;
+
+export const BrokerListResponseSchema = z.object({
+  brokers: z.array(BrokerSchema),
+  count: z.number(),
+});

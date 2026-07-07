@@ -99,7 +99,7 @@ const navigationItems: NavItem[] = [
   // Concesionarios group (Subsystem D: admin/super_admin only)
   {
     label: "Organizaciones",
-    href: "/admin/dealers",
+    href: "/admin/organizations",
     icon: Building2,
     group: "concesionarios",
   },

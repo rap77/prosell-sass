@@ -8,13 +8,13 @@ import { Permission } from "@/lib/auth/permissions";
 import { useDealers } from "@/lib/api/dealers";
 
 /**
- * Admin dealers list — Subsystem D Phase 6.
+ * Admin organizations list — Subsystem D Phase 6.
  *
  * Backend already gates GET /admin/dealers behind
  * Permission.DEALER_ADMIN_VIEW_ALL; this redirect is a client-side UX
  * nicety (the real boundary is the edge middleware in proxy.ts).
  */
-export default function AdminDealersPage() {
+export default function AdminOrganizationsPage() {
   const isAdmin = useRequireAdmin();
   const { hasPermission } = useAuth();
   const { data: dealers = [], isLoading, error } = useDealers();
@@ -40,12 +40,12 @@ export default function AdminDealersPage() {
             color: "var(--ps-text-primary)",
           }}
         >
-          Concesionarios
+          Organizaciones
         </h1>
 
         {hasPermission(Permission.DEALER_ADMIN_VIEW_ALL) && (
           <Link
-            href="/admin/dealers/new"
+            href="/admin/organizations/new"
             style={{
               height: 36,
               display: "flex",
@@ -58,7 +58,7 @@ export default function AdminDealersPage() {
               textDecoration: "none",
             }}
           >
-            Nuevo concesionario
+            Nueva organización
           </Link>
         )}
       </div>
@@ -73,19 +73,19 @@ export default function AdminDealersPage() {
           }}
         >
           <Loader2 size={16} className="animate-spin" />
-          Cargando concesionarios…
+          Cargando organizaciones…
         </div>
       )}
 
       {error && (
         <p style={{ color: "var(--ps-error)" }}>
-          Error al cargar concesionarios: {error.message}
+          Error al cargar organizaciones: {error.message}
         </p>
       )}
 
       {!isLoading && !error && dealers.length === 0 && (
         <p style={{ color: "var(--ps-text-secondary)" }}>
-          No hay concesionarios registrados.
+          No hay organizaciones registrados.
         </p>
       )}
 
@@ -93,7 +93,7 @@ export default function AdminDealersPage() {
         {dealers.map((dealer) => (
           <li key={dealer.id}>
             <Link
-              href={`/admin/dealers/${dealer.id}`}
+              href={`/admin/organizations/${dealer.id}`}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -107,6 +107,13 @@ export default function AdminDealersPage() {
             >
               <Building2 size={16} style={{ color: "var(--ps-cyan)" }} />
               {dealer.name}
+              {(dealer.broker_count ?? 0) > 0 && (
+                <span
+                  style={{ fontSize: 12, color: "var(--ps-text-secondary)" }}
+                >
+                  ({dealer.broker_count} brokers)
+                </span>
+              )}
             </Link>
           </li>
         ))}

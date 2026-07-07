@@ -154,7 +154,7 @@ function toPublishableVehicleData(
   return {
     id: product.id,
     title: product.title,
-    description: product.description,
+    description: product.description ?? undefined,
     price_cents: product.price_cents,
     zip_code: product.location_zip ?? "",
     image_urls: getProductImageUrls(product),

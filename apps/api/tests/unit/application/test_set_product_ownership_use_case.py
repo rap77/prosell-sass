@@ -54,7 +54,9 @@ async def test_single_owner_100_percent(use_case, mock_ownership_repo, mock_prod
     )
 
     mock_ownership_repo.clear_ownership.assert_called_once_with(product_id)
-    mock_ownership_repo.add_owner.assert_called_once_with(product_id, owner_id, Decimal("100.00"))
+    mock_ownership_repo.add_owner.assert_called_once_with(
+        product_id, owner_id, Decimal("100.00"), "organization"
+    )
 
 
 @pytest.mark.asyncio

@@ -67,18 +67,18 @@ describe("AdminDealersPage", () => {
     render(<AdminDealersPage />);
 
     const link = screen.getByText("Dealer One").closest("a");
-    expect(link).toHaveAttribute("href", "/admin/dealers/dealer-1");
+    expect(link).toHaveAttribute("href", "/admin/organizations/dealer-1");
   });
 
-  it("links to /admin/dealers/new when the user can create dealers", () => {
+  it("links to /admin/organizations/new when the user can create dealers", () => {
     mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => true });
     mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
 
     expect(
-      screen.getByRole("link", { name: /nuevo concesionario/i }),
-    ).toHaveAttribute("href", "/admin/dealers/new");
+      screen.getByRole("link", { name: /nuevo organización/i }),
+    ).toHaveAttribute("href", "/admin/organizations/new");
   });
 
   it("hides the entry point when the user lacks the permission", () => {
@@ -88,7 +88,7 @@ describe("AdminDealersPage", () => {
     render(<AdminDealersPage />);
 
     expect(
-      screen.queryByRole("link", { name: /nuevo concesionario/i }),
+      screen.queryByRole("link", { name: /nuevo organización/i }),
     ).not.toBeInTheDocument();
   });
 });

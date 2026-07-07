@@ -20,6 +20,7 @@ class OwnerShare:
 
     owner_id: UUID
     percentage: Decimal
+    owner_type: str = "organization"  # "organization" | "user"
 
 
 class SetProductOwnershipUseCase:
@@ -66,4 +67,6 @@ class SetProductOwnershipUseCase:
         # Atomically replace ownership
         await self.ownership_repository.clear_ownership(product_id)
         for owner in owners:
-            await self.ownership_repository.add_owner(product_id, owner.owner_id, owner.percentage)
+            await self.ownership_repository.add_owner(
+                product_id, owner.owner_id, owner.percentage, owner.owner_type
+            )

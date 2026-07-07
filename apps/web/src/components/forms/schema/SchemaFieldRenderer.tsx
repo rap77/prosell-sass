@@ -14,7 +14,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import type { DecodedVehicle } from "@/lib/api/vehicles";
 import type { AttributeSchemaEntry } from "@/types/category";
@@ -105,35 +104,58 @@ export function SchemaFieldRenderer({
       <Controller
         name={fieldKey}
         control={control}
-        render={({ field, fieldState }) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={inputId}>
-              {label}
-              {entry.required && <span className="text-destructive"> *</span>}
-            </Label>
-            <Select
-              value={String(field.value ?? "")}
-              onValueChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
-              disabled={disabled}
-            >
-              <SelectTrigger id={inputId}>
-                <SelectValue placeholder={`Select ${label}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((opt) => (
-                  <SelectItem key={String(opt)} value={String(opt)}>
-                    {String(opt)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldState.error && (
-              <p className="text-sm text-destructive">
-                {fieldState.error.message}
-              </p>
-            )}
-          </div>
-        )}
+        render={({ field, fieldState }) => {
+          const currentValue = String(field.value ?? "");
+          // ponytail: if VIN decode sets a value not in options, include it so Select shows it
+          const optionStrings = options.map((o) => String(o));
+          const hasCurrentValue =
+            currentValue && optionStrings.includes(currentValue);
+          const displayOptions =
+            hasCurrentValue || !currentValue
+              ? options
+              : [field.value, ...options];
+
+          return (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={inputId}>
+                {label}
+                {entry.required && <span className="text-destructive"> *</span>}
+              </Label>
+              <Select
+                value={currentValue}
+                onValueChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
+                disabled={disabled}
+              >
+                <SelectTrigger id={inputId}>
+                  {/* ponytail: render value manually — SelectValue loses ref when SelectContent unmounts */}
+                  {currentValue ? (
+                    <span>{currentValue}</span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Select {label}
+                    </span>
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {displayOptions.map((opt) => (
+                    <SelectItem
+                      key={String(opt)}
+                      value={String(opt)}
+                      textValue={String(opt)}
+                    >
+                      {String(opt)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldState.error && (
+                <p className="text-sm text-destructive">
+                  {fieldState.error.message}
+                </p>
+              )}
+            </div>
+          );
+        }}
       />
     );
   }
@@ -154,6 +176,7 @@ export function SchemaFieldRenderer({
             <Input
               id={inputId}
               type="number"
+              step="any"
               value={field.value != null ? String(field.value) : ""}
               onChange={(e) =>
                 field.onChange(

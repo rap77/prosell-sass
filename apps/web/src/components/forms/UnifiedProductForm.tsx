@@ -18,6 +18,8 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { Building2, User } from "lucide-react";
+
 import { ImageDropzone } from "@/components/upload/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useDealers } from "@/lib/api/dealers";
+import { useDealers, useDealerBrokers } from "@/lib/api/dealers";
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -83,6 +85,7 @@ function generateTitle(
 
 interface OwnerEntry {
   owner_id: string;
+  owner_type: "organization" | "user";
   percentage: string;
 }
 
@@ -98,9 +101,17 @@ export function UnifiedProductForm({
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   // Ownership state (create mode only)
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [pendingOwners, setPendingOwners] = useState<OwnerEntry[]>([]);
   const { data: dealers = [] } = useDealers();
+  const { data: brokers = [], isLoading: isLoadingBrokers } = useDealerBrokers(
+    selectedOrgId ?? undefined,
+  );
   const setOwnership = useSetProductOwnership();
+
+  // Derive if selected org has brokers
+  const selectedOrg = dealers.find((d) => d.id === selectedOrgId);
+  const hasBrokers = (selectedOrg?.broker_count ?? 0) > 0;
 
   // Hooks
   const createProduct = useCreateProduct();
@@ -249,6 +260,7 @@ export function UnifiedProductForm({
               productId: newProduct.id,
               owners: pendingOwners.map((o) => ({
                 owner_id: o.owner_id,
+                owner_type: o.owner_type,
                 percentage: parseFloat(o.percentage).toFixed(2),
               })),
             });
@@ -417,128 +429,265 @@ export function UnifiedProductForm({
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Propietarios</h2>
           <p className="text-sm text-muted-foreground">
-            Opcional. Asigná ownership a uno o más dealers. Si no asignás, el
-            producto pertenece a tu organización.
+            Opcional. Seleccioná una organización. Si tiene brokers, podés
+            asignar porcentajes. Si no, la organización es propietaria al 100%.
           </p>
 
-          {pendingOwners.length > 0 && (
-            <div className="space-y-3">
-              {pendingOwners.map((owner, index) => {
-                const selectedIds = new Set(
-                  pendingOwners.map((o) => o.owner_id),
-                );
-                return (
-                  <div key={index} className="flex items-center gap-2">
-                    <Select
-                      value={owner.owner_id || undefined}
-                      onValueChange={(v) => {
-                        const updated = [...pendingOwners];
-                        updated[index] = { ...updated[index], owner_id: v };
-                        setPendingOwners(updated);
-                      }}
-                    >
-                      <SelectTrigger className="flex-1">
-                        {owner.owner_id ? (
-                          <span className="truncate">
-                            {dealers.find((d) => d.id === owner.owner_id)?.name}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            Seleccionar dealer
-                          </span>
-                        )}
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dealers
-                          .filter(
-                            (d) =>
-                              d.id === owner.owner_id || !selectedIds.has(d.id),
-                          )
-                          .map((dealer) => (
-                            <SelectItem
-                              key={dealer.id}
-                              value={dealer.id}
-                              textValue={dealer.name}
-                            >
-                              {dealer.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex w-24 items-center gap-1">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={owner.percentage}
-                        onChange={(e) => {
-                          const updated = [...pendingOwners];
-                          updated[index] = {
-                            ...updated[index],
-                            percentage: e.target.value,
-                          };
-                          setPendingOwners(updated);
-                        }}
-                        className="text-right"
-                        disabled={isDisabled}
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        setPendingOwners(
-                          pendingOwners.filter((_, i) => i !== index),
-                        )
-                      }
-                      className="h-8 w-8 text-destructive"
-                      disabled={isDisabled}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-
-              {/* Total indicator */}
-              {(() => {
-                const total = pendingOwners.reduce(
-                  (sum, o) => sum + (parseFloat(o.percentage) || 0),
-                  0,
-                );
-                return (
-                  <p
-                    className={`text-sm ${Math.abs(total - 100) < 0.01 ? "text-green-600" : "text-destructive"}`}
+          {/* Step 1: Select Organization */}
+          <div>
+            <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Organización
+            </Label>
+            <Select
+              value={selectedOrgId ?? undefined}
+              onValueChange={(orgId) => {
+                setSelectedOrgId(orgId);
+                const org = dealers.find((d) => d.id === orgId);
+                const orgHasBrokers = (org?.broker_count ?? 0) > 0;
+                if (orgHasBrokers) {
+                  // Clear owners, let user select brokers
+                  setPendingOwners([]);
+                } else {
+                  // Org is the 100% owner
+                  setPendingOwners([
+                    {
+                      owner_id: orgId,
+                      owner_type: "organization",
+                      percentage: "100",
+                    },
+                  ]);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                {selectedOrgId ? (
+                  <span className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    {selectedOrg?.name}
+                    {hasBrokers && (
+                      <span className="text-xs text-muted-foreground">
+                        ({selectedOrg?.broker_count} brokers)
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    Seleccionar organización
+                  </span>
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                {dealers.map((dealer) => (
+                  <SelectItem
+                    key={dealer.id}
+                    value={dealer.id}
+                    textValue={dealer.name}
                   >
-                    Total: {total.toFixed(2)}%
-                    {Math.abs(total - 100) >= 0.01 && " (debe ser 100%)"}
-                  </p>
-                );
-              })()}
-            </div>
-          )}
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      {dealer.name}
+                      {(dealer.broker_count ?? 0) > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({dealer.broker_count} brokers)
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setPendingOwners([
-                ...pendingOwners,
-                { owner_id: "", percentage: "0" },
-              ])
-            }
-            disabled={isDisabled || dealers.length === pendingOwners.length}
-            className="w-fit"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Agregar propietario
-          </Button>
+          {/* Step 2: Show owners based on org type */}
+          {selectedOrgId && (
+            <>
+              {hasBrokers ? (
+                // Org has brokers — user selects broker owners
+                <>
+                  {isLoadingBrokers ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Cargando brokers...
+                    </div>
+                  ) : (
+                    <>
+                      {pendingOwners.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Seleccioná los brokers propietarios del producto.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {pendingOwners.map((owner, index) => {
+                            const selectedBrokerIds = new Set(
+                              pendingOwners
+                                .filter((o) => o.owner_type === "user")
+                                .map((o) => o.owner_id),
+                            );
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2"
+                              >
+                                <Select
+                                  value={owner.owner_id || undefined}
+                                  onValueChange={(v) => {
+                                    const updated = [...pendingOwners];
+                                    updated[index] = {
+                                      ...updated[index],
+                                      owner_id: v,
+                                    };
+                                    setPendingOwners(updated);
+                                  }}
+                                >
+                                  <SelectTrigger className="flex-1">
+                                    {owner.owner_id ? (
+                                      <span className="flex items-center gap-2 truncate">
+                                        <User className="h-4 w-4" />
+                                        {brokers.find(
+                                          (b) => b.id === owner.owner_id,
+                                        )?.name ?? owner.owner_id}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">
+                                        Seleccionar broker
+                                      </span>
+                                    )}
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {brokers
+                                      .filter(
+                                        (b) =>
+                                          b.id === owner.owner_id ||
+                                          !selectedBrokerIds.has(b.id),
+                                      )
+                                      .map((broker) => (
+                                        <SelectItem
+                                          key={broker.id}
+                                          value={broker.id}
+                                          textValue={broker.name}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <User className="h-4 w-4" />
+                                            {broker.name}
+                                            <span className="text-xs text-muted-foreground">
+                                              ({broker.email})
+                                            </span>
+                                            {broker.status === "pending" && (
+                                              <span className="text-[10px] text-orange-500">
+                                                (pendiente)
+                                              </span>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+
+                                <div className="flex w-24 items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    value={owner.percentage}
+                                    onChange={(e) => {
+                                      const updated = [...pendingOwners];
+                                      updated[index] = {
+                                        ...updated[index],
+                                        percentage: e.target.value,
+                                      };
+                                      setPendingOwners(updated);
+                                    }}
+                                    className="text-right"
+                                    disabled={isDisabled}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    setPendingOwners(
+                                      pendingOwners.filter(
+                                        (_, i) => i !== index,
+                                      ),
+                                    )
+                                  }
+                                  className="h-8 w-8 text-destructive"
+                                  disabled={isDisabled}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+
+                          {/* Total indicator */}
+                          {(() => {
+                            const total = pendingOwners.reduce(
+                              (sum, o) => sum + (parseFloat(o.percentage) || 0),
+                              0,
+                            );
+                            return (
+                              <p
+                                className={`text-sm ${Math.abs(total - 100) < 0.01 ? "text-green-600" : "text-destructive"}`}
+                              >
+                                Total: {total.toFixed(2)}%
+                                {Math.abs(total - 100) >= 0.01 &&
+                                  " (debe ser 100%)"}
+                              </p>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // ponytail: auto-fill remaining percentage to complete 100
+                          const used = pendingOwners.reduce(
+                            (sum, o) => sum + (parseFloat(o.percentage) || 0),
+                            0,
+                          );
+                          const remaining = Math.max(0, 100 - used);
+                          setPendingOwners([
+                            ...pendingOwners,
+                            {
+                              owner_id: "",
+                              owner_type: "user",
+                              percentage: String(remaining),
+                            },
+                          ]);
+                        }}
+                        disabled={
+                          isDisabled || brokers.length === pendingOwners.length
+                        }
+                        className="w-fit"
+                      >
+                        <Plus className="mr-1 h-4 w-4" />
+                        Agregar propietario
+                      </Button>
+                    </>
+                  )}
+                </>
+              ) : (
+                // Org has NO brokers — org is the owner
+                <div className="flex items-center gap-2 rounded-md bg-muted/50 p-3 text-sm">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    <strong>{selectedOrg?.name}</strong> es el propietario
+                    (100%)
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </section>
       )}
 

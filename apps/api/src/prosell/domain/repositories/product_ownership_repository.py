@@ -17,12 +17,19 @@ class ProductOwner:
 
     product_id: UUID
     owner_id: UUID
+    owner_type: str  # "organization" | "user"
     percentage: Decimal
     created_at: datetime
 
 
 class AbstractProductOwnershipRepository(Protocol):
-    async def add_owner(self, product_id: UUID, owner_id: UUID, percentage: Decimal) -> None:
+    async def add_owner(
+        self,
+        product_id: UUID,
+        owner_id: UUID,
+        percentage: Decimal,
+        owner_type: str = "organization",
+    ) -> None:
         """Add an owner to a product with a percentage share."""
         ...
 

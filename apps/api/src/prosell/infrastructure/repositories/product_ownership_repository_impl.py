@@ -19,17 +19,24 @@ class SqlAlchemyProductOwnershipRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def add_owner(self, product_id: UUID, owner_id: UUID, percentage: Decimal) -> None:
+    async def add_owner(
+        self,
+        product_id: UUID,
+        owner_id: UUID,
+        percentage: Decimal,
+        owner_type: str = "organization",
+    ) -> None:
         stmt = (
             pg_insert(ProductOwnershipModel)
             .values(
                 product_id=product_id,
                 owner_id=owner_id,
+                owner_type=owner_type,
                 percentage=percentage,
             )
             .on_conflict_do_update(
                 index_elements=["product_id", "owner_id"],
-                set_={"percentage": percentage},
+                set_={"percentage": percentage, "owner_type": owner_type},
             )
         )
         await self.session.execute(stmt)
@@ -42,6 +49,7 @@ class SqlAlchemyProductOwnershipRepository:
             ProductOwner(
                 product_id=row.product_id,
                 owner_id=row.owner_id,
+                owner_type=row.owner_type,
                 percentage=row.percentage,
                 created_at=row.created_at,
             )

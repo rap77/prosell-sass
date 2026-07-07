@@ -5,10 +5,12 @@ organization and drill into a specific dealer's product catalog,
 mirroring the cross-tenant bypass already wired into `product_router.py`.
 """
 
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org.response import OrganizationListResponse, OrganizationResponse
@@ -40,6 +42,9 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.api.middleware.rate_limit_middleware import smart_rate_limit
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.repositories.organization_broker_repository_impl import (
+    SqlAlchemyOrganizationBrokerRepository,
+)
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
 )
@@ -67,14 +72,17 @@ async def list_dealers(current_user: CurrentUser, db: DbSession) -> Organization
     _require_dealer_admin_view_all(current_user)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
-    # No skip/limit on this endpoint — it always returns every dealer, so
-    # `total` is just the fetched count. A separate count() round trip
-    # would be redundant (was previously a second DB query for the same
-    # number).
+    broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
     organizations = await org_repo.get_all(tenant_id=None)
 
+    # ponytail: N+1 is fine for admin dashboard with ~50 orgs max
+    responses = []
+    for org in organizations:
+        count = await broker_repo.count_brokers(org.id)
+        responses.append(OrganizationResponse.from_entity(org, broker_count=count))
+
     return OrganizationListResponse(
-        organizations=[OrganizationResponse.from_entity(org) for org in organizations],
+        organizations=responses,
         total=len(organizations),
         skip=0,
         limit=len(organizations),
@@ -112,6 +120,7 @@ async def create_dealer(
     request: Request,
     create_request: CreateDealerRequest,
     current_user: CurrentUser,
+    db: DbSession,
     use_case: Annotated[
         CreateDealerOrganizationUseCase, Depends(get_create_dealer_organization_use_case)
     ],
@@ -142,6 +151,17 @@ async def create_dealer(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+    # Add brokers if provided
+    if create_request.brokers:
+        broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+        for broker in create_request.brokers:
+            await broker_repo.create_broker(
+                organization_id=invitation.organization_id,
+                name=broker.name,
+                email=broker.email,
+                status="pending",
+            )
 
     return CreateDealerResponse(
         invitation_id=invitation.id,
@@ -213,3 +233,212 @@ async def resend_dealer_invitation(
         email=invitation.email,
         status=invitation.status.value,
     )
+
+
+# -----------------------------------------------------------------------------
+# Update dealer
+# -----------------------------------------------------------------------------
+
+
+class UpdateDealerRequest(BaseModel):
+    name: str | None = None
+
+
+class UpdateDealerResponse(BaseModel):
+    id: UUID
+    name: str
+    status: str
+
+
+@router.patch("/{dealer_id}", response_model=UpdateDealerResponse)
+async def update_dealer(
+    dealer_id: UUID,
+    request: UpdateDealerRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> UpdateDealerResponse:
+    """Update a dealer's details. Currently only name is editable."""
+    _require_dealer_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    dealer = await org_repo.get_by_id(dealer_id, tenant_id=dealer_id)
+    if dealer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
+
+    if request.name is not None:
+        dealer.name = request.name
+
+    updated = await org_repo.update(dealer)
+    return UpdateDealerResponse(id=updated.id, name=updated.name, status=updated.status)
+
+
+# -----------------------------------------------------------------------------
+# Broker CRUD
+# -----------------------------------------------------------------------------
+
+
+class BrokerResponse(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    user_id: UUID | None
+    status: str  # pending | verified
+    created_at: datetime
+    verified_at: datetime | None
+
+
+class BrokerListResponse(BaseModel):
+    brokers: list[BrokerResponse]
+    count: int
+
+
+class CreateBrokerRequest(BaseModel):
+    name: str
+    email: str
+
+
+class UpdateBrokerRequest(BaseModel):
+    name: str | None = None
+    email: str | None = None
+
+
+@router.get("/{dealer_id}/brokers", response_model=BrokerListResponse)
+async def list_dealer_brokers(
+    dealer_id: UUID, current_user: CurrentUser, db: DbSession
+) -> BrokerListResponse:
+    """List brokers for a dealer. Requires DEALER_ADMIN_VIEW_ALL."""
+    _require_dealer_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    dealer = await org_repo.get_by_id(dealer_id, tenant_id=dealer_id)
+    if dealer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
+
+    broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+    brokers = await broker_repo.list_brokers(dealer_id)
+
+    return BrokerListResponse(
+        brokers=[
+            BrokerResponse(
+                id=b.id,
+                name=b.name,
+                email=b.email,
+                user_id=b.user_id,
+                status=b.status,
+                created_at=b.created_at,
+                verified_at=b.verified_at,
+            )
+            for b in brokers
+        ],
+        count=len(brokers),
+    )
+
+
+@router.post(
+    "/{dealer_id}/brokers", response_model=BrokerResponse, status_code=status.HTTP_201_CREATED
+)
+async def create_dealer_broker(
+    dealer_id: UUID,
+    request: CreateBrokerRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BrokerResponse:
+    """Create a broker for a dealer. Requires DEALER_ADMIN_VIEW_ALL.
+
+    Brokers start as 'pending' and can be linked to users later.
+    """
+    _require_dealer_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    dealer = await org_repo.get_by_id(dealer_id, tenant_id=dealer_id)
+    if dealer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
+
+    broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+
+    # Check if broker with this email already exists
+    existing = await broker_repo.get_by_email(dealer_id, request.email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A broker with this email already exists for this organization",
+        )
+
+    broker = await broker_repo.create_broker(
+        organization_id=dealer_id,
+        name=request.name,
+        email=request.email,
+        status="pending",
+    )
+
+    return BrokerResponse(
+        id=broker.id,
+        name=broker.name,
+        email=broker.email,
+        user_id=broker.user_id,
+        status=broker.status,
+        created_at=broker.created_at,
+        verified_at=broker.verified_at,
+    )
+
+
+@router.patch("/{dealer_id}/brokers/{broker_id}", response_model=BrokerResponse)
+async def update_dealer_broker(
+    dealer_id: UUID,
+    broker_id: UUID,
+    request: UpdateBrokerRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BrokerResponse:
+    """Update a broker. Only allowed if status is 'pending'."""
+    _require_dealer_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    dealer = await org_repo.get_by_id(dealer_id, tenant_id=dealer_id)
+    if dealer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
+
+    broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+
+    try:
+        broker = await broker_repo.update_broker(
+            broker_id=broker_id,
+            name=request.name,
+            email=request.email,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+    if broker is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Broker not found")
+
+    return BrokerResponse(
+        id=broker.id,
+        name=broker.name,
+        email=broker.email,
+        user_id=broker.user_id,
+        status=broker.status,
+        created_at=broker.created_at,
+        verified_at=broker.verified_at,
+    )
+
+
+@router.delete("/{dealer_id}/brokers/{broker_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_dealer_broker(
+    dealer_id: UUID,
+    broker_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> None:
+    """Delete a broker. Requires DEALER_ADMIN_VIEW_ALL."""
+    _require_dealer_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    dealer = await org_repo.get_by_id(dealer_id, tenant_id=dealer_id)
+    if dealer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
+
+    broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+    deleted = await broker_repo.delete_broker(broker_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Broker not found")

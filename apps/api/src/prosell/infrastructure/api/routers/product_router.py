@@ -1156,6 +1156,7 @@ class OwnerShareRequest(BaseModel):
     """Single owner share in request."""
 
     owner_id: UUID
+    owner_type: str = "organization"  # "organization" | "user"
     percentage: str  # Decimal as string for precision
 
 
@@ -1169,6 +1170,7 @@ class OwnerShareResponse(BaseModel):
     """Single owner share in response."""
 
     owner_id: UUID
+    owner_type: str
     percentage: str
     created_at: datetime
 
@@ -1216,6 +1218,7 @@ async def set_product_ownership(
                 OwnerShare(
                     owner_id=o.owner_id,
                     percentage=Decimal(o.percentage),
+                    owner_type=o.owner_type,
                 )
                 for o in request.owners
             ],
@@ -1230,6 +1233,7 @@ async def set_product_ownership(
         owners=[
             OwnerShareResponse(
                 owner_id=o.owner_id,
+                owner_type=o.owner_type,
                 percentage=str(o.percentage),
                 created_at=o.created_at,
             )
@@ -1260,6 +1264,7 @@ async def get_product_ownership(
         owners=[
             OwnerShareResponse(
                 owner_id=o.owner_id,
+                owner_type=o.owner_type,
                 percentage=str(o.percentage),
                 created_at=o.created_at,
             )

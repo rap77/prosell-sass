@@ -15,18 +15,26 @@ import {
 } from "@tanstack/react-query";
 import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import {
+  BrokerListResponseSchema,
   CreateDealerResponseSchema,
   DealerListResponseSchema,
   DealerProductListResponseSchema,
+  type Broker,
   type CreateDealerResponse,
   type Dealer,
   type DealerProduct,
 } from "@/lib/api/schemas/dealers";
 
+interface BrokerInput {
+  name: string;
+  email: string;
+}
+
 interface CreateDealerInput {
   name: string;
   vertical_ids: string[];
   owner_email: string;
+  brokers?: BrokerInput[];
 }
 
 async function getJson(url: string): Promise<unknown> {
@@ -118,3 +126,163 @@ export function useResendDealerInvitation() {
     },
   });
 }
+
+interface UpdateDealerInput {
+  name?: string;
+}
+
+/** Update a dealer's details. */
+export function useUpdateDealer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      dealerId,
+      data,
+    }: {
+      dealerId: string;
+      data: UpdateDealerInput;
+    }): Promise<{ id: string; name: string; status: string }> => {
+      const res = await fetch(`/api/v1/admin/dealers/${dealerId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null);
+        throw new Error(extractErrorMessage(body, "Error updating dealer"));
+      }
+      return res.json() as Promise<{
+        id: string;
+        name: string;
+        status: string;
+      }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+    },
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Broker hooks
+// -----------------------------------------------------------------------------
+
+/** List brokers for a dealer. */
+export function useDealerBrokers(
+  dealerId: string | undefined,
+): UseQueryResult<Broker[], Error> {
+  return useQuery({
+    queryKey: ["admin-dealer-brokers", dealerId],
+    queryFn: async () => {
+      const raw = await getJson(`/api/v1/admin/dealers/${dealerId}/brokers`);
+      return BrokerListResponseSchema.parse(raw).brokers;
+    },
+    enabled: !!dealerId,
+  });
+}
+
+/** Create a broker for a dealer. */
+export function useCreateDealerBroker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      dealerId,
+      name,
+      email,
+    }: {
+      dealerId: string;
+      name: string;
+      email: string;
+    }): Promise<Broker> => {
+      const res = await fetch(`/api/v1/admin/dealers/${dealerId}/brokers`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null);
+        throw new Error(extractErrorMessage(body, "Error creating broker"));
+      }
+      return res.json() as Promise<Broker>;
+    },
+    onSuccess: (_, { dealerId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dealer-brokers", dealerId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+    },
+  });
+}
+
+/** Update a broker (only if status is pending). */
+export function useUpdateDealerBroker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      dealerId,
+      brokerId,
+      name,
+      email,
+    }: {
+      dealerId: string;
+      brokerId: string;
+      name?: string;
+      email?: string;
+    }): Promise<Broker> => {
+      const res = await fetch(
+        `/api/v1/admin/dealers/${dealerId}/brokers/${brokerId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email }),
+        },
+      );
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null);
+        throw new Error(extractErrorMessage(body, "Error updating broker"));
+      }
+      return res.json() as Promise<Broker>;
+    },
+    onSuccess: (_, { dealerId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dealer-brokers", dealerId],
+      });
+    },
+  });
+}
+
+/** Delete a broker. */
+export function useDeleteDealerBroker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      dealerId,
+      brokerId,
+    }: {
+      dealerId: string;
+      brokerId: string;
+    }): Promise<void> => {
+      const res = await fetch(
+        `/api/v1/admin/dealers/${dealerId}/brokers/${brokerId}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null);
+        throw new Error(extractErrorMessage(body, "Error deleting broker"));
+      }
+    },
+    onSuccess: (_, { dealerId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dealer-brokers", dealerId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+    },
+  });
+}
+
+// Legacy exports for backward compatibility
+export const useAddDealerBroker = useCreateDealerBroker;
+export const useRemoveDealerBroker = useDeleteDealerBroker;

@@ -118,6 +118,14 @@ _CAR_SCHEMA: dict = {
         "vin_decode_key": "trim",
         "group": "basic",
     },
+    "clean_title": {
+        "type": "boolean",
+        "label": "Clean Title",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "group": "basic",
+    },
     # ═══════════════════════════════════════════════════════════════════════════
     # Group 2: engine (VIN-decodeable)
     # ═══════════════════════════════════════════════════════════════════════════
@@ -544,6 +552,33 @@ _WATERCRAFT_SCHEMA: dict = {
     "engine_hours": _f("number", filter_type="range"),
 }
 
+# ── RVs, Trailers, Aircraft ───────────────────────────────────────────────────
+_RV_SCHEMA: dict = {
+    "make": _f("string", required=True, filter_type="select"),
+    "model": _f("string", required=True),
+    "year": _f("number", required=True, filter_type="range"),
+    "mileage": _f("number", filter_type="range"),
+    "length_ft": _f("number", filter_type="range"),
+    "sleeps": _f("number", filter_type="range"),
+    "fuel_type": _f("string", filter_type="select", options=["Gasolina", "Diésel"]),
+}
+_TRAILER_SCHEMA: dict = {
+    "make": _f("string", filter_type="select"),
+    "model": _f("string"),
+    "year": _f("number", filter_type="range"),
+    "length_ft": _f("number", filter_type="range"),
+    "load_capacity_kg": _f("number", filter_type="range"),
+    "axles": _f("number", filter_type="select", options=["1", "2", "3"]),
+}
+_AIRCRAFT_SCHEMA: dict = {
+    "make": _f("string", required=True, filter_type="select"),
+    "model": _f("string", required=True),
+    "year": _f("number", required=True, filter_type="range"),
+    "total_time_hours": _f("number", filter_type="range"),
+    "engine_hours": _f("number", filter_type="range"),
+    "seats": _f("number", filter_type="range"),
+}
+
 # ── Real estate ──────────────────────────────────────────────────────────────
 _OPERATION = _f("string", required=True, filter_type="select", options=["Venta", "Alquiler"])
 _HOUSE_PRESENTATION: dict = {
@@ -719,6 +754,24 @@ VEHICLES_VERTICAL: _Node = {
                         ),
                     ],
                 },
+                {
+                    "name": "Otros",
+                    "slug": "otros-terrestres",
+                    "children": [
+                        _leaf(
+                            "RVs/Motorhomes",
+                            "rvs-motorhomes",
+                            _RV_SCHEMA,
+                            _VEHICLE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Remolques",
+                            "remolques",
+                            _TRAILER_SCHEMA,
+                            _VEHICLE_PRESENTATION,
+                        ),
+                    ],
+                },
             ],
         },
         {
@@ -746,6 +799,30 @@ VEHICLES_VERTICAL: _Node = {
                         ),
                     ],
                 },
+            ],
+        },
+        {
+            "name": "Vehículos Aéreos",
+            "slug": "vehiculos-aereos",
+            "children": [
+                _leaf(
+                    "Aviones",
+                    "aviones",
+                    _AIRCRAFT_SCHEMA,
+                    _VEHICLE_PRESENTATION,
+                ),
+                _leaf(
+                    "Helicópteros",
+                    "helicopteros",
+                    _AIRCRAFT_SCHEMA,
+                    _VEHICLE_PRESENTATION,
+                ),
+                _leaf(
+                    "Ultraligeros",
+                    "ultraligeros",
+                    _AIRCRAFT_SCHEMA,
+                    _VEHICLE_PRESENTATION,
+                ),
             ],
         },
     ],

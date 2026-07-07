@@ -1,7 +1,7 @@
 /**
  * AdminDealerProductsPage.test.tsx — Subsystem D Phase 6.9
  *
- * Renders the dealer's products using GET /admin/dealers/{id}/products.
+ * Renders the dealer's products using GET /admin/organizations/{id}/products.
  */
 import { render, screen, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";

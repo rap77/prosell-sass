@@ -73,7 +73,10 @@ describe("AdminDealerDetailPage", () => {
     render(<AdminDealerDetailPage />);
 
     const link = await screen.findByRole("link", { name: /productos/i });
-    expect(link).toHaveAttribute("href", "/admin/dealers/dealer-1/products");
+    expect(link).toHaveAttribute(
+      "href",
+      "/admin/organizations/dealer-1/products",
+    );
   });
 
   it("shows a not-found message when the dealer doesn't exist", async () => {
