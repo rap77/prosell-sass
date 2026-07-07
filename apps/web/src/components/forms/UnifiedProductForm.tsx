@@ -430,7 +430,7 @@ export function UnifiedProductForm({
                 return (
                   <div key={index} className="flex items-center gap-2">
                     <Select
-                      value={owner.owner_id}
+                      value={owner.owner_id || undefined}
                       onValueChange={(v) => {
                         const updated = [...pendingOwners];
                         updated[index] = { ...updated[index], owner_id: v };
@@ -438,7 +438,15 @@ export function UnifiedProductForm({
                       }}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Seleccionar dealer" />
+                        {owner.owner_id ? (
+                          <span className="truncate">
+                            {dealers.find((d) => d.id === owner.owner_id)?.name}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Seleccionar dealer
+                          </span>
+                        )}
                       </SelectTrigger>
                       <SelectContent>
                         {dealers

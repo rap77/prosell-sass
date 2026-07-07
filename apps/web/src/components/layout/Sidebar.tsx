@@ -150,18 +150,19 @@ export function Sidebar({ groups }: SidebarProps) {
   const { hasPermission } = useAuth();
   const pathname = usePathname();
 
-  // Filter navigation items based on user role. "concesionarios" gets an
-  // extra permission check on top of the group list — defense in depth so
-  // a layout misconfiguration can't expose the cross-dealer admin view to
-  // a caller without DEALER_ADMIN_VIEW_ALL.
+  // Filter navigation items based on user role. Groups with sensitive items
+  // get extra permission checks — defense in depth so a layout misconfiguration
+  // can't expose admin views to unauthorized users.
   const visibleItems = navigationItems.filter((item) => {
+    if (!groups.includes(item.group)) return false;
+
     if (item.group === "concesionarios") {
-      return (
-        groups.includes("concesionarios") &&
-        hasPermission(Permission.DEALER_ADMIN_VIEW_ALL)
-      );
+      return hasPermission(Permission.DEALER_ADMIN_VIEW_ALL);
     }
-    return groups.includes(item.group);
+    if (item.group === "configuración") {
+      return hasPermission(Permission.SETTINGS_READ);
+    }
+    return true;
   });
 
   return (

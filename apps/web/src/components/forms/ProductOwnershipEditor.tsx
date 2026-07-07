@@ -132,11 +132,19 @@ export function ProductOwnershipEditor({
           {owners.map((owner, index) => (
             <div key={index} className="flex items-center gap-2">
               <Select
-                value={owner.owner_id}
+                value={owner.owner_id || undefined}
                 onValueChange={(v) => updateOwner(index, "owner_id", v)}
               >
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Seleccionar dealer" />
+                  {owner.owner_id ? (
+                    <span className="truncate">
+                      {dealers.find((d) => d.id === owner.owner_id)?.name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Seleccionar dealer
+                    </span>
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   {dealers

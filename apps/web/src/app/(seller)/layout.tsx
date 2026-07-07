@@ -23,7 +23,15 @@ export default function SellerLayout({
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
-        <Sidebar groups={["general", "inventario", "ventas"]} />
+        <Sidebar
+          groups={[
+            "general",
+            "inventario",
+            "ventas",
+            "concesionarios",
+            "configuración",
+          ]}
+        />
       </div>
 
       {/* Main content area */}
