@@ -36,9 +36,36 @@ vi.mock("@/lib/stores/layoutStore", () => ({
 describe("Sidebar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset useAuth to default mock (seller without permissions)
+    vi.mocked(useAuth).mockReturnValue({
+      user: {
+        id: "1",
+        email: "john@example.com",
+        first_name: "John",
+        last_name: "Doe",
+        role: "Seller",
+      },
+      isAuthenticated: false,
+      isLoading: false,
+      hasPermission: vi.fn(() => false),
+    } as unknown as ReturnType<typeof useAuth>);
   });
 
   it("renders navigation groups (Inventario, Ventas, Configuración)", () => {
+    // ponytail: need SETTINGS_READ permission for configuración group
+    vi.mocked(useAuth).mockReturnValue({
+      user: {
+        id: "1",
+        email: "admin@example.com",
+        first_name: "Admin",
+        last_name: "User",
+        role: "admin",
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: vi.fn((p: Permission) => p === Permission.SETTINGS_READ),
+    } as unknown as ReturnType<typeof useAuth>);
+
     render(<Sidebar groups={["inventario", "ventas", "configuración"]} />);
 
     expect(screen.getAllByText("Inventario").length).toBeGreaterThan(0);
@@ -70,9 +97,21 @@ describe("Sidebar", () => {
   });
 
   it("uses corrected Spanish terminology (not Operations/Growth)", () => {
-    const { container } = render(
-      <Sidebar groups={["inventario", "ventas", "configuración"]} />,
-    );
+    // ponytail: need SETTINGS_READ permission for configuración group
+    vi.mocked(useAuth).mockReturnValue({
+      user: {
+        id: "1",
+        email: "admin@example.com",
+        first_name: "Admin",
+        last_name: "User",
+        role: "admin",
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: vi.fn((p: Permission) => p === Permission.SETTINGS_READ),
+    } as unknown as ReturnType<typeof useAuth>);
+
+    render(<Sidebar groups={["inventario", "ventas", "configuración"]} />);
 
     // Verify correct terms are present (Configuración appears twice: as group header and as nav item)
     expect(screen.getAllByText("Inventario").length).toBeGreaterThan(0);
