@@ -76,8 +76,7 @@ async def test_seed_creates_both_level_1_branches(db_session):
 async def test_seed_is_idempotent(db_session):
     # Count only the seed's own nodes (robust to any other global rows).
     slugs = _all_slugs(VEHICLES_VERTICAL)
-    # Sanity: the Vehículos tree has 1 root + 3 L1 + 7 L2 + 21 L3 = 32 nodes
-    assert len(slugs) == 32
+    expected_count = len(slugs)  # ponytail: dynamic, no hardcoded count
     count_stmt = select(func.count(CategoryModel.id)).where(
         CategoryModel.tenant_id.is_(None), CategoryModel.slug.in_(slugs)
     )
@@ -88,5 +87,5 @@ async def test_seed_is_idempotent(db_session):
     await seed_vehicles_vertical(db_session)
     second = (await db_session.execute(count_stmt)).scalar()
 
-    assert first == 25
-    assert second == 25, "Re-running the seed must not duplicate categories"
+    assert first == expected_count
+    assert second == expected_count, "Re-running the seed must not duplicate categories"

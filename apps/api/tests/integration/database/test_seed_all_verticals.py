@@ -39,8 +39,8 @@ def test_all_slugs_are_globally_unique_across_niches():
         + _all_slugs(BIENES_RAICES_VERTICAL)
         + _all_slugs(ARTICULOS_VERTICAL)
     )
+    # ponytail: only check uniqueness, not count — adding categories shouldn't break tests
     assert len(all_slugs) == len(set(all_slugs)), "Duplicate slug across niches"
-    assert len(all_slugs) == 32 + 24 + 30  # 86 nodes total
 
 
 @pytest.mark.asyncio
@@ -90,6 +90,7 @@ async def test_seed_global_taxonomy_is_idempotent(db_session):
         + _all_slugs(BIENES_RAICES_VERTICAL)
         + _all_slugs(ARTICULOS_VERTICAL)
     )
+    expected_count = len(tree_slugs)  # ponytail: dynamic count
     count_stmt = select(func.count(CategoryModel.id)).where(
         CategoryModel.tenant_id.is_(None), CategoryModel.slug.in_(tree_slugs)
     )
@@ -99,5 +100,5 @@ async def test_seed_global_taxonomy_is_idempotent(db_session):
     await seed_global_taxonomy(db_session)
     second = (await db_session.execute(count_stmt)).scalar()
 
-    assert first == 86
-    assert second == 86, "Re-running the global seed must not duplicate categories"
+    assert first == expected_count
+    assert second == expected_count, "Re-running the global seed must not duplicate categories"
