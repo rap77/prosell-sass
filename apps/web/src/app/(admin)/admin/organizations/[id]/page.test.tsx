@@ -7,16 +7,27 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import AdminDealerDetailPage from "./page";
 
-const mockUseAuth = vi.fn();
-vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => mockUseAuth(),
+// Mock useRequireAdmin (the component uses this, not useAuth)
+const mockUseRequireAdmin = vi.fn();
+vi.mock("@/hooks/useRequireAdmin", () => ({
+  useRequireAdmin: () => mockUseRequireAdmin(),
 }));
 
 const mockUseDealer = vi.fn();
 const mockUseResendInvitation = vi.fn();
+const mockUseUpdateDealer = vi.fn();
+const mockUseDealerBrokers = vi.fn();
+const mockUseCreateDealerBroker = vi.fn();
+const mockUseUpdateDealerBroker = vi.fn();
+const mockUseDeleteDealerBroker = vi.fn();
 vi.mock("@/lib/api/dealers", () => ({
   useDealer: () => mockUseDealer(),
   useResendDealerInvitation: () => mockUseResendInvitation(),
+  useUpdateDealer: () => mockUseUpdateDealer(),
+  useDealerBrokers: () => mockUseDealerBrokers(),
+  useCreateDealerBroker: () => mockUseCreateDealerBroker(),
+  useUpdateDealerBroker: () => mockUseUpdateDealerBroker(),
+  useDeleteDealerBroker: () => mockUseDeleteDealerBroker(),
 }));
 
 const mockReplace = vi.fn();
@@ -28,26 +39,42 @@ vi.mock("next/navigation", () => ({
 describe("AdminDealerDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseRequireAdmin.mockReturnValue(true);
     mockUseResendInvitation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mockUseUpdateDealer.mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    });
+    // Broker hooks used by BrokerManager component
+    mockUseDealerBrokers.mockReturnValue({ data: [], isLoading: false });
+    mockUseCreateDealerBroker.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mockUseUpdateDealerBroker.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mockUseDeleteDealerBroker.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
   });
 
-  it("redirects a non-admin to /dashboard", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: false });
+  it("returns null when not admin (useRequireAdmin handles redirect)", () => {
+    mockUseRequireAdmin.mockReturnValue(false);
     mockUseDealer.mockReturnValue({
       dealer: undefined,
       isLoading: false,
       error: null,
     });
 
-    render(<AdminDealerDetailPage />);
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/dashboard");
-    });
+    const { container } = render(<AdminDealerDetailPage />);
+    expect(container.firstChild).toBeNull();
   });
 
   it("shows the dealer's name and status", async () => {
@@ -60,7 +87,7 @@ describe("AdminDealerDetailPage", () => {
     render(<AdminDealerDetailPage />);
 
     expect(await screen.findByText("Dealer One")).toBeInTheDocument();
-    expect(screen.getByText(/active/i)).toBeInTheDocument();
+    expect(screen.getByText(/activo/i)).toBeInTheDocument();
   });
 
   it("links to the dealer's products page", async () => {
@@ -88,7 +115,7 @@ describe("AdminDealerDetailPage", () => {
 
     render(<AdminDealerDetailPage />);
 
-    expect(await screen.findByText(/no encontrado/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no encontrad/i)).toBeInTheDocument();
   });
 
   it("does not show the resend-invitation button when the dealer is active", async () => {
@@ -99,6 +126,9 @@ describe("AdminDealerDetailPage", () => {
     });
 
     render(<AdminDealerDetailPage />);
+
+    // Wait for content to render
+    await screen.findByText("Acme Motors");
 
     expect(
       screen.queryByRole("button", { name: /reenviar invitación/i }),
@@ -123,7 +153,9 @@ describe("AdminDealerDetailPage", () => {
 
     render(<AdminDealerDetailPage />);
 
-    const button = screen.getByRole("button", { name: /reenviar invitación/i });
+    const button = await screen.findByRole("button", {
+      name: /reenviar invitación/i,
+    });
     fireEvent.click(button);
 
     expect(mockMutate).toHaveBeenCalledWith("dealer-1");

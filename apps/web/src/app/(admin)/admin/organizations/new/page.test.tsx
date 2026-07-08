@@ -35,10 +35,11 @@ describe("AdminNewDealerPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthIsLoading.mockReturnValue(false);
+    // ponytail: need level=0 because component filters by level
     mockUseCategories.mockReturnValue({
       data: [
-        { id: "cat-1", name: "Vehicles" },
-        { id: "cat-2", name: "Real Estate" },
+        { id: "cat-1", name: "Vehicles", level: 0 },
+        { id: "cat-2", name: "Real Estate", level: 0 },
       ],
       isLoading: false,
     });
@@ -63,6 +64,7 @@ describe("AdminNewDealerPage", () => {
 
   it("shows a hint instead of a silently-disabled button when there are no active verticals", () => {
     mockHasPermission.mockReturnValue(true);
+    // No level=0 categories means no verticals
     mockUseCategories.mockReturnValue({ data: [], isLoading: false });
 
     render(<AdminNewDealerPage />);

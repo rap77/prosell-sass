@@ -77,7 +77,7 @@ describe("AdminDealersPage", () => {
     render(<AdminDealersPage />);
 
     expect(
-      screen.getByRole("link", { name: /nuevo organización/i }),
+      screen.getByRole("link", { name: /nueva organización/i }),
     ).toHaveAttribute("href", "/admin/organizations/new");
   });
 
@@ -88,7 +88,7 @@ describe("AdminDealersPage", () => {
     render(<AdminDealersPage />);
 
     expect(
-      screen.queryByRole("link", { name: /nuevo organización/i }),
+      screen.queryByRole("link", { name: /nueva organización/i }),
     ).not.toBeInTheDocument();
   });
 });
