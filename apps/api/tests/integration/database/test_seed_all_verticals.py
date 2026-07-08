@@ -40,7 +40,7 @@ def test_all_slugs_are_globally_unique_across_niches():
         + _all_slugs(ARTICULOS_VERTICAL)
     )
     assert len(all_slugs) == len(set(all_slugs)), "Duplicate slug across niches"
-    assert len(all_slugs) == 25 + 24 + 30  # 79 nodes total
+    assert len(all_slugs) == 32 + 24 + 30  # 86 nodes total
 
 
 @pytest.mark.asyncio
@@ -99,5 +99,5 @@ async def test_seed_global_taxonomy_is_idempotent(db_session):
     await seed_global_taxonomy(db_session)
     second = (await db_session.execute(count_stmt)).scalar()
 
-    assert first == 79
-    assert second == 79, "Re-running the global seed must not duplicate categories"
+    assert first == 86
+    assert second == 86, "Re-running the global seed must not duplicate categories"

@@ -76,8 +76,8 @@ async def test_seed_creates_both_level_1_branches(db_session):
 async def test_seed_is_idempotent(db_session):
     # Count only the seed's own nodes (robust to any other global rows).
     slugs = _all_slugs(VEHICLES_VERTICAL)
-    # Sanity: the Vehículos tree has 1 root + 2 L1 + 5 L2 + 17 L3 = 25 nodes
-    assert len(slugs) == 25
+    # Sanity: the Vehículos tree has 1 root + 3 L1 + 7 L2 + 21 L3 = 32 nodes
+    assert len(slugs) == 32
     count_stmt = select(func.count(CategoryModel.id)).where(
         CategoryModel.tenant_id.is_(None), CategoryModel.slug.in_(slugs)
     )
