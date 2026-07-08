@@ -35,6 +35,8 @@ async def main() -> None:
         sources=[LabelScheduleSource(broker)],
     )
     receiver = Receiver(broker=broker)
+    # Event that signals shutdown — never set, so worker runs forever until killed
+    finish_event = asyncio.Event()
 
     logger.info("Starting Taskiq worker (receiver + scheduler)...")
     logger.info("Broker: %s", settings.task_queue_broker_url or settings.redis_url)
@@ -46,7 +48,7 @@ async def main() -> None:
 
     await scheduler.startup()
     try:
-        await receiver.start()  # type: ignore[attr-defined]
+        await receiver.listen(finish_event)
     finally:
         await scheduler.shutdown()
 
