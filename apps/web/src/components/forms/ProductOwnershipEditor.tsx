@@ -45,14 +45,6 @@ export function ProductOwnershipEditor({
     useProductOwnership(productId);
   const setOwnership = useSetProductOwnership();
 
-  // Selected organization for editing ownership
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-
-  // Fetch brokers for selected org
-  const { data: brokers = [], isLoading: isLoadingBrokers } = useDealerBrokers(
-    selectedOrgId ?? undefined,
-  );
-
   // Derive initial state from server data
   const serverOwners = useMemo(
     () =>
@@ -64,21 +56,23 @@ export function ProductOwnershipEditor({
     [ownership],
   );
 
-  // Auto-select org from existing ownership
-  useEffect(() => {
-    if (serverOwners.length > 0 && !selectedOrgId) {
-      // If existing ownership has an org type, use that
-      const orgOwner = serverOwners.find(
-        (o) => o.owner_type === "organization",
-      );
-      if (orgOwner) {
-        setSelectedOrgId(orgOwner.owner_id);
-      } else if (serverOwners[0]) {
-        // User owners belong to some org — we need to look up which one
-        // ponytail: for now, don't auto-select if only user owners
-      }
-    }
-  }, [serverOwners, selectedOrgId]);
+  // ponytail: derive default org from existing ownership, no useEffect needed
+  const defaultOrgId = useMemo(() => {
+    const orgOwner = serverOwners.find((o) => o.owner_type === "organization");
+    return orgOwner?.owner_id ?? null;
+  }, [serverOwners]);
+
+  // User can override the default by selecting a different org
+  const [userSelectedOrgId, setUserSelectedOrgId] = useState<string | null>(
+    null,
+  );
+  const selectedOrgId = userSelectedOrgId ?? defaultOrgId;
+  const setSelectedOrgId = setUserSelectedOrgId;
+
+  // Fetch brokers for selected org
+  const { data: brokers = [], isLoading: isLoadingBrokers } = useDealerBrokers(
+    selectedOrgId ?? undefined,
+  );
 
   const [localOwners, setLocalOwners] = useState<OwnerEntry[] | null>(null);
 
