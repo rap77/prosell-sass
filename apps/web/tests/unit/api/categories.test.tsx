@@ -98,9 +98,12 @@ describe("Categories API Client - useCategories", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/v1/categories?flat=true", {
-      credentials: "include",
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/categories?flat=true&is_active=true",
+      {
+        credentials: "include",
+      },
+    );
     // Mapper adds default values for new fields (parent_id, level, sort_order, etc.)
     expect(result.current.data?.length).toBe(2);
     expect(result.current.data?.[0].id).toBe("cat-1");

@@ -115,7 +115,7 @@ describe("useCategories", () => {
     // Verify categories are returned
     expect(result.current.data).toEqual(mockCategories);
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/v1/categories?flat=true",
+      "/api/v1/categories?flat=true&is_active=true",
       expect.objectContaining({
         credentials: "include",
       }),
