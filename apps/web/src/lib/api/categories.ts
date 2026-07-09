@@ -35,7 +35,8 @@ export function useCategories(): UseQueryResult<Category[], Error> {
     queryKey: ["categories"],
     queryFn: async () => {
       // flat=true returns all categories for client-side tree building
-      const res = await fetch("/api/v1/categories?flat=true", {
+      // is_active=true filters out soft-deleted categories
+      const res = await fetch("/api/v1/categories?flat=true&is_active=true", {
         credentials: "include",
       });
 
