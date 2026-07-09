@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel in-flight CI runs only on PRs to avoid queue accumulation from
+# rapid pushes to a single branch. Push to main keeps every run alive so
+# the latest deploy still fires via workflow_run (otherwise a cancelled
+# CI run won't trigger the deploy workflow).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   PYTHON_VERSION: "3.13"
   NODE_VERSION: "22"
