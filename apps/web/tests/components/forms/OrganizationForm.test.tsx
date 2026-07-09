@@ -63,7 +63,7 @@ describe("OrganizationForm", () => {
       expect(screen.getByLabelText(/organization name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/website/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/teléfono/i)).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /create organization/i }),
       ).toBeInTheDocument();
