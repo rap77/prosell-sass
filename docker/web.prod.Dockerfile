@@ -23,10 +23,6 @@ COPY apps/web ./apps/web
 # Limit Node.js memory to prevent OOM during build
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# ponytail: disable Turbopack for prod builds — webpack is more stable on low-RAM servers
-# Turbopack is fast in dev but memory-hungry for builds; re-enable when server has 4GB+
-ENV TURBOPACK=0
-
 RUN pnpm --filter @prosell/web build
 
 # ---- Runner -----------------------------------------------------------------
