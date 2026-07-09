@@ -25,6 +25,24 @@ class OrganizationModel(Base):
     website: Mapped[str | None] = mapped_column(String(500), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
+    # Contact info
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    whatsapp: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Address (desglosada)
+    street_address: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Legal / fiscal
+    tax_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Social media
+    instagram: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    facebook: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     # Verification
     status: Mapped[str] = mapped_column(
         String(50),

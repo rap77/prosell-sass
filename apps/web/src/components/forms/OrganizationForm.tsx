@@ -50,6 +50,20 @@ const organizationSchema = z.object({
     .or(z.literal("")),
   website: z.string().url("Invalid URL").optional().or(z.literal("")),
   phone: z.string().optional(),
+  // Contact
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  whatsapp: z.string().optional(),
+  // Address
+  street_address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postal_code: z.string().optional(),
+  country: z.string().optional(),
+  // Legal
+  tax_id: z.string().optional(),
+  // Social
+  instagram: z.string().optional(),
+  facebook: z.string().url("URL inválida").optional().or(z.literal("")),
 });
 
 export type OrganizationFormValues = z.infer<typeof organizationSchema>;
@@ -114,6 +128,16 @@ export function OrganizationForm({
       description: initialData?.description || "",
       website: initialData?.website || "",
       phone: initialData?.phone || "",
+      email: initialData?.email || "",
+      whatsapp: initialData?.whatsapp || "",
+      street_address: initialData?.street_address || "",
+      city: initialData?.city || "",
+      state: initialData?.state || "",
+      postal_code: initialData?.postal_code || "",
+      country: initialData?.country || "",
+      tax_id: initialData?.tax_id || "",
+      instagram: initialData?.instagram || "",
+      facebook: initialData?.facebook || "",
     },
   });
 
@@ -137,13 +161,27 @@ export function OrganizationForm({
     }
 
     try {
+      const payload = {
+        name: data.name,
+        description: data.description || undefined,
+        website: data.website || undefined,
+        phone: data.phone || undefined,
+        email: data.email || undefined,
+        whatsapp: data.whatsapp || undefined,
+        street_address: data.street_address || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        postal_code: data.postal_code || undefined,
+        country: data.country || undefined,
+        tax_id: data.tax_id || undefined,
+        instagram: data.instagram || undefined,
+        facebook: data.facebook || undefined,
+      };
+
       if (mode === "create") {
         const org = await createOrganization({
-          name: data.name,
+          ...payload,
           tenant_id: tenantId,
-          description: data.description || undefined,
-          website: data.website || undefined,
-          phone: data.phone || undefined,
         });
 
         // Navigate to organization detail or call onSuccess
@@ -153,12 +191,7 @@ export function OrganizationForm({
           router.push(`/dashboard/org/${org.id}`);
         }
       } else if (mode === "edit" && organizationId) {
-        await updateOrganization(organizationId, {
-          name: data.name,
-          description: data.description || undefined,
-          website: data.website || undefined,
-          phone: data.phone || undefined,
-        });
+        await updateOrganization(organizationId, payload);
 
         // Navigate to organization detail or call onSuccess
         if (onSuccess) {
@@ -263,13 +296,13 @@ export function OrganizationForm({
 
       {/* Phone Input */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">Teléfono</Label>
         <Input
           {...register("phone")}
           onBlur={handleInputChange}
           id="phone"
           type="tel"
-          placeholder="+1 (555) 123-4567"
+          placeholder="+54 11 1234-5678"
           disabled={isDisabled}
           aria-invalid={!!errors.phone || !!error}
           className={cn(
@@ -282,6 +315,147 @@ export function OrganizationForm({
             {errors.phone.message}
           </p>
         )}
+      </div>
+
+      {/* Email Input */}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="email">Email de contacto</Label>
+        <Input
+          {...register("email")}
+          onBlur={handleInputChange}
+          id="email"
+          type="email"
+          placeholder="contacto@empresa.com"
+          disabled={isDisabled}
+          aria-invalid={!!errors.email}
+          className={cn(
+            errors.email && "border-destructive focus-visible:ring-destructive",
+          )}
+        />
+        {errors.email?.message && (
+          <p role="alert" className="text-sm text-destructive">
+            {errors.email.message}
+          </p>
+        )}
+      </div>
+
+      {/* WhatsApp Input */}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="whatsapp">WhatsApp</Label>
+        <Input
+          {...register("whatsapp")}
+          onBlur={handleInputChange}
+          id="whatsapp"
+          type="tel"
+          placeholder="+54 9 11 1234-5678"
+          disabled={isDisabled}
+        />
+      </div>
+
+      {/* Address Section */}
+      <div className="border-t pt-4 mt-2">
+        <h3 className="text-sm font-medium mb-3">Dirección</h3>
+        <div className="grid gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="street_address">Calle y número</Label>
+            <Input
+              {...register("street_address")}
+              id="street_address"
+              placeholder="Av. Corrientes 1234"
+              disabled={isDisabled}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="city">Ciudad</Label>
+              <Input
+                {...register("city")}
+                id="city"
+                placeholder="Buenos Aires"
+                disabled={isDisabled}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="state">Provincia/Estado</Label>
+              <Input
+                {...register("state")}
+                id="state"
+                placeholder="CABA"
+                disabled={isDisabled}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="postal_code">Código postal</Label>
+              <Input
+                {...register("postal_code")}
+                id="postal_code"
+                placeholder="C1043"
+                disabled={isDisabled}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="country">País</Label>
+              <Input
+                {...register("country")}
+                id="country"
+                placeholder="Argentina"
+                disabled={isDisabled}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Legal Section */}
+      <div className="border-t pt-4 mt-2">
+        <h3 className="text-sm font-medium mb-3">Información fiscal</h3>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="tax_id">CUIT / RUC / NIT</Label>
+          <Input
+            {...register("tax_id")}
+            id="tax_id"
+            placeholder="30-12345678-9"
+            disabled={isDisabled}
+          />
+        </div>
+      </div>
+
+      {/* Social Media Section */}
+      <div className="border-t pt-4 mt-2">
+        <h3 className="text-sm font-medium mb-3">Redes sociales</h3>
+        <div className="grid gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input
+              {...register("instagram")}
+              id="instagram"
+              placeholder="@miempresa"
+              disabled={isDisabled}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="facebook">Facebook</Label>
+            <Input
+              {...register("facebook")}
+              id="facebook"
+              type="url"
+              placeholder="https://facebook.com/miempresa"
+              disabled={isDisabled}
+              aria-invalid={!!errors.facebook}
+              className={cn(
+                errors.facebook &&
+                  "border-destructive focus-visible:ring-destructive",
+              )}
+            />
+            {errors.facebook?.message && (
+              <p role="alert" className="text-sm text-destructive">
+                {errors.facebook.message}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Store Error */}

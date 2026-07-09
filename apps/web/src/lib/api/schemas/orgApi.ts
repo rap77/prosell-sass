@@ -27,6 +27,21 @@ export const OrganizationSchema = z
     description: z.string().nullable(),
     website: z.string().nullable(),
     phone: z.string().nullable(),
+    // Contact
+    email: z.string().nullable(),
+    whatsapp: z.string().nullable(),
+    // Address
+    street_address: z.string().nullable(),
+    city: z.string().nullable(),
+    state: z.string().nullable(),
+    postal_code: z.string().nullable(),
+    country: z.string().nullable(),
+    // Legal
+    tax_id: z.string().nullable(),
+    // Social
+    instagram: z.string().nullable(),
+    facebook: z.string().nullable(),
+    // Meta
     wallet_id: z.string().nullable(),
     setup_complete: z.boolean(),
     created_at: z.string(),

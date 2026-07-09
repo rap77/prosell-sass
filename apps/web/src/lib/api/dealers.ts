@@ -129,6 +129,19 @@ export function useResendDealerInvitation() {
 
 interface UpdateDealerInput {
   name?: string;
+  description?: string;
+  website?: string;
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  tax_id?: string;
+  instagram?: string;
+  facebook?: string;
 }
 
 /** Update a dealer's details. */

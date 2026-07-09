@@ -20,6 +20,23 @@ export const DealerSchema = z
     status: z.string(),
     logo_url: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
+    website: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    // Contact
+    email: z.string().nullable().optional(),
+    whatsapp: z.string().nullable().optional(),
+    // Address
+    street_address: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    state: z.string().nullable().optional(),
+    postal_code: z.string().nullable().optional(),
+    country: z.string().nullable().optional(),
+    // Legal
+    tax_id: z.string().nullable().optional(),
+    // Social
+    instagram: z.string().nullable().optional(),
+    facebook: z.string().nullable().optional(),
+    // Meta
     created_at: z.string(),
     updated_at: z.string(),
     broker_count: z.number().nullable().optional(),

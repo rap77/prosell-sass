@@ -3,14 +3,22 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Loader2, Pencil, Check, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Pencil,
+  Check,
+  X,
+  Settings,
+} from "lucide-react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import {
   useDealer,
   useResendDealerInvitation,
   useUpdateDealer,
 } from "@/lib/api/dealers";
-import { BrokerManager } from "@/components/admin/BrokerManager";
+import { OrganizationEditModal } from "@/components/admin/OrganizationEditModal";
 
 /**
  * Admin dealer detail — Subsystem D Phase 6.
@@ -29,6 +37,7 @@ export default function AdminDealerDetailPage() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleStartEdit = () => {
     if (dealer) {
@@ -270,6 +279,27 @@ export default function AdminDealerDetailPage() {
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={() => setIsEditModalOpen(true)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            height: 36,
+            padding: "0 16px",
+            borderRadius: 8,
+            background: "var(--ps-bg-elevated)",
+            border: "1px solid var(--ps-border-default)",
+            color: "var(--ps-text-primary)",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          <Settings size={14} />
+          Editar información
+        </button>
         <Link
           href={`/admin/organizations/${dealer.id}/products`}
           style={{
@@ -290,8 +320,14 @@ export default function AdminDealerDetailPage() {
         </Link>
       </div>
 
-      {/* Broker management section */}
-      <BrokerManager dealerId={dealer.id} />
+      {/* Edit modal */}
+      {isEditModalOpen && (
+        <OrganizationEditModal
+          dealer={dealer}
+          open={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

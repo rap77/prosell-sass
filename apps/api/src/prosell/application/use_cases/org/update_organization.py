@@ -43,6 +43,16 @@ class UpdateOrganizationUseCase:
             description=request.description,
             website=request.website,
             phone=request.phone,
+            email=request.email,
+            whatsapp=request.whatsapp,
+            street_address=request.street_address,
+            city=request.city,
+            state=request.state,
+            postal_code=request.postal_code,
+            country=request.country,
+            tax_id=request.tax_id,
+            instagram=request.instagram,
+            facebook=request.facebook,
         )
 
         if request.logo_url is not None:

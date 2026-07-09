@@ -20,6 +20,21 @@ class OrganizationResponse(BaseModel):
     description: str | None = None
     website: str | None = None
     phone: str | None = None
+    # Contact
+    email: str | None = None
+    whatsapp: str | None = None
+    # Address
+    street_address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    # Legal
+    tax_id: str | None = None
+    # Social
+    instagram: str | None = None
+    facebook: str | None = None
+    # Meta
     verified_at: datetime | None = None
     wallet_id: UUID | None = None
     setup_complete: bool = False
@@ -43,6 +58,16 @@ class OrganizationResponse(BaseModel):
             description=org.description,
             website=org.website,
             phone=org.phone,
+            email=org.email,
+            whatsapp=org.whatsapp,
+            street_address=org.street_address,
+            city=org.city,
+            state=org.state,
+            postal_code=org.postal_code,
+            country=org.country,
+            tax_id=org.tax_id,
+            instagram=org.instagram,
+            facebook=org.facebook,
             verified_at=org.verified_at,
             wallet_id=org.wallet_id,
             setup_complete=org.setup_complete,

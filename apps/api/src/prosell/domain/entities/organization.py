@@ -28,6 +28,24 @@ class Organization(DomainModel):
     website: str | None = None
     phone: str | None = None
 
+    # Contact info
+    email: str | None = None
+    whatsapp: str | None = None
+
+    # Address
+    street_address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+
+    # Legal / fiscal
+    tax_id: str | None = None
+
+    # Social media
+    instagram: str | None = None
+    facebook: str | None = None
+
     # Verification & settings
     status: OrganizationStatus = OrganizationStatus.PENDING_VERIFICATION
     verified_at: datetime | None = None
@@ -187,15 +205,21 @@ class Organization(DomainModel):
         description: str | None = None,
         website: str | None = None,
         phone: str | None = None,
+        email: str | None = None,
+        whatsapp: str | None = None,
+        street_address: str | None = None,
+        city: str | None = None,
+        state: str | None = None,
+        postal_code: str | None = None,
+        country: str | None = None,
+        tax_id: str | None = None,
+        instagram: str | None = None,
+        facebook: str | None = None,
     ) -> None:
         """
-        Update basic organization information.
+        Update organization information.
 
-        Args:
-            name: New name (optional)
-            description: New description (optional)
-            website: New website (optional)
-            phone: New phone (optional)
+        All args are optional — only non-None values are applied.
         """
         if name is not None:
             self.name = name
@@ -205,6 +229,26 @@ class Organization(DomainModel):
             self.website = website
         if phone is not None:
             self.phone = phone
+        if email is not None:
+            self.email = email
+        if whatsapp is not None:
+            self.whatsapp = whatsapp
+        if street_address is not None:
+            self.street_address = street_address
+        if city is not None:
+            self.city = city
+        if state is not None:
+            self.state = state
+        if postal_code is not None:
+            self.postal_code = postal_code
+        if country is not None:
+            self.country = country
+        if tax_id is not None:
+            self.tax_id = tax_id
+        if instagram is not None:
+            self.instagram = instagram
+        if facebook is not None:
+            self.facebook = facebook
 
         self.updated_at = datetime.now(UTC)
 

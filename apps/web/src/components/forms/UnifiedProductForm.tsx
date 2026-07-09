@@ -165,9 +165,27 @@ export function UnifiedProductForm({
     }
   }, [mode, existingProduct, reset]);
 
-  // Seed images in edit mode
+  // Clear store when productId changes or on create mode
   useEffect(() => {
-    if (mode === "edit" && existingImageData?.images?.length) {
+    clearAll();
+  }, [productId, mode, clearAll]);
+
+  // Seed images in edit mode AFTER data arrives
+  useEffect(() => {
+    // Only seed when we have actual image data (not during loading)
+    if (
+      mode === "edit" &&
+      existingImageData &&
+      existingImageData.images.length > 0
+    ) {
+      logger.debug("Seeding images for edit mode", {
+        productId,
+        imageCount: existingImageData.images.length,
+        images: existingImageData.images.map((img) => ({
+          key: img.key,
+          hasUrl: !!img.url,
+        })),
+      });
       const entries: ImageEntry[] = existingImageData.images.map((img) => ({
         id: crypto.randomUUID(),
         preview: img.url,
@@ -175,8 +193,14 @@ export function UnifiedProductForm({
         status: "complete" as const,
       }));
       seedImages(entries);
+    } else if (mode === "edit") {
+      logger.debug("Edit mode but no image data yet", {
+        productId,
+        hasData: !!existingImageData,
+        imageCount: existingImageData?.images?.length ?? 0,
+      });
     }
-  }, [mode, existingImageData, seedImages]);
+  }, [mode, productId, existingImageData, seedImages]);
 
   // Group fields
   const sortedGroups = useMemo(
