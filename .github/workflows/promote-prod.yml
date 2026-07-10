@@ -30,7 +30,8 @@ jobs:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 30m
+          # ponytail: 45m porque next build tarda ~25min en 2GB droplet
+          command_timeout: 45m
           script: |
             set -e
             # Path del repo en el host. Parametrizado vía secret para no hardcodear
