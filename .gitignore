@@ -147,6 +147,7 @@ mvp-validation/
 *-error.png
 *-debug.png
 tests/e2e/.auth/
+tests/e2e/tests/
 # Windows Zone.Identifier artifacts (WSL)
 *:Zone.Identifier
 *.Identifier
