@@ -344,11 +344,12 @@ export const useAuthStore = create<AuthState>()(
           );
 
           // Update state - tokens are handled by httpOnly cookies
+          // ponytail: initialized: true prevents redundant /auth/state fetch after login
           set({
             user: mapApiUserToStoreUser(response.user),
             isAuthenticated: true,
             isLoading: false,
-            initialized: false,
+            initialized: true,
             error: null,
           });
         } catch (unknownError) {

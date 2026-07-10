@@ -28,9 +28,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           alignItems: "center",
           justifyContent: "center",
           background: "var(--ps-bg-base)",
+          animation: "authFadeIn 0.2s ease-out",
         }}
       >
-        <style>{`@keyframes authSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <style>{`
+          @keyframes authSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes authFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        `}</style>
         <div style={{ textAlign: "center" }}>
           <Loader2
             size={40}
