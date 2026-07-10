@@ -18,7 +18,6 @@ import {
   useResendDealerInvitation,
   useUpdateDealer,
 } from "@/lib/api/dealers";
-import { OrganizationEditModal } from "@/components/admin/OrganizationEditModal";
 
 /**
  * Admin dealer detail — Subsystem D Phase 6.
@@ -37,7 +36,6 @@ export default function AdminDealerDetailPage() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleStartEdit = () => {
     if (dealer) {
@@ -279,9 +277,8 @@ export default function AdminDealerDetailPage() {
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          onClick={() => setIsEditModalOpen(true)}
+        <Link
+          href={`/admin/organizations/${dealer.id}/edit`}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -292,14 +289,14 @@ export default function AdminDealerDetailPage() {
             background: "var(--ps-bg-elevated)",
             border: "1px solid var(--ps-border-default)",
             color: "var(--ps-text-primary)",
+            textDecoration: "none",
             fontWeight: 600,
             fontSize: 13,
-            cursor: "pointer",
           }}
         >
           <Settings size={14} />
           Editar información
-        </button>
+        </Link>
         <Link
           href={`/admin/organizations/${dealer.id}/products`}
           style={{
@@ -319,15 +316,6 @@ export default function AdminDealerDetailPage() {
           Ver productos <ArrowRight size={14} />
         </Link>
       </div>
-
-      {/* Edit modal */}
-      {isEditModalOpen && (
-        <OrganizationEditModal
-          dealer={dealer}
-          open={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-        />
-      )}
     </div>
   );
 }

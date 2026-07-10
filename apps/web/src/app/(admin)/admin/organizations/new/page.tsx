@@ -6,7 +6,8 @@ import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { useCategories } from "@/lib/api/categories";
-import { useCreateDealer } from "@/lib/api/dealers";
+import { useCreateDealer, useUpdateDealer } from "@/lib/api/dealers";
+import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
 
 /**
  * Staff form to create a dealer org + invite its owner — Subsystem E Task 16.
@@ -26,6 +27,7 @@ export default function AdminNewDealerPage() {
   // ponytail: Only level 0 categories are verticals (top-level industry niches)
   const verticals = categories.filter((c) => c.level === 0);
   const createDealer = useCreateDealer();
+  const updateDealer = useUpdateDealer();
 
   const [name, setName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -36,17 +38,28 @@ export default function AdminNewDealerPage() {
   const [brokerName, setBrokerName] = useState("");
   const [brokerEmail, setBrokerEmail] = useState("");
 
+  // Optional fields
+  const [description, setDescription] = useState("");
+  const [website, setWebsite] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [taxId, setTaxId] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+
   useEffect(() => {
     if (!authLoading && !canCreate) {
       router.replace("/dashboard");
     }
   }, [authLoading, canCreate, router]);
 
-  useEffect(() => {
-    if (createDealer.isSuccess) {
-      router.push("/admin/organizations");
-    }
-  }, [createDealer.isSuccess, router]);
+  // ponytail: redirect handled in handleSubmit after optional update
 
   if (authLoading || !canCreate) {
     return null;
@@ -79,14 +92,57 @@ export default function AdminNewDealerPage() {
     setBrokers((prev) => prev.filter((b) => b.email !== email));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const hasOptionalFields = () =>
+    description ||
+    website ||
+    phone ||
+    email ||
+    whatsapp ||
+    streetAddress ||
+    city ||
+    state ||
+    postalCode ||
+    country ||
+    taxId ||
+    instagram ||
+    facebook;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createDealer.mutate({
-      name,
-      vertical_ids: verticalIds,
-      owner_email: ownerEmail,
-      brokers: brokers.length > 0 ? brokers : undefined,
-    });
+    try {
+      const result = await createDealer.mutateAsync({
+        name,
+        vertical_ids: verticalIds,
+        owner_email: ownerEmail,
+        brokers: brokers.length > 0 ? brokers : undefined,
+      });
+
+      // If optional fields were filled, update the org immediately
+      if (hasOptionalFields()) {
+        await updateDealer.mutateAsync({
+          dealerId: result.organization_id,
+          data: {
+            description: description || undefined,
+            website: website || undefined,
+            phone: phone || undefined,
+            email: email || undefined,
+            whatsapp: whatsapp || undefined,
+            street_address: streetAddress || undefined,
+            city: city || undefined,
+            state: state || undefined,
+            postal_code: postalCode || undefined,
+            country: country || undefined,
+            tax_id: taxId || undefined,
+            instagram: instagram || undefined,
+            facebook: facebook || undefined,
+          },
+        });
+      }
+
+      router.push("/admin/organizations");
+    } catch {
+      // Error handled by mutation state
+    }
   };
 
   return (
@@ -326,15 +382,57 @@ export default function AdminNewDealerPage() {
           )}
         </fieldset>
 
-        {createDealer.error && (
+        {/* Shared form fields - same component as edit page */}
+        <div
+          style={{
+            borderTop: "1px solid var(--ps-border-default)",
+            paddingTop: 16,
+            marginTop: 8,
+          }}
+        >
+          <OrganizationFormFields
+            description={description}
+            website={website}
+            phone={phone}
+            email={email}
+            whatsapp={whatsapp}
+            streetAddress={streetAddress}
+            city={city}
+            state={state}
+            postalCode={postalCode}
+            country={country}
+            taxId={taxId}
+            instagram={instagram}
+            facebook={facebook}
+            onDescriptionChange={setDescription}
+            onWebsiteChange={setWebsite}
+            onPhoneChange={setPhone}
+            onEmailChange={setEmail}
+            onWhatsappChange={setWhatsapp}
+            onStreetAddressChange={setStreetAddress}
+            onCityChange={setCity}
+            onStateChange={setState}
+            onPostalCodeChange={setPostalCode}
+            onCountryChange={setCountry}
+            onTaxIdChange={setTaxId}
+            onInstagramChange={setInstagram}
+            onFacebookChange={setFacebook}
+          />
+        </div>
+
+        {(createDealer.error || updateDealer.error) && (
           <p style={{ color: "var(--ps-error)" }}>
-            {createDealer.error.message}
+            {createDealer.error?.message || updateDealer.error?.message}
           </p>
         )}
 
         <button
           type="submit"
-          disabled={createDealer.isPending || verticalIds.length === 0}
+          disabled={
+            createDealer.isPending ||
+            updateDealer.isPending ||
+            verticalIds.length === 0
+          }
           style={{
             height: 40,
             borderRadius: 8,
@@ -345,7 +443,9 @@ export default function AdminNewDealerPage() {
             cursor: "pointer",
           }}
         >
-          Crear organización
+          {createDealer.isPending || updateDealer.isPending
+            ? "Creando..."
+            : "Crear organización"}
         </button>
       </form>
     </div>
