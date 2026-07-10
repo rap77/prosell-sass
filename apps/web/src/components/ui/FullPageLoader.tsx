@@ -17,12 +17,17 @@ export function FullPageLoader({
     <div
       style={{
         position: "fixed",
-        inset: 0,
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         background: "var(--ps-bg-base)",
         zIndex: 9999,
+        margin: 0,
+        padding: 0,
       }}
     >
       <style>{`
