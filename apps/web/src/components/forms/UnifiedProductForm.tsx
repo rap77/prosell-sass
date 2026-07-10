@@ -175,7 +175,7 @@ export function UnifiedProductForm({
     // Only seed when we have actual image data (not during loading)
     if (
       mode === "edit" &&
-      existingImageData &&
+      existingImageData?.images &&
       existingImageData.images.length > 0
     ) {
       logger.debug("Seeding images for edit mode", {

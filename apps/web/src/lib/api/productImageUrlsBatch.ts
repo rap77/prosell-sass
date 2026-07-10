@@ -22,7 +22,7 @@ export function useProductImageUrlsBatch(productIds: string[]): {
 } {
   const queries = useQueries({
     queries: productIds.map((productId) => ({
-      queryKey: ["products", productId, "image-urls"] as const,
+      queryKey: ["products", productId, "image-urls", "cover"] as const,
       queryFn: async (): Promise<string | null> => {
         const res = await fetch(`/api/v1/products/${productId}/image-urls`, {
           credentials: "include",

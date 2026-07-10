@@ -94,7 +94,7 @@ export function ProductCard({
   }
 
   // --- Image (cover vs. niche placeholder) ---
-  const imgSrc = imageUrl ?? placeholder;
+  const imgSrc = imageUrl || placeholder;
   // Placeholders are local + branded → optimize. Signed MinIO URLs are
   // host-bound (next.config.ts comment) → unoptimized to bypass the
   // server-side `/_next/image` fetch (which can't reach MinIO).

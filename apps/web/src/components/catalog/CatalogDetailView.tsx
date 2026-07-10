@@ -283,7 +283,8 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
     isLoading,
     refetch,
   } = useProduct(productId, { internal: true });
-  const { data: signedUrls } = useProductImageUrls(productId);
+  const { data: signedUrls, isPending: isPendingUrls } =
+    useProductImageUrls(productId);
   const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
   const clearBreadcrumbLabel = useBreadcrumbStore((state) => state.clearLabel);
 
@@ -297,13 +298,13 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
     return () => clearBreadcrumbLabel(productId);
   }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
 
-  // Build map of key → signed URL for O(1) lookup
-  const signedUrlMap = new Map<string, string>(
-    signedUrls?.images.map((img) => [img.key, img.url]) ?? [],
-  );
-
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (isLoading) return <DetailPageSkeleton />;
+  if (isLoading || isPendingUrls) return <DetailPageSkeleton />;
+
+  // Build map of key → signed URL for O(1) lookup (after loading guard)
+  const signedUrlMap = new Map<string, string>(
+    (signedUrls?.images ?? []).map((img) => [img.key, img.url]),
+  );
 
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error || !product) {
