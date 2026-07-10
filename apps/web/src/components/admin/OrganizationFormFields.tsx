@@ -50,6 +50,39 @@ const inputStyle = {
   color: "var(--ps-text-primary)",
 };
 
+// ponytail: extracted outside render to satisfy React Compiler
+function SectionHeader({
+  title,
+  isOpen,
+  onToggle,
+}: {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: "none",
+        border: "none",
+        color: "var(--ps-text-primary)",
+        cursor: "pointer",
+        fontSize: 14,
+        fontWeight: 600,
+        padding: "8px 0",
+      }}
+    >
+      {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      {title}
+    </button>
+  );
+}
+
 export function OrganizationFormFields({
   description,
   website,
@@ -89,36 +122,6 @@ export function OrganizationFormFields({
   const [showFiscal, setShowFiscal] = useState(defaultExpanded || !!taxId);
   const [showSocial, setShowSocial] = useState(
     defaultExpanded || !!(instagram || facebook),
-  );
-
-  const SectionHeader = ({
-    title,
-    isOpen,
-    onToggle,
-  }: {
-    title: string;
-    isOpen: boolean;
-    onToggle: () => void;
-  }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: "none",
-        border: "none",
-        color: "var(--ps-text-primary)",
-        cursor: "pointer",
-        fontSize: 14,
-        fontWeight: 600,
-        padding: "8px 0",
-      }}
-    >
-      {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      {title}
-    </button>
   );
 
   return (

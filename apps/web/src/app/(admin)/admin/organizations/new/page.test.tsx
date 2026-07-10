@@ -17,10 +17,16 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
 }));
 
-const mockMutate = vi.fn();
+const mockMutateAsync = vi.fn().mockResolvedValue({ id: "new-dealer-id" });
 vi.mock("@/lib/api/dealers", () => ({
   useCreateDealer: () => ({
-    mutate: mockMutate,
+    mutateAsync: mockMutateAsync,
+    isPending: false,
+    error: null,
+  }),
+  // ponytail: page imports this but doesn't use it in create flow
+  useUpdateDealer: () => ({
+    mutateAsync: vi.fn(),
     isPending: false,
     error: null,
   }),
@@ -86,7 +92,7 @@ describe("AdminNewDealerPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /crear/i }));
 
     await waitFor(() =>
-      expect(mockMutate).toHaveBeenCalledWith({
+      expect(mockMutateAsync).toHaveBeenCalledWith({
         name: "Acme Motors",
         vertical_ids: ["cat-1"],
         owner_email: "owner@x.com",

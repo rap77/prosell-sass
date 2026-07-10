@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -8,52 +8,16 @@ import { useDealer, useUpdateDealer } from "@/lib/api/dealers";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { BrokerManager } from "@/components/admin/BrokerManager";
 import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
+import type { Dealer } from "@/lib/api/schemas/dealers";
 
 /**
  * Edit organization page — uses shared OrganizationFormFields component.
+ * ponytail: Form extracted to avoid setState-in-useEffect (React Compiler)
  */
 export default function AdminEditOrganizationPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const isAdmin = useRequireAdmin();
   const { dealer, isLoading, error } = useDealer(id);
-  const updateDealer = useUpdateDealer();
-
-  // Form state
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [website, setWebsite] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("");
-  const [taxId, setTaxId] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [facebook, setFacebook] = useState("");
-
-  // Populate form when dealer loads
-  useEffect(() => {
-    if (dealer) {
-      setName(dealer.name);
-      setDescription(dealer.description ?? "");
-      setWebsite(dealer.website ?? "");
-      setPhone(dealer.phone ?? "");
-      setEmail(dealer.email ?? "");
-      setWhatsapp(dealer.whatsapp ?? "");
-      setStreetAddress(dealer.street_address ?? "");
-      setCity(dealer.city ?? "");
-      setState(dealer.state ?? "");
-      setPostalCode(dealer.postal_code ?? "");
-      setCountry(dealer.country ?? "");
-      setTaxId(dealer.tax_id ?? "");
-      setInstagram(dealer.instagram ?? "");
-      setFacebook(dealer.facebook ?? "");
-    }
-  }, [dealer]);
 
   if (!isAdmin) return null;
 
@@ -80,6 +44,32 @@ export default function AdminEditOrganizationPage() {
       </p>
     );
   }
+
+  // ponytail: key={dealer.id} resets form state when dealer changes
+  return <EditOrganizationForm key={dealer.id} dealer={dealer} />;
+}
+
+function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
+  const router = useRouter();
+  const updateDealer = useUpdateDealer();
+
+  // Form state initialized from dealer (no useEffect needed)
+  const [name, setName] = useState(dealer.name);
+  const [description, setDescription] = useState(dealer.description ?? "");
+  const [website, setWebsite] = useState(dealer.website ?? "");
+  const [phone, setPhone] = useState(dealer.phone ?? "");
+  const [email, setEmail] = useState(dealer.email ?? "");
+  const [whatsapp, setWhatsapp] = useState(dealer.whatsapp ?? "");
+  const [streetAddress, setStreetAddress] = useState(
+    dealer.street_address ?? "",
+  );
+  const [city, setCity] = useState(dealer.city ?? "");
+  const [state, setState] = useState(dealer.state ?? "");
+  const [postalCode, setPostalCode] = useState(dealer.postal_code ?? "");
+  const [country, setCountry] = useState(dealer.country ?? "");
+  const [taxId, setTaxId] = useState(dealer.tax_id ?? "");
+  const [instagram, setInstagram] = useState(dealer.instagram ?? "");
+  const [facebook, setFacebook] = useState(dealer.facebook ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
