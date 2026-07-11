@@ -36,7 +36,9 @@ export function FullPageLoader({
       `}</style>
       <div
         style={{
-          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
           animation: "fpLoaderFadeIn 0.2s ease-out",
         }}
       >
