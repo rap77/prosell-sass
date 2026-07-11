@@ -229,6 +229,7 @@ export interface AuthState {
   isLoading: boolean;
   error: AuthError | null;
   initialized: boolean; // Track if auth state has been initialized from server
+  isNavigating: boolean; // ponytail: track post-login navigation to prevent flash
 
   // Actions
   initializeAuth: () => Promise<void>; // Initialize auth state from server
@@ -238,6 +239,7 @@ export interface AuthState {
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  setNavigating: (navigating: boolean) => void;
   reset: () => Promise<void>;
 }
 
@@ -254,6 +256,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true, // Start with loading state
       error: null,
       initialized: false, // Track if auth has been initialized
+      isNavigating: false, // ponytail: prevent flash during post-login navigation
 
       // Initialize auth state from server
       initializeAuth: async () => {
@@ -485,6 +488,10 @@ export const useAuthStore = create<AuthState>()(
 
       setLoading: (loading: boolean) => {
         set({ isLoading: loading });
+      },
+
+      setNavigating: (navigating: boolean) => {
+        set({ isNavigating: navigating });
       },
 
       reset: async () => {

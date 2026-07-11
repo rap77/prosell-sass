@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { MainContentWrapper } from "@/components/layout/MainContentWrapper";
+import { NavigationCleanup } from "@/components/layout/NavigationCleanup";
 
 /**
  * Seller-specific layout with role-based navigation access.
@@ -21,6 +22,8 @@ export default function SellerLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* ponytail: clear navigation flag when layout mounts */}
+      <NavigationCleanup />
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
         <Sidebar

@@ -62,6 +62,7 @@ const createTestAuthStore = () =>
         isLoading: false,
         error: null,
         initialized: false,
+        isNavigating: false,
 
         initializeAuth: async () => {
           const { initialized } = get();
@@ -221,6 +222,10 @@ const createTestAuthStore = () =>
 
         setLoading: (loading: boolean) => {
           set({ isLoading: loading });
+        },
+
+        setNavigating: (navigating: boolean) => {
+          set({ isNavigating: navigating });
         },
 
         reset: async () => {

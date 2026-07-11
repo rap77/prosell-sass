@@ -19,10 +19,16 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const isLoading = useAuthInitializer();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isNavigating = useAuthStore((s) => s.isNavigating);
 
-  // ponytail: skip loader if already authenticated (prevents post-login flash)
+  // ponytail: show loader during initial auth check (when not yet authenticated)
   if (isLoading && !isAuthenticated) {
     return <FullPageLoader message="Cargando sesión..." />;
+  }
+
+  // ponytail: show loader during post-login navigation (flag survives component unmount)
+  if (isNavigating) {
+    return <FullPageLoader message="Entrando..." />;
   }
 
   return <>{children}</>;

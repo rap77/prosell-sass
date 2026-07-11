@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/authStore";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import {
   AuthShell,
@@ -24,7 +25,6 @@ import {
   focusAuthInput,
   blurAuthInput,
 } from "@/components/auth/AuthShell";
-import { FullPageLoader } from "@/components/ui/FullPageLoader";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -121,7 +121,8 @@ export function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const [showPw, setShowPw] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  // ponytail: use global store flag instead of local state to survive navigation
+  const setNavigating = useAuthStore((s) => s.setNavigating);
 
   const {
     register,
@@ -141,18 +142,14 @@ export function LoginPageContent() {
     startTransition(async () => {
       try {
         await login(data.email, data.password);
-        setIsRedirecting(true);
+        // ponytail: set global flag BEFORE navigation - survives component unmount
+        setNavigating(true);
         router.push("/dashboard");
       } catch {
         /* error set in auth store */
       }
     });
   };
-
-  // ponytail: show loader during redirect to prevent flash
-  if (isRedirecting) {
-    return <FullPageLoader message="Entrando..." />;
-  }
 
   return (
     <AuthShell>
