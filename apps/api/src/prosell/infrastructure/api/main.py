@@ -42,6 +42,7 @@ from prosell.infrastructure.api.routers import (
     wallet_router,
 )
 from prosell.infrastructure.api.routers.appointment_router import router as appointment_router
+from prosell.infrastructure.api.routers.public_product_router import router as public_product_router
 from prosell.infrastructure.api.routers.test_router import router as test_router
 from prosell.infrastructure.api.routers.vendedor_router import router as vendedor_router
 from prosell.infrastructure.api.routers.webhook_router import router as webhook_router
@@ -277,6 +278,12 @@ app.include_router(
     health_router,
     prefix="/api/v1",
     tags=["Health"],
+)
+
+app.include_router(
+    public_product_router,
+    prefix="/api/v1/public/products",
+    tags=["Public"],
 )
 
 app.include_router(
