@@ -24,6 +24,7 @@ import {
   focusAuthInput,
   blurAuthInput,
 } from "@/components/auth/AuthShell";
+import { FullPageLoader } from "@/components/ui/FullPageLoader";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -120,6 +121,7 @@ export function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const [showPw, setShowPw] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     register,
@@ -139,12 +141,18 @@ export function LoginPageContent() {
     startTransition(async () => {
       try {
         await login(data.email, data.password);
+        setIsRedirecting(true);
         router.push("/dashboard");
       } catch {
         /* error set in auth store */
       }
     });
   };
+
+  // ponytail: show loader during redirect to prevent flash
+  if (isRedirecting) {
+    return <FullPageLoader message="Entrando..." />;
+  }
 
   return (
     <AuthShell>
