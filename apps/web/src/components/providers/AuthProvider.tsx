@@ -26,10 +26,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return <FullPageLoader message="Cargando sesión..." />;
   }
 
-  // ponytail: show loader during post-login navigation (flag survives component unmount)
-  if (isNavigating) {
-    return <FullPageLoader message="Entrando..." />;
-  }
-
-  return <>{children}</>;
+  // ponytail: during post-login navigation, render children (so NavigationCleanup mounts)
+  // but show loader overlay on top until navigation completes
+  return (
+    <>
+      {isNavigating && <FullPageLoader message="Entrando..." />}
+      {children}
+    </>
+  );
 }
