@@ -40,6 +40,7 @@ class UpdateOrganizationUseCase:
         # Apply only provided fields
         org.update_basic_info(
             name=request.name,
+            code=request.code,
             description=request.description,
             website=request.website,
             phone=request.phone,

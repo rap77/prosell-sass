@@ -49,6 +49,8 @@ class CreateOrganizationUseCase:
         )
 
         # Apply optional fields
+        if request.code is not None:
+            org.code = request.code.upper()[:5]
         if request.description is not None:
             org.description = request.description
         if request.website is not None:

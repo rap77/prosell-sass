@@ -29,6 +29,7 @@ export type {
 export interface CreateOrganizationRequest {
   name: string;
   tenant_id: string;
+  code?: string;
   description?: string;
   website?: string;
   phone?: string;
@@ -36,6 +37,7 @@ export interface CreateOrganizationRequest {
 
 export interface UpdateOrganizationRequest {
   name?: string;
+  code?: string;
   description?: string;
   website?: string;
   phone?: string;

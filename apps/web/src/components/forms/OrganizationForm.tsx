@@ -43,6 +43,12 @@ const organizationSchema = z.object({
     .min(2, "Name must be at least 2 characters")
     .max(255, "Name must be less than 255 characters")
     .trim(),
+  code: z
+    .string()
+    .max(5, "Máximo 5 caracteres")
+    .transform((v) => v.toUpperCase())
+    .optional()
+    .or(z.literal("")),
   description: z
     .string()
     .max(1000, "Description must be less than 1000 characters")
@@ -125,6 +131,7 @@ export function OrganizationForm({
     mode: "all",
     defaultValues: {
       name: initialData?.name || "",
+      code: initialData?.code || "",
       description: initialData?.description || "",
       website: initialData?.website || "",
       phone: initialData?.phone || "",
@@ -163,6 +170,7 @@ export function OrganizationForm({
     try {
       const payload = {
         name: data.name,
+        code: data.code || undefined,
         description: data.description || undefined,
         website: data.website || undefined,
         phone: data.phone || undefined,
@@ -244,6 +252,33 @@ export function OrganizationForm({
         {errors.name && errors.name.message && (
           <p role="alert" className="text-sm text-destructive">
             {errors.name.message}
+          </p>
+        )}
+      </div>
+
+      {/* Code Input */}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="code">Código / Siglas</Label>
+        <Input
+          {...register("code")}
+          onBlur={handleInputChange}
+          id="code"
+          type="text"
+          maxLength={5}
+          placeholder="ACME"
+          disabled={isDisabled}
+          aria-invalid={!!errors.code}
+          className={cn(
+            "uppercase w-32",
+            errors.code && "border-destructive focus-visible:ring-destructive",
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          Máx. 5 letras. Se muestra en las tarjetas de productos.
+        </p>
+        {errors.code?.message && (
+          <p role="alert" className="text-sm text-destructive">
+            {errors.code.message}
           </p>
         )}
       </div>

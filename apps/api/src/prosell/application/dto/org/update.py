@@ -7,6 +7,7 @@ class UpdateOrganizationRequest(BaseModel):
     """DTO for organization update request (all fields optional)."""
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
+    code: str | None = Field(default=None, max_length=5)
     description: str | None = None
     website: str | None = None
     phone: str | None = None
