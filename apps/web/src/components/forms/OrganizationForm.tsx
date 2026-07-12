@@ -230,57 +230,54 @@ export function OrganizationForm({
       className="flex flex-col gap-6"
       noValidate
     >
-      {/* Name Input */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="name">
-          Organization Name <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          {...register("name")}
-          onBlur={handleInputChange}
-          id="name"
-          type="text"
-          placeholder="Acme Corporation"
-          disabled={isDisabled}
-          aria-invalid={!!errors.name || !!error}
-          aria-describedby={error ? "org-error" : undefined}
-          className={cn(
-            (errors.name || error) &&
-              "border-destructive focus-visible:ring-destructive",
+      {/* Name + Code row */}
+      <div className="grid grid-cols-[1fr_auto] gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="name">
+            Nombre <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            {...register("name")}
+            onBlur={handleInputChange}
+            id="name"
+            type="text"
+            placeholder="Acme Corporation"
+            disabled={isDisabled}
+            aria-invalid={!!errors.name || !!error}
+            aria-describedby={error ? "org-error" : undefined}
+            className={cn(
+              (errors.name || error) &&
+                "border-destructive focus-visible:ring-destructive",
+            )}
+          />
+          {errors.name && errors.name.message && (
+            <p role="alert" className="text-sm text-destructive">
+              {errors.name.message}
+            </p>
           )}
-        />
-        {errors.name && errors.name.message && (
-          <p role="alert" className="text-sm text-destructive">
-            {errors.name.message}
-          </p>
-        )}
-      </div>
-
-      {/* Code Input */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="code">Código / Siglas</Label>
-        <Input
-          {...register("code")}
-          onBlur={handleInputChange}
-          id="code"
-          type="text"
-          maxLength={5}
-          placeholder="ACME"
-          disabled={isDisabled}
-          aria-invalid={!!errors.code}
-          className={cn(
-            "uppercase w-32",
-            errors.code && "border-destructive focus-visible:ring-destructive",
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="code">Siglas</Label>
+          <Input
+            {...register("code")}
+            onBlur={handleInputChange}
+            id="code"
+            type="text"
+            maxLength={5}
+            placeholder="ACME"
+            disabled={isDisabled}
+            aria-invalid={!!errors.code}
+            className={cn(
+              "uppercase w-24",
+              errors.code && "border-destructive focus-visible:ring-destructive",
+            )}
+          />
+          {errors.code?.message && (
+            <p role="alert" className="text-sm text-destructive">
+              {errors.code.message}
+            </p>
           )}
-        />
-        <p className="text-xs text-muted-foreground">
-          Máx. 5 letras. Se muestra en las tarjetas de productos.
-        </p>
-        {errors.code?.message && (
-          <p role="alert" className="text-sm text-destructive">
-            {errors.code.message}
-          </p>
-        )}
+        </div>
       </div>
 
       {/* Description Input */}
