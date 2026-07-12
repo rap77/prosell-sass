@@ -15,6 +15,7 @@ const CURRENT_USER_SCHEMA = z.object({
 
 const ORGANIZATION_SCHEMA = z.object({
   id: z.string(),
+  code: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
 });
 
@@ -62,6 +63,7 @@ export interface CurrentUserProfile {
 
 export interface OrganizationProfile {
   id: string;
+  code?: string | null;
   phone?: string | null;
 }
 

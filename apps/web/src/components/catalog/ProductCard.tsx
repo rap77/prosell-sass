@@ -22,6 +22,8 @@ export interface ProductCardProps {
   productAttributes: Record<string, unknown>;
   verticalSlug: string | null;
   imageUrl: string | null;
+  /** Organization code/abbreviation shown as tag (internal pages only) */
+  orgCode?: string | null;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -56,6 +58,7 @@ export function ProductCard({
   productAttributes,
   verticalSlug,
   imageUrl,
+  orgCode,
   onView,
   onEdit,
   onDelete,
@@ -107,8 +110,13 @@ export function ProductCard({
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
-      {/* Image (4:3) */}
-      <div className="relative aspect-[4/3] w-full bg-muted">
+      {/* Image (4:3) — clickable, triggers onView like the Eye button */}
+      <button
+        type="button"
+        onClick={onView}
+        className="relative aspect-[4/3] w-full bg-muted cursor-pointer"
+        aria-label="Ver detalle del producto"
+      >
         <Image
           src={imgSrc}
           alt={product.title}
@@ -118,13 +126,19 @@ export function ProductCard({
           unoptimized={unoptimized}
           priority={false}
         />
+        {/* Org code tag — top-left (internal pages only) */}
+        {orgCode && (
+          <span className="absolute left-2 top-2 rounded bg-primary/90 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
+            {orgCode}
+          </span>
+        )}
         {/* Status badge — top-right (spec §4). The wrapper is positioning
             only; the badge's own `data-testid="vehicle-status"` must pass
             through unchanged so DataGrid tests that rely on it keep working. */}
         <div className="absolute right-2 top-2">
           <StatusBadge status={badgeStatus} />
         </div>
-      </div>
+      </button>
 
       {/* Body */}
       <div className="flex flex-col gap-2 p-4">

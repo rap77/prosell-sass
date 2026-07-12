@@ -13,6 +13,7 @@ class OrganizationResponse(BaseModel):
 
     id: UUID
     name: str
+    code: str | None = None  # Short abbreviation (max 5 chars, uppercase)
     tenant_id: UUID
     status: str
     logo_url: str | None = None
@@ -51,6 +52,7 @@ class OrganizationResponse(BaseModel):
         return cls(
             id=org.id,
             name=org.name,
+            code=org.code,
             tenant_id=org.tenant_id,
             status=org.status.value,
             logo_url=org.logo_url,

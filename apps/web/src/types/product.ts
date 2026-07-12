@@ -15,6 +15,8 @@ export interface Product {
   id: string;
   tenant_id: string;
   organization_id: string;
+  /** Organization abbreviation (max 5 chars, uppercase) — shown on internal product cards */
+  org_code?: string | null;
   category_id: string;
 
   // Basic info
