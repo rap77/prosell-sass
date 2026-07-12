@@ -11,13 +11,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function useRequireAdmin(): boolean {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAdmin) {
+    // ponytail: wait until auth is loaded before redirecting
+    // prevents race condition with zustand hydration
+    if (!isLoading && isAuthenticated && !isAdmin) {
       router.replace("/dashboard");
     }
-  }, [isAdmin, router]);
+  }, [isAdmin, isAuthenticated, isLoading, router]);
 
   return isAdmin;
 }
