@@ -27,6 +27,7 @@ const UPDATE_PROFILE_INPUT_SCHEMA = z.object({
     .trim()
     .refine((value) => EMAIL_REGEX.test(value), "Correo inválido"),
   phone: z.string().trim().optional(),
+  orgCode: z.string().trim().max(5).optional(),
   organizationId: z.string().optional(),
 });
 
@@ -72,6 +73,7 @@ export interface UpdateProfileInput {
   lastName: string;
   email: string;
   phone?: string;
+  orgCode?: string;
   organizationId?: string;
 }
 
@@ -181,9 +183,9 @@ async function getCurrentOrganization(): Promise<OrganizationProfile | null> {
   return parseJson(response, ORGANIZATION_SCHEMA);
 }
 
-async function updateOrganizationPhone(
+async function updateOrganizationFields(
   organizationId: string,
-  phone: string,
+  fields: { phone?: string; code?: string },
 ): Promise<void> {
   const response = await fetch(`/api/v1/org/${organizationId}`, {
     method: "PATCH",
@@ -191,13 +193,13 @@ async function updateOrganizationPhone(
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify(fields),
   });
 
   if (!response.ok) {
     const payload: ApiErrorPayload = await response
       .json()
-      .catch(() => ({ message: "No se pudo guardar el teléfono" }));
+      .catch(() => ({ message: "No se pudo guardar la organización" }));
     throw new Error(getErrorMessage(payload));
   }
 }
@@ -241,10 +243,10 @@ export function useUpdateProfile() {
       const updatedUser = await parseJson(response, CURRENT_USER_SCHEMA);
 
       if (parsedInput.organizationId) {
-        await updateOrganizationPhone(
-          parsedInput.organizationId,
-          parsedInput.phone ?? "",
-        );
+        await updateOrganizationFields(parsedInput.organizationId, {
+          phone: parsedInput.phone ?? "",
+          code: parsedInput.orgCode,
+        });
       }
 
       return updatedUser;
