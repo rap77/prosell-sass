@@ -140,13 +140,12 @@ export function LoginPageContent() {
   const onSubmit = async (data: LoginValues) => {
     if (isDisabled) return;
     startTransition(async () => {
-      try {
-        await login(data.email, data.password);
-        // ponytail: set global flag BEFORE navigation - survives component unmount
+      await login(data.email, data.password);
+      // ponytail: only navigate if login succeeded (store.login sets error, doesn't throw)
+      const { isAuthenticated } = useAuthStore.getState();
+      if (isAuthenticated) {
         setNavigating(true);
         router.push("/dashboard");
-      } catch {
-        /* error set in auth store */
       }
     });
   };
