@@ -17,12 +17,15 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+# Import all models so they register with Base.metadata
+import prosell.infrastructure.models  # noqa: F401
 from prosell.core.config import Settings, get_settings
+from prosell.infrastructure.database.base import Base
 
 # DDL statements interpolate the test database name as an identifier, which
 # cannot be passed as a bound parameter. Quote it through the dialect preparer
@@ -132,9 +135,9 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
     # Create async engine for test database
     async_engine = create_async_engine(test_database_url, poolclass=NullPool)
 
-    # Create all tables
+    # Create all tables from model definitions
     async with async_engine.begin() as conn:
-        await conn.run_sync(MetaData().create_all)
+        await conn.run_sync(Base.metadata.create_all)
 
     # Create session factory
     async_test_session = async_sessionmaker(

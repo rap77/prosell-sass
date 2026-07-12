@@ -29,7 +29,7 @@ def mock_oauth_service() -> MagicMock:
     service = MagicMock()
     service.initiate_authorization = AsyncMock(
         return_value=OAuthAuthorizeResult(
-            authorization_url="https://accounts.google.com/o/oauth2/v2/auth?client_id=test&redirect_uri=http://localhost:8000/api/auth/oauth/google/callback&response_type=code&scope=openid+email+profile&state=test-state-123",
+            authorization_url="https://accounts.google.com/o/oauth2/v2/auth?client_id=test&redirect_uri=http://localhost:8000/api/v1/auth/oauth/google/callback&response_type=code&scope=openid+email+profile&state=test-state-123",
             state_token="test-state-123",
         )
     )
@@ -127,7 +127,7 @@ class TestOAuthAuthorizeEndpoint:
         mock_service = app.dependency_overrides[get_oauth_service]()
         mock_service.initiate_authorization = AsyncMock(
             return_value=OAuthAuthorizeResult(
-                authorization_url="https://www.facebook.com/v18.0/dialog/oauth?client_id=test&redirect_uri=http://localhost:8000/api/auth/oauth/facebook/callback&response_type=code&scope=email%2Cpublic_profile&state=test-state-456",
+                authorization_url="https://www.facebook.com/v18.0/dialog/oauth?client_id=test&redirect_uri=http://localhost:8000/api/v1/auth/oauth/facebook/callback&response_type=code&scope=email%2Cpublic_profile&state=test-state-456",
                 state_token="test-state-456",
             )
         )

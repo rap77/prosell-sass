@@ -95,11 +95,11 @@ def oauth_settings() -> OAuthSettings:
         # Google OAuth
         google_oauth_client_id="test-google-client-id",
         google_oauth_client_secret="test-google-secret",
-        google_oauth_redirect_uri="http://localhost:8000/api/auth/oauth/google/callback",
+        google_oauth_redirect_uri="http://localhost:8000/api/v1/auth/oauth/google/callback",
         # Facebook OAuth (corrected field names)
         facebook_oauth_app_id="test-facebook-app-id",
         facebook_oauth_app_secret="test-facebook-secret",
-        facebook_oauth_redirect_uri="http://localhost:8000/api/auth/oauth/facebook/callback",
+        facebook_oauth_redirect_uri="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
         # Redis URL for state token storage
         redis_url="redis://localhost:6379/0",
         # Frontend URLs
