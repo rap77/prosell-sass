@@ -160,3 +160,7 @@ graphify-out/
 
 # Penpot design files (local, not committed)
 *.penpot
+
+# Council reports (temporary)
+council-*.html
+council-*.md

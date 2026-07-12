@@ -11,19 +11,19 @@
 /* Generado con ui-ux-pro-max */
 :root {
   /* Colors - Premium dark + action red */
-  --color-primary: #1E293B;
-  --color-on-primary: #FFFFFF;
+  --color-primary: #1e293b;
+  --color-on-primary: #ffffff;
   --color-secondary: #334155;
-  --color-accent: #DC2626;
-  --color-background: #F8FAFC;
-  --color-foreground: #0F172A;
-  --color-muted: #E9EDF1;
-  --color-border: #E2E8F0;
-  --color-destructive: #DC2626;
+  --color-accent: #dc2626;
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-muted: #e9edf1;
+  --color-border: #e2e8f0;
+  --color-destructive: #dc2626;
 
   /* Typography - E-commerce optimized */
-  --font-display: 'Rubik', sans-serif;
-  --font-body: 'Nunito Sans', sans-serif;
+  --font-display: "Rubik", sans-serif;
+  --font-body: "Nunito Sans", sans-serif;
 }
 ```
 
@@ -32,6 +32,7 @@
 **Style**: Motion-Driven (scroll animations, hover 300ms, parallax)
 
 **Checklist pre-delivery**:
+
 - [ ] No emojis como íconos (usar Heroicons/Lucide)
 - [ ] `cursor-pointer` en elementos clickeables
 - [ ] Hover states con transiciones 150-300ms
@@ -44,13 +45,13 @@
 
 ## Git Branches
 
-| Fase | Branch | Status |
-|------|--------|--------|
-| 1 | `feat/phase-1-mvp-whatsapp` | 🎯 NEXT |
-| 2 | `feat/phase-2-lead-capture` | ⏳ Pending |
-| 3 | `feat/phase-3-crm-basic` | ⏳ Pending |
-| 4 | `feat/phase-4-pipelines` | ⏳ Pending |
-| 5 | `feat/phase-5-workflows` | ⏳ Pending |
+| Fase | Branch                      | Status     |
+| ---- | --------------------------- | ---------- |
+| 1    | `feat/phase-1-mvp-whatsapp` | 🎯 NEXT    |
+| 2    | `feat/phase-2-lead-capture` | ⏳ Pending |
+| 3    | `feat/phase-3-crm-basic`    | ⏳ Pending |
+| 4    | `feat/phase-4-pipelines`    | ⏳ Pending |
+| 5    | `feat/phase-5-workflows`    | ⏳ Pending |
 
 ---
 
@@ -72,6 +73,7 @@ apps/api/src/prosell/
 ```
 
 **Endpoint**:
+
 ```python
 @router.get("/products/{slug}")
 async def get_public_product(slug: str) -> PublicProductResponse:
@@ -142,9 +144,10 @@ apps/web/src/app/
 ```
 
 **Open Graph Meta Tags**:
+
 ```tsx
 export async function generateMetadata({ params }): Promise<Metadata> {
-  const product = await getProduct(params.slug)
+  const product = await getProduct(params.slug);
   return {
     title: `${product.brand} ${product.model} ${product.year}`,
     description: product.description?.slice(0, 160),
@@ -152,13 +155,14 @@ export async function generateMetadata({ params }): Promise<Metadata> {
       title: `${product.brand} ${product.model} ${product.year} - $${product.price}`,
       description: product.description,
       images: [product.cover_image_url],
-      type: 'product',
+      type: "product",
     },
-  }
+  };
 }
 ```
 
 **WhatsApp Share**:
+
 ```typescript
 const shareText = `
 🚗 ${product.brand} ${product.model} ${product.year}
@@ -166,9 +170,9 @@ const shareText = `
 📍 ${product.location}
 
 ${window.location.href}
-`.trim()
+`.trim();
 
-const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
+const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 ```
 
 ### Tareas
@@ -423,23 +427,23 @@ async def on_lead_created(lead: Lead):
 
 ### Implementar
 
-| Concepto | Fase | Cómo |
-|----------|------|------|
-| Views | 3 | TanStack Table + dnd-kit Kanban |
-| Pipelines | 4 | Stages + Timeline de actividades |
-| Automations | 5 | Cron jobs + triggers hardcoded |
-| Custom Fields | 6+ | JSONB en modelos existentes |
+| Concepto      | Fase | Cómo                             |
+| ------------- | ---- | -------------------------------- |
+| Views         | 3    | TanStack Table + dnd-kit Kanban  |
+| Pipelines     | 4    | Stages + Timeline de actividades |
+| Automations   | 5    | Cron jobs + triggers hardcoded   |
+| Custom Fields | 6+   | JSONB en modelos existentes      |
 
 ### Ignorar
 
-| Concepto | Por qué |
-|----------|---------|
-| GraphQL | REST más simple |
-| Schema dinámico | JSONB suficiente |
-| Jotai/Linaria | Ya tenemos Zustand/Tailwind |
-| i18n | Solo español por ahora |
-| Email sync | No aplica |
-| AI Agents | FASE 6+ |
+| Concepto        | Por qué                     |
+| --------------- | --------------------------- |
+| GraphQL         | REST más simple             |
+| Schema dinámico | JSONB suficiente            |
+| Jotai/Linaria   | Ya tenemos Zustand/Tailwind |
+| i18n            | Solo español por ahora      |
+| Email sync      | No aplica                   |
+| AI Agents       | FASE 6+                     |
 
 ---
 
@@ -466,6 +470,7 @@ git checkout feat/phase-1-mvp-whatsapp
 ```
 
 Empezar con:
+
 1. Endpoint público backend
 2. Página `/p/[slug]` con Open Graph
 3. Botón "Compartir por WhatsApp"

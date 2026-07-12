@@ -50,7 +50,11 @@ const VEHICLE_ATTRS = [
   { key: "year", label: "Año" },
   { key: "brand", label: "Marca" },
   { key: "model", label: "Modelo" },
-  { key: "mileage", label: "Kilometraje", format: (v: number) => `${v.toLocaleString()} km` },
+  {
+    key: "mileage",
+    label: "Kilometraje",
+    format: (v: number) => `${v.toLocaleString()} km`,
+  },
   { key: "engine", label: "Motor" },
   { key: "transmission", label: "Transmisión" },
   { key: "fuel_type", label: "Combustible" },
@@ -81,9 +85,12 @@ export function ProductPublicView({
   const brand = product.attributes?.brand as string | undefined;
   const model = product.attributes?.model as string | undefined;
   const year = product.attributes?.year as number | undefined;
-  const vehicleName = brand && model ? `${brand} ${model} ${year || ""}`.trim() : product.title;
+  const vehicleName =
+    brand && model ? `${brand} ${model} ${year || ""}`.trim() : product.title;
   const price = formatPrice(product.price_cents, product.currency);
-  const location = [product.location_city, product.location_state].filter(Boolean).join(", ");
+  const location = [product.location_city, product.location_state]
+    .filter(Boolean)
+    .join(", ");
 
   const whatsappText = `
 🚗 ${vehicleName}
@@ -97,7 +104,7 @@ ${shareUrl}
 
   // Filter attributes that have values
   const displayAttrs = VEHICLE_ATTRS.filter(
-    (attr) => product.attributes?.[attr.key] != null
+    (attr) => product.attributes?.[attr.key] != null,
   );
 
   return (

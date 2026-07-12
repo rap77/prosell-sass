@@ -53,7 +53,7 @@ async function getImageUrls(slug: string): Promise<ImageUrlsData | null> {
       `${API_URL}/api/v1/public/products/${slug}/image-urls`,
       {
         next: { revalidate: 300 }, // Cache signed URLs for 5 minutes
-      }
+      },
     );
     if (!res.ok) return null;
     return res.json();
