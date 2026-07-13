@@ -8,6 +8,7 @@ class UpdateOrganizationRequest(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
     code: str | None = Field(default=None, max_length=5)
+    color: str | None = Field(default=None, max_length=7)
     description: str | None = None
     website: str | None = None
     phone: str | None = None

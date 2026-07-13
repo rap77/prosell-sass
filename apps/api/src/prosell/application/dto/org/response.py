@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from prosell.domain.entities.organization import Organization
 
@@ -14,6 +14,7 @@ class OrganizationResponse(BaseModel):
     id: UUID
     name: str
     code: str | None = None  # Short abbreviation (max 5 chars, uppercase)
+    color: str | None = None  # Tag color (hex, e.g. "#4DB8FF")
     tenant_id: UUID
     status: str
     logo_url: str | None = None
@@ -39,7 +40,7 @@ class OrganizationResponse(BaseModel):
     verified_at: datetime | None = None
     wallet_id: UUID | None = None
     setup_complete: bool = False
-    settings: dict[str, object] = {}
+    settings: dict[str, object] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
     broker_count: int | None = None  # populated when listing dealers
@@ -53,6 +54,7 @@ class OrganizationResponse(BaseModel):
             id=org.id,
             name=org.name,
             code=org.code,
+            color=org.color,
             tenant_id=org.tenant_id,
             status=org.status.value,
             logo_url=org.logo_url,

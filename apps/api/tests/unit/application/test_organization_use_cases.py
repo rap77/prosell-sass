@@ -86,10 +86,10 @@ class TestCreateOrganizationUseCase:
         linked_org.wallet_id = wallet.id
         org_repo.update.return_value = linked_org
 
-        request = CreateOrganizationRequest(name=org.name, tenant_id=org.tenant_id)
+        request = CreateOrganizationRequest(name=org.name)
         use_case = CreateOrganizationUseCase(org_repo, wallet_repo)
 
-        result = await use_case.execute(request)
+        result = await use_case.execute(request, tenant_id=org.tenant_id)
 
         assert result.name == org.name
         assert result.tenant_id == org.tenant_id
@@ -104,11 +104,11 @@ class TestCreateOrganizationUseCase:
         wallet_repo = make_wallet_repo()
         org_repo.exists_by_name.return_value = True
 
-        request = CreateOrganizationRequest(name="Existing Corp", tenant_id=uuid4())
+        request = CreateOrganizationRequest(name="Existing Corp")
         use_case = CreateOrganizationUseCase(org_repo, wallet_repo)
 
         with pytest.raises(OrganizationAlreadyExistsException):
-            await use_case.execute(request)
+            await use_case.execute(request, tenant_id=uuid4())
 
         org_repo.create.assert_not_awaited()
         wallet_repo.create.assert_not_awaited()

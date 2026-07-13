@@ -88,22 +88,31 @@ def get_wallet_repository(
 )
 async def create_organization(
     request: CreateOrganizationRequest,
-    _current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
+    current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
     org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
     wallet_repo: Annotated[SqlAlchemyWalletRepository, Depends(get_wallet_repository)],
 ) -> OrganizationResponse:
     """
     Create a new organization (MASTER/SUPER_ADMIN only).
 
-    Provisions org in PENDING_VERIFICATION status and creates a default wallet.
-    Default verticals are enabled by init_data.py on container startup.
+    tenant_id is derived from the authenticated user's session — never
+    trusted from the request body.
+
+    Provisions org in PENDING_VERIFICATION status and creates a default
+    wallet. Default verticals are enabled by init_data.py on container
+    startup.
     """
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Authenticated user has no associated tenant.",
+        )
     use_case = CreateOrganizationUseCase(
         org_repository=org_repo,
         wallet_repository=wallet_repo,
     )
     try:
-        return await use_case.execute(request)
+        return await use_case.execute(request, tenant_id=current_user.tenant_id)
     except OrganizationAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.message) from e
     except OrgDomainException as e:
