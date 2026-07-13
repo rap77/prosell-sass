@@ -29,7 +29,7 @@ import {
 const profileSchema = z.object({
   firstName: z.string().trim().min(1, "El nombre es requerido"),
   lastName: z.string().trim().min(1, "El apellido es requerido"),
-  email: z.email("Correo inválido"),
+  email: z.string().email("Correo inválido"),
   phone: z.string().trim().optional(),
 });
 

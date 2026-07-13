@@ -69,12 +69,8 @@ export interface OrganizationState {
     id: string,
     data: UpdateOrganizationRequest,
   ) => Promise<void>;
-  verifyOrganization: (id: string, verifierId: string) => Promise<void>;
-  rejectOrganization: (
-    id: string,
-    verifierId: string,
-    reason?: string,
-  ) => Promise<void>;
+  verifyOrganization: (id: string) => Promise<void>;
+  rejectOrganization: (id: string, reason?: string) => Promise<void>;
   suspendOrganization: (id: string) => Promise<void>;
   setCurrentOrg: (org: Organization | null) => void;
   // Guarded setter: no-op when the current user lacks
@@ -164,7 +160,7 @@ export const useOrganizationStore = create<OrganizationState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const org = await orgApi.getById(id, tenantId);
+          const org = await orgApi.getById(id);
 
           // Update in list if exists
           const { organizations } = get();
@@ -259,11 +255,11 @@ export const useOrganizationStore = create<OrganizationState>()(
       },
 
       // Verify organization
-      verifyOrganization: async (id, verifierId) => {
+      verifyOrganization: async (id) => {
         set({ isLoading: true, error: null });
 
         try {
-          const verified = await orgApi.verify(id, verifierId);
+          const verified = await orgApi.verify(id);
 
           // Update in list
           const { organizations, currentOrg } = get();
@@ -292,11 +288,11 @@ export const useOrganizationStore = create<OrganizationState>()(
       },
 
       // Reject organization
-      rejectOrganization: async (id, verifierId, reason) => {
+      rejectOrganization: async (id, reason) => {
         set({ isLoading: true, error: null });
 
         try {
-          const rejected = await orgApi.reject(id, verifierId, reason);
+          const rejected = await orgApi.reject(id, reason);
 
           // Update in list
           const { organizations, currentOrg } = get();

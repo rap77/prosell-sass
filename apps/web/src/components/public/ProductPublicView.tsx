@@ -326,8 +326,9 @@ ${shareUrl}
           >
             {displayAttrs.map((attr) => {
               const value = product.attributes?.[attr.key];
+              // ponytail: `format` is optional on the union; narrow with `'in'`
               const displayValue =
-                attr.format && typeof value === "number"
+                "format" in attr && typeof value === "number"
                   ? attr.format(value)
                   : String(value);
               return (

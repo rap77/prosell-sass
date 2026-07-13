@@ -14,6 +14,4 @@ EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.test.py,*_test.py,
 RULES_FILE="AGENTS.md"
 
 # Strict mode: fail if AI response is ambiguous
-# ponytail: disabled — pre-existing files have accumulated GGA findings that
-# are out of scope for current work. Re-enable when codebase is clean.
-STRICT_MODE="false"
+STRICT_MODE="true"
