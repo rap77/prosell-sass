@@ -18,3 +18,4 @@ class ProductImageUrlsResponse(BaseModel):
 
     product_id: UUID
     images: list[ProductImageUrlResponse]
+    cover_image_key: str | None = None  # ponytail: for edit mode cover restoration

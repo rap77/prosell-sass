@@ -713,7 +713,11 @@ async def get_product_image_urls(
             )
         )
 
-    return ProductImageUrlsResponse(product_id=product_id, images=signed_images)
+    return ProductImageUrlsResponse(
+        product_id=product_id,
+        images=signed_images,
+        cover_image_key=product.cover_image_key,
+    )
 
 
 @router.patch("/{product_id}", response_model=ProductResponse)

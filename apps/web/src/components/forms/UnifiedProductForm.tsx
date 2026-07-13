@@ -119,6 +119,7 @@ export function UnifiedProductForm({
   const { uploadImages } = useImageUploadOptimized();
   const clearAll = useUploadStore((s) => s.clearAll);
   const seedImages = useUploadStore((s) => s.seedImages);
+  const setCoverImage = useUploadStore((s) => s.setCoverImage);
 
   // Edit mode: fetch existing product
   const { data: existingProduct, isLoading: isLoadingProduct } = useProduct(
@@ -181,6 +182,7 @@ export function UnifiedProductForm({
       logger.debug("Seeding images for edit mode", {
         productId,
         imageCount: existingImageData.images.length,
+        coverKey: existingImageData.cover_image_key,
         images: existingImageData.images.map((img) => ({
           key: img.key,
           hasUrl: !!img.url,
@@ -193,6 +195,16 @@ export function UnifiedProductForm({
         status: "complete" as const,
       }));
       seedImages(entries);
+
+      // ponytail: restore cover from server if it exists
+      if (existingImageData.cover_image_key) {
+        const coverEntry = entries.find(
+          (e) => e.storageKey === existingImageData.cover_image_key,
+        );
+        if (coverEntry) {
+          setCoverImage(coverEntry.id);
+        }
+      }
     } else if (mode === "edit") {
       logger.debug("Edit mode but no image data yet", {
         productId,
@@ -200,7 +212,7 @@ export function UnifiedProductForm({
         imageCount: existingImageData?.images?.length ?? 0,
       });
     }
-  }, [mode, productId, existingImageData, seedImages]);
+  }, [mode, productId, existingImageData, seedImages, setCoverImage]);
 
   // Group fields
   const sortedGroups = useMemo(

@@ -440,6 +440,7 @@ export interface ProductImageUrl {
 export interface ProductImageUrlsResponse {
   product_id: string;
   images: ProductImageUrl[];
+  cover_image_key?: string | null;
 }
 
 const productImageUrlsResponseSchema = z.object({
@@ -451,6 +452,7 @@ const productImageUrlsResponseSchema = z.object({
       expires_in: z.number(),
     }),
   ),
+  cover_image_key: z.string().nullable().optional(),
 });
 
 /**

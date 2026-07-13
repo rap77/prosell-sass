@@ -349,6 +349,7 @@ class TestGetProductImageUrlsEmpty:
         assert response.json() == {
             "product_id": str(TEST_PRODUCT_ID),
             "images": [],
+            "cover_image_key": None,
         }
 
 
