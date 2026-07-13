@@ -28,6 +28,7 @@ class ProductResponse(BaseModel):
     id: UUID
     tenant_id: UUID
     organization_id: UUID
+    org_code: str | None = None  # Organization abbreviation (for internal product cards)
     category_id: UUID
     title: str
     slug: str | None = None
@@ -71,12 +72,13 @@ class ProductResponse(BaseModel):
         return self.price_cents / 100
 
     @classmethod
-    def from_entity(cls, product: Product) -> "ProductResponse":
+    def from_entity(cls, product: Product, *, org_code: str | None = None) -> "ProductResponse":
         """Build response from domain entity."""
         return cls(
             id=product.id,
             tenant_id=product.tenant_id,
             organization_id=product.organization_id,
+            org_code=org_code,
             category_id=product.category_id,
             title=product.title,
             slug=product.slug,

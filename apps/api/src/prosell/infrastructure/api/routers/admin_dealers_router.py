@@ -242,6 +242,21 @@ async def resend_dealer_invitation(
 
 class UpdateDealerRequest(BaseModel):
     name: str | None = None
+    code: str | None = None
+    color: str | None = None
+    description: str | None = None
+    website: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    whatsapp: str | None = None
+    street_address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    tax_id: str | None = None
+    instagram: str | None = None
+    facebook: str | None = None
 
 
 class UpdateDealerResponse(BaseModel):
@@ -257,7 +272,7 @@ async def update_dealer(
     current_user: CurrentUser,
     db: DbSession,
 ) -> UpdateDealerResponse:
-    """Update a dealer's details. Currently only name is editable."""
+    """Update a dealer's details."""
     _require_dealer_admin_view_all(current_user)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
@@ -265,8 +280,39 @@ async def update_dealer(
     if dealer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
 
+    # ponytail: direct assignment, entity handles validation
     if request.name is not None:
         dealer.name = request.name
+    if request.code is not None:
+        dealer.code = request.code
+    if request.color is not None:
+        dealer.color = request.color
+    if request.description is not None:
+        dealer.description = request.description
+    if request.website is not None:
+        dealer.website = request.website
+    if request.phone is not None:
+        dealer.phone = request.phone
+    if request.email is not None:
+        dealer.email = request.email
+    if request.whatsapp is not None:
+        dealer.whatsapp = request.whatsapp
+    if request.street_address is not None:
+        dealer.street_address = request.street_address
+    if request.city is not None:
+        dealer.city = request.city
+    if request.state is not None:
+        dealer.state = request.state
+    if request.postal_code is not None:
+        dealer.postal_code = request.postal_code
+    if request.country is not None:
+        dealer.country = request.country
+    if request.tax_id is not None:
+        dealer.tax_id = request.tax_id
+    if request.instagram is not None:
+        dealer.instagram = request.instagram
+    if request.facebook is not None:
+        dealer.facebook = request.facebook
 
     updated = await org_repo.update(dealer)
     return UpdateDealerResponse(id=updated.id, name=updated.name, status=updated.status)

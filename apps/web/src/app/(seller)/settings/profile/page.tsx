@@ -29,7 +29,7 @@ import {
 const profileSchema = z.object({
   firstName: z.string().trim().min(1, "El nombre es requerido"),
   lastName: z.string().trim().min(1, "El apellido es requerido"),
-  email: z.string().trim().email("Correo inválido"),
+  email: z.email("Correo inválido"),
   phone: z.string().trim().optional(),
 });
 
@@ -259,7 +259,7 @@ export default function SettingsProfilePage() {
         <Field
           id="phone"
           label="Teléfono"
-          hint="Este teléfono se guarda como contacto principal de tu organización."
+          hint="Contacto principal de tu organización."
           error={form.formState.errors.phone?.message}
         >
           <input

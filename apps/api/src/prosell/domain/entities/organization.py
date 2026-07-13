@@ -21,6 +21,11 @@ class Organization(DomainModel):
     name: str = Field(..., min_length=1, max_length=255)
     tenant_id: UUID  # For multi-tenant isolation
 
+    # Short code / abbreviation (max 5 chars, always uppercase)
+    code: str | None = None
+    # Tag color for product cards (hex, e.g. "#4DB8FF")
+    color: str | None = None
+
     # Branding
     logo_url: str | None = None
     banner_url: str | None = None
@@ -202,6 +207,8 @@ class Organization(DomainModel):
     def update_basic_info(
         self,
         name: str | None = None,
+        code: str | None = None,
+        color: str | None = None,
         description: str | None = None,
         website: str | None = None,
         phone: str | None = None,
@@ -220,9 +227,14 @@ class Organization(DomainModel):
         Update organization information.
 
         All args are optional — only non-None values are applied.
+        Code is auto-uppercased.
         """
         if name is not None:
             self.name = name
+        if code is not None:
+            self.code = code.upper()[:5]  # ponytail: enforce uppercase + max 5 chars
+        if color is not None:
+            self.color = color[:7]  # ponytail: enforce max 7 chars (#RRGGBB)
         if description is not None:
             self.description = description
         if website is not None:

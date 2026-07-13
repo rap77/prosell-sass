@@ -23,6 +23,7 @@ export async function generateUploadUrl(
   const res = await fetch("/api/v1/images/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ content_type: fileType }),
   });
 
@@ -83,7 +84,9 @@ export async function pollProcessingStatus(
   let attempts = 0;
 
   while (attempts < maxAttempts) {
-    const res = await fetch(`/api/v1/images/status/${fileId}`);
+    const res = await fetch(`/api/v1/images/status/${fileId}`, {
+      credentials: "include",
+    });
 
     if (!res.ok) throw new Error("Failed to check processing status");
 
@@ -122,6 +125,7 @@ export async function uploadImageDirect(
   const res = await fetch("/api/v1/images/upload", {
     method: "POST",
     body: formData,
+    credentials: "include",
     // Note: Don't set Content-Type header for FormData - browser sets it with boundary
   });
 

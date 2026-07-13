@@ -15,6 +15,8 @@ const CURRENT_USER_SCHEMA = z.object({
 
 const ORGANIZATION_SCHEMA = z.object({
   id: z.string(),
+  code: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
 });
 
@@ -62,6 +64,8 @@ export interface CurrentUserProfile {
 
 export interface OrganizationProfile {
   id: string;
+  code?: string | null;
+  color?: string | null;
   phone?: string | null;
 }
 
@@ -179,9 +183,9 @@ async function getCurrentOrganization(): Promise<OrganizationProfile | null> {
   return parseJson(response, ORGANIZATION_SCHEMA);
 }
 
-async function updateOrganizationPhone(
+async function updateOrganizationFields(
   organizationId: string,
-  phone: string,
+  fields: { phone?: string },
 ): Promise<void> {
   const response = await fetch(`/api/v1/org/${organizationId}`, {
     method: "PATCH",
@@ -189,13 +193,13 @@ async function updateOrganizationPhone(
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify(fields),
   });
 
   if (!response.ok) {
     const payload: ApiErrorPayload = await response
       .json()
-      .catch(() => ({ message: "No se pudo guardar el teléfono" }));
+      .catch(() => ({ message: "No se pudo guardar la organización" }));
     throw new Error(getErrorMessage(payload));
   }
 }
@@ -239,10 +243,9 @@ export function useUpdateProfile() {
       const updatedUser = await parseJson(response, CURRENT_USER_SCHEMA);
 
       if (parsedInput.organizationId) {
-        await updateOrganizationPhone(
-          parsedInput.organizationId,
-          parsedInput.phone ?? "",
-        );
+        await updateOrganizationFields(parsedInput.organizationId, {
+          phone: parsedInput.phone ?? "",
+        });
       }
 
       return updatedUser;

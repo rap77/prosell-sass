@@ -129,6 +129,8 @@ export function useResendDealerInvitation() {
 
 interface UpdateDealerInput {
   name?: string;
+  code?: string;
+  color?: string;
   description?: string;
   website?: string;
   phone?: string;

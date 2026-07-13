@@ -20,6 +20,12 @@ export const OrganizationSchema = z
   .object({
     id: z.string(),
     name: z.string(),
+    code: z.string().nullable().optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .nullable()
+      .optional(),
     tenant_id: z.string(),
     status: OrganizationStatusSchema,
     logo_url: z.string().nullable(),

@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores";
 import { toast } from "sonner";
 
 // ============================================
@@ -43,15 +42,26 @@ const organizationSchema = z.object({
     .min(2, "Name must be at least 2 characters")
     .max(255, "Name must be less than 255 characters")
     .trim(),
+  code: z
+    .string()
+    .max(5, "Máximo 5 caracteres")
+    .transform((v) => v.toUpperCase())
+    .optional()
+    .or(z.literal("")),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Color hex inválido (#RRGGBB)")
+    .optional()
+    .or(z.literal("")),
   description: z
     .string()
     .max(1000, "Description must be less than 1000 characters")
     .optional()
     .or(z.literal("")),
-  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+  website: z.url("Invalid URL").optional().or(z.literal("")),
   phone: z.string().optional(),
   // Contact
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.email("Email inválido").optional().or(z.literal("")),
   whatsapp: z.string().optional(),
   // Address
   street_address: z.string().optional(),
@@ -63,7 +73,7 @@ const organizationSchema = z.object({
   tax_id: z.string().optional(),
   // Social
   instagram: z.string().optional(),
-  facebook: z.string().url("URL inválida").optional().or(z.literal("")),
+  facebook: z.url("URL inválida").optional().or(z.literal("")),
 });
 
 export type OrganizationFormValues = z.infer<typeof organizationSchema>;
@@ -102,10 +112,6 @@ export function OrganizationForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // Get tenant_id from auth store
-  const { user } = useAuthStore();
-  const tenantId = user?.id || ""; // Use user ID as tenant_id for now
-
   // Get store methods
   const {
     createOrganization,
@@ -125,6 +131,8 @@ export function OrganizationForm({
     mode: "all",
     defaultValues: {
       name: initialData?.name || "",
+      code: initialData?.code || "",
+      color: initialData?.color || "#4DB8FF",
       description: initialData?.description || "",
       website: initialData?.website || "",
       phone: initialData?.phone || "",
@@ -163,6 +171,8 @@ export function OrganizationForm({
     try {
       const payload = {
         name: data.name,
+        code: data.code || undefined,
+        color: data.color || undefined,
         description: data.description || undefined,
         website: data.website || undefined,
         phone: data.phone || undefined,
@@ -179,10 +189,7 @@ export function OrganizationForm({
       };
 
       if (mode === "create") {
-        const org = await createOrganization({
-          ...payload,
-          tenant_id: tenantId,
-        });
+        const org = await createOrganization(payload);
 
         // Navigate to organization detail or call onSuccess
         if (onSuccess) {
@@ -222,30 +229,74 @@ export function OrganizationForm({
       className="flex flex-col gap-6"
       noValidate
     >
-      {/* Name Input */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="name">
-          Organization Name <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          {...register("name")}
-          onBlur={handleInputChange}
-          id="name"
-          type="text"
-          placeholder="Acme Corporation"
-          disabled={isDisabled}
-          aria-invalid={!!errors.name || !!error}
-          aria-describedby={error ? "org-error" : undefined}
-          className={cn(
-            (errors.name || error) &&
-              "border-destructive focus-visible:ring-destructive",
+      {/* Name + Code + Color row */}
+      <div className="grid grid-cols-[1fr_auto_auto] items-start gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="name">
+            Nombre <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            {...register("name")}
+            onBlur={handleInputChange}
+            id="name"
+            type="text"
+            placeholder="Acme Corporation"
+            disabled={isDisabled}
+            aria-invalid={!!errors.name || !!error}
+            aria-describedby={error ? "org-error" : undefined}
+            className={cn(
+              (errors.name || error) &&
+                "border-destructive focus-visible:ring-destructive",
+            )}
+          />
+          {errors.name && errors.name.message && (
+            <p role="alert" className="text-sm text-destructive">
+              {errors.name.message}
+            </p>
           )}
-        />
-        {errors.name && errors.name.message && (
-          <p role="alert" className="text-sm text-destructive">
-            {errors.name.message}
-          </p>
-        )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="code">Siglas</Label>
+          <Input
+            {...register("code")}
+            onBlur={handleInputChange}
+            id="code"
+            type="text"
+            maxLength={5}
+            placeholder="ACME"
+            disabled={isDisabled}
+            aria-invalid={!!errors.code}
+            className={cn(
+              "uppercase w-24",
+              errors.code &&
+                "border-destructive focus-visible:ring-destructive",
+            )}
+          />
+          {errors.code?.message && (
+            <p role="alert" className="text-sm text-destructive">
+              {errors.code.message}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="color">Color</Label>
+          <input
+            {...register("color")}
+            id="color"
+            type="color"
+            disabled={isDisabled}
+            aria-invalid={!!errors.color}
+            className={cn(
+              "h-10 w-14 cursor-pointer rounded-md border border-input bg-background disabled:cursor-not-allowed disabled:opacity-50",
+              errors.color && "border-destructive",
+            )}
+          />
+          {errors.color?.message && (
+            <p role="alert" className="text-sm text-destructive">
+              {errors.color.message}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Description Input */}

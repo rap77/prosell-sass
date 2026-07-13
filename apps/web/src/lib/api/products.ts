@@ -204,12 +204,11 @@ export function useCreateProduct(): UseMutationResult<
   return useMutation({
     mutationFn: createProductWithVehicle,
 
-    onSuccess: (newProduct) => {
+    onSuccess: () => {
       // Invalidate vehicles query (may have auto-created vehicle)
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-
-      toast.success("Product created successfully");
+      // ponytail: toast handled by form, not hook
     },
 
     onError: (err) => {
@@ -372,8 +371,7 @@ export function useUpdateProduct(): UseMutationResult<
       queryClient.invalidateQueries({
         queryKey: ["products", updatedProduct.id],
       });
-
-      toast.success("Product updated successfully");
+      // ponytail: toast handled by form, not hook
     },
 
     onError: (err) => {

@@ -1,5 +1,7 @@
 """Create organization use case."""
 
+from uuid import UUID
+
 from prosell.application.dto.org import CreateOrganizationRequest, OrganizationResponse
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.wallet import Wallet
@@ -22,6 +24,7 @@ class CreateOrganizationUseCase:
     async def execute(
         self,
         request: CreateOrganizationRequest,
+        tenant_id: UUID,
     ) -> OrganizationResponse:
         """
         Execute organization creation.
@@ -29,7 +32,8 @@ class CreateOrganizationUseCase:
         Creates org in PENDING_VERIFICATION status and provisions a wallet.
 
         Args:
-            request: CreateOrganizationRequest DTO
+            request: CreateOrganizationRequest DTO (without tenant_id)
+            tenant_id: Trusted tenant UUID from the authenticated session
 
         Returns:
             OrganizationResponse DTO
@@ -38,17 +42,21 @@ class CreateOrganizationUseCase:
             OrganizationAlreadyExistsException: If name already taken for tenant
         """
         # 1. Check uniqueness within tenant
-        exists = await self.org_repository.exists_by_name(request.name, request.tenant_id)
+        exists = await self.org_repository.exists_by_name(request.name, tenant_id)
         if exists:
             raise OrganizationAlreadyExistsException(request.name)
 
         # 2. Create organization entity
         org = Organization.create(
             name=request.name,
-            tenant_id=request.tenant_id,
+            tenant_id=tenant_id,
         )
 
         # Apply optional fields
+        if request.code is not None:
+            org.code = request.code.upper()[:5]
+        if request.color is not None:
+            org.color = request.color[:7]
         if request.description is not None:
             org.description = request.description
         if request.website is not None:

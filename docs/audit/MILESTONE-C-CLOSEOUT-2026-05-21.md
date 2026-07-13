@@ -1,7 +1,7 @@
 # Audit de cierre — Milestone C
 
-**Fecha**: 2026-05-21  
-**Framework operativo**: MasterMind  
+**Fecha**: 2026-05-21
+**Framework operativo**: MasterMind
 **Milestone auditada**: Milestone C — UX Completion
 
 ---

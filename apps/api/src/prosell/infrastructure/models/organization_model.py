@@ -18,6 +18,11 @@ class OrganizationModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     tenant_id: Mapped[UUID] = mapped_column(unique=True, index=True, nullable=False)
 
+    # Short code / abbreviation (max 5 chars, always uppercase)
+    code: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    # Tag color for product cards (hex, e.g. "#4DB8FF")
+    color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+
     # Branding
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)

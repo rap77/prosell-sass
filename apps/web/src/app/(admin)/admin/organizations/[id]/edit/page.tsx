@@ -55,6 +55,8 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
 
   // Form state initialized from dealer (no useEffect needed)
   const [name, setName] = useState(dealer.name);
+  const [code, setCode] = useState(dealer.code ?? "");
+  const [color, setColor] = useState(dealer.color ?? "#4DB8FF");
   const [description, setDescription] = useState(dealer.description ?? "");
   const [website, setWebsite] = useState(dealer.website ?? "");
   const [phone, setPhone] = useState(dealer.phone ?? "");
@@ -78,6 +80,8 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
         dealerId: dealer.id,
         data: {
           name,
+          code: code || undefined,
+          color: color || undefined,
           description: description || undefined,
           website: website || undefined,
           phone: phone || undefined,
@@ -146,17 +150,53 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
           maxWidth: 600,
         }}
       >
-        {/* Name - always visible */}
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Nombre *
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            style={inputStyle}
-          />
-        </label>
+        {/* Name + Code + Color row */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto auto",
+            gap: 12,
+            alignItems: "end",
+          }}
+        >
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            Nombre *
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            Siglas
+            <input
+              type="text"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.toUpperCase().slice(0, 5))
+              }
+              maxLength={5}
+              placeholder="ACME"
+              style={{ ...inputStyle, width: 80, textTransform: "uppercase" }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            Color
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              style={{
+                ...inputStyle,
+                width: 50,
+                padding: 4,
+                cursor: "pointer",
+              }}
+            />
+          </label>
+        </div>
 
         {/* Shared form fields - same component as create page */}
         <OrganizationFormFields
