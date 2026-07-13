@@ -1,8 +1,8 @@
 # Session: Landing Page — Redesign, Handoff Implementation & Component Refactor
 
-**Date**: 2026-05-21  
-**Branch**: `main`  
-**Commits**: `b124452`, `a6ca3c5`, `[logo]`, `[sections]`, `[refactor]`  
+**Date**: 2026-05-21
+**Branch**: `main`
+**Commits**: `b124452`, `a6ca3c5`, `[logo]`, `[sections]`, `[refactor]`
 **Status**: ✅ Complete
 
 ---
