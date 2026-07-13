@@ -28,7 +28,13 @@ describe("AdminDealersPage", () => {
   });
 
   it("redirects a non-admin to /dashboard", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: false, hasPermission: () => false });
+    // ponytail: useRequireAdmin only redirects when authenticated AND not admin
+    mockUseAuth.mockReturnValue({
+      isAdmin: false,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => false,
+    });
     mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
@@ -39,7 +45,12 @@ describe("AdminDealersPage", () => {
   });
 
   it("renders the dealers list for an admin", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => false });
+    mockUseAuth.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => false,
+    });
     mockUseDealers.mockReturnValue({
       data: [
         { id: "dealer-1", name: "Dealer One" },
@@ -57,7 +68,12 @@ describe("AdminDealersPage", () => {
   });
 
   it("links each dealer to its detail page", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => false });
+    mockUseAuth.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => false,
+    });
     mockUseDealers.mockReturnValue({
       data: [{ id: "dealer-1", name: "Dealer One" }],
       isLoading: false,
@@ -71,7 +87,12 @@ describe("AdminDealersPage", () => {
   });
 
   it("links to /admin/organizations/new when the user can create dealers", () => {
-    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => true });
+    mockUseAuth.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => true,
+    });
     mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
@@ -82,7 +103,12 @@ describe("AdminDealersPage", () => {
   });
 
   it("hides the entry point when the user lacks the permission", () => {
-    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => false });
+    mockUseAuth.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => false,
+    });
     mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);

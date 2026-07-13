@@ -60,7 +60,8 @@ describe("OrganizationForm", () => {
   describe("Create mode", () => {
     it("renders create form with all fields", () => {
       render(<OrganizationForm mode="create" />);
-      expect(screen.getByLabelText(/organization name/i)).toBeInTheDocument();
+      // ponytail: labels match actual form (mixed EN/ES — Description/Website in EN, Nombre/Teléfono in ES)
+      expect(screen.getByLabelText(/nombre/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/website/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/teléfono/i)).toBeInTheDocument();
@@ -86,10 +87,7 @@ describe("OrganizationForm", () => {
       const user = userEvent.setup();
       render(<OrganizationForm mode="create" />);
 
-      await user.type(
-        screen.getByLabelText(/organization name/i),
-        "My Company",
-      );
+      await user.type(screen.getByLabelText(/nombre/i), "My Company");
       await user.type(screen.getByLabelText(/description/i), "A great company");
       await user.click(
         screen.getByRole("button", { name: /create organization/i }),
@@ -108,10 +106,7 @@ describe("OrganizationForm", () => {
     it("navigates to org detail after successful creation", async () => {
       const user = userEvent.setup();
       render(<OrganizationForm mode="create" />);
-      await user.type(
-        screen.getByLabelText(/organization name/i),
-        "My Company",
-      );
+      await user.type(screen.getByLabelText(/nombre/i), "My Company");
       await user.click(
         screen.getByRole("button", { name: /create organization/i }),
       );
@@ -125,10 +120,7 @@ describe("OrganizationForm", () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
       render(<OrganizationForm mode="create" onSuccess={onSuccess} />);
-      await user.type(
-        screen.getByLabelText(/organization name/i),
-        "My Company",
-      );
+      await user.type(screen.getByLabelText(/nombre/i), "My Company");
       await user.click(
         screen.getByRole("button", { name: /create organization/i }),
       );
@@ -156,9 +148,7 @@ describe("OrganizationForm", () => {
           initialData={{ name: "Existing Org", description: "Existing desc" }}
         />,
       );
-      expect(screen.getByLabelText(/organization name/i)).toHaveValue(
-        "Existing Org",
-      );
+      expect(screen.getByLabelText(/nombre/i)).toHaveValue("Existing Org");
     });
 
     it("calls updateOrganization on submit in edit mode", async () => {
@@ -170,7 +160,7 @@ describe("OrganizationForm", () => {
           initialData={{ name: "Old Name" }}
         />,
       );
-      const nameInput = screen.getByLabelText(/organization name/i);
+      const nameInput = screen.getByLabelText(/nombre/i);
       await user.clear(nameInput);
       await user.type(nameInput, "New Name");
       await user.click(screen.getByRole("button", { name: /save changes/i }));

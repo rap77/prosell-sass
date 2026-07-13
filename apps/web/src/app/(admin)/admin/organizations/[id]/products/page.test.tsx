@@ -30,7 +30,12 @@ describe("AdminDealerProductsPage", () => {
   });
 
   it("redirects a non-admin to /dashboard", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: false });
+    // ponytail: useRequireAdmin only redirects when authenticated AND not admin
+    mockUseAuth.mockReturnValue({
+      isAdmin: false,
+      isAuthenticated: true,
+      isLoading: false,
+    });
     mockUseDealerProducts.mockReturnValue({
       data: [],
       isLoading: false,
