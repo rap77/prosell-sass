@@ -268,7 +268,8 @@ export function OrganizationForm({
             aria-invalid={!!errors.code}
             className={cn(
               "uppercase w-24",
-              errors.code && "border-destructive focus-visible:ring-destructive",
+              errors.code &&
+                "border-destructive focus-visible:ring-destructive",
             )}
           />
           {errors.code?.message && (
