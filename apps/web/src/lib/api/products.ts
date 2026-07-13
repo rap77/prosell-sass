@@ -208,7 +208,7 @@ export function useCreateProduct(): UseMutationResult<
       // Invalidate vehicles query (may have auto-created vehicle)
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      // ponytail: toast handled by form, not hook
+      toast.success("Product created successfully");
     },
 
     onError: (err) => {
@@ -371,7 +371,7 @@ export function useUpdateProduct(): UseMutationResult<
       queryClient.invalidateQueries({
         queryKey: ["products", updatedProduct.id],
       });
-      // ponytail: toast handled by form, not hook
+      toast.success("Product updated successfully");
     },
 
     onError: (err) => {
