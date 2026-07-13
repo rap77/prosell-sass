@@ -93,6 +93,9 @@ is_allowed() {
         # create_test_schema.py bootstraps the same local test container's
         # schema for CI/local integration runs -- same dev-only credential.
         apps/api/scripts/create_test_schema.py) return 0 ;;
+        # sync-test-db.sh runs migrations against the local test container
+        # (postgres on port 5433) -- same dev-only credential as above.
+        scripts/sync-test-db.sh) return 0 ;;
     esac
     return 1
 }

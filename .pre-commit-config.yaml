@@ -113,6 +113,14 @@ repos:
         pass_filenames: false
         stages: [pre-push]
         types: [python]
+      # ponytail: sync test DB migrations before running tests
+      - id: sync-test-db
+        name: sync test DB migrations (pre-push)
+        entry: bash scripts/sync-test-db.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        types: [python]
       - id: pytest-push
         name: pytest backend suite (pre-push)
         entry: bash -c 'cd apps/api && uv run pytest -q'
