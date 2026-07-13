@@ -16,6 +16,8 @@ export const DealerSchema = z
   .object({
     id: z.string(),
     name: z.string(),
+    code: z.string().nullable().optional(),
+    color: z.string().nullable().optional(),
     tenant_id: z.string(),
     status: z.string(),
     logo_url: z.string().nullable().optional(),

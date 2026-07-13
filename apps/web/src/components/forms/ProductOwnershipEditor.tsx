@@ -180,10 +180,7 @@ export function ProductOwnershipEditor({
         <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
           Organización
         </label>
-        <Select
-          value={selectedOrgId ?? undefined}
-          onValueChange={handleOrgChange}
-        >
+        <Select value={selectedOrgId ?? ""} onValueChange={handleOrgChange}>
           <SelectTrigger className="w-full">
             {selectedOrgId ? (
               <span className="flex items-center gap-2">
@@ -360,21 +357,22 @@ export function ProductOwnershipEditor({
         </div>
       )}
 
-      {/* Save button */}
+      {/* Save ownership button - visually distinct from main form save */}
       {isDirty && (
         <Button
           type="button"
           size="sm"
+          variant="outline"
           onClick={handleSave}
           disabled={!isValid || hasEmptyOwner || setOwnership.isPending}
         >
           {setOwnership.isPending ? (
             <>
               <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              Guardando...
+              Aplicando...
             </>
           ) : (
-            "Guardar"
+            "Aplicar propietarios"
           )}
         </Button>
       )}
