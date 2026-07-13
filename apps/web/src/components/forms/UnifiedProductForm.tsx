@@ -64,7 +64,7 @@ export interface UnifiedProductFormProps {
 }
 
 // Fixed fields schema (price, description)
-const fixedFieldsSchema = z.object({
+const FIXED_FIELDS_SCHEMA = z.object({
   price: z.coerce.number().min(0, "Price must be positive"),
   description: z.string().max(5000).optional(),
 });
@@ -130,9 +130,11 @@ export function UnifiedProductForm({
   );
 
   // Build schema from category
+  // ponytail: useMemo justified — schema derivation walks attribute_schema,
+  // expensive on large categories; memo avoids re-derivation on every keystroke
   const { combinedSchema, defaultValues } = useMemo(() => {
     const attrSchema = buildZodSchema(category.attribute_schema);
-    const combined = fixedFieldsSchema.merge(attrSchema);
+    const combined = FIXED_FIELDS_SCHEMA.merge(attrSchema);
     const defaults = {
       price: 0,
       description: "",
@@ -215,6 +217,8 @@ export function UnifiedProductForm({
   }, [mode, productId, existingImageData, seedImages, setCoverImage]);
 
   // Group fields
+  // ponytail: useMemo justified — group sorting + grouping runs over
+  // category.attribute_schema; memo avoids recomputing on every form change
   const sortedGroups = useMemo(
     () =>
       [...category.attribute_groups].sort(
@@ -304,7 +308,7 @@ export function UnifiedProductForm({
         }
 
         clearAll();
-        toast.success("Producto creado exitosamente");
+        // ponytail: toast handled by hook (createProduct.onSuccess)
 
         if (onSuccess) {
           onSuccess();
@@ -326,7 +330,7 @@ export function UnifiedProductForm({
           },
         });
 
-        toast.success("Producto actualizado exitosamente");
+        // ponytail: toast handled by hook (updateProduct.onSuccess)
 
         if (onSuccess) {
           onSuccess();
