@@ -58,10 +58,10 @@ const organizationSchema = z.object({
     .max(1000, "Description must be less than 1000 characters")
     .optional()
     .or(z.literal("")),
-  website: z.url("Invalid URL").optional().or(z.literal("")),
+  website: z.string().url("Invalid URL").optional().or(z.literal("")),
   phone: z.string().optional(),
   // Contact
-  email: z.email("Email inválido").optional().or(z.literal("")),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
   whatsapp: z.string().optional(),
   // Address
   street_address: z.string().optional(),
@@ -73,7 +73,7 @@ const organizationSchema = z.object({
   tax_id: z.string().optional(),
   // Social
   instagram: z.string().optional(),
-  facebook: z.url("URL inválida").optional().or(z.literal("")),
+  facebook: z.string().url("URL inválida").optional().or(z.literal("")),
 });
 
 export type OrganizationFormValues = z.infer<typeof organizationSchema>;
