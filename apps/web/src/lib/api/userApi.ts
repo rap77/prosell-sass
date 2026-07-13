@@ -16,6 +16,7 @@ const CURRENT_USER_SCHEMA = z.object({
 const ORGANIZATION_SCHEMA = z.object({
   id: z.string(),
   code: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
 });
 
@@ -27,7 +28,6 @@ const UPDATE_PROFILE_INPUT_SCHEMA = z.object({
     .trim()
     .refine((value) => EMAIL_REGEX.test(value), "Correo inválido"),
   phone: z.string().trim().optional(),
-  orgCode: z.string().trim().max(5).optional(),
   organizationId: z.string().optional(),
 });
 
@@ -65,6 +65,7 @@ export interface CurrentUserProfile {
 export interface OrganizationProfile {
   id: string;
   code?: string | null;
+  color?: string | null;
   phone?: string | null;
 }
 
@@ -73,7 +74,6 @@ export interface UpdateProfileInput {
   lastName: string;
   email: string;
   phone?: string;
-  orgCode?: string;
   organizationId?: string;
 }
 
@@ -185,7 +185,7 @@ async function getCurrentOrganization(): Promise<OrganizationProfile | null> {
 
 async function updateOrganizationFields(
   organizationId: string,
-  fields: { phone?: string; code?: string },
+  fields: { phone?: string },
 ): Promise<void> {
   const response = await fetch(`/api/v1/org/${organizationId}`, {
     method: "PATCH",
@@ -245,7 +245,6 @@ export function useUpdateProfile() {
       if (parsedInput.organizationId) {
         await updateOrganizationFields(parsedInput.organizationId, {
           phone: parsedInput.phone ?? "",
-          code: parsedInput.orgCode,
         });
       }
 

@@ -24,6 +24,8 @@ export interface ProductCardProps {
   imageUrl: string | null;
   /** Organization code/abbreviation shown as tag (internal pages only) */
   orgCode?: string | null;
+  /** Organization tag color (hex, e.g. "#4DB8FF"). Falls back to primary. */
+  orgColor?: string | null;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -59,6 +61,7 @@ export function ProductCard({
   verticalSlug,
   imageUrl,
   orgCode,
+  orgColor,
   onView,
   onEdit,
   onDelete,
@@ -126,9 +129,17 @@ export function ProductCard({
           unoptimized={unoptimized}
           priority={false}
         />
-        {/* Org code tag — top-left (internal pages only) */}
+        {/* Org code tag — top-left (internal pages only). Uses org color
+            when provided, else falls back to primary tokens. */}
         {orgCode && (
-          <span className="absolute left-2 top-2 rounded bg-primary/90 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
+          <span
+            className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm"
+            style={
+              orgColor
+                ? { backgroundColor: orgColor }
+                : { backgroundColor: "var(--ps-primary)" }
+            }
+          >
             {orgCode}
           </span>
         )}

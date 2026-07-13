@@ -29,14 +29,8 @@ import {
 const profileSchema = z.object({
   firstName: z.string().trim().min(1, "El nombre es requerido"),
   lastName: z.string().trim().min(1, "El apellido es requerido"),
-  email: z.string().trim().email("Correo inválido"),
+  email: z.email("Correo inválido"),
   phone: z.string().trim().optional(),
-  orgCode: z
-    .string()
-    .trim()
-    .max(5, "Máximo 5 caracteres")
-    .transform((v) => v.toUpperCase())
-    .optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -120,7 +114,6 @@ export default function SettingsProfilePage() {
       lastName: user?.last_name ?? "",
       email: user?.email ?? "",
       phone: organizationQuery.data?.phone ?? "",
-      orgCode: organizationQuery.data?.code ?? "",
     },
   });
 
@@ -131,12 +124,10 @@ export default function SettingsProfilePage() {
       lastName: user?.last_name ?? "",
       email: user?.email ?? "",
       phone: organizationQuery.data?.phone ?? "",
-      orgCode: organizationQuery.data?.code ?? "",
     });
   }, [
     form,
     organizationQuery.data?.phone,
-    organizationQuery.data?.code,
     user?.email,
     user?.first_name,
     user?.last_name,
@@ -149,7 +140,6 @@ export default function SettingsProfilePage() {
         lastName: values.lastName,
         email: values.email,
         phone: values.phone,
-        orgCode: values.orgCode,
         organizationId: organizationQuery.data?.id,
       });
       updateUser({
@@ -265,42 +255,22 @@ export default function SettingsProfilePage() {
           />
         </Field>
 
-        {/* Phone + Org Code row */}
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16 }}
+        {/* Phone */}
+        <Field
+          id="phone"
+          label="Teléfono"
+          hint="Contacto principal de tu organización."
+          error={form.formState.errors.phone?.message}
         >
-          <Field
+          <input
             id="phone"
-            label="Teléfono"
-            hint="Contacto principal de tu organización."
-            error={form.formState.errors.phone?.message}
-          >
-            <input
-              id="phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="+54 11 0000 0000"
-              style={inputBase}
-              {...reg("phone")}
-            />
-          </Field>
-
-          <Field
-            id="orgCode"
-            label="Siglas"
-            hint="Se muestra en las tarjetas."
-            error={form.formState.errors.orgCode?.message}
-          >
-            <input
-              id="orgCode"
-              type="text"
-              maxLength={5}
-              placeholder="ACME"
-              style={{ ...inputBase, width: 90, textTransform: "uppercase" }}
-              {...reg("orgCode")}
-            />
-          </Field>
-        </div>
+            type="tel"
+            autoComplete="tel"
+            placeholder="+54 11 0000 0000"
+            style={inputBase}
+            {...reg("phone")}
+          />
+        </Field>
 
         {/* Submit */}
         <div

@@ -28,8 +28,8 @@ export type {
 
 export interface CreateOrganizationRequest {
   name: string;
-  tenant_id: string;
   code?: string;
+  color?: string;
   description?: string;
   website?: string;
   phone?: string;
@@ -38,6 +38,7 @@ export interface CreateOrganizationRequest {
 export interface UpdateOrganizationRequest {
   name?: string;
   code?: string;
+  color?: string;
   description?: string;
   website?: string;
   phone?: string;
@@ -119,14 +120,12 @@ export const orgApi = {
   async list(params?: {
     skip?: number;
     limit?: number;
-    tenant_id?: string;
   }): Promise<OrganizationListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.skip !== undefined)
       searchParams.set("skip", params.skip.toString());
     if (params?.limit !== undefined)
       searchParams.set("limit", params.limit.toString());
-    if (params?.tenant_id) searchParams.set("tenant_id", params.tenant_id);
 
     const query = searchParams.toString();
     const url = `${API_BASE_URL}/api/v1/org${query ? `?${query}` : ""}`;
@@ -156,14 +155,11 @@ export const orgApi = {
    * Get organization by ID
    * GET /api/v1/org/{id}
    */
-  async getById(id: string, tenant_id: string): Promise<Organization> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/org/${id}?tenant_id=${tenant_id}`,
-      {
-        method: "GET",
-        credentials: "include",
-      },
-    );
+  async getById(id: string): Promise<Organization> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/org/${id}`, {
+      method: "GET",
+      credentials: "include",
+    });
 
     return handleResponse(response, OrganizationSchema);
   },
@@ -192,13 +188,12 @@ export const orgApi = {
    * Verify organization (SUPER_ADMIN only)
    * POST /api/v1/org/{id}/verify
    */
-  async verify(id: string, verifier_id: string): Promise<Organization> {
+  async verify(id: string): Promise<Organization> {
     const response = await fetch(`${API_BASE_URL}/api/v1/org/${id}/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ verifier_id }),
       credentials: "include",
     });
 
@@ -209,17 +204,13 @@ export const orgApi = {
    * Reject organization (SUPER_ADMIN only)
    * POST /api/v1/org/{id}/reject
    */
-  async reject(
-    id: string,
-    verifier_id: string,
-    reason?: string,
-  ): Promise<Organization> {
+  async reject(id: string, reason?: string): Promise<Organization> {
     const response = await fetch(`${API_BASE_URL}/api/v1/org/${id}/reject`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ verifier_id, reason }),
+      body: JSON.stringify({ reason }),
       credentials: "include",
     });
 
