@@ -30,6 +30,8 @@ export default function AdminNewDealerPage() {
   const updateDealer = useUpdateDealer();
 
   const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [color, setColor] = useState("#4DB8FF");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
   const [brokers, setBrokers] = useState<
@@ -117,11 +119,13 @@ export default function AdminNewDealerPage() {
         brokers: brokers.length > 0 ? brokers : undefined,
       });
 
-      // If optional fields were filled, update the org immediately
-      if (hasOptionalFields()) {
+      // ponytail: always update to set code/color if provided
+      if (code || color || hasOptionalFields()) {
         await updateDealer.mutateAsync({
           dealerId: result.organization_id,
           data: {
+            code: code || undefined,
+            color: color || undefined,
             description: description || undefined,
             website: website || undefined,
             phone: phone || undefined,
@@ -184,6 +188,44 @@ export default function AdminNewDealerPage() {
             }}
           />
         </label>
+
+        <div style={{ display: "flex", gap: 12 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+            Siglas (opcional)
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
+              maxLength={5}
+              placeholder="ACME"
+              style={{
+                height: 38,
+                padding: "0 12px",
+                borderRadius: 8,
+                border: "1px solid var(--ps-border-default)",
+                background: "var(--ps-bg-elevated)",
+                color: "var(--ps-text-primary)",
+              }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            Color
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              style={{
+                height: 38,
+                width: 60,
+                padding: 4,
+                borderRadius: 8,
+                border: "1px solid var(--ps-border-default)",
+                background: "var(--ps-bg-elevated)",
+                cursor: "pointer",
+              }}
+            />
+          </label>
+        </div>
 
         <fieldset
           style={{

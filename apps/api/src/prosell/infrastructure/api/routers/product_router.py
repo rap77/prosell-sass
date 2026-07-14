@@ -71,6 +71,8 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
+from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -499,7 +501,7 @@ async def list_products(
 
     # image_urls are returned as bare storage keys. The browser fetches
     # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
-    return await use_case.execute(
+    result = await use_case.execute(
         tenant_id=effective_tenant,
         organization_id=organization_id,
         category_id=category_id,
@@ -513,6 +515,51 @@ async def list_products(
         skip=skip,
         limit=limit,
     )
+
+    # ponytail: batch-fetch ownership info for all products in one query
+    # JOIN with organizations to get code/color for the owner org
+    if result.products:
+        product_ids = [p.id for p in result.products]
+        ownership_query = (
+            select(
+                ProductOwnershipModel.product_id,
+                OrganizationModel.id.label("org_id"),
+                OrganizationModel.code,
+                OrganizationModel.color,
+            )
+            .join(
+                OrganizationModel,
+                ProductOwnershipModel.owner_id == OrganizationModel.id,
+            )
+            .where(
+                ProductOwnershipModel.product_id.in_(product_ids),
+                ProductOwnershipModel.owner_type == "organization",
+            )
+        )
+        ownership_rows = await db.execute(ownership_query)
+        owner_map: dict[UUID, tuple[UUID, str | None, str | None]] = {
+            row.product_id: (row.org_id, row.code, row.color) for row in ownership_rows
+        }
+
+        # Enrich ProductResponse with owner info
+        enriched = [
+            p.model_copy(
+                update={
+                    "owner_org_id": owner_map.get(p.id, (None, None, None))[0],
+                    "owner_org_code": owner_map.get(p.id, (None, None, None))[1],
+                    "owner_org_color": owner_map.get(p.id, (None, None, None))[2],
+                }
+            )
+            for p in result.products
+        ]
+        return ProductListResponse(
+            products=enriched,
+            total=result.total,
+            skip=result.skip,
+            limit=result.limit,
+        )
+
+    return result
 
 
 # ─── Filter values endpoint (mounted at /api/v1/categories in main.py) ──────

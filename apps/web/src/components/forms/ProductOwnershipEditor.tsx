@@ -9,8 +9,9 @@
  * 3. If org has NO brokers → org itself is the 100% owner
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Trash2, Loader2, Building2, User } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ interface ProductOwnershipEditorProps {
 export function ProductOwnershipEditor({
   productId,
 }: ProductOwnershipEditorProps) {
+  const queryClient = useQueryClient();
   const { data: dealers = [], isLoading: isLoadingDealers } = useDealers();
   const { data: ownership, isLoading: isLoadingOwnership } =
     useProductOwnership(productId);
@@ -141,7 +143,9 @@ export function ProductOwnershipEditor({
   const handleSave = async () => {
     if (!isValid || hasEmptyOwner) return;
 
-    await setOwnership.mutateAsync({
+    // ponytail: use returned data directly to avoid race condition
+    // between setLocalOwners(null) and query refetch
+    const result = await setOwnership.mutateAsync({
       productId,
       owners: owners.map((o) => ({
         owner_id: o.owner_id,
@@ -149,6 +153,7 @@ export function ProductOwnershipEditor({
         percentage: parseFloat(o.percentage).toFixed(2),
       })),
     });
+    queryClient.setQueryData(["products", productId, "ownership"], result);
     setLocalOwners(null);
   };
 

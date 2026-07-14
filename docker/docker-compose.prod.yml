@@ -10,7 +10,7 @@ services:
   # ---------------------------------------------------------------------------
   db:
     image: postgres:17-alpine
-    container_name: prosell-prod-db
+    container_name: prosell-prd-db
     env_file:
       - ../.env.prod
     volumes:
@@ -28,7 +28,7 @@ services:
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7.4-alpine
-    container_name: prosell-prod-redis
+    container_name: prosell-prd-redis
     env_file:
       - ../.env.prod
     command:
@@ -53,7 +53,7 @@ services:
     build:
       context: ..
       dockerfile: docker/api.Dockerfile
-    container_name: prosell-prod-api
+    container_name: prosell-prd-api
     env_file:
       - ../.env.prod
     environment:
@@ -92,7 +92,7 @@ services:
     build:
       context: ..
       dockerfile: docker/api.Dockerfile
-    container_name: prosell-prod-worker
+    container_name: prosell-prd-worker
     env_file:
       - ../.env.prod
     environment:
@@ -115,7 +115,7 @@ services:
       dockerfile: docker/web.prod.Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://api.prosellweb.com
-    container_name: prosell-prod-web
+    container_name: prosell-prd-web
     environment:
       - API_URL=http://api:8000
       - NODE_ENV=production
@@ -143,7 +143,7 @@ services:
   # ---------------------------------------------------------------------------
   caddy:
     image: caddy:2-alpine
-    container_name: prosell-prod-caddy
+    container_name: prosell-prd-caddy
     ports:
       - "80:80"
       - "443:443"
