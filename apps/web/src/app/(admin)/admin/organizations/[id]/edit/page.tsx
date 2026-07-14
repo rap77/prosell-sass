@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useDealer, useUpdateDealer } from "@/lib/api/dealers";
+import {
+  useDealer,
+  useResendDealerInvitation,
+  useUpdateDealer,
+} from "@/lib/api/dealers";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { BrokerManager } from "@/components/admin/BrokerManager";
 import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
@@ -52,6 +56,8 @@ export default function AdminEditOrganizationPage() {
 function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
   const router = useRouter();
   const updateDealer = useUpdateDealer();
+  const resendInvitation = useResendDealerInvitation();
+  const isPendingVerification = dealer.status === "pending_verification";
 
   // Form state initialized from dealer (no useEffect needed)
   const [name, setName] = useState(dealer.name);
@@ -196,6 +202,62 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
               }}
             />
           </label>
+        </div>
+
+        {/* Owner section — read-only: ownership transfer needs backend support */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label htmlFor="owner-email">Propietario</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              id="owner-email"
+              type="email"
+              value={dealer.owner_email ?? "Sin propietario asignado"}
+              readOnly
+              aria-describedby={
+                isPendingVerification ? "owner-pending-hint" : undefined
+              }
+              style={{
+                ...inputStyle,
+                flex: 1,
+                color: "var(--ps-text-secondary)",
+                cursor: "default",
+              }}
+            />
+            {isPendingVerification && (
+              <button
+                type="button"
+                onClick={() => resendInvitation.mutate(dealer.id)}
+                disabled={resendInvitation.isPending}
+                style={{
+                  height: 38,
+                  padding: "0 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--ps-border-default)",
+                  background: "var(--ps-bg-elevated)",
+                  color: "var(--ps-text-primary)",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {resendInvitation.isPending
+                  ? "Reenviando…"
+                  : "Reenviar invitación"}
+              </button>
+            )}
+          </div>
+          {isPendingVerification && (
+            <p
+              id="owner-pending-hint"
+              style={{
+                margin: 0,
+                fontSize: 12,
+                color: "var(--ps-text-secondary)",
+              }}
+            >
+              Invitación pendiente de aceptación. La organización se activará
+              cuando el propietario acepte.
+            </p>
+          )}
         </div>
 
         {/* Shared form fields - same component as create page */}

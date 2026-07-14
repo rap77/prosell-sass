@@ -16,18 +16,22 @@ import {
 import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import {
   BrokerListResponseSchema,
+  BrokerSchema,
   CreateDealerResponseSchema,
   DealerListResponseSchema,
   DealerProductListResponseSchema,
+  UpdateDealerResponseSchema,
   type Broker,
   type CreateDealerResponse,
   type Dealer,
   type DealerProduct,
+  type UpdateDealerResponse,
 } from "@/lib/api/schemas/dealers";
 
 interface BrokerInput {
   name: string;
   email: string;
+  phone?: string;
 }
 
 interface CreateDealerInput {
@@ -156,7 +160,7 @@ export function useUpdateDealer() {
     }: {
       dealerId: string;
       data: UpdateDealerInput;
-    }): Promise<{ id: string; name: string; status: string }> => {
+    }): Promise<UpdateDealerResponse> => {
       const res = await fetch(`/api/v1/admin/dealers/${dealerId}`, {
         method: "PATCH",
         credentials: "include",
@@ -167,11 +171,7 @@ export function useUpdateDealer() {
         const body: unknown = await res.json().catch(() => null);
         throw new Error(extractErrorMessage(body, "Error updating dealer"));
       }
-      return res.json() as Promise<{
-        id: string;
-        name: string;
-        status: string;
-      }>;
+      return UpdateDealerResponseSchema.parse(await res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
@@ -205,22 +205,24 @@ export function useCreateDealerBroker() {
       dealerId,
       name,
       email,
+      phone,
     }: {
       dealerId: string;
       name: string;
       email: string;
+      phone?: string;
     }): Promise<Broker> => {
       const res = await fetch(`/api/v1/admin/dealers/${dealerId}/brokers`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, phone }),
       });
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
         throw new Error(extractErrorMessage(body, "Error creating broker"));
       }
-      return res.json() as Promise<Broker>;
+      return BrokerSchema.parse(await res.json());
     },
     onSuccess: (_, { dealerId }) => {
       queryClient.invalidateQueries({
@@ -240,11 +242,13 @@ export function useUpdateDealerBroker() {
       brokerId,
       name,
       email,
+      phone,
     }: {
       dealerId: string;
       brokerId: string;
       name?: string;
       email?: string;
+      phone?: string;
     }): Promise<Broker> => {
       const res = await fetch(
         `/api/v1/admin/dealers/${dealerId}/brokers/${brokerId}`,
@@ -252,14 +256,14 @@ export function useUpdateDealerBroker() {
           method: "PATCH",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email }),
+          body: JSON.stringify({ name, email, phone }),
         },
       );
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
         throw new Error(extractErrorMessage(body, "Error updating broker"));
       }
-      return res.json() as Promise<Broker>;
+      return BrokerSchema.parse(await res.json());
     },
     onSuccess: (_, { dealerId }) => {
       queryClient.invalidateQueries({
@@ -297,7 +301,3 @@ export function useDeleteDealerBroker() {
     },
   });
 }
-
-// Legacy exports for backward compatibility
-export const useAddDealerBroker = useCreateDealerBroker;
-export const useRemoveDealerBroker = useDeleteDealerBroker;

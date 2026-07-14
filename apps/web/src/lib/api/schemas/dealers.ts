@@ -42,6 +42,7 @@ export const DealerSchema = z
     created_at: z.string(),
     updated_at: z.string(),
     broker_count: z.number().nullable().optional(),
+    owner_email: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -85,11 +86,22 @@ export const CreateDealerResponseSchema = z.object({
 
 export type CreateDealerResponse = z.infer<typeof CreateDealerResponseSchema>;
 
+export const UpdateDealerResponseSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    status: z.string(),
+  })
+  .passthrough();
+
+export type UpdateDealerResponse = z.infer<typeof UpdateDealerResponseSchema>;
+
 // Broker schemas
 export const BrokerSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
+  phone: z.string().nullable().optional(),
   user_id: z.string().nullable(),
   status: z.enum(["pending", "verified"]),
   created_at: z.string(),

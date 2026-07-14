@@ -126,6 +126,32 @@ async def test_admin_lists_all_dealers(
 
 
 @pytest.mark.asyncio
+async def test_list_dealers_exposes_owner_email_from_latest_invitation(
+    async_client_as_admin: AsyncClient,
+    root_category: CategoryModel,
+    other_dealer: OrganizationModel,
+) -> None:
+    """Dealers list includes owner_email (from latest invitation) so the
+    admin edit form can display the owner; orgs without invitation get None."""
+    create_response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Owner Email Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "list-owner@x.com",
+        },
+    )
+    assert create_response.status_code == 201
+
+    response = await async_client_as_admin.get("/api/v1/admin/dealers")
+
+    assert response.status_code == 200
+    by_name = {org["name"]: org for org in response.json()["organizations"]}
+    assert by_name["Owner Email Motors"]["owner_email"] == "list-owner@x.com"
+    assert by_name[other_dealer.name]["owner_email"] is None
+
+
+@pytest.mark.asyncio
 async def test_seller_cannot_list_dealers(
     async_client_as_seller: AsyncClient,
 ) -> None:
@@ -414,3 +440,73 @@ async def test_resend_invitation_409s_when_dealer_is_not_pending_verification(
 
     assert response.status_code == 409
     assert "pending" in response.json()["detail"].lower()
+
+
+# -----------------------------------------------------------------------------
+# Broker phone
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_broker_phone_roundtrip_create_list_update(
+    async_client_as_admin: AsyncClient,
+    other_dealer: OrganizationModel,
+) -> None:
+    """Brokers carry an optional phone: create echoes it, list returns it,
+    and PATCH can change it (pending brokers only, as with name/email)."""
+    create = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{other_dealer.id}/brokers",
+        json={"name": "Ana Broker", "email": "ana@x.com", "phone": "+58 412 5551234"},
+    )
+    assert create.status_code == 201
+    body = create.json()
+    assert body["phone"] == "+58 412 5551234"
+    broker_id = body["id"]
+
+    listing = await async_client_as_admin.get(f"/api/v1/admin/dealers/{other_dealer.id}/brokers")
+    assert listing.status_code == 200
+    assert listing.json()["brokers"][0]["phone"] == "+58 412 5551234"
+
+    patched = await async_client_as_admin.patch(
+        f"/api/v1/admin/dealers/{other_dealer.id}/brokers/{broker_id}",
+        json={"phone": "+58 424 0000000"},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["phone"] == "+58 424 0000000"
+
+
+@pytest.mark.asyncio
+async def test_broker_phone_is_optional(
+    async_client_as_admin: AsyncClient,
+    other_dealer: OrganizationModel,
+) -> None:
+    """Brokers without phone still work; phone comes back as None."""
+    create = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{other_dealer.id}/brokers",
+        json={"name": "Sin Fono", "email": "sinfono@x.com"},
+    )
+    assert create.status_code == 201
+    assert create.json()["phone"] is None
+
+
+@pytest.mark.asyncio
+async def test_create_dealer_accepts_brokers_with_phone(
+    async_client_as_admin: AsyncClient,
+    root_category: CategoryModel,
+) -> None:
+    """POST /admin/dealers accepts brokers[].phone and persists it."""
+    create_response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Broker Phone Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "owner-bp@x.com",
+            "brokers": [{"name": "Beto", "email": "beto@x.com", "phone": "+58 416 7778899"}],
+        },
+    )
+    assert create_response.status_code == 201
+    dealer_id = create_response.json()["organization_id"]
+
+    listing = await async_client_as_admin.get(f"/api/v1/admin/dealers/{dealer_id}/brokers")
+    assert listing.status_code == 200
+    assert listing.json()["brokers"][0]["phone"] == "+58 416 7778899"

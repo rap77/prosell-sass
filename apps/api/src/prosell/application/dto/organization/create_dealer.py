@@ -11,6 +11,7 @@ class BrokerInput(BaseModel):
 
     name: str
     email: EmailStr
+    phone: str | None = None
 
 
 class CreateDealerRequest(BaseModel):

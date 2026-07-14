@@ -43,7 +43,11 @@ from prosell.infrastructure.api.dependencies import (
 from prosell.infrastructure.api.middleware.rate_limit_middleware import smart_rate_limit
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.organization_broker_repository_impl import (
+    BrokerInfo,
     SqlAlchemyOrganizationBrokerRepository,
+)
+from prosell.infrastructure.repositories.organization_invitation_repository_impl import (
+    SqlAlchemyOrganizationInvitationRepository,
 )
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
@@ -73,13 +77,21 @@ async def list_dealers(current_user: CurrentUser, db: DbSession) -> Organization
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+    invitation_repo = SqlAlchemyOrganizationInvitationRepository(db)
     organizations = await org_repo.get_all(tenant_id=None)
 
     # ponytail: N+1 is fine for admin dashboard with ~50 orgs max
     responses = []
     for org in organizations:
         count = await broker_repo.count_brokers(org.id)
-        responses.append(OrganizationResponse.from_entity(org, broker_count=count))
+        invitation = await invitation_repo.get_latest_by_organization(org.id, org.tenant_id)
+        responses.append(
+            OrganizationResponse.from_entity(
+                org,
+                broker_count=count,
+                owner_email=invitation.email if invitation else None,
+            )
+        )
 
     return OrganizationListResponse(
         organizations=responses,
@@ -160,6 +172,7 @@ async def create_dealer(
                 organization_id=invitation.organization_id,
                 name=broker.name,
                 email=broker.email,
+                phone=broker.phone,
                 status="pending",
             )
 
@@ -327,10 +340,24 @@ class BrokerResponse(BaseModel):
     id: UUID
     name: str
     email: str
+    phone: str | None
     user_id: UUID | None
     status: str  # pending | verified
     created_at: datetime
     verified_at: datetime | None
+
+    @classmethod
+    def from_info(cls, broker: BrokerInfo) -> "BrokerResponse":
+        return cls(
+            id=broker.id,
+            name=broker.name,
+            email=broker.email,
+            phone=broker.phone,
+            user_id=broker.user_id,
+            status=broker.status,
+            created_at=broker.created_at,
+            verified_at=broker.verified_at,
+        )
 
 
 class BrokerListResponse(BaseModel):
@@ -341,11 +368,13 @@ class BrokerListResponse(BaseModel):
 class CreateBrokerRequest(BaseModel):
     name: str
     email: str
+    phone: str | None = None
 
 
 class UpdateBrokerRequest(BaseModel):
     name: str | None = None
     email: str | None = None
+    phone: str | None = None
 
 
 @router.get("/{dealer_id}/brokers", response_model=BrokerListResponse)
@@ -364,18 +393,7 @@ async def list_dealer_brokers(
     brokers = await broker_repo.list_brokers(dealer_id)
 
     return BrokerListResponse(
-        brokers=[
-            BrokerResponse(
-                id=b.id,
-                name=b.name,
-                email=b.email,
-                user_id=b.user_id,
-                status=b.status,
-                created_at=b.created_at,
-                verified_at=b.verified_at,
-            )
-            for b in brokers
-        ],
+        brokers=[BrokerResponse.from_info(b) for b in brokers],
         count=len(brokers),
     )
 
@@ -414,18 +432,11 @@ async def create_dealer_broker(
         organization_id=dealer_id,
         name=request.name,
         email=request.email,
+        phone=request.phone,
         status="pending",
     )
 
-    return BrokerResponse(
-        id=broker.id,
-        name=broker.name,
-        email=broker.email,
-        user_id=broker.user_id,
-        status=broker.status,
-        created_at=broker.created_at,
-        verified_at=broker.verified_at,
-    )
+    return BrokerResponse.from_info(broker)
 
 
 @router.patch("/{dealer_id}/brokers/{broker_id}", response_model=BrokerResponse)
@@ -451,6 +462,7 @@ async def update_dealer_broker(
             broker_id=broker_id,
             name=request.name,
             email=request.email,
+            phone=request.phone,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
@@ -458,15 +470,7 @@ async def update_dealer_broker(
     if broker is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Broker not found")
 
-    return BrokerResponse(
-        id=broker.id,
-        name=broker.name,
-        email=broker.email,
-        user_id=broker.user_id,
-        status=broker.status,
-        created_at=broker.created_at,
-        verified_at=broker.verified_at,
-    )
+    return BrokerResponse.from_info(broker)
 
 
 @router.delete("/{dealer_id}/brokers/{broker_id}", status_code=status.HTTP_204_NO_CONTENT)

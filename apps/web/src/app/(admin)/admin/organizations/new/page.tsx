@@ -35,10 +35,11 @@ export default function AdminNewDealerPage() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
   const [brokers, setBrokers] = useState<
-    Array<{ name: string; email: string }>
+    Array<{ name: string; email: string; phone?: string }>
   >([]);
   const [brokerName, setBrokerName] = useState("");
   const [brokerEmail, setBrokerEmail] = useState("");
+  const [brokerPhone, setBrokerPhone] = useState("");
 
   // Optional fields
   const [description, setDescription] = useState("");
@@ -76,6 +77,7 @@ export default function AdminNewDealerPage() {
   const addBroker = () => {
     const trimmedName = brokerName.trim();
     const trimmedEmail = brokerEmail.trim().toLowerCase();
+    const trimmedPhone = brokerPhone.trim();
     if (
       trimmedName &&
       trimmedEmail &&
@@ -83,10 +85,15 @@ export default function AdminNewDealerPage() {
     ) {
       setBrokers((prev) => [
         ...prev,
-        { name: trimmedName, email: trimmedEmail },
+        {
+          name: trimmedName,
+          email: trimmedEmail,
+          phone: trimmedPhone || undefined,
+        },
       ]);
       setBrokerName("");
       setBrokerEmail("");
+      setBrokerPhone("");
     }
   };
 
@@ -171,33 +178,22 @@ export default function AdminNewDealerPage() {
           maxWidth: 480,
         }}
       >
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Nombre
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            style={{
-              height: 38,
-              padding: "0 12px",
-              borderRadius: 8,
-              border: "1px solid var(--ps-border-default)",
-              background: "var(--ps-bg-elevated)",
-              color: "var(--ps-text-primary)",
-            }}
-          />
-        </label>
-
-        <div style={{ display: "flex", gap: 12 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-            Siglas (opcional)
+        {/* Name + Code + Color row — same layout as edit page */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto auto",
+            gap: 12,
+            alignItems: "end",
+          }}
+        >
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            Nombre *
             <input
               type="text"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
-              maxLength={5}
-              placeholder="ACME"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
               style={{
                 height: 38,
                 padding: "0 12px",
@@ -209,6 +205,28 @@ export default function AdminNewDealerPage() {
             />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            Siglas
+            <input
+              type="text"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.toUpperCase().slice(0, 5))
+              }
+              maxLength={5}
+              placeholder="ACME"
+              style={{
+                height: 38,
+                width: 80,
+                padding: "0 12px",
+                borderRadius: 8,
+                border: "1px solid var(--ps-border-default)",
+                background: "var(--ps-bg-elevated)",
+                color: "var(--ps-text-primary)",
+                textTransform: "uppercase",
+              }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             Color
             <input
               type="color"
@@ -216,7 +234,7 @@ export default function AdminNewDealerPage() {
               onChange={(e) => setColor(e.target.value)}
               style={{
                 height: 38,
-                width: 60,
+                width: 50,
                 padding: 4,
                 borderRadius: 8,
                 border: "1px solid var(--ps-border-default)",
@@ -336,13 +354,30 @@ export default function AdminNewDealerPage() {
               type="email"
               value={brokerEmail}
               onChange={(e) => setBrokerEmail(e.target.value)}
+              placeholder="Email"
+              style={{
+                flex: 1,
+                height: 38,
+                padding: "0 12px",
+                borderRadius: 8,
+                border: "1px solid var(--ps-border-default)",
+                background: "var(--ps-bg-elevated)",
+                color: "var(--ps-text-primary)",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="tel"
+              value={brokerPhone}
+              onChange={(e) => setBrokerPhone(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   addBroker();
                 }
               }}
-              placeholder="Email"
+              placeholder="Teléfono (opcional)"
               style={{
                 flex: 1,
                 height: 38,
@@ -398,6 +433,7 @@ export default function AdminNewDealerPage() {
                       }}
                     >
                       {broker.email}
+                      {broker.phone && ` · ${broker.phone}`}
                     </div>
                   </div>
                   <button
