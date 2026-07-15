@@ -11,7 +11,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.domain.repositories.product_ownership_repository import ProductOwner
+from prosell.domain.repositories.product_ownership_repository import OwnerType, ProductOwner
 from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
 
 
@@ -24,7 +24,7 @@ class SqlAlchemyProductOwnershipRepository:
         product_id: UUID,
         owner_id: UUID,
         percentage: Decimal,
-        owner_type: str = "organization",
+        owner_type: OwnerType = "organization",
     ) -> None:
         stmt = (
             pg_insert(ProductOwnershipModel)

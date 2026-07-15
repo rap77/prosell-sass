@@ -4,7 +4,7 @@
  * Validates the wire shape at the HTTP boundary instead of trusting an
  * `as BackendXResponse` cast on `res.json()`. `.passthrough()` tolerates
  * backend fields the leads UI doesn't render yet (mirrors the
- * `dealers.ts`/`category.ts` schema convention).
+ * `organizations.ts`/`category.ts` schema convention).
  */
 
 import { z } from "zod";

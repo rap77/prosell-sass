@@ -432,7 +432,7 @@ class TestUserHasPermission:
             full_name="Admin Perm User",
         )
         user.roles = [Role.create_system_role(RoleType.ADMIN)]
-        assert user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL) is True
+        assert user.has_permission(Permission.ORG_ADMIN_VIEW_ALL) is True
 
     def test_has_permission_returns_false_when_no_roles(self) -> None:
         from prosell.domain.entities.role import Permission
@@ -443,7 +443,7 @@ class TestUserHasPermission:
             full_name="No Roles Perm User",
         )
         assert user.roles is None
-        assert user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL) is False
+        assert user.has_permission(Permission.ORG_ADMIN_VIEW_ALL) is False
 
     def test_has_permission_returns_false_when_role_lacks_it(self) -> None:
         from prosell.domain.entities.role import Permission, Role, RoleType
@@ -454,7 +454,7 @@ class TestUserHasPermission:
             full_name="Viewer Perm User",
         )
         user.roles = [Role.create_system_role(RoleType.VIEWER)]
-        assert user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL) is False
+        assert user.has_permission(Permission.ORG_ADMIN_VIEW_ALL) is False
 
 
 class TestUserAccountStatus:

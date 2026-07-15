@@ -49,10 +49,10 @@ class Product(DomainModel):
     # product with no images has no cover.
     cover_image_key: str | None = None
 
-    # Subsystem D: cross-dealer marketplace visibility. Toggled by users
+    # Subsystem D: cross-organization marketplace visibility. Toggled by users
     # with `MARKETPLACE_PUBLISH` permission (ProSell vendors, admins).
     # When true, the product is visible to marketplace consumers across
-    # all dealers (future marketplace endpoint).
+    # all organizations (future marketplace endpoint).
     published_to_marketplace: bool = False
 
     # Location (for shipping/pickup)

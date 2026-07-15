@@ -1,7 +1,7 @@
 """Integration tests -- Subsystem D Phase 4: admin dealer endpoints.
 
 Task 4.2 (RED): GET /admin/dealers returns the orgs list (200) for admin,
-    403 for a seller without DEALER_ADMIN_VIEW_ALL.
+    403 for a seller without ORG_ADMIN_VIEW_ALL.
 Task 4.4 (RED): GET /admin/dealers/{id}/products returns the dealer's
     products (200), 404 for an unknown dealer id.
 """
@@ -117,8 +117,8 @@ async def test_admin_lists_all_dealers(
     async_client_as_admin: AsyncClient,
     other_dealer: OrganizationModel,
 ) -> None:
-    """Task 4.2: admin (DEALER_ADMIN_VIEW_ALL) sees the dealers list."""
-    response = await async_client_as_admin.get("/api/v1/admin/dealers")
+    """Task 4.2: admin (ORG_ADMIN_VIEW_ALL) sees the dealers list."""
+    response = await async_client_as_admin.get("/api/v1/admin/organizations")
 
     assert response.status_code == 200
     names = {org["name"] for org in response.json()["organizations"]}
@@ -134,7 +134,7 @@ async def test_list_dealers_exposes_owner_email_from_latest_invitation(
     """Dealers list includes owner_email (from latest invitation) so the
     admin edit form can display the owner; orgs without invitation get None."""
     create_response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Owner Email Motors",
             "vertical_ids": [str(root_category.id)],
@@ -143,7 +143,7 @@ async def test_list_dealers_exposes_owner_email_from_latest_invitation(
     )
     assert create_response.status_code == 201
 
-    response = await async_client_as_admin.get("/api/v1/admin/dealers")
+    response = await async_client_as_admin.get("/api/v1/admin/organizations")
 
     assert response.status_code == 200
     by_name = {org["name"]: org for org in response.json()["organizations"]}
@@ -155,8 +155,8 @@ async def test_list_dealers_exposes_owner_email_from_latest_invitation(
 async def test_seller_cannot_list_dealers(
     async_client_as_seller: AsyncClient,
 ) -> None:
-    """Task 4.2: seller without DEALER_ADMIN_VIEW_ALL gets 403."""
-    response = await async_client_as_seller.get("/api/v1/admin/dealers")
+    """Task 4.2: seller without ORG_ADMIN_VIEW_ALL gets 403."""
+    response = await async_client_as_seller.get("/api/v1/admin/organizations")
 
     assert response.status_code == 403
 
@@ -167,7 +167,9 @@ async def test_admin_lists_dealer_products(
     other_dealer: OrganizationModel,
 ) -> None:
     """Task 4.4: admin fetches a specific dealer's products."""
-    response = await async_client_as_admin.get(f"/api/v1/admin/dealers/{other_dealer.id}/products")
+    response = await async_client_as_admin.get(
+        f"/api/v1/admin/organizations/{other_dealer.id}/products"
+    )
 
     assert response.status_code == 200
     titles = {p["title"] for p in response.json()["products"]}
@@ -179,7 +181,7 @@ async def test_admin_unknown_dealer_id_returns_404(
     async_client_as_admin: AsyncClient,
 ) -> None:
     """Task 4.4: unknown dealer id returns 404."""
-    response = await async_client_as_admin.get(f"/api/v1/admin/dealers/{uuid4()}/products")
+    response = await async_client_as_admin.get(f"/api/v1/admin/organizations/{uuid4()}/products")
 
     assert response.status_code == 404
 
@@ -189,8 +191,10 @@ async def test_seller_cannot_list_dealer_products(
     async_client_as_seller: AsyncClient,
     other_dealer: OrganizationModel,
 ) -> None:
-    """Task 4.4: seller without DEALER_ADMIN_VIEW_ALL gets 403."""
-    response = await async_client_as_seller.get(f"/api/v1/admin/dealers/{other_dealer.id}/products")
+    """Task 4.4: seller without ORG_ADMIN_VIEW_ALL gets 403."""
+    response = await async_client_as_seller.get(
+        f"/api/v1/admin/organizations/{other_dealer.id}/products"
+    )
 
     assert response.status_code == 403
 
@@ -249,7 +253,9 @@ async def test_admin_dealer_products_excludes_other_org_with_corrupt_tenant_id(
     db_session.add(corrupt_product)
     await db_session.flush()
 
-    response = await async_client_as_admin.get(f"/api/v1/admin/dealers/{other_dealer.id}/products")
+    response = await async_client_as_admin.get(
+        f"/api/v1/admin/organizations/{other_dealer.id}/products"
+    )
 
     assert response.status_code == 200
     titles = {p["title"] for p in response.json()["products"]}
@@ -261,9 +267,9 @@ async def test_create_dealer_requires_dealer_admin_view_all(
     async_client_as_seller: AsyncClient,
     root_category: CategoryModel,
 ) -> None:
-    """Task 12: seller without DEALER_ADMIN_VIEW_ALL gets 403."""
+    """Task 12: seller without ORG_ADMIN_VIEW_ALL gets 403."""
     response = await async_client_as_seller.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Acme Motors",
             "vertical_ids": [str(root_category.id)],
@@ -277,9 +283,9 @@ async def test_create_dealer_requires_dealer_admin_view_all(
 async def test_create_dealer_rejects_empty_verticals(
     async_client_as_admin: AsyncClient,
 ) -> None:
-    """Task 12: at least one vertical is required (CreateDealerOrganizationUseCase)."""
+    """Task 12: at least one vertical is required (CreateOrganizationUseCase)."""
     response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={"name": "Acme Motors", "vertical_ids": [], "owner_email": "owner@x.com"},
     )
     assert response.status_code == 400
@@ -291,7 +297,7 @@ async def test_create_dealer_rejects_unknown_vertical_id(
 ) -> None:
     """Task 12 / gap G4: a vertical_id with no matching root category 400s."""
     response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Acme Motors",
             "vertical_ids": [str(uuid4())],
@@ -308,7 +314,7 @@ async def test_create_dealer_rejects_invalid_email(
 ) -> None:
     """Task 12 / gap G2: owner_email is EmailStr, not a bare str."""
     response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Acme Motors",
             "vertical_ids": [str(root_category.id)],
@@ -325,7 +331,7 @@ async def test_create_dealer_happy_path(
 ) -> None:
     """Task 12: creates the org, enables the vertical, and invites the owner."""
     response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Acme Motors",
             "vertical_ids": [str(root_category.id)],
@@ -343,9 +349,9 @@ async def test_create_dealer_happy_path(
 async def test_resend_invitation_requires_dealer_admin_view_all(
     async_client_as_seller: AsyncClient,
 ) -> None:
-    """Task 12: seller without DEALER_ADMIN_VIEW_ALL gets 403."""
+    """Task 12: seller without ORG_ADMIN_VIEW_ALL gets 403."""
     response = await async_client_as_seller.post(
-        f"/api/v1/admin/dealers/{uuid4()}/resend-invitation",
+        f"/api/v1/admin/organizations/{uuid4()}/resend-invitation",
     )
     assert response.status_code == 403
 
@@ -356,7 +362,7 @@ async def test_resend_invitation_404s_for_unknown_dealer(
 ) -> None:
     """Task 12: an unknown dealer_id 404s."""
     response = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{uuid4()}/resend-invitation",
+        f"/api/v1/admin/organizations/{uuid4()}/resend-invitation",
     )
     assert response.status_code == 404
 
@@ -368,7 +374,7 @@ async def test_resend_invitation_404s_when_dealer_has_no_invitation_yet(
 ) -> None:
     """Task 12: a dealer org with no OrganizationInvitation row yet 404s."""
     response = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{pending_dealer_without_invitation.id}/resend-invitation",
+        f"/api/v1/admin/organizations/{pending_dealer_without_invitation.id}/resend-invitation",
     )
     assert response.status_code == 404
 
@@ -380,7 +386,7 @@ async def test_resend_invitation_happy_path_reissues_the_pending_invitation(
 ) -> None:
     """Task 12: resend reuses the existing pending invitation with a fresh token."""
     create_response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Acme Motors",
             "vertical_ids": [str(root_category.id)],
@@ -391,7 +397,7 @@ async def test_resend_invitation_happy_path_reissues_the_pending_invitation(
     first_invitation_id = create_response.json()["invitation_id"]
 
     response = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{dealer_id}/resend-invitation",
+        f"/api/v1/admin/organizations/{dealer_id}/resend-invitation",
     )
 
     assert response.status_code == 200
@@ -416,7 +422,7 @@ async def test_resend_invitation_409s_when_dealer_is_not_pending_verification(
     operationally confusing and a vector for impersonation phish.
     """
     create_response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Acme Motors",
             "vertical_ids": [str(root_category.id)],
@@ -435,7 +441,7 @@ async def test_resend_invitation_409s_when_dealer_is_not_pending_verification(
     await db_session.flush()
 
     response = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{dealer_id}/resend-invitation",
+        f"/api/v1/admin/organizations/{dealer_id}/resend-invitation",
     )
 
     assert response.status_code == 409
@@ -455,7 +461,7 @@ async def test_broker_phone_roundtrip_create_list_update(
     """Brokers carry an optional phone: create echoes it, list returns it,
     and PATCH can change it (pending brokers only, as with name/email)."""
     create = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{other_dealer.id}/brokers",
+        f"/api/v1/admin/organizations/{other_dealer.id}/brokers",
         json={"name": "Ana Broker", "email": "ana@x.com", "phone": "+58 412 5551234"},
     )
     assert create.status_code == 201
@@ -463,12 +469,14 @@ async def test_broker_phone_roundtrip_create_list_update(
     assert body["phone"] == "+58 412 5551234"
     broker_id = body["id"]
 
-    listing = await async_client_as_admin.get(f"/api/v1/admin/dealers/{other_dealer.id}/brokers")
+    listing = await async_client_as_admin.get(
+        f"/api/v1/admin/organizations/{other_dealer.id}/brokers"
+    )
     assert listing.status_code == 200
     assert listing.json()["brokers"][0]["phone"] == "+58 412 5551234"
 
     patched = await async_client_as_admin.patch(
-        f"/api/v1/admin/dealers/{other_dealer.id}/brokers/{broker_id}",
+        f"/api/v1/admin/organizations/{other_dealer.id}/brokers/{broker_id}",
         json={"phone": "+58 424 0000000"},
     )
     assert patched.status_code == 200
@@ -482,7 +490,7 @@ async def test_broker_phone_is_optional(
 ) -> None:
     """Brokers without phone still work; phone comes back as None."""
     create = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{other_dealer.id}/brokers",
+        f"/api/v1/admin/organizations/{other_dealer.id}/brokers",
         json={"name": "Sin Fono", "email": "sinfono@x.com"},
     )
     assert create.status_code == 201
@@ -496,7 +504,7 @@ async def test_create_dealer_accepts_brokers_with_phone(
 ) -> None:
     """POST /admin/dealers accepts brokers[].phone and persists it."""
     create_response = await async_client_as_admin.post(
-        "/api/v1/admin/dealers",
+        "/api/v1/admin/organizations",
         json={
             "name": "Broker Phone Motors",
             "vertical_ids": [str(root_category.id)],
@@ -507,6 +515,6 @@ async def test_create_dealer_accepts_brokers_with_phone(
     assert create_response.status_code == 201
     dealer_id = create_response.json()["organization_id"]
 
-    listing = await async_client_as_admin.get(f"/api/v1/admin/dealers/{dealer_id}/brokers")
+    listing = await async_client_as_admin.get(f"/api/v1/admin/organizations/{dealer_id}/brokers")
     assert listing.status_code == 200
     assert listing.json()["brokers"][0]["phone"] == "+58 416 7778899"

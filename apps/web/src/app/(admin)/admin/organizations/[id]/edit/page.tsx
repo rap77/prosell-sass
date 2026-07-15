@@ -4,24 +4,21 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import {
-  useDealer,
-  useResendDealerInvitation,
-  useUpdateDealer,
-} from "@/lib/api/dealers";
+import { useOrganization, useUpdateOrganization } from "@/lib/api/organizations";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { BrokerManager } from "@/components/admin/BrokerManager";
 import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
-import type { Dealer } from "@/lib/api/schemas/dealers";
+import type { Organization } from "@/lib/api/schemas/organizations";
 
 /**
- * Edit organization page — uses shared OrganizationFormFields component.
+ * Edit organization page — uses shared OrganizationFormFields component
+ * (which includes identity + optional fields).
  * ponytail: Form extracted to avoid setState-in-useEffect (React Compiler)
  */
 export default function AdminEditOrganizationPage() {
   const { id } = useParams<{ id: string }>();
   const isAdmin = useRequireAdmin();
-  const { dealer, isLoading, error } = useDealer(id);
+  const { organization, isLoading, error } = useOrganization(id);
 
   if (!isAdmin) return null;
 
@@ -41,7 +38,7 @@ export default function AdminEditOrganizationPage() {
     );
   }
 
-  if (error || !dealer) {
+  if (error || !organization) {
     return (
       <p style={{ color: "var(--ps-error)" }}>
         Error al cargar la organización: {error?.message ?? "No encontrada"}
@@ -49,41 +46,39 @@ export default function AdminEditOrganizationPage() {
     );
   }
 
-  // ponytail: key={dealer.id} resets form state when dealer changes
-  return <EditOrganizationForm key={dealer.id} dealer={dealer} />;
+  // ponytail: key={organization.id} resets form state when organization changes
+  return <EditOrganizationForm key={organization.id} organization={organization} />;
 }
 
-function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
+function EditOrganizationForm({ organization }: { organization: Organization }) {
   const router = useRouter();
-  const updateDealer = useUpdateDealer();
-  const resendInvitation = useResendDealerInvitation();
-  const isPendingVerification = dealer.status === "pending_verification";
+  const updateOrganization = useUpdateOrganization();
 
-  // Form state initialized from dealer (no useEffect needed)
-  const [name, setName] = useState(dealer.name);
-  const [code, setCode] = useState(dealer.code ?? "");
-  const [color, setColor] = useState(dealer.color ?? "#4DB8FF");
-  const [description, setDescription] = useState(dealer.description ?? "");
-  const [website, setWebsite] = useState(dealer.website ?? "");
-  const [phone, setPhone] = useState(dealer.phone ?? "");
-  const [email, setEmail] = useState(dealer.email ?? "");
-  const [whatsapp, setWhatsapp] = useState(dealer.whatsapp ?? "");
+  // Form state initialized from organization (no useEffect needed)
+  const [name, setName] = useState(organization.name);
+  const [code, setCode] = useState(organization.code ?? "");
+  const [color, setColor] = useState(organization.color ?? "#4DB8FF");
+  const [description, setDescription] = useState(organization.description ?? "");
+  const [website, setWebsite] = useState(organization.website ?? "");
+  const [phone, setPhone] = useState(organization.phone ?? "");
+  const [email, setEmail] = useState(organization.email ?? "");
+  const [whatsapp, setWhatsapp] = useState(organization.whatsapp ?? "");
   const [streetAddress, setStreetAddress] = useState(
-    dealer.street_address ?? "",
+    organization.street_address ?? "",
   );
-  const [city, setCity] = useState(dealer.city ?? "");
-  const [state, setState] = useState(dealer.state ?? "");
-  const [postalCode, setPostalCode] = useState(dealer.postal_code ?? "");
-  const [country, setCountry] = useState(dealer.country ?? "");
-  const [taxId, setTaxId] = useState(dealer.tax_id ?? "");
-  const [instagram, setInstagram] = useState(dealer.instagram ?? "");
-  const [facebook, setFacebook] = useState(dealer.facebook ?? "");
+  const [city, setCity] = useState(organization.city ?? "");
+  const [state, setState] = useState(organization.state ?? "");
+  const [postalCode, setPostalCode] = useState(organization.postal_code ?? "");
+  const [country, setCountry] = useState(organization.country ?? "");
+  const [taxId, setTaxId] = useState(organization.tax_id ?? "");
+  const [instagram, setInstagram] = useState(organization.instagram ?? "");
+  const [facebook, setFacebook] = useState(organization.facebook ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateDealer.mutateAsync({
-        dealerId: dealer.id,
+      await updateOrganization.mutateAsync({
+        organizationId: organization.id,
         data: {
           name,
           code: code || undefined,
@@ -103,26 +98,17 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
           facebook: facebook || undefined,
         },
       });
-      router.push(`/admin/organizations/${dealer.id}`);
+      router.push(`/admin/organizations/${organization.id}`);
     } catch {
       // Error handled by mutation state
     }
-  };
-
-  const inputStyle = {
-    height: 38,
-    padding: "0 12px",
-    borderRadius: 8,
-    border: "1px solid var(--ps-border-default)",
-    background: "var(--ps-bg-elevated)",
-    color: "var(--ps-text-primary)",
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Back button */}
       <Link
-        href={`/admin/organizations/${dealer.id}`}
+        href={`/admin/organizations/${organization.id}`}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -144,7 +130,7 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
           color: "var(--ps-text-primary)",
         }}
       >
-        Editar: {dealer.name}
+        Editar: {organization.name}
       </h1>
 
       <form
@@ -156,112 +142,14 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
           maxWidth: 600,
         }}
       >
-        {/* Name + Code + Color row */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto auto",
-            gap: 12,
-            alignItems: "end",
-          }}
-        >
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            Nombre *
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            Siglas
-            <input
-              type="text"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.toUpperCase().slice(0, 5))
-              }
-              maxLength={5}
-              placeholder="ACME"
-              style={{ ...inputStyle, width: 80, textTransform: "uppercase" }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            Color
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              style={{
-                ...inputStyle,
-                width: 50,
-                padding: 4,
-                cursor: "pointer",
-              }}
-            />
-          </label>
-        </div>
-
-        {/* Owner section — read-only: ownership transfer needs backend support */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label htmlFor="owner-email">Propietario</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              id="owner-email"
-              type="email"
-              value={dealer.owner_email ?? "Sin propietario asignado"}
-              readOnly
-              aria-describedby={
-                isPendingVerification ? "owner-pending-hint" : undefined
-              }
-              style={{
-                ...inputStyle,
-                flex: 1,
-                color: "var(--ps-text-secondary)",
-                cursor: "default",
-              }}
-            />
-            {isPendingVerification && (
-              <button
-                type="button"
-                onClick={() => resendInvitation.mutate(dealer.id)}
-                disabled={resendInvitation.isPending}
-                style={{
-                  height: 38,
-                  padding: "0 12px",
-                  borderRadius: 8,
-                  border: "1px solid var(--ps-border-default)",
-                  background: "var(--ps-bg-elevated)",
-                  color: "var(--ps-text-primary)",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {resendInvitation.isPending
-                  ? "Reenviando…"
-                  : "Reenviar invitación"}
-              </button>
-            )}
-          </div>
-          {isPendingVerification && (
-            <p
-              id="owner-pending-hint"
-              style={{
-                margin: 0,
-                fontSize: 12,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
-              Invitación pendiente de aceptación. La organización se activará
-              cuando el propietario acepte.
-            </p>
-          )}
-        </div>
-
-        {/* Shared form fields - same component as create page */}
+        {/* Shared form fields — identity (name/code/color) + optional */}
         <OrganizationFormFields
+          name={name}
+          code={code}
+          color={color}
+          onNameChange={setName}
+          onCodeChange={setCode}
+          onColorChange={setColor}
           description={description}
           website={website}
           phone={phone}
@@ -299,13 +187,13 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
             marginTop: 8,
           }}
         >
-          <BrokerManager dealerId={dealer.id} />
+          <BrokerManager organizationId={organization.id} />
         </div>
 
         {/* Error */}
-        {updateDealer.error && (
+        {updateOrganization.error && (
           <p style={{ color: "var(--ps-error)" }}>
-            {updateDealer.error.message}
+            {updateOrganization.error.message}
           </p>
         )}
 
@@ -313,7 +201,7 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
         <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
           <button
             type="submit"
-            disabled={updateDealer.isPending || !name.trim()}
+            disabled={updateOrganization.isPending || !name.trim()}
             style={{
               flex: 1,
               height: 40,
@@ -325,10 +213,10 @@ function EditOrganizationForm({ dealer }: { dealer: Dealer }) {
               cursor: "pointer",
             }}
           >
-            {updateDealer.isPending ? "Guardando..." : "Guardar cambios"}
+            {updateOrganization.isPending ? "Guardando..." : "Guardar cambios"}
           </button>
           <Link
-            href={`/admin/organizations/${dealer.id}`}
+            href={`/admin/organizations/${organization.id}`}
             style={{
               display: "flex",
               alignItems: "center",

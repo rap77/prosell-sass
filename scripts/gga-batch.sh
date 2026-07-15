@@ -9,7 +9,7 @@ GIT_DIR="$(git rev-parse --git-dir)"
 MAX_FILES_PER_BATCH="${GGA_BATCH_MAX_FILES:-8}"
 MAX_BYTES_PER_BATCH="${GGA_BATCH_MAX_BYTES:-50000}"
 PRIMARY_PROVIDER="${GGA_PRIMARY_PROVIDER:-}"
-FALLBACK_PROVIDERS="${GGA_FALLBACK_PROVIDERS:-gemini}"
+FALLBACK_PROVIDERS="${GGA_FALLBACK_PROVIDERS:-codex}"
 
 if [[ -z "$PRIMARY_PROVIDER" && -f ".gga" ]]; then
   PRIMARY_PROVIDER="$(
@@ -17,7 +17,11 @@ if [[ -z "$PRIMARY_PROVIDER" && -f ".gga" ]]; then
   )"
 fi
 
-mapfile -t STAGED_FILES < <(git diff --cached --name-only --diff-filter=ACMRD)
+if [[ "$#" -gt 0 ]]; then
+  STAGED_FILES=("$@")
+else
+  mapfile -t STAGED_FILES < <(git diff --cached --name-only --diff-filter=ACMRD)
+fi
 
 if [[ "${#STAGED_FILES[@]}" -eq 0 ]]; then
   echo "No staged files to review."
@@ -186,11 +190,19 @@ done
 flush_batch
 
 batch_number=1
+declare -a failed_batches=()
 for batch in "${batches[@]}"; do
   mapfile -t batch_files < <(printf '%s' "$batch")
-  run_batch "$batch_number" "${batch_files[@]}"
+  if ! run_batch "$batch_number" "${batch_files[@]}"; then
+    failed_batches+=("$batch_number")
+  fi
   (( batch_number += 1 ))
 done
 
 echo
+if [[ "${#failed_batches[@]}" -gt 0 ]]; then
+  echo "❌ GGA failed batches: ${failed_batches[*]} (${#failed_batches[@]}/${#batches[@]})"
+  exit 1
+fi
+
 echo "✅ GGA batches passed (${#batches[@]} total)"

@@ -1,8 +1,9 @@
 /**
  * AdminEditOrganizationPage.test.tsx
  *
- * Owner (propietario) section: read-only email + resend invitation
- * (pending orgs only). Parity with the create form per admin request.
+ * Verifies the org edit form: identity + optional fields + brokers.
+ * The legacy read-only "Propietario" section was removed (orgs no longer
+ * carry an owner_email concept in the form — see business model).
  */
 import { render, screen } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
@@ -13,110 +14,97 @@ vi.mock("@/hooks/useRequireAdmin", () => ({
   useRequireAdmin: () => mockUseRequireAdmin(),
 }));
 
-const mockUseDealer = vi.fn();
-const mockUseResendInvitation = vi.fn();
-const mockUseUpdateDealer = vi.fn();
-const mockUseDealerBrokers = vi.fn();
-const mockUseCreateDealerBroker = vi.fn();
-const mockUseUpdateDealerBroker = vi.fn();
-const mockUseDeleteDealerBroker = vi.fn();
-vi.mock("@/lib/api/dealers", () => ({
-  useDealer: () => mockUseDealer(),
-  useResendDealerInvitation: () => mockUseResendInvitation(),
-  useUpdateDealer: () => mockUseUpdateDealer(),
-  useDealerBrokers: () => mockUseDealerBrokers(),
-  useCreateDealerBroker: () => mockUseCreateDealerBroker(),
-  useUpdateDealerBroker: () => mockUseUpdateDealerBroker(),
-  useDeleteDealerBroker: () => mockUseDeleteDealerBroker(),
+const mockUseOrganization = vi.fn();
+const mockUseUpdateOrganization = vi.fn();
+const mockUseOrganizationBrokers = vi.fn();
+const mockUseCreateOrganizationBroker = vi.fn();
+const mockUseUpdateOrganizationBroker = vi.fn();
+const mockUseDeleteOrganizationBroker = vi.fn();
+vi.mock("@/lib/api/organizations", () => ({
+  useOrganization: () => mockUseOrganization(),
+  useUpdateOrganization: () => mockUseUpdateOrganization(),
+  useOrganizationBrokers: () => mockUseOrganizationBrokers(),
+  useCreateOrganizationBroker: () => mockUseCreateOrganizationBroker(),
+  useUpdateOrganizationBroker: () => mockUseUpdateOrganizationBroker(),
+  useDeleteOrganizationBroker: () => mockUseDeleteOrganizationBroker(),
 }));
 
-const mockReplace = vi.fn();
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mockReplace, push: mockPush }),
-  useParams: () => ({ id: "dealer-1" }),
+  useRouter: () => ({ replace: vi.fn(), push: mockPush }),
+  useParams: () => ({ id: "org-1" }),
 }));
 
-function makeDealer(overrides: Record<string, unknown> = {}) {
+function makeOrganization(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
-    id: "dealer-1",
+    id: "org-1",
     name: "Acme Motors",
-    tenant_id: "dealer-1",
+    tenant_id: "org-1",
     status: "active",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
-    owner_email: "owner@acme.com",
     ...overrides,
   };
 }
 
-describe("AdminEditOrganizationPage — owner section", () => {
+describe("AdminEditOrganizationPage — form structure", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseRequireAdmin.mockReturnValue(true);
-    mockUseResendInvitation.mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-    });
-    mockUseUpdateDealer.mockReturnValue({
+    mockUseUpdateOrganization.mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
       error: null,
     });
-    mockUseDealerBrokers.mockReturnValue({ data: [], isLoading: false });
-    mockUseCreateDealerBroker.mockReturnValue({
+    mockUseOrganizationBrokers.mockReturnValue({ data: [], isLoading: false });
+    mockUseCreateOrganizationBroker.mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
-    mockUseUpdateDealerBroker.mockReturnValue({
+    mockUseUpdateOrganizationBroker.mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
-    mockUseDeleteDealerBroker.mockReturnValue({
+    mockUseDeleteOrganizationBroker.mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
   });
 
-  it("shows the owner email as read-only", () => {
-    mockUseDealer.mockReturnValue({
-      dealer: makeDealer(),
+  it("does not render the legacy read-only Propietario section", () => {
+    mockUseOrganization.mockReturnValue({
+      organization: makeOrganization(),
       isLoading: false,
       error: null,
     });
 
     render(<AdminEditOrganizationPage />);
 
-    const ownerInput = screen.getByLabelText(/propietario/i);
-    expect(ownerInput).toHaveValue("owner@acme.com");
-    expect(ownerInput).toHaveAttribute("readonly");
-  });
-
-  it("shows resend invitation button only for pending orgs", () => {
-    mockUseDealer.mockReturnValue({
-      dealer: makeDealer({ status: "pending_verification" }),
-      isLoading: false,
-      error: null,
-    });
-
-    render(<AdminEditOrganizationPage />);
-
-    expect(
-      screen.getByRole("button", { name: /reenviar invitación/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("hides resend invitation button for active orgs", () => {
-    mockUseDealer.mockReturnValue({
-      dealer: makeDealer(),
-      isLoading: false,
-      error: null,
-    });
-
-    render(<AdminEditOrganizationPage />);
-
+    expect(screen.queryByLabelText(/propietario/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /reenviar invitación/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders the identity row (Nombre + Siglas + Color)", () => {
+    mockUseOrganization.mockReturnValue({
+      organization: makeOrganization({ code: "ACME", color: "#FF0000" }),
+      isLoading: false,
+      error: null,
+    });
+
+    const { container } = render(<AdminEditOrganizationPage />);
+
+    expect(screen.getByLabelText(/nombre/i)).toHaveValue("Acme Motors");
+    expect(screen.getByLabelText(/siglas/i)).toHaveValue("ACME");
+    // <input type="color"> exposes its value via the `value` attribute, not
+    // via the accessible name — query the DOM directly.
+    const colorInput = container.querySelector(
+      'input[type="color"]',
+    ) as HTMLInputElement | null;
+    expect(colorInput).not.toBeNull();
+    expect(colorInput?.value).toBe("#ff0000");
   });
 });

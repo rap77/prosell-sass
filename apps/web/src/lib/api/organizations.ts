@@ -1,10 +1,10 @@
 /**
- * dealersApi — admin dealer endpoints (Subsystem D Phase 4 backend).
+ * organizationsApi — admin organization endpoints (Subsystem D Phase 4 backend).
  *
- * GET /api/v1/admin/dealers
- * GET /api/v1/admin/dealers/{id}/products
+ * GET /api/v1/admin/organizations
+ * GET /api/v1/admin/organizations/{id}/products
  *
- * Both endpoints are gated server-side behind Permission.DEALER_ADMIN_VIEW_ALL
+ * Both endpoints are gated server-side behind Permission.ORG_ADMIN_VIEW_ALL
  * — a non-admin caller gets a 403, surfaced here as a thrown Error.
  */
 import {
@@ -17,16 +17,16 @@ import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import {
   BrokerListResponseSchema,
   BrokerSchema,
-  CreateDealerResponseSchema,
-  DealerListResponseSchema,
-  DealerProductListResponseSchema,
-  UpdateDealerResponseSchema,
+  CreateOrganizationResponseSchema,
+  OrganizationListResponseSchema,
+  OrganizationProductListResponseSchema,
+  UpdateOrganizationResponseSchema,
   type Broker,
-  type CreateDealerResponse,
-  type Dealer,
-  type DealerProduct,
-  type UpdateDealerResponse,
-} from "@/lib/api/schemas/dealers";
+  type CreateOrganizationResponse,
+  type Organization,
+  type OrganizationProduct,
+  type UpdateOrganizationResponse,
+} from "@/lib/api/schemas/organizations";
 
 interface BrokerInput {
   name: string;
@@ -34,10 +34,11 @@ interface BrokerInput {
   phone?: string;
 }
 
-interface CreateDealerInput {
+interface CreateOrganizationInput {
   name: string;
   vertical_ids: string[];
-  owner_email: string;
+  /** Optional: only set if the org should receive an owner invitation now. */
+  owner_email?: string;
   brokers?: BrokerInput[];
 }
 
@@ -68,70 +69,70 @@ async function postJson(url: string, body: unknown): Promise<unknown> {
   return res.json();
 }
 
-/** List every dealer organization. */
-export function useDealers(): UseQueryResult<Dealer[], Error> {
+/** List every organization organization. */
+export function useOrganizations(): UseQueryResult<Organization[], Error> {
   return useQuery({
-    queryKey: ["admin-dealers"],
+    queryKey: ["admin-organizations"],
     queryFn: async () => {
-      const raw = await getJson("/api/v1/admin/dealers");
-      return DealerListResponseSchema.parse(raw).organizations;
+      const raw = await getJson("/api/v1/admin/organizations");
+      return OrganizationListResponseSchema.parse(raw).organizations;
     },
   });
 }
 
-/** Find a single dealer by id from the dealers list (no dedicated GET-by-id endpoint). */
-export function useDealer(
-  dealerId: string | undefined,
-): UseQueryResult<Dealer[], Error> & { dealer: Dealer | undefined } {
-  const query = useDealers();
-  const dealer = query.data?.find((d) => d.id === dealerId);
-  return { ...query, dealer };
+/** Find a single organization by id from the organizations list (no dedicated GET-by-id endpoint). */
+export function useOrganization(
+  organizationId: string | undefined,
+): UseQueryResult<Organization[], Error> & { organization: Organization | undefined } {
+  const query = useOrganizations();
+  const organization = query.data?.find((d) => d.id === organizationId);
+  return { ...query, organization };
 }
 
-/** List a specific dealer's products. */
-export function useDealerProducts(
-  dealerId: string | undefined,
-): UseQueryResult<DealerProduct[], Error> {
+/** List a specific organization's products. */
+export function useOrganizationProducts(
+  organizationId: string | undefined,
+): UseQueryResult<OrganizationProduct[], Error> {
   return useQuery({
-    queryKey: ["admin-dealer-products", dealerId],
+    queryKey: ["admin-organization-products", organizationId],
     queryFn: async () => {
-      const raw = await getJson(`/api/v1/admin/dealers/${dealerId}/products`);
-      return DealerProductListResponseSchema.parse(raw).products;
+      const raw = await getJson(`/api/v1/admin/organizations/${organizationId}/products`);
+      return OrganizationProductListResponseSchema.parse(raw).products;
     },
-    enabled: !!dealerId,
+    enabled: !!organizationId,
   });
 }
 
-/** Create a dealer org + enable verticals + invite its owner. */
-export function useCreateDealer() {
+/** Create a organization org + enable verticals + invite its owner. */
+export function useCreateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (
-      input: CreateDealerInput,
-    ): Promise<CreateDealerResponse> => {
-      const raw = await postJson("/api/v1/admin/dealers", input);
-      return CreateDealerResponseSchema.parse(raw);
+      input: CreateOrganizationInput,
+    ): Promise<CreateOrganizationResponse> => {
+      const raw = await postJson("/api/v1/admin/organizations", input);
+      return CreateOrganizationResponseSchema.parse(raw);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
     },
   });
 }
 
-/** Resend (or freshly issue) the owner invitation for an existing dealer. */
-export function useResendDealerInvitation() {
+/** Resend (or freshly issue) the owner invitation for an existing organization. */
+export function useResendOrganizationInvitation() {
   return useMutation({
-    mutationFn: async (dealerId: string): Promise<CreateDealerResponse> => {
+    mutationFn: async (organizationId: string): Promise<CreateOrganizationResponse> => {
       const raw = await postJson(
-        `/api/v1/admin/dealers/${dealerId}/resend-invitation`,
+        `/api/v1/admin/organizations/${organizationId}/resend-invitation`,
         {},
       );
-      return CreateDealerResponseSchema.parse(raw);
+      return CreateOrganizationResponseSchema.parse(raw);
     },
   });
 }
 
-interface UpdateDealerInput {
+interface UpdateOrganizationInput {
   name?: string;
   code?: string;
   color?: string;
@@ -150,18 +151,18 @@ interface UpdateDealerInput {
   facebook?: string;
 }
 
-/** Update a dealer's details. */
-export function useUpdateDealer() {
+/** Update a organization's details. */
+export function useUpdateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      dealerId,
+      organizationId,
       data,
     }: {
-      dealerId: string;
-      data: UpdateDealerInput;
-    }): Promise<UpdateDealerResponse> => {
-      const res = await fetch(`/api/v1/admin/dealers/${dealerId}`, {
+      organizationId: string;
+      data: UpdateOrganizationInput;
+    }): Promise<UpdateOrganizationResponse> => {
+      const res = await fetch(`/api/v1/admin/organizations/${organizationId}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -169,12 +170,12 @@ export function useUpdateDealer() {
       });
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
-        throw new Error(extractErrorMessage(body, "Error updating dealer"));
+        throw new Error(extractErrorMessage(body, "Error updating organization"));
       }
-      return UpdateDealerResponseSchema.parse(await res.json());
+      return UpdateOrganizationResponseSchema.parse(await res.json());
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
     },
   });
 }
@@ -183,36 +184,36 @@ export function useUpdateDealer() {
 // Broker hooks
 // -----------------------------------------------------------------------------
 
-/** List brokers for a dealer. */
-export function useDealerBrokers(
-  dealerId: string | undefined,
+/** List brokers for a organization. */
+export function useOrganizationBrokers(
+  organizationId: string | undefined,
 ): UseQueryResult<Broker[], Error> {
   return useQuery({
-    queryKey: ["admin-dealer-brokers", dealerId],
+    queryKey: ["admin-organization-brokers", organizationId],
     queryFn: async () => {
-      const raw = await getJson(`/api/v1/admin/dealers/${dealerId}/brokers`);
+      const raw = await getJson(`/api/v1/admin/organizations/${organizationId}/brokers`);
       return BrokerListResponseSchema.parse(raw).brokers;
     },
-    enabled: !!dealerId,
+    enabled: !!organizationId,
   });
 }
 
-/** Create a broker for a dealer. */
-export function useCreateDealerBroker() {
+/** Create a broker for a organization. */
+export function useCreateOrganizationBroker() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      dealerId,
+      organizationId,
       name,
       email,
       phone,
     }: {
-      dealerId: string;
+      organizationId: string;
       name: string;
       email: string;
       phone?: string;
     }): Promise<Broker> => {
-      const res = await fetch(`/api/v1/admin/dealers/${dealerId}/brokers`, {
+      const res = await fetch(`/api/v1/admin/organizations/${organizationId}/brokers`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -224,34 +225,34 @@ export function useCreateDealerBroker() {
       }
       return BrokerSchema.parse(await res.json());
     },
-    onSuccess: (_, { dealerId }) => {
+    onSuccess: (_, { organizationId }) => {
       queryClient.invalidateQueries({
-        queryKey: ["admin-dealer-brokers", dealerId],
+        queryKey: ["admin-organization-brokers", organizationId],
       });
-      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
     },
   });
 }
 
 /** Update a broker (only if status is pending). */
-export function useUpdateDealerBroker() {
+export function useUpdateOrganizationBroker() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      dealerId,
+      organizationId,
       brokerId,
       name,
       email,
       phone,
     }: {
-      dealerId: string;
+      organizationId: string;
       brokerId: string;
       name?: string;
       email?: string;
       phone?: string;
     }): Promise<Broker> => {
       const res = await fetch(
-        `/api/v1/admin/dealers/${dealerId}/brokers/${brokerId}`,
+        `/api/v1/admin/organizations/${organizationId}/brokers/${brokerId}`,
         {
           method: "PATCH",
           credentials: "include",
@@ -265,27 +266,27 @@ export function useUpdateDealerBroker() {
       }
       return BrokerSchema.parse(await res.json());
     },
-    onSuccess: (_, { dealerId }) => {
+    onSuccess: (_, { organizationId }) => {
       queryClient.invalidateQueries({
-        queryKey: ["admin-dealer-brokers", dealerId],
+        queryKey: ["admin-organization-brokers", organizationId],
       });
     },
   });
 }
 
 /** Delete a broker. */
-export function useDeleteDealerBroker() {
+export function useDeleteOrganizationBroker() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      dealerId,
+      organizationId,
       brokerId,
     }: {
-      dealerId: string;
+      organizationId: string;
       brokerId: string;
     }): Promise<void> => {
       const res = await fetch(
-        `/api/v1/admin/dealers/${dealerId}/brokers/${brokerId}`,
+        `/api/v1/admin/organizations/${organizationId}/brokers/${brokerId}`,
         { method: "DELETE", credentials: "include" },
       );
       if (!res.ok) {
@@ -293,11 +294,11 @@ export function useDeleteDealerBroker() {
         throw new Error(extractErrorMessage(body, "Error deleting broker"));
       }
     },
-    onSuccess: (_, { dealerId }) => {
+    onSuccess: (_, { organizationId }) => {
       queryClient.invalidateQueries({
-        queryKey: ["admin-dealer-brokers", dealerId],
+        queryKey: ["admin-organization-brokers", organizationId],
       });
-      queryClient.invalidateQueries({ queryKey: ["admin-dealers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
     },
   });
 }

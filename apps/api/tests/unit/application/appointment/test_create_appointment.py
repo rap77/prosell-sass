@@ -184,7 +184,7 @@ class TestCreateAppointmentWithConflictDetection:
         exception = exc_info.value
         assert hasattr(exception, "conflicts")
         assert len(exception.conflicts) > 0
-        assert exception.conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
+        assert exception.conflicts[0].type == ConflictType.ORG_UNAVAILABLE
 
         # Verify appointment not created
         mock_appointment_repo.create.assert_not_called()  # type: ignore[attr-defined]

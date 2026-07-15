@@ -16,6 +16,8 @@ import logging
 from dataclasses import dataclass
 from typing import Literal
 
+from prosell.domain.base import ValueObject
+
 logger = logging.getLogger(__name__)
 
 # =============================================================================
@@ -64,38 +66,33 @@ def _sanitize_path(value: str | None, field_name: str, row_number: int) -> str |
 # =============================================================================
 
 
-@dataclass
-class LocationParseResult:
+class LocationParseResult(ValueObject):
     """Result of parsing a location string."""
 
     city: str | None
     state: str | None
 
 
-@dataclass
-class TitleStatusResult:
+class TitleStatusResult(ValueObject):
     """Result of parsing a clean_title field."""
 
     status: Literal["clean", "rebuilt"] | None
 
 
-@dataclass
-class FacebookGroupsResult:
+class FacebookGroupsResult(ValueObject):
     """Result of parsing a facebook_groups field."""
 
     groups: list[str] | None
 
 
-@dataclass
-class MileageParseResult:
+class MileageParseResult(ValueObject):
     """Result of parsing a mileage field."""
 
     mileage: float | None
     unit: Literal["miles", "km"] = "miles"
 
 
-@dataclass
-class YearParseResult:
+class YearParseResult(ValueObject):
     """Result of parsing a year field."""
 
     year: int | None
@@ -111,7 +108,7 @@ class MappedCSVRow:
     # Required fields first (no defaults)
     row_number: int
     vin: str
-    cod_dealer: str
+    cod_organization: str
     price_cents: int
 
     # Optional fields (all with defaults to satisfy Python ordering)
@@ -307,8 +304,8 @@ class CSVFieldMapper:
         return MappedCSVRow(
             row_number=row_number,
             vin=row.get("VIN", "").strip(),
-            cod_dealer=_truncate(
-                row.get("title", "").strip(), MAX_SHORT_TEXT_LENGTH, "cod_dealer", row_number
+            cod_organization=_truncate(
+                row.get("title", "").strip(), MAX_SHORT_TEXT_LENGTH, "cod_organization", row_number
             )
             or "",
             price_cents=price_cents,

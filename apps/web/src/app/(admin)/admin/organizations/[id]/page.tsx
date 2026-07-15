@@ -14,40 +14,40 @@ import {
 } from "lucide-react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import {
-  useDealer,
-  useResendDealerInvitation,
-  useUpdateDealer,
-} from "@/lib/api/dealers";
+  useOrganization,
+  useResendOrganizationInvitation,
+  useUpdateOrganization,
+} from "@/lib/api/organizations";
 
 /**
- * Admin dealer detail — Subsystem D Phase 6.
+ * Admin organization detail — Subsystem D Phase 6.
  *
  * Uses `useParams()` (not the `params: Promise<...>` + `use()` pattern)
  * — this page is 100% client-rendered via React Query, so there's no
  * server-streaming benefit to the promise form, and `use()` on a pending
  * promise needs a Suspense boundary to resolve cleanly in jsdom tests.
  */
-export default function AdminDealerDetailPage() {
+export default function AdminOrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const isAdmin = useRequireAdmin();
-  const { dealer, isLoading, error } = useDealer(id);
-  const resendInvitation = useResendDealerInvitation();
-  const updateDealer = useUpdateDealer();
+  const { organization, isLoading, error } = useOrganization(id);
+  const resendInvitation = useResendOrganizationInvitation();
+  const updateOrganization = useUpdateOrganization();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
 
   const handleStartEdit = () => {
-    if (dealer) {
-      setEditedName(dealer.name);
+    if (organization) {
+      setEditedName(organization.name);
       setIsEditingName(true);
     }
   };
 
   const handleSaveName = async () => {
-    if (!dealer || !editedName.trim()) return;
-    await updateDealer.mutateAsync({
-      dealerId: dealer.id,
+    if (!organization || !editedName.trim()) return;
+    await updateOrganization.mutateAsync({
+      organizationId: organization.id,
       data: { name: editedName.trim() },
     });
     setIsEditingName(false);
@@ -86,7 +86,7 @@ export default function AdminDealerDetailPage() {
     );
   }
 
-  if (!dealer) {
+  if (!organization) {
     return (
       <p style={{ color: "var(--ps-text-secondary)" }}>
         Organización no encontrado.
@@ -140,7 +140,7 @@ export default function AdminDealerDetailPage() {
             <button
               type="button"
               onClick={handleSaveName}
-              disabled={updateDealer.isPending || !editedName.trim()}
+              disabled={updateOrganization.isPending || !editedName.trim()}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -154,7 +154,7 @@ export default function AdminDealerDetailPage() {
                 cursor: "pointer",
               }}
             >
-              {updateDealer.isPending ? (
+              {updateOrganization.isPending ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
                 <Check size={14} />
@@ -189,7 +189,7 @@ export default function AdminDealerDetailPage() {
                 color: "var(--ps-text-primary)",
               }}
             >
-              {dealer.name}
+              {organization.name}
             </h1>
             <button
               type="button"
@@ -219,21 +219,21 @@ export default function AdminDealerDetailPage() {
             fontSize: 12,
             fontWeight: 600,
             background:
-              dealer.status === "active"
+              organization.status === "active"
                 ? "var(--ps-success-10)"
                 : "var(--ps-warning-10)",
             color:
-              dealer.status === "active"
+              organization.status === "active"
                 ? "var(--ps-success)"
                 : "var(--ps-warning)",
           }}
         >
-          {dealer.status === "active" ? "Activo" : "Pendiente"}
+          {organization.status === "active" ? "Activo" : "Pendiente"}
         </span>
       </div>
 
       {/* Pending status explanation */}
-      {dealer.status === "pending_verification" && (
+      {organization.status === "pending_verification" && (
         <div
           style={{
             padding: 16,
@@ -255,7 +255,7 @@ export default function AdminDealerDetailPage() {
           </div>
           <button
             type="button"
-            onClick={() => resendInvitation.mutate(dealer.id)}
+            onClick={() => resendInvitation.mutate(organization.id)}
             disabled={resendInvitation.isPending}
             style={{
               alignSelf: "flex-start",
@@ -278,7 +278,7 @@ export default function AdminDealerDetailPage() {
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Link
-          href={`/admin/organizations/${dealer.id}/edit`}
+          href={`/admin/organizations/${organization.id}/edit`}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -298,7 +298,7 @@ export default function AdminDealerDetailPage() {
           Editar información
         </Link>
         <Link
-          href={`/admin/organizations/${dealer.id}/products`}
+          href={`/admin/organizations/${organization.id}/products`}
           style={{
             display: "inline-flex",
             alignItems: "center",

@@ -43,8 +43,8 @@ class OrganizationResponse(BaseModel):
     settings: dict[str, object] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
-    broker_count: int | None = None  # populated when listing dealers
-    owner_email: str | None = None  # populated when listing dealers (latest invitation)
+    broker_count: int | None = None  # populated when listing organizations
+    owner_email: str | None = None  # populated when listing organizations (latest invitation)
 
     @classmethod
     def from_entity(

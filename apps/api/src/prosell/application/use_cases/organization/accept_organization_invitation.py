@@ -18,7 +18,7 @@ from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
 class AcceptOrganizationInvitationUseCase:
-    """Accept a dealer-owner invitation: create their account, log them in."""
+    """Accept a organization-owner invitation: create their account, log them in."""
 
     def __init__(
         self,

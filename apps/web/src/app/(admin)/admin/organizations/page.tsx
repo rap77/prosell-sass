@@ -5,19 +5,19 @@ import { Building2, Loader2 } from "lucide-react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
-import { useDealers } from "@/lib/api/dealers";
+import { useOrganizations } from "@/lib/api/organizations";
 
 /**
  * Admin organizations list — Subsystem D Phase 6.
  *
- * Backend already gates GET /admin/dealers behind
- * Permission.DEALER_ADMIN_VIEW_ALL; this redirect is a client-side UX
+ * Backend already gates GET /admin/organizations behind
+ * Permission.ORG_ADMIN_VIEW_ALL; this redirect is a client-side UX
  * nicety (the real boundary is the edge middleware in proxy.ts).
  */
 export default function AdminOrganizationsPage() {
   const isAdmin = useRequireAdmin();
   const { hasPermission } = useAuth();
-  const { data: dealers = [], isLoading, error } = useDealers();
+  const { data: organizations = [], isLoading, error } = useOrganizations();
 
   if (!isAdmin) {
     return null;
@@ -43,7 +43,7 @@ export default function AdminOrganizationsPage() {
           Organizaciones
         </h1>
 
-        {hasPermission(Permission.DEALER_ADMIN_VIEW_ALL) && (
+        {hasPermission(Permission.ORG_ADMIN_VIEW_ALL) && (
           <Link
             href="/admin/organizations/new"
             style={{
@@ -83,17 +83,17 @@ export default function AdminOrganizationsPage() {
         </p>
       )}
 
-      {!isLoading && !error && dealers.length === 0 && (
+      {!isLoading && !error && organizations.length === 0 && (
         <p style={{ color: "var(--ps-text-secondary)" }}>
           No hay organizaciones registrados.
         </p>
       )}
 
       <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {dealers.map((dealer) => (
-          <li key={dealer.id}>
+        {organizations.map((organization) => (
+          <li key={organization.id}>
             <Link
-              href={`/admin/organizations/${dealer.id}`}
+              href={`/admin/organizations/${organization.id}`}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -106,12 +106,12 @@ export default function AdminOrganizationsPage() {
               }}
             >
               <Building2 size={16} style={{ color: "var(--ps-cyan)" }} />
-              {dealer.name}
-              {(dealer.broker_count ?? 0) > 0 && (
+              {organization.name}
+              {(organization.broker_count ?? 0) > 0 && (
                 <span
                   style={{ fontSize: 12, color: "var(--ps-text-secondary)" }}
                 >
-                  ({dealer.broker_count} brokers)
+                  ({organization.broker_count} brokers)
                 </span>
               )}
             </Link>

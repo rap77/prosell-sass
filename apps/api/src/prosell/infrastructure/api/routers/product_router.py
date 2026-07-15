@@ -3,7 +3,7 @@
 import csv
 import io
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
@@ -177,17 +177,17 @@ def _merged_image_url_candidates(product: Product) -> list[str]:
     return product.merged_image_keys()
 
 
-def _check_dealer_scope_permission(
+def _check_org_scope_permission(
     current_user: User, organization_id: UUID | None
 ) -> tuple[UUID, bool]:
-    """Validate dealer-scoping authorization shared by every product list
+    """Validate organization-scoping authorization shared by every product list
     endpoint that accepts `organization_id`.
 
     Raises 403 if the caller has no tenant, or if they request another
-    dealer's `organization_id` without `DEALER_ADMIN_VIEW_ALL`. Returns
-    `(tenant_id, can_view_all_dealers)` — `tenant_id` is `current_user.tenant_id`
+    organization's `organization_id` without `ORG_ADMIN_VIEW_ALL`. Returns
+    `(tenant_id, can_view_all_orgs)` — `tenant_id` is `current_user.tenant_id`
     narrowed to non-None here so callers don't each repeat the None-check.
-    Callers still derive their own effective tenant_id from `can_view_all_dealers`
+    Callers still derive their own effective tenant_id from `can_view_all_orgs`
     because they don't all mean the same thing by "no organization_id given"
     (e.g. `list_products` defaults to a global browse for admins,
     `get_featured_products` defaults to the caller's own tenant).
@@ -195,17 +195,26 @@ def _check_dealer_scope_permission(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
+    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     if (
         organization_id is not None
-        and not can_view_all_dealers
+        and not can_view_all_orgs
         and organization_id != current_user.tenant_id
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot filter products by another dealer's organization_id",
+            detail="Cannot filter products by another organization's organization_id",
         )
-    return current_user.tenant_id, can_view_all_dealers
+    return current_user.tenant_id, can_view_all_orgs
+
+
+def _require_marketplace_publish(current_user: User) -> None:
+    """Require permission for actions that publish or moderate products."""
+    if not current_user.has_permission(Permission.MARKETPLACE_PUBLISH):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Marketplace publish permission required",
+        )
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -443,9 +452,9 @@ async def list_products(
       category's `attribute_schema`; non-filterable or unknown keys
       are rejected with 422. Range keys accept `<name>_min`/`<name>_max`.
     """
-    tenant_id, can_view_all_dealers = _check_dealer_scope_permission(current_user, organization_id)
+    tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
 
-    effective_tenant = None if can_view_all_dealers else tenant_id
+    effective_tenant = None if can_view_all_orgs else tenant_id
 
     # Collect `attr.*` query params (strip prefix). Validation happens below
     # only when we have a category to validate against — otherwise any
@@ -474,12 +483,12 @@ async def list_products(
         # every `attr.*` key against it. Unknown / non-filterable keys
         # raise ValueError → HTTP 422, so they can never reach the SQL
         # filter pipeline as an attacker-controlled JSONB key.
-        # Resolve against the dealer being viewed, not the admin's own
+        # Resolve against the organization being viewed, not the admin's own
         # tenant — `organization_id` is only honored here when the caller
-        # has DEALER_ADMIN_VIEW_ALL (validated above), so this can't be used
+        # has ORG_ADMIN_VIEW_ALL (validated above), so this can't be used
         # to read another tenant's category as a regular seller.
         category_tenant_id = (
-            organization_id if organization_id is not None and can_view_all_dealers else tenant_id
+            organization_id if organization_id is not None and can_view_all_orgs else tenant_id
         )
         category_repo = SqlAlchemyCategoryRepository(db)
         category = await category_repo.get_by_id_or_global(category_id, category_tenant_id)
@@ -609,11 +618,9 @@ async def get_category_filter_values(
     entries to bound response size; any key whose result was truncated
     appears in the response's `truncated` list.
     """
-    owner_tenant_id, can_view_all_dealers = _check_dealer_scope_permission(
-        current_user, organization_id
-    )
+    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
     tenant_id = (
-        organization_id if organization_id is not None and can_view_all_dealers else owner_tenant_id
+        organization_id if organization_id is not None and can_view_all_orgs else owner_tenant_id
     )
 
     category_repo = SqlAlchemyCategoryRepository(db)
@@ -659,11 +666,9 @@ async def get_featured_products(
     limit: int = 10,
 ) -> list[ProductResponse]:
     """Get featured products."""
-    owner_tenant_id, can_view_all_dealers = _check_dealer_scope_permission(
-        current_user, organization_id
-    )
+    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
     tenant_id = (
-        organization_id if organization_id is not None and can_view_all_dealers else owner_tenant_id
+        organization_id if organization_id is not None and can_view_all_orgs else owner_tenant_id
     )
 
     repo = SqlAlchemyProductRepository(db)
@@ -854,6 +859,7 @@ async def approve_product(
     Transitions product from PENDING → PUBLISHED.
     Requires MASTER or VERIFIER role.
     """
+    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
@@ -877,6 +883,7 @@ async def reject_product(
     Transitions product from PENDING → REJECTED.
     Requires MASTER or VERIFIER role.
     """
+    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
@@ -905,6 +912,7 @@ async def publish_product(
     Transitions product from PENDING → PUBLISHED.
     Admin only - skips approval workflow.
     """
+    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
@@ -1207,7 +1215,7 @@ class OwnerShareRequest(BaseModel):
     """Single owner share in request."""
 
     owner_id: UUID
-    owner_type: str = "organization"  # "organization" | "user"
+    owner_type: Literal["organization", "user"] = "organization"
     percentage: str  # Decimal as string for precision
 
 
@@ -1221,7 +1229,7 @@ class OwnerShareResponse(BaseModel):
     """Single owner share in response."""
 
     owner_id: UUID
-    owner_type: str
+    owner_type: Literal["organization", "user"]
     percentage: str
     created_at: datetime
 
@@ -1306,6 +1314,11 @@ async def get_product_ownership(
     """Get ownership for a product."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=403, detail="No tenant context")
+
+    product_repo = SqlAlchemyProductRepository(db)
+    product = await product_repo.get_by_id(product_id, current_user.tenant_id)
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     ownership_repo = SqlAlchemyProductOwnershipRepository(db)
     owners = await ownership_repo.list_owners(product_id)

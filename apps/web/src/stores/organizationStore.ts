@@ -31,7 +31,6 @@ import { Permission, userHasPermission } from "@/lib/auth/permissions";
 export interface OrganizationListParams {
   skip?: number;
   limit?: number;
-  tenant_id?: string;
 }
 
 export interface OrganizationError {
@@ -54,14 +53,14 @@ export interface OrganizationState {
     skip: number;
     limit: number;
   } | null;
-  // The dealer an admin is currently "viewing as" (Subsystem D DealerPicker).
+  // The organization an admin is currently "viewing as" (Subsystem D OrganizationPicker).
   // null means "viewing my own organization" — the default for everyone.
   viewingOrgId: string | null;
 
   // Actions
   fetchOrganizations: (params?: OrganizationListParams) => Promise<void>;
-  fetchMyOrganization: (tenantId: string) => Promise<void>;
-  fetchOrganizationById: (id: string, tenantId: string) => Promise<void>;
+  fetchMyOrganization: () => Promise<void>;
+  fetchOrganizationById: (id: string) => Promise<void>;
   createOrganization: (
     data: CreateOrganizationRequest,
   ) => Promise<Organization>;
@@ -74,7 +73,7 @@ export interface OrganizationState {
   suspendOrganization: (id: string) => Promise<void>;
   setCurrentOrg: (org: Organization | null) => void;
   // Guarded setter: no-op when the current user lacks
-  // Permission.DEALER_ADMIN_VIEW_ALL (checked against the live authStore
+  // Permission.ORG_ADMIN_VIEW_ALL (checked against the live authStore
   // user, not a prop — callers can't bypass the guard by omitting a check).
   setViewingOrgId: (orgId: string | null) => void;
   clearError: () => void;
@@ -129,7 +128,7 @@ export const useOrganizationStore = create<OrganizationState>()(
       },
 
       // Fetch current user's organization
-      fetchMyOrganization: async (tenantId) => {
+      fetchMyOrganization: async () => {
         set({ isLoading: true, error: null });
 
         try {
@@ -156,7 +155,7 @@ export const useOrganizationStore = create<OrganizationState>()(
       },
 
       // Fetch organization by ID
-      fetchOrganizationById: async (id, tenantId) => {
+      fetchOrganizationById: async (id) => {
         set({ isLoading: true, error: null });
 
         try {
@@ -358,10 +357,10 @@ export const useOrganizationStore = create<OrganizationState>()(
         set({ currentOrg: org });
       },
 
-      // Set the dealer being "viewed as" — no-op without DEALER_ADMIN_VIEW_ALL
+      // Set the organization being "viewed as" — no-op without ORG_ADMIN_VIEW_ALL
       setViewingOrgId: (orgId) => {
         const role = useAuthStore.getState().user?.role ?? null;
-        if (!userHasPermission(role, Permission.DEALER_ADMIN_VIEW_ALL)) {
+        if (!userHasPermission(role, Permission.ORG_ADMIN_VIEW_ALL)) {
           return;
         }
         set({ viewingOrgId: orgId });

@@ -26,9 +26,9 @@ vi.mock("@/components/teams/TeamSwitcher", () => ({
   TeamSwitcher: () => <div data-testid="team-switcher">Team Switcher</div>,
 }));
 
-// Mock DealerPicker component (Subsystem D Phase 6.4)
-vi.mock("@/components/admin/DealerPicker", () => ({
-  DealerPicker: () => <div data-testid="dealer-picker" />,
+// Mock OrganizationPicker component (Subsystem D Phase 6.4)
+vi.mock("@/components/admin/OrganizationPicker", () => ({
+  OrganizationPicker: () => <div data-testid="organization-picker" />,
 }));
 
 vi.mock("@/components/layout/NotificationBell", () => ({
@@ -48,19 +48,19 @@ describe("Header", () => {
     });
   });
 
-  it("renders DealerPicker instead of the org switcher for an admin", () => {
+  it("renders OrganizationPicker instead of the org switcher for an admin", () => {
     mockUseAuth.mockReturnValue({ logout: vi.fn(), user: null, isAdmin: true });
 
     render(<Header />);
 
-    expect(screen.getByTestId("dealer-picker")).toBeInTheDocument();
+    expect(screen.getByTestId("organization-picker")).toBeInTheDocument();
     expect(screen.queryByText("Organizations")).not.toBeInTheDocument();
   });
 
   it("renders the org switcher placeholder for a non-admin", () => {
     render(<Header />);
 
-    expect(screen.queryByTestId("dealer-picker")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("organization-picker")).not.toBeInTheDocument();
   });
 
   it("renders without crashing", () => {

@@ -16,22 +16,22 @@ import { Plus, Trash2, Loader2, User, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  useDealerBrokers,
-  useCreateDealerBroker,
-  useUpdateDealerBroker,
-  useDeleteDealerBroker,
-} from "@/lib/api/dealers";
-import type { Broker } from "@/lib/api/schemas/dealers";
+  useOrganizationBrokers,
+  useCreateOrganizationBroker,
+  useUpdateOrganizationBroker,
+  useDeleteOrganizationBroker,
+} from "@/lib/api/organizations";
+import type { Broker } from "@/lib/api/schemas/organizations";
 
 interface BrokerManagerProps {
-  dealerId: string;
+  organizationId: string;
 }
 
-export function BrokerManager({ dealerId }: BrokerManagerProps) {
-  const { data: brokers = [], isLoading } = useDealerBrokers(dealerId);
-  const createBroker = useCreateDealerBroker();
-  const updateBroker = useUpdateDealerBroker();
-  const deleteBroker = useDeleteDealerBroker();
+export function BrokerManager({ organizationId }: BrokerManagerProps) {
+  const { data: brokers = [], isLoading } = useOrganizationBrokers(organizationId);
+  const createBroker = useCreateOrganizationBroker();
+  const updateBroker = useUpdateOrganizationBroker();
+  const deleteBroker = useDeleteOrganizationBroker();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -47,7 +47,7 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
     if (!newName.trim() || !newEmail.trim()) return;
     try {
       await createBroker.mutateAsync({
-        dealerId,
+        organizationId,
         name: newName.trim(),
         email: newEmail.trim(),
         phone: newPhone.trim() || undefined,
@@ -80,7 +80,7 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
     if (!editingId || !editName.trim() || !editEmail.trim()) return;
     try {
       await updateBroker.mutateAsync({
-        dealerId,
+        organizationId,
         brokerId: editingId,
         name: editName.trim(),
         email: editEmail.trim(),
@@ -94,7 +94,7 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
   };
 
   const handleDelete = async (brokerId: string) => {
-    await deleteBroker.mutateAsync({ dealerId, brokerId });
+    await deleteBroker.mutateAsync({ organizationId, brokerId });
   };
 
   if (isLoading) {

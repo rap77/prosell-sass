@@ -179,14 +179,16 @@ async def list_appointments(
         AppointmentStatus | None,
         Query(alias="status", description="Filter by appointment status"),
     ] = None,
-    dealer_id: Annotated[UUID | None, Query(description="Filter by dealer/user ID")] = None,
+    organization_id: Annotated[
+        UUID | None, Query(description="Filter by organization/user ID")
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> AppointmentListResponse:
     """
     List appointments for the authenticated tenant.
 
-    - `dealer_id`: filter by the attending dealer/user (maps to `user_id`).
+    - `organization_id`: filter by the attending organization/user (maps to `user_id`).
     - `status`: filter by appointment status enum.
     - `start_date` / `end_date`: ISO 8601 date range filter.
     """
@@ -198,7 +200,7 @@ async def list_appointments(
 
     appointments, total = await appointment_repo.list_all(
         tenant_id=current_user.tenant_id,
-        user_id=dealer_id,
+        user_id=organization_id,
         start_date=start_date,
         end_date=end_date,
         status=status_filter,

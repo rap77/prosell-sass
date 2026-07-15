@@ -6,7 +6,7 @@
  * Mobile-first design with:
  *   - Image gallery
  *   - Title + price
- *   - Location + dealer info
+ *   - Location + organization info
  *   - Vehicle attributes grid
  *   - Sticky "Share on WhatsApp" button
  */
@@ -82,9 +82,12 @@ export function ProductPublicView({
 
   // Build WhatsApp share URL
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const brand = product.attributes?.brand as string | undefined;
-  const model = product.attributes?.model as string | undefined;
-  const year = product.attributes?.year as number | undefined;
+  const brandValue = product.attributes.brand;
+  const modelValue = product.attributes.model;
+  const yearValue = product.attributes.year;
+  const brand = typeof brandValue === "string" ? brandValue : undefined;
+  const model = typeof modelValue === "string" ? modelValue : undefined;
+  const year = typeof yearValue === "number" ? yearValue : undefined;
   const vehicleName =
     brand && model ? `${brand} ${model} ${year || ""}`.trim() : product.title;
   const price = formatPrice(product.price_cents, product.currency);

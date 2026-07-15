@@ -135,7 +135,7 @@ class TestCreateAppointmentConflictDetection:
             id=uuid4(),
             tenant_id=uuid4(),
             lead_id=uuid4(),
-            user_id=valid_request_data["user_id"],  # Same dealer
+            user_id=valid_request_data["user_id"],  # Same organization
             product_id=valid_request_data["product_id"],
             scheduled_at=valid_request_data["scheduled_at"],  # Same time
             status=AppointmentStatus.SCHEDULED,
@@ -153,7 +153,7 @@ class TestCreateAppointmentConflictDetection:
         exception = exc_info.value
         assert exception.user_id == str(valid_request_data["user_id"])
         assert len(exception.conflicts) == 1
-        assert exception.conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
+        assert exception.conflicts[0].type == ConflictType.ORG_UNAVAILABLE
 
     async def test_create_appointment_multiple_conflicts(
         self,

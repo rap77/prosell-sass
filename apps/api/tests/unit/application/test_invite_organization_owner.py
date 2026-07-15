@@ -1,4 +1,4 @@
-"""Tests for InviteDealerOwnerUseCase."""
+"""Tests for InviteOrganizationOwnerUseCase."""
 
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
@@ -7,8 +7,8 @@ from uuid import uuid4
 
 import pytest
 
-from prosell.application.use_cases.organization.invite_dealer_owner import (
-    InviteDealerOwnerUseCase,
+from prosell.application.use_cases.organization.invite_organization_owner import (
+    InviteOrganizationOwnerUseCase,
 )
 from prosell.domain.entities.organization_invitation import OrganizationInvitation
 
@@ -17,7 +17,7 @@ from prosell.domain.entities.organization_invitation import OrganizationInvitati
 def use_case():
     invitation_repository = AsyncMock()
     email_service = AsyncMock()
-    uc = InviteDealerOwnerUseCase(invitation_repository, email_service)
+    uc = InviteOrganizationOwnerUseCase(invitation_repository, email_service)
     return uc, invitation_repository, email_service
 
 

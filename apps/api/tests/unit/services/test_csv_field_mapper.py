@@ -201,7 +201,7 @@ class TestCSVFieldMapperMapRow:
 
         result = CSVFieldMapper.map_row(row, row_number=2)
 
-        assert result.cod_dealer == "DJ"
+        assert result.cod_organization == "DJ"
         assert result.price_cents == 1780000
         assert result.location_city == "Orlando"
         assert result.location_state == "FL"
@@ -238,7 +238,7 @@ class TestCSVFieldMapperMapRow:
 
         result = CSVFieldMapper.map_row(row, row_number=2)
 
-        assert result.cod_dealer == "DJ"
+        assert result.cod_organization == "DJ"
         assert result.price_cents == 1780000
         assert result.location_city == "Orlando"
         assert result.location_state is None

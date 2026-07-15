@@ -7,17 +7,18 @@ It follows Clean Architecture principles as a domain service with no external de
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
+from prosell.domain.base import ValueObject
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 
 
 class ConflictType(StrEnum):
     """Types of appointment conflicts."""
 
-    DEALER_UNAVAILABLE = "dealer_unavailable"
+    ORG_UNAVAILABLE = "org_unavailable"
     # Future conflict types can be added here (e.g., VEHICLE_UNAVAILABLE, ROOM_UNAVAILABLE)
 
 
-class Conflict:
+class Conflict(ValueObject):
     """Value object representing a scheduling conflict.
 
     Attributes:
@@ -26,26 +27,9 @@ class Conflict:
         message: Human-readable description of the conflict
     """
 
-    def __init__(
-        self,
-        type: ConflictType,
-        existing_appointment: Appointment,
-        message: str,
-    ) -> None:
-        """Initialize a conflict.
-
-        Args:
-            type: The type of conflict
-            existing_appointment: The conflicting appointment
-            message: Human-readable description
-        """
-        self.type = type
-        self.existing_appointment = existing_appointment
-        self.message = message
-
-    def __repr__(self) -> str:
-        """Return string representation of conflict."""
-        return f"Conflict(type={self.type}, message={self.message})"
+    type: ConflictType
+    existing_appointment: Appointment
+    message: str
 
 
 class AppointmentConflictDetector:
@@ -57,7 +41,7 @@ class AppointmentConflictDetector:
     being a pure domain service with no external dependencies.
 
     Conflict detection rules:
-    - Same dealer + overlapping time = conflict
+    - Same organization (tenant_id) + overlapping time = conflict
     - Cancelled/completed appointments don't cause conflicts
     - Time overlap uses strict inequality (boundaries don't count)
     """
@@ -94,8 +78,10 @@ class AppointmentConflictDetector:
         conflicts: list[Conflict] = []
 
         for existing_app in existing_appointments:
-            # Skip if different dealer (no conflict)
-            if appointment.user_id != existing_app.user_id:
+            # Skip if different organization (no conflict) — compares
+            # tenant_id because the rule `ORG_UNAVAILABLE` is per-organization:
+            # any user in the same org competing for the same slot is a conflict.
+            if appointment.tenant_id != existing_app.tenant_id:
                 continue
 
             # Skip if existing appointment is not scheduled (cancelled/completed don't conflict)
@@ -113,9 +99,9 @@ class AppointmentConflictDetector:
             ):
                 conflicts.append(
                     Conflict(
-                        type=ConflictType.DEALER_UNAVAILABLE,
+                        type=ConflictType.ORG_UNAVAILABLE,
                         existing_appointment=existing_app,
-                        message="Dealer already has appointment at this time",
+                        message="Organization already has appointment at this time",
                     )
                 )
 

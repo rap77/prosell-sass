@@ -2,13 +2,13 @@
  * Zod schema for POST /api/v1/categories/infer.
  *
  * Validates the wire shape at the HTTP boundary (mirrors the
- * `dealers.ts`/`leads.ts` schema convention).
+ * `organizations.ts`/`leads.ts` schema convention).
  */
 
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const CategoryInferenceItemSchema = z.object({
-  category_id: z.string().uuid(),
+  category_id: z.uuid(),
   name: z.string(),
   score: z.number().min(0).max(1),
 });

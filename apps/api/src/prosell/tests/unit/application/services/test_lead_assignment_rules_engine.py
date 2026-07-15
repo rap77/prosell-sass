@@ -1,10 +1,10 @@
 """Unit tests for LeadAssignmentRulesEngine domain service.
 
 This test suite verifies lead assignment logic including:
-- Round-robin assignment across dealers
+- Round-robin assignment across organizations
 - Vehicle owner assignment (product owner gets the lead)
-- Workload balancing (assign to dealer with fewest active leads)
-- Geographic proximity (assign to nearest dealer if location data available)
+- Workload balancing (assign to organization with fewest active leads)
+- Geographic proximity (assign to nearest organization if location data available)
 - Priority-based rule execution
 - Thread-safe round-robin state management
 """
@@ -30,7 +30,7 @@ class TestRoundRobinState:
     """Test suite for RoundRobinState thread-safe counter.
 
     Verifies that round-robin state management is thread-safe
-    and correctly cycles through dealer indices.
+    and correctly cycles through organization indices.
     """
 
     def test_round_robin_state_initialization(self):
@@ -43,26 +43,26 @@ class TestRoundRobinState:
         """Test that next() increments and wraps around."""
         state = RoundRobinState()
 
-        assert state.next(dealer_count=3) == 0, "First call should return 0"
-        assert state.next(dealer_count=3) == 1, "Second call should return 1"
-        assert state.next(dealer_count=3) == 2, "Third call should return 2"
-        assert state.next(dealer_count=3) == 0, "Fourth call should wrap to 0"
+        assert state.next(organization_count=3) == 0, "First call should return 0"
+        assert state.next(organization_count=3) == 1, "Second call should return 1"
+        assert state.next(organization_count=3) == 2, "Third call should return 2"
+        assert state.next(organization_count=3) == 0, "Fourth call should wrap to 0"
 
     def test_round_robin_state_current(self):
         """Test that current_index() returns current without incrementing."""
         state = RoundRobinState()
 
         assert state.current_index() == 0, "Initial index should be 0"
-        state.next(dealer_count=3)  # Advance to 1
+        state.next(organization_count=3)  # Advance to 1
         assert state.current_index() == 1, "Should return 1 after advance"
 
-    def test_round_robin_state_single_dealer(self):
-        """Test that single dealer always returns index 0."""
+    def test_round_robin_state_single_organization(self):
+        """Test that single organization always returns index 0."""
         state = RoundRobinState()
 
-        assert state.next(dealer_count=1) == 0
-        assert state.next(dealer_count=1) == 0
-        assert state.next(dealer_count=1) == 0
+        assert state.next(organization_count=1) == 0
+        assert state.next(organization_count=1) == 0
+        assert state.next(organization_count=1) == 0
 
     def test_round_robin_state_thread_safety(self):
         """Test that RoundRobinState is thread-safe.
@@ -75,11 +75,11 @@ class TestRoundRobinState:
 
         state = RoundRobinState()
         results = []
-        dealer_count = 5
+        organization_count = 5
 
         def concurrent_next():
             for _ in range(100):
-                results.append(state.next(dealer_count=dealer_count))
+                results.append(state.next(organization_count=organization_count))
 
         threads = [threading.Thread(target=concurrent_next) for _ in range(10)]
 
@@ -90,7 +90,7 @@ class TestRoundRobinState:
             thread.join()
 
         # Verify all indices are within valid range
-        assert all(0 <= idx < dealer_count for idx in results), (
+        assert all(0 <= idx < organization_count for idx in results), (
             "All indices should be within valid range"
         )
 
@@ -142,11 +142,11 @@ class TestAssignmentRule:
 class TestRoundRobinAssignmentRule:
     """Test suite for round-robin assignment rule.
 
-    Verifies that round-robin distributes leads evenly across dealers.
+    Verifies that round-robin distributes leads evenly across organizations.
     """
 
     def test_round_robin_first_lead(self):
-        """Test that first lead goes to first dealer."""
+        """Test that first lead goes to first organization."""
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -155,41 +155,41 @@ class TestRoundRobinAssignmentRule:
             tenant_id=tenant_id,
         )
 
-        dealers = [
+        organizations = [
             AssignmentCandidate(
                 user_id=uuid4(),
-                name="Dealer A",
+                name="Organization A",
                 active_lead_count=0,
             ),
             AssignmentCandidate(
                 user_id=uuid4(),
-                name="Dealer B",
+                name="Organization B",
                 active_lead_count=0,
             ),
         ]
 
-        result = engine._round_robin_rule.score(lead, dealers[0])
+        result = engine._round_robin_rule.score(lead, organizations[0])
 
-        # First dealer should get the lead (score should be high)
+        # First organization should get the lead (score should be high)
         # Note: The actual score depends on implementation, but it should be > 0
         assert result >= 0.0, "Round-robin should return a valid score"
 
-    def test_round_robin_cycles_through_dealers(self):
-        """Test that round-robin cycles through all dealers."""
+    def test_round_robin_cycles_through_organizations(self):
+        """Test that round-robin cycles through all organizations."""
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
 
-        dealers = [
+        organizations = [
             AssignmentCandidate(
                 user_id=uuid4(),
-                name=f"Dealer {i}",
+                name=f"Organization {i}",
                 active_lead_count=0,
             )
             for i in range(3)
         ]
 
-        assigned_dealers = []
+        assigned_organizations = []
 
         for i in range(6):  # Assign 6 leads (2 full cycles)
             lead = Lead.create(
@@ -199,19 +199,19 @@ class TestRoundRobinAssignmentRule:
 
             result = engine.assign_lead(
                 lead=lead,
-                candidates=dealers,
+                candidates=organizations,
                 strategy=AssignmentStrategy.ROUND_ROBIN,
             )
 
             assert result.assigned_to is not None
-            assigned_dealers.append(result.assigned_to.user_id)
+            assigned_organizations.append(result.assigned_to.user_id)
 
-        # Verify distribution is roughly even (2 each for 3 dealers)
+        # Verify distribution is roughly even (2 each for 3 organizations)
         from collections import Counter
 
-        counts = Counter(assigned_dealers)
+        counts = Counter(assigned_organizations)
         assert all(count == 2 for count in counts.values()), (
-            "Each dealer should get exactly 2 leads in 2 full cycles"
+            "Each organization should get exactly 2 leads in 2 full cycles"
         )
 
 
@@ -228,7 +228,7 @@ class TestVehicleOwnerAssignmentRule:
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
         product_owner_id = uuid4()
-        other_dealer_id = uuid4()
+        other_organization_id = uuid4()
         product_id = uuid4()
         organization_id = uuid4()
 
@@ -248,15 +248,15 @@ class TestVehicleOwnerAssignmentRule:
             price_cents=10000,
         )
 
-        dealers = [
+        organizations = [
             AssignmentCandidate(
                 user_id=product_owner_id,
                 name="Product Owner",
                 active_lead_count=5,
             ),
             AssignmentCandidate(
-                user_id=other_dealer_id,
-                name="Other Dealer",
+                user_id=other_organization_id,
+                name="Other Organization",
                 active_lead_count=0,
             ),
         ]
@@ -267,20 +267,22 @@ class TestVehicleOwnerAssignmentRule:
         # Score with product context
         owner_score = engine._vehicle_owner_rule.score(
             lead,
-            dealers[0],
+            organizations[0],
             product=product,
             organization_members=organization_members,
         )
 
         other_score = engine._vehicle_owner_rule.score(
             lead,
-            dealers[1],
+            organizations[1],
             product=product,
             organization_members=organization_members,
         )
 
         # Owner should get significantly higher score
-        assert owner_score > other_score, "Product owner should get higher score than other dealers"
+        assert owner_score > other_score, (
+            "Product owner should get higher score than other organizations"
+        )
 
     def test_vehicle_owner_no_product(self):
         """Test that rule returns 0 when no product associated."""
@@ -294,13 +296,13 @@ class TestVehicleOwnerAssignmentRule:
             product_id=None,  # No product
         )
 
-        dealer = AssignmentCandidate(
+        organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Dealer A",
+            name="Organization A",
             active_lead_count=0,
         )
 
-        score = engine._vehicle_owner_rule.score(lead, dealer)
+        score = engine._vehicle_owner_rule.score(lead, organization)
 
         # Should return 0 when no product
         assert score == 0.0, "Should return 0 when lead has no product"
@@ -309,11 +311,11 @@ class TestVehicleOwnerAssignmentRule:
 class TestWorkloadBalancingRule:
     """Test suite for workload balancing assignment rule.
 
-    Verifies that dealers with fewer active leads get priority.
+    Verifies that organizations with fewer active leads get priority.
     """
 
     def test_workload_balancing_prefers_less_loaded(self):
-        """Test that dealer with fewer leads gets higher score."""
+        """Test that organization with fewer leads gets higher score."""
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -323,23 +325,23 @@ class TestWorkloadBalancingRule:
             tenant_id=tenant_id,
         )
 
-        busy_dealer = AssignmentCandidate(
+        busy_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Busy Dealer",
+            name="Busy Organization",
             active_lead_count=10,
         )
 
-        free_dealer = AssignmentCandidate(
+        free_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Free Dealer",
+            name="Free Organization",
             active_lead_count=2,
         )
 
-        busy_score = engine._workload_balancing_rule.score(lead, busy_dealer)
-        free_score = engine._workload_balancing_rule.score(lead, free_dealer)
+        busy_score = engine._workload_balancing_rule.score(lead, busy_organization)
+        free_score = engine._workload_balancing_rule.score(lead, free_organization)
 
-        # Free dealer should get higher score
-        assert free_score > busy_score, "Dealer with fewer leads should get higher score"
+        # Free organization should get higher score
+        assert free_score > busy_score, "Organization with fewer leads should get higher score"
 
     def test_workload_balancing_equal_workload(self):
         """Test that equal workload results in similar scores."""
@@ -352,33 +354,35 @@ class TestWorkloadBalancingRule:
             tenant_id=tenant_id,
         )
 
-        dealer1 = AssignmentCandidate(
+        organization1 = AssignmentCandidate(
             user_id=uuid4(),
-            name="Dealer 1",
+            name="Organization 1",
             active_lead_count=5,
         )
 
-        dealer2 = AssignmentCandidate(
+        organization2 = AssignmentCandidate(
             user_id=uuid4(),
-            name="Dealer 2",
+            name="Organization 2",
             active_lead_count=5,
         )
 
-        score1 = engine._workload_balancing_rule.score(lead, dealer1)
-        score2 = engine._workload_balancing_rule.score(lead, dealer2)
+        score1 = engine._workload_balancing_rule.score(lead, organization1)
+        score2 = engine._workload_balancing_rule.score(lead, organization2)
 
         # Scores should be similar for equal workload
-        assert abs(score1 - score2) < 0.1, "Dealers with equal workload should get similar scores"
+        assert abs(score1 - score2) < 0.1, (
+            "Organizations with equal workload should get similar scores"
+        )
 
 
 class TestGeographicProximityRule:
     """Test suite for geographic proximity assignment rule.
 
-    Verifies that dealers geographically closer to the lead get priority.
+    Verifies that organizations geographically closer to the lead get priority.
     """
 
     def test_geographic_proximity_prefers_nearby(self):
-        """Test that nearby dealer gets higher score."""
+        """Test that nearby organization gets higher score."""
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -389,17 +393,17 @@ class TestGeographicProximityRule:
             tenant_id=tenant_id,
         )
 
-        nearby_dealer = AssignmentCandidate(
+        nearby_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="NYC Dealer",
+            name="NYC Organization",
             active_lead_count=5,
             location_city="New York",
             location_state="NY",
         )
 
-        far_dealer = AssignmentCandidate(
+        far_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="LA Dealer",
+            name="LA Organization",
             active_lead_count=5,
             location_city="Los Angeles",
             location_state="CA",
@@ -410,18 +414,20 @@ class TestGeographicProximityRule:
 
         nearby_score = engine._geographic_proximity_rule.score(
             lead,
-            nearby_dealer,
+            nearby_organization,
             lead_location=lead_location,
         )
 
         far_score = engine._geographic_proximity_rule.score(
             lead,
-            far_dealer,
+            far_organization,
             lead_location=lead_location,
         )
 
-        # Nearby dealer should get higher score
-        assert nearby_score > far_score, "Geographically closer dealer should get higher score"
+        # Nearby organization should get higher score
+        assert nearby_score > far_score, (
+            "Geographically closer organization should get higher score"
+        )
 
     def test_geographic_proximity_no_location(self):
         """Test that rule returns 0 when no location data available."""
@@ -434,14 +440,14 @@ class TestGeographicProximityRule:
             tenant_id=tenant_id,
         )
 
-        dealer = AssignmentCandidate(
+        organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Dealer A",
+            name="Organization A",
             active_lead_count=0,
         )
 
         # No location data
-        score = engine._geographic_proximity_rule.score(lead, dealer)
+        score = engine._geographic_proximity_rule.score(lead, organization)
 
         # Should return 0 when no location data
         assert score == 0.0, "Should return 0 when no location data available"
@@ -468,10 +474,10 @@ class TestLeadAssignmentRulesEngine:
             tenant_id=tenant_id,
         )
 
-        dealers = [
+        organizations = [
             AssignmentCandidate(
                 user_id=uuid4(),
-                name=f"Dealer {i}",
+                name=f"Organization {i}",
                 active_lead_count=i,
             )
             for i in range(3)
@@ -479,13 +485,13 @@ class TestLeadAssignmentRulesEngine:
 
         result = engine.assign_lead(
             lead=lead,
-            candidates=dealers,
+            candidates=organizations,
             strategy=AssignmentStrategy.ROUND_ROBIN,
         )
 
         assert isinstance(result, AssignmentResult)
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id in [d.user_id for d in dealers]
+        assert result.assigned_to.user_id in [d.user_id for d in organizations]
         assert result.strategy_used == AssignmentStrategy.ROUND_ROBIN
         assert result.confidence_score > 0.0
 
@@ -495,7 +501,7 @@ class TestLeadAssignmentRulesEngine:
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
         product_owner_id = uuid4()
-        other_dealer_id = uuid4()
+        other_organization_id = uuid4()
         product_id = uuid4()
         organization_id = uuid4()
 
@@ -514,15 +520,15 @@ class TestLeadAssignmentRulesEngine:
             price_cents=10000,
         )
 
-        dealers = [
+        organizations = [
             AssignmentCandidate(
                 user_id=product_owner_id,
                 name="Product Owner",
                 active_lead_count=10,
             ),
             AssignmentCandidate(
-                user_id=other_dealer_id,
-                name="Other Dealer",
+                user_id=other_organization_id,
+                name="Other Organization",
                 active_lead_count=0,
             ),
         ]
@@ -532,7 +538,7 @@ class TestLeadAssignmentRulesEngine:
 
         result = engine.assign_lead(
             lead=lead,
-            candidates=dealers,
+            candidates=organizations,
             strategy=AssignmentStrategy.VEHICLE_OWNER,
             product=product,
             organization_members=organization_members,
@@ -552,29 +558,29 @@ class TestLeadAssignmentRulesEngine:
             tenant_id=tenant_id,
         )
 
-        busy_dealer = AssignmentCandidate(
+        busy_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Busy Dealer",
+            name="Busy Organization",
             active_lead_count=10,
         )
 
-        free_dealer = AssignmentCandidate(
+        free_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Free Dealer",
+            name="Free Organization",
             active_lead_count=1,
         )
 
-        dealers = [busy_dealer, free_dealer]
+        organizations = [busy_organization, free_organization]
 
         result = engine.assign_lead(
             lead=lead,
-            candidates=dealers,
+            candidates=organizations,
             strategy=AssignmentStrategy.WORKLOAD_BALANCING,
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == free_dealer.user_id, (
-            "Should assign to dealer with fewer leads"
+        assert result.assigned_to.user_id == free_organization.user_id, (
+            "Should assign to organization with fewer leads"
         )
 
     def test_assign_lead_geographic_proximity_strategy(self):
@@ -590,34 +596,34 @@ class TestLeadAssignmentRulesEngine:
 
         lead_location = {"city": "New York", "state": "NY"}
 
-        nyc_dealer = AssignmentCandidate(
+        nyc_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="NYC Dealer",
+            name="NYC Organization",
             active_lead_count=5,
             location_city="New York",
             location_state="NY",
         )
 
-        la_dealer = AssignmentCandidate(
+        la_organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="LA Dealer",
+            name="LA Organization",
             active_lead_count=5,
             location_city="Los Angeles",
             location_state="CA",
         )
 
-        dealers = [nyc_dealer, la_dealer]
+        organizations = [nyc_organization, la_organization]
 
         result = engine.assign_lead(
             lead=lead,
-            candidates=dealers,
+            candidates=organizations,
             strategy=AssignmentStrategy.GEOGRAPHIC_PROXIMITY,
             lead_location=lead_location,
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == nyc_dealer.user_id, (
-            "Should assign to geographically closest dealer"
+        assert result.assigned_to.user_id == nyc_organization.user_id, (
+            "Should assign to geographically closest organization"
         )
 
     def test_assign_lead_empty_candidates(self):
@@ -646,7 +652,7 @@ class TestLeadAssignmentRulesEngine:
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
         product_owner_id = uuid4()
-        other_dealer_id = uuid4()
+        other_organization_id = uuid4()
         product_id = uuid4()
         organization_id = uuid4()
 
@@ -671,20 +677,20 @@ class TestLeadAssignmentRulesEngine:
             active_lead_count=10,
         )
 
-        free_dealer = AssignmentCandidate(
-            user_id=other_dealer_id,
-            name="Free Dealer",
+        free_organization = AssignmentCandidate(
+            user_id=other_organization_id,
+            name="Free Organization",
             active_lead_count=1,
         )
 
-        dealers = [busy_owner, free_dealer]
+        organizations = [busy_owner, free_organization]
 
         # Provide organization membership context
         organization_members = {product_owner_id}
 
         result = engine.assign_lead(
             lead=lead,
-            candidates=dealers,
+            candidates=organizations,
             strategy=AssignmentStrategy.COMBINED,
             product=product,
             organization_members=organization_members,
@@ -702,20 +708,20 @@ class TestAssignmentResult:
     def test_assignment_result_creation(self):
         """Test AssignmentResult value object creation."""
 
-        dealer = AssignmentCandidate(
+        organization = AssignmentCandidate(
             user_id=uuid4(),
-            name="Test Dealer",
+            name="Test Organization",
             active_lead_count=5,
         )
 
         result = AssignmentResult(
-            assigned_to=dealer,
+            assigned_to=organization,
             strategy_used=AssignmentStrategy.ROUND_ROBIN,
             confidence_score=0.95,
             rule_scores={"round_robin": 1.0},
         )
 
-        assert result.assigned_to == dealer
+        assert result.assigned_to == organization
         assert result.strategy_used == AssignmentStrategy.ROUND_ROBIN
         assert result.confidence_score == 0.95
         assert result.rule_scores == {"round_robin": 1.0}
@@ -741,14 +747,14 @@ class TestAssignmentCandidate:
 
         candidate = AssignmentCandidate(
             user_id=uuid4(),
-            name="Test Dealer",
+            name="Test Organization",
             active_lead_count=5,
             location_city="New York",
             location_state="NY",
         )
 
         assert candidate.user_id is not None
-        assert candidate.name == "Test Dealer"
+        assert candidate.name == "Test Organization"
         assert candidate.active_lead_count == 5
         assert candidate.location_city == "New York"
         assert candidate.location_state == "NY"
@@ -758,7 +764,7 @@ class TestAssignmentCandidate:
 
         candidate = AssignmentCandidate(
             user_id=uuid4(),
-            name="Test Dealer",
+            name="Test Organization",
             active_lead_count=5,
         )
 

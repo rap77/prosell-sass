@@ -1,7 +1,7 @@
 """API routers for ProSell SaaS."""
 
-from prosell.infrastructure.api.routers.admin_dealers_router import (
-    router as admin_dealers_router,
+from prosell.infrastructure.api.routers.admin_organizations_router import (
+    router as admin_organizations_router,
 )
 from prosell.infrastructure.api.routers.admin_router import router as admin_router
 from prosell.infrastructure.api.routers.auth_router import router as auth_router
@@ -26,7 +26,7 @@ from prosell.infrastructure.api.routers.vehicle_router import router as vehicle_
 from prosell.infrastructure.api.routers.wallet_router import router as wallet_router
 
 __all__ = [
-    "admin_dealers_router",
+    "admin_organizations_router",
     "admin_router",
     "auth_router",
     "branch_router",

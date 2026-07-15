@@ -6,33 +6,32 @@ import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { useCategories } from "@/lib/api/categories";
-import { useCreateDealer, useUpdateDealer } from "@/lib/api/dealers";
+import { useCreateOrganization, useUpdateOrganization } from "@/lib/api/organizations";
 import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
 
 /**
- * Staff form to create a dealer org + invite its owner — Subsystem E Task 16.
+ * Staff form to create a organization org + invite its owner — Subsystem E Task 16.
  *
- * Gates on hasPermission(DEALER_ADMIN_VIEW_ALL) directly rather than
+ * Gates on hasPermission(ORG_ADMIN_VIEW_ALL) directly rather than
  * useRequireAdmin(), which checks role-identity (isAdmin) instead of the
  * permission itself.
  */
 export default function AdminNewDealerPage() {
   const router = useRouter();
   const { hasPermission, isLoading: authLoading } = useAuth();
-  const canCreate = hasPermission(Permission.DEALER_ADMIN_VIEW_ALL);
+  const canCreate = hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
 
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
 
   // ponytail: Only level 0 categories are verticals (top-level industry niches)
   const verticals = categories.filter((c) => c.level === 0);
-  const createDealer = useCreateDealer();
-  const updateDealer = useUpdateDealer();
+  const createOrganization = useCreateOrganization();
+  const updateOrganization = useUpdateOrganization();
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [color, setColor] = useState("#4DB8FF");
-  const [ownerEmail, setOwnerEmail] = useState("");
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
   const [brokers, setBrokers] = useState<
     Array<{ name: string; email: string; phone?: string }>
@@ -119,17 +118,16 @@ export default function AdminNewDealerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await createDealer.mutateAsync({
+      const result = await createOrganization.mutateAsync({
         name,
         vertical_ids: verticalIds,
-        owner_email: ownerEmail,
         brokers: brokers.length > 0 ? brokers : undefined,
       });
 
       // ponytail: always update to set code/color if provided
       if (code || color || hasOptionalFields()) {
-        await updateDealer.mutateAsync({
-          dealerId: result.organization_id,
+        await updateOrganization.mutateAsync({
+          organizationId: result.organization_id,
           data: {
             code: code || undefined,
             color: color || undefined,
@@ -178,72 +176,41 @@ export default function AdminNewDealerPage() {
           maxWidth: 480,
         }}
       >
-        {/* Name + Code + Color row — same layout as edit page */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto auto",
-            gap: 12,
-            alignItems: "end",
-          }}
-        >
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            Nombre *
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              style={{
-                height: 38,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
-              }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            Siglas
-            <input
-              type="text"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.toUpperCase().slice(0, 5))
-              }
-              maxLength={5}
-              placeholder="ACME"
-              style={{
-                height: 38,
-                width: 80,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
-                textTransform: "uppercase",
-              }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            Color
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              style={{
-                height: 38,
-                width: 50,
-                padding: 4,
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                cursor: "pointer",
-              }}
-            />
-          </label>
-        </div>
+        {/* Shared form fields — identity (name/code/color) + optional */}
+        <OrganizationFormFields
+          name={name}
+          code={code}
+          color={color}
+          onNameChange={setName}
+          onCodeChange={setCode}
+          onColorChange={setColor}
+          description={description}
+          website={website}
+          phone={phone}
+          email={email}
+          whatsapp={whatsapp}
+          streetAddress={streetAddress}
+          city={city}
+          state={state}
+          postalCode={postalCode}
+          country={country}
+          taxId={taxId}
+          instagram={instagram}
+          facebook={facebook}
+          onDescriptionChange={setDescription}
+          onWebsiteChange={setWebsite}
+          onPhoneChange={setPhone}
+          onEmailChange={setEmail}
+          onWhatsappChange={setWhatsapp}
+          onStreetAddressChange={setStreetAddress}
+          onCityChange={setCity}
+          onStateChange={setState}
+          onPostalCodeChange={setPostalCode}
+          onCountryChange={setCountry}
+          onTaxIdChange={setTaxId}
+          onInstagramChange={setInstagram}
+          onFacebookChange={setFacebook}
+        />
 
         <fieldset
           style={{
@@ -290,24 +257,6 @@ export default function AdminNewDealerPage() {
             </label>
           ))}
         </fieldset>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Email del owner
-          <input
-            type="email"
-            value={ownerEmail}
-            onChange={(e) => setOwnerEmail(e.target.value)}
-            required
-            style={{
-              height: 38,
-              padding: "0 12px",
-              borderRadius: 8,
-              border: "1px solid var(--ps-border-default)",
-              background: "var(--ps-bg-elevated)",
-              color: "var(--ps-text-primary)",
-            }}
-          />
-        </label>
 
         {/* Brokers section */}
         <fieldset
@@ -460,55 +409,17 @@ export default function AdminNewDealerPage() {
           )}
         </fieldset>
 
-        {/* Shared form fields - same component as edit page */}
-        <div
-          style={{
-            borderTop: "1px solid var(--ps-border-default)",
-            paddingTop: 16,
-            marginTop: 8,
-          }}
-        >
-          <OrganizationFormFields
-            description={description}
-            website={website}
-            phone={phone}
-            email={email}
-            whatsapp={whatsapp}
-            streetAddress={streetAddress}
-            city={city}
-            state={state}
-            postalCode={postalCode}
-            country={country}
-            taxId={taxId}
-            instagram={instagram}
-            facebook={facebook}
-            onDescriptionChange={setDescription}
-            onWebsiteChange={setWebsite}
-            onPhoneChange={setPhone}
-            onEmailChange={setEmail}
-            onWhatsappChange={setWhatsapp}
-            onStreetAddressChange={setStreetAddress}
-            onCityChange={setCity}
-            onStateChange={setState}
-            onPostalCodeChange={setPostalCode}
-            onCountryChange={setCountry}
-            onTaxIdChange={setTaxId}
-            onInstagramChange={setInstagram}
-            onFacebookChange={setFacebook}
-          />
-        </div>
-
-        {(createDealer.error || updateDealer.error) && (
+        {(createOrganization.error || updateOrganization.error) && (
           <p style={{ color: "var(--ps-error)" }}>
-            {createDealer.error?.message || updateDealer.error?.message}
+            {createOrganization.error?.message || updateOrganization.error?.message}
           </p>
         )}
 
         <button
           type="submit"
           disabled={
-            createDealer.isPending ||
-            updateDealer.isPending ||
+            createOrganization.isPending ||
+            updateOrganization.isPending ||
             verticalIds.length === 0
           }
           style={{
@@ -521,7 +432,7 @@ export default function AdminNewDealerPage() {
             cursor: "pointer",
           }}
         >
-          {createDealer.isPending || updateDealer.isPending
+          {createOrganization.isPending || updateOrganization.isPending
             ? "Creando..."
             : "Crear organización"}
         </button>

@@ -28,8 +28,8 @@ import {
  * - 'inventario'     → catalog & publications
  * - 'ventas'         → sales execution (leads, pipeline, analytics)
  * - 'configuración'  → admin/branch only
- * - 'concesionarios' → Subsystem D: cross-dealer admin view, gated behind
- *   Permission.DEALER_ADMIN_VIEW_ALL regardless of whether the caller's
+ * - 'concesionarios' → Subsystem D: cross-organization admin view, gated behind
+ *   Permission.ORG_ADMIN_VIEW_ALL regardless of whether the caller's
  *   layout requests this group (defense in depth — see `Sidebar()` below).
  */
 export type NavGroup =
@@ -140,7 +140,7 @@ interface SidebarProps {
  *
  * Features:
  * - Context API for shared state (isOpen, toggle)
- * - Compound components: <Sidebar.Nav />, <Sidebar.Footer />
+ * - Dedicated navigation and footer subcomponents
  * - Smooth transitions using opacity/transform only (CSS-01 anti-pattern)
  * - Role-based filtering via `groups` prop
  * - Active route highlighting
@@ -157,7 +157,7 @@ export function Sidebar({ groups }: SidebarProps) {
     if (!groups.includes(item.group)) return false;
 
     if (item.group === "concesionarios") {
-      return hasPermission(Permission.DEALER_ADMIN_VIEW_ALL);
+      return hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
     }
     if (item.group === "configuración") {
       return hasPermission(Permission.SETTINGS_READ);
@@ -246,14 +246,14 @@ export function Sidebar({ groups }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <Sidebar.Nav
+        <SidebarNav
           items={visibleItems}
           pathname={pathname}
           collapsed={sidebarCollapsed}
         />
 
         {/* Footer */}
-        <Sidebar.Footer collapsed={sidebarCollapsed} />
+        <SidebarFooter collapsed={sidebarCollapsed} />
       </div>
     </aside>
   );
@@ -263,7 +263,7 @@ export function Sidebar({ groups }: SidebarProps) {
  * Sidebar navigation items with group labels.
  * Animate opacity/transform only (60fps) per CSS-01 anti-pattern.
  */
-Sidebar.Nav = function SidebarNav({
+function SidebarNav({
   items,
   pathname,
   collapsed,
@@ -386,12 +386,12 @@ Sidebar.Nav = function SidebarNav({
       )}
     </nav>
   );
-};
+}
 
 /**
  * Sidebar footer with user info and logout.
  */
-Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
+function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   const { user } = useAuth();
 
   // Helper function to get user initials
@@ -483,4 +483,4 @@ Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
       </div>
     </div>
   );
-};
+}

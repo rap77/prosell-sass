@@ -10,6 +10,7 @@ from uuid import UUID
 
 from prosell.domain.repositories.product_ownership_repository import (
     AbstractProductOwnershipRepository,
+    OwnerType,
 )
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 
@@ -20,7 +21,7 @@ class OwnerShare:
 
     owner_id: UUID
     percentage: Decimal
-    owner_type: str = "organization"  # "organization" | "user"
+    owner_type: OwnerType = "organization"
 
 
 class SetProductOwnershipUseCase:

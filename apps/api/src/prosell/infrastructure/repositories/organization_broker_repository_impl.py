@@ -73,12 +73,16 @@ class SqlAlchemyOrganizationBrokerRepository:
     async def update_broker(
         self,
         broker_id: UUID,
+        organization_id: UUID,
         name: str | None = None,
         email: str | None = None,
         phone: str | None = None,
     ) -> BrokerInfo | None:
-        """Update a broker. Only allowed if status is 'pending'."""
-        stmt = select(OrganizationBrokerModel).where(OrganizationBrokerModel.id == broker_id)
+        """Update a broker. Only allowed if status is 'pending' and belongs to organization."""
+        stmt = select(OrganizationBrokerModel).where(
+            OrganizationBrokerModel.id == broker_id,
+            OrganizationBrokerModel.organization_id == organization_id,
+        )
         result = await self.session.execute(stmt)
         broker = result.scalar_one_or_none()
         if broker is None:
@@ -97,17 +101,23 @@ class SqlAlchemyOrganizationBrokerRepository:
         await self.session.flush()
         return _to_info(broker)
 
-    async def delete_broker(self, broker_id: UUID) -> bool:
-        """Delete a broker by id."""
-        stmt = delete(OrganizationBrokerModel).where(OrganizationBrokerModel.id == broker_id)
+    async def delete_broker(self, broker_id: UUID, organization_id: UUID) -> bool:
+        """Delete a broker by id, scoped to organization."""
+        stmt = delete(OrganizationBrokerModel).where(
+            OrganizationBrokerModel.id == broker_id,
+            OrganizationBrokerModel.organization_id == organization_id,
+        )
         result = await self.session.execute(stmt)
         await self.session.flush()
         # ponytail: rowcount exists at runtime, pyright doesn't see it
         return int(result.rowcount or 0) > 0  # type: ignore[attr-defined]
 
-    async def get_broker(self, broker_id: UUID) -> BrokerInfo | None:
-        """Get a broker by id."""
-        stmt = select(OrganizationBrokerModel).where(OrganizationBrokerModel.id == broker_id)
+    async def get_broker(self, broker_id: UUID, organization_id: UUID) -> BrokerInfo | None:
+        """Get a broker by id, scoped to organization."""
+        stmt = select(OrganizationBrokerModel).where(
+            OrganizationBrokerModel.id == broker_id,
+            OrganizationBrokerModel.organization_id == organization_id,
+        )
         result = await self.session.execute(stmt)
         broker = result.scalar_one_or_none()
         if broker is None:
@@ -146,11 +156,16 @@ class SqlAlchemyOrganizationBrokerRepository:
             return None
         return _to_info(broker)
 
-    async def verify_broker(self, broker_id: UUID, user_id: UUID) -> BrokerInfo | None:
-        """Mark a broker as verified and link to user account."""
+    async def verify_broker(
+        self, broker_id: UUID, organization_id: UUID, user_id: UUID
+    ) -> BrokerInfo | None:
+        """Mark an organization-scoped broker as verified and link its user account."""
         stmt = (
             update(OrganizationBrokerModel)
-            .where(OrganizationBrokerModel.id == broker_id)
+            .where(
+                OrganizationBrokerModel.id == broker_id,
+                OrganizationBrokerModel.organization_id == organization_id,
+            )
             .values(status="verified", user_id=user_id, verified_at=func.now())
             .returning(OrganizationBrokerModel)
         )

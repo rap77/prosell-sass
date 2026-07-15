@@ -2,7 +2,7 @@
 + vertical rows, or do they leak because of per-step commits?
 
 The plan's gap doc claimed the per-request session commits after each
-repository .flush(), so CreateDealerOrganizationUseCase needs an explicit
+repository .flush(), so CreateOrganizationUseCase needs an explicit
 `async with db.begin():` in the router. This test checks that claim against
 the actual session lifecycle (`get_async_session` only commits once, at the
 end, and only if no exception propagated -- see
@@ -16,11 +16,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.application.use_cases.organization.create_dealer_organization import (
-    CreateDealerOrganizationUseCase,
+from prosell.application.use_cases.organization.create_organization import (
+    CreateOrganizationUseCase,
 )
-from prosell.application.use_cases.organization.invite_dealer_owner import (
-    InviteDealerOwnerUseCase,
+from prosell.application.use_cases.organization.invite_organization_owner import (
+    InviteOrganizationOwnerUseCase,
 )
 from prosell.domain.ports import AbstractEmailService
 from prosell.infrastructure.models.category_model import CategoryModel
@@ -62,10 +62,10 @@ async def test_mid_flow_failure_leaves_no_org_row_after_session_rollback(
     raising_email_service = AsyncMock(spec=AbstractEmailService)
     raising_email_service.send_org_invitation.side_effect = RuntimeError("email provider down")
 
-    invite_use_case = InviteDealerOwnerUseCase(
+    invite_use_case = InviteOrganizationOwnerUseCase(
         SqlAlchemyOrganizationInvitationRepository(db_session), raising_email_service
     )
-    uc = CreateDealerOrganizationUseCase(
+    uc = CreateOrganizationUseCase(
         SqlAlchemyOrganizationRepository(db_session),
         SqlAlchemyOrganizationVerticalRepository(db_session),
         SqlAlchemyUserRepository(db_session),

@@ -115,17 +115,17 @@ class TestTimesOverlap:
 class TestDetectConflicts:
     """Test suite for detect_conflicts method.
 
-    Verifies conflict detection logic including dealer assignment,
+    Verifies conflict detection logic including organization assignment,
     time overlap, and appointment status filtering.
     """
 
-    def test_detect_conflicts_different_dealer_no_conflict(self):
-        """Test that different dealers don't cause conflicts."""
+    def test_detect_conflicts_different_organization_no_conflict(self):
+        """Test that different organizations don't cause conflicts."""
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer1_id = uuid4()
-        dealer2_id = uuid4()
+        organization1_id = uuid4()
+        organization2_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -134,7 +134,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer1_id,
+            user_id=organization1_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -144,7 +144,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),  # Different lead
-            user_id=dealer2_id,  # Different dealer
+            user_id=organization2_id,  # Different organization
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),  # Same time
             status=AppointmentStatus.SCHEDULED,
@@ -152,14 +152,14 @@ class TestDetectConflicts:
 
         conflicts = detector.detect_conflicts(new_appointment, [existing_appointment])
 
-        assert len(conflicts) == 0, "Different dealers should not cause conflicts"
+        assert len(conflicts) == 0, "Different organizations should not cause conflicts"
 
     def test_detect_conflicts_different_time_no_conflict(self):
         """Test that different times don't cause conflicts."""
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -168,7 +168,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 9, 0, tzinfo=UTC),  # 9 AM
             status=AppointmentStatus.SCHEDULED,
@@ -178,7 +178,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,  # Same dealer
+            user_id=organization_id,  # Same organization
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 11, 0, tzinfo=UTC),  # 11 AM
             status=AppointmentStatus.SCHEDULED,
@@ -193,7 +193,7 @@ class TestDetectConflicts:
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -202,7 +202,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -212,7 +212,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,  # Same dealer
+            user_id=organization_id,  # Same organization
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),  # Same time
             status=AppointmentStatus.CANCELLED,  # Cancelled
@@ -227,7 +227,7 @@ class TestDetectConflicts:
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -236,7 +236,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -246,7 +246,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,  # Same dealer
+            user_id=organization_id,  # Same organization
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),  # Same time
             status=AppointmentStatus.COMPLETED,  # Completed
@@ -256,12 +256,12 @@ class TestDetectConflicts:
 
         assert len(conflicts) == 0, "Completed appointments should not cause conflicts"
 
-    def test_detect_conflicts_same_dealer_same_time_conflict(self):
-        """Test that same dealer + same time causes conflict."""
+    def test_detect_conflicts_same_organization_same_time_conflict(self):
+        """Test that same organization + same time causes conflict."""
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -270,7 +270,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -280,7 +280,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,  # Same dealer
+            user_id=organization_id,  # Same organization
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),  # Same time
             status=AppointmentStatus.SCHEDULED,
@@ -288,8 +288,8 @@ class TestDetectConflicts:
 
         conflicts = detector.detect_conflicts(new_appointment, [existing_appointment])
 
-        assert len(conflicts) == 1, "Same dealer + same time should cause conflict"
-        assert conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
+        assert len(conflicts) == 1, "Same organization + same time should cause conflict"
+        assert conflicts[0].type == ConflictType.ORG_UNAVAILABLE
         assert conflicts[0].existing_appointment == existing_appointment
 
     def test_detect_conflicts_time_overlap_conflict(self):
@@ -297,7 +297,7 @@ class TestDetectConflicts:
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -306,7 +306,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),  # 9:30 AM
             status=AppointmentStatus.SCHEDULED,
@@ -316,7 +316,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,  # Same dealer
+            user_id=organization_id,  # Same organization
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 9, 0, tzinfo=UTC),  # 9:00 AM
             status=AppointmentStatus.SCHEDULED,
@@ -325,14 +325,14 @@ class TestDetectConflicts:
         conflicts = detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 1, "Overlapping times should cause conflict"
-        assert conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
+        assert conflicts[0].type == ConflictType.ORG_UNAVAILABLE
 
     def test_detect_conflicts_multiple_conflicts(self):
         """Test detection of multiple conflicts."""
         from uuid import uuid4
 
         detector = AppointmentConflictDetector()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         lead_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
@@ -341,7 +341,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -351,7 +351,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -361,7 +361,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=uuid4(),
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 30, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -377,7 +377,7 @@ class TestDetectConflicts:
 
         detector = AppointmentConflictDetector()
         lead_id = uuid4()
-        dealer_id = uuid4()
+        organization_id = uuid4()
         product_id = uuid4()
         tenant_id = uuid4()
 
@@ -385,7 +385,7 @@ class TestDetectConflicts:
             id=uuid4(),
             tenant_id=tenant_id,
             lead_id=lead_id,
-            user_id=dealer_id,
+            user_id=organization_id,
             product_id=product_id,
             scheduled_at=datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
             status=AppointmentStatus.SCHEDULED,
@@ -414,17 +414,17 @@ class TestConflictValueObject:
         )
 
         conflict = Conflict(
-            type=ConflictType.DEALER_UNAVAILABLE,
+            type=ConflictType.ORG_UNAVAILABLE,
             existing_appointment=existing_appointment,
             message="Test conflict message",
         )
 
-        assert conflict.type == ConflictType.DEALER_UNAVAILABLE
+        assert conflict.type == ConflictType.ORG_UNAVAILABLE
         assert conflict.existing_appointment == existing_appointment
         assert conflict.message == "Test conflict message"
-        assert "dealer_unavailable" in repr(conflict)
+        assert "org_unavailable" in repr(conflict)
 
     def test_conflict_type_enum(self):
         """Test ConflictType enum values."""
-        assert ConflictType.DEALER_UNAVAILABLE.value == "dealer_unavailable"
-        assert isinstance(ConflictType.DEALER_UNAVAILABLE.value, str)
+        assert ConflictType.ORG_UNAVAILABLE.value == "org_unavailable"
+        assert isinstance(ConflictType.ORG_UNAVAILABLE.value, str)

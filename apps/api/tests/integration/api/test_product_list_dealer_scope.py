@@ -1,7 +1,7 @@
 """Integration tests — Subsystem D Phase 2: admin dealer-scope bypass on product list.
 
-Task 2.1 (RED): admin (DEALER_ADMIN_VIEW_ALL) sees products across ALL tenants.
-Task 2.3 (RED): seller (no DEALER_ADMIN_VIEW_ALL) stays scoped to own tenant — regression.
+Task 2.1 (RED): admin (ORG_ADMIN_VIEW_ALL) sees products across ALL tenants.
+Task 2.3 (RED): seller (no ORG_ADMIN_VIEW_ALL) stays scoped to own tenant — regression.
 Task 2.4 (RED): seller passing ?organization_id=<other tenant> gets 403 (IDOR guard).
 """
 
@@ -87,7 +87,7 @@ async def test_admin_sees_products_across_all_tenants(
     own_tenant_product: ProductModel,
     other_tenant_product: ProductModel,
 ) -> None:
-    """Task 2.1: admin (DEALER_ADMIN_VIEW_ALL) lists products -> sees BOTH tenants."""
+    """Task 2.1: admin (ORG_ADMIN_VIEW_ALL) lists products -> sees BOTH tenants."""
     response = await async_client_as_admin.get("/api/v1/products")
 
     assert response.status_code == 200
@@ -102,7 +102,7 @@ async def test_seller_stays_scoped_to_own_tenant(
     own_tenant_product: ProductModel,
     other_tenant_product: ProductModel,
 ) -> None:
-    """Task 2.3: seller (no DEALER_ADMIN_VIEW_ALL) -- regression, only own tenant."""
+    """Task 2.3: seller (no ORG_ADMIN_VIEW_ALL) -- regression, only own tenant."""
     response = await async_client_as_seller.get("/api/v1/products")
 
     assert response.status_code == 200
@@ -153,7 +153,7 @@ async def test_admin_sees_featured_products_for_target_org(
     async_client_as_admin: AsyncClient,
     other_tenant_product: ProductModel,
 ) -> None:
-    """Code review finding #2: GET /products/featured had no DEALER_ADMIN_VIEW_ALL
+    """Code review finding #2: GET /products/featured had no ORG_ADMIN_VIEW_ALL
     bypass — always scoped to the admin's own tenant, inconsistent with
     list_products in the same router.
     """
@@ -187,7 +187,7 @@ async def test_admin_sees_filter_values_for_target_org_category(
     other_tenant_product: ProductModel,
 ) -> None:
     """Code review finding #2: GET /categories/{id}/filter-values had no
-    DEALER_ADMIN_VIEW_ALL bypass — category lookup always used the admin's
+    ORG_ADMIN_VIEW_ALL bypass — category lookup always used the admin's
     own tenant, 404ing on another dealer's category.
     """
     response = await async_client_as_admin.get(

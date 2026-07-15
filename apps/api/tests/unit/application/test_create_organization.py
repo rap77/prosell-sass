@@ -1,17 +1,17 @@
-"""Tests for CreateDealerOrganizationUseCase."""
+"""Tests for CreateOrganizationUseCase."""
 
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 
-from prosell.application.use_cases.organization.create_dealer_organization import (
-    CreateDealerOrganizationUseCase,
+from prosell.application.use_cases.organization.create_organization import (
+    CreateOrganizationUseCase,
 )
 from prosell.domain.entities.organization_invitation import OrganizationInvitation
 
 UseCaseFixture = tuple[
-    CreateDealerOrganizationUseCase, AsyncMock, AsyncMock, AsyncMock, AsyncMock, AsyncMock
+    CreateOrganizationUseCase, AsyncMock, AsyncMock, AsyncMock, AsyncMock, AsyncMock
 ]
 
 
@@ -26,7 +26,7 @@ def use_case() -> UseCaseFixture:
     # get_by_id_cross_tenant.return_value.
     category_repository.get_by_id_cross_tenant.return_value = AsyncMock(is_active=True)
     invite_use_case = AsyncMock()
-    uc = CreateDealerOrganizationUseCase(
+    uc = CreateOrganizationUseCase(
         org_repository, vertical_repository, user_repository, category_repository, invite_use_case
     )
     return (
@@ -197,4 +197,45 @@ async def test_happy_path_creates_org_enables_verticals_and_invites_owner(
     invite_use_case.execute.assert_called_once()
     invite_call_kwargs = invite_use_case.execute.call_args.kwargs
     assert invite_call_kwargs["email"] == "owner@x.com"  # lowercased before passing through
-    assert result is invite_use_case.execute.return_value
+    assert result.organization.name == "Acme Motors"
+    assert result.invitation is invite_use_case.execute.return_value
+
+
+@pytest.mark.asyncio
+async def test_creates_org_without_owner_email_skips_invitation(
+    use_case: UseCaseFixture,
+) -> None:
+    """When owner_email is None, the org is created but no invitation is issued.
+
+    Use case: ProSell manages the org's inventory directly until the org
+    needs its own user. The org still has a real organization_id from
+    Organization.create().
+    """
+    (
+        uc,
+        org_repository,
+        vertical_repository,
+        user_repository,
+        _category_repository,
+        invite_use_case,
+    ) = use_case
+    user_repository.get_by_email.return_value = None
+    org_repository.create.side_effect = lambda org: org
+
+    result = await uc.execute(
+        name="ProSell Managed Org",
+        vertical_ids=[uuid4()],
+        owner_email=None,
+        inviter_name="Staff",
+        created_by_user_id=uuid4(),
+    )
+
+    org_repository.create.assert_called_once()
+    assert result.organization.name == "ProSell Managed Org"
+    assert result.organization.id is not None
+    assert result.invitation is None
+
+    # Verticals still enabled; no invitation issued; no email lookup.
+    assert vertical_repository.enable.call_count == 1
+    invite_use_case.execute.assert_not_called()
+    user_repository.get_by_email.assert_not_called()

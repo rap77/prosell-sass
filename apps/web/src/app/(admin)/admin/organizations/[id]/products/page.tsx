@@ -3,18 +3,18 @@
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
-import { useDealerProducts } from "@/lib/api/dealers";
+import { useOrganizationProducts } from "@/lib/api/organizations";
 
 /**
- * Admin dealer products list — Subsystem D Phase 6.
+ * Admin organization products list — Subsystem D Phase 6.
  *
- * Uses `useParams()` — see AdminDealerDetailPage for why (no server
+ * Uses `useParams()` — see AdminOrganizationDetailPage for why (no server
  * benefit from `params: Promise<...>` on a 100% client-rendered page).
  */
-export default function AdminDealerProductsPage() {
+export default function AdminOrganizationProductsPage() {
   const { id } = useParams<{ id: string }>();
   const isAdmin = useRequireAdmin();
-  const { data: products = [], isLoading, error } = useDealerProducts(id);
+  const { data: products = [], isLoading, error } = useOrganizationProducts(id);
 
   if (!isAdmin) {
     return null;

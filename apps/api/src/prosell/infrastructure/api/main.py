@@ -1,5 +1,8 @@
 """FastAPI application entry point for ProSell SaaS."""
 
+import base64
+import os
+
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,7 +22,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
     pydantic_validation_error_handler,
 )
 from prosell.infrastructure.api.routers import (
-    admin_dealers_router,
+    admin_organizations_router,
     admin_router,
     auth_router,
     branch_router,
@@ -125,26 +128,39 @@ async def security_headers_middleware(
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
-    # Content Security Policy (basic - enhance as needed)
-    # SECURITY: 'unsafe-inline' allows inline scripts/styles which is vulnerable to XSS.
-    # For production, MUST migrate to nonce/hash-based CSP:
-    # - Generate nonce per request: nonce = base64.b64encode(os.urandom(16)).decode()
-    # - Pass to templates: return templates.TemplateResponse(..., context={"nonce": nonce})
-    # - Use in CSP: f"script-src 'self' 'nonce-{nonce}';"
-    # - Use in templates: <script nonce="{{ nonce }}">
-    # Track: https://github.com/rap77/prosell-sass/issues/SECURITY-001
-    # Allow Swagger UI CDN for API docs (development only)
-    # In production, consider bundling Swagger UI assets locally
-    csp_base = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-        "img-src 'self' data: https:; "
-        "font-src 'self' https://cdn.jsdelivr.net; "
-        "connect-src 'self' https://cdn.jsdelivr.net; "
-        "frame-ancestors 'none';"
-    )
-    response.headers["Content-Security-Policy"] = csp_base
+    # Content Security Policy:
+    # - Production: strict nonce-based policy, no inline scripts, no eval.
+    # - Non-production: relaxed policy so Swagger UI (loaded from CDN with
+    #   inline scripts) still works without serving assets locally.
+    # Per-request nonce is required for strict CSP; templates and middleware
+    # that emit inline scripts must read `request.state.csp_nonce` and use
+    # the matching nonce attribute. (See docs/security/csp.md.)
+    is_production = settings.environment == "production"
+    if is_production:
+        nonce = base64.b64encode(os.urandom(16)).decode()
+        # Propagate nonce so templates can stamp it onto <script> tags.
+        request.state.csp_nonce = nonce
+        csp_directives = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
+            "style-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "frame-ancestors 'none';"
+        )
+    else:
+        # Dev / staging / testing: allow Swagger UI's inline scripts and eval.
+        csp_directives = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "frame-ancestors 'none';"
+        )
+    response.headers["Content-Security-Policy"] = csp_directives
 
     # Referrer Policy
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -171,8 +187,19 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Explicit allowlist: avoids the `Access-Control-Request-Method: PATCH`
+    # / `Authorization` / `X-Requested-With` etc. surprises you get with
+    # wildcard methods/headers in browsers that silently reject `*` when
+    # `allow_credentials=True` (which is the case here).
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "X-CSRF-Token",
+    ],
 )
 
 
@@ -305,9 +332,9 @@ app.include_router(
 )
 
 app.include_router(
-    admin_dealers_router,
-    prefix="/api/v1/admin/dealers",
-    tags=["Admin", "Dealers"],
+    admin_organizations_router,
+    prefix="/api/v1/admin/organizations",
+    tags=["Admin", "Organizations"],
 )
 
 app.include_router(

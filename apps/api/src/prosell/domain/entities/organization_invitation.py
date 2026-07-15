@@ -25,7 +25,7 @@ class OrganizationInvitationStatus(StrEnum):
 
 
 class OrganizationInvitation(DomainModel):
-    """Invitation for a new dealer owner to claim an Organization staff created."""
+    """Invitation for a new organization owner to claim an Organization staff created."""
 
     id: UUID
     organization_id: UUID
@@ -49,7 +49,7 @@ class OrganizationInvitation(DomainModel):
         created_by_user_id: UUID,
         expires_in_days: int = 7,
     ) -> "OrganizationInvitation":
-        """Factory method for a new dealer-owner invitation, with a secure token.
+        """Factory method for a new organization-owner invitation, with a secure token.
 
         The raw token is hashed and discarded — callers that need to email the
         invitation must use `build_pending` instead, which returns the raw token

@@ -297,7 +297,7 @@ class TestListOrganizations:
         self, mock_org_repo: MagicMock
     ) -> None:
         """Code review finding #4: list_organizations gates the no-tenant-filter
-        branch on Permission.DEALER_ADMIN_VIEW_ALL (not a hardcoded role-string
+        branch on Permission.ORG_ADMIN_VIEW_ALL (not a hardcoded role-string
         list) — same set of roles today (SUPER_ADMIN/ADMIN), but now a single
         source of truth shared with product_router.py/admin_dealers_router.py.
         """

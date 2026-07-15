@@ -1,18 +1,18 @@
 /**
- * Zod schemas for the admin dealer endpoints (Subsystem D Phase 4 backend).
+ * Zod schemas for the admin organization endpoints (Subsystem D Phase 4 backend).
  *
  * Validates the wire shape at the HTTP boundary:
- *   GET /api/v1/admin/dealers              → DealerListResponseSchema
- *   GET /api/v1/admin/dealers/{id}/products → DealerProductListResponseSchema
+ *   GET /api/v1/admin/organizations              → OrganizationListResponseSchema
+ *   GET /api/v1/admin/organizations/{id}/products → OrganizationProductListResponseSchema
  *
  * `.passthrough()` on the item schemas tolerates backend fields the
- * dealer admin UI doesn't render yet (mirrors the `category.ts` schema
+ * organization admin UI doesn't render yet (mirrors the `category.ts` schema
  * convention).
  */
 
 import { z } from "zod";
 
-export const DealerSchema = z
+export const OrganizationSchema = z
   .object({
     id: z.string(),
     name: z.string(),
@@ -46,16 +46,16 @@ export const DealerSchema = z
   })
   .passthrough();
 
-export type Dealer = z.infer<typeof DealerSchema>;
+export type Organization = z.infer<typeof OrganizationSchema>;
 
-export const DealerListResponseSchema = z.object({
-  organizations: z.array(DealerSchema),
+export const OrganizationListResponseSchema = z.object({
+  organizations: z.array(OrganizationSchema),
   total: z.number(),
   skip: z.number(),
   limit: z.number(),
 });
 
-export const DealerProductSchema = z
+export const OrganizationProductSchema = z
   .object({
     id: z.string(),
     title: z.string(),
@@ -68,25 +68,25 @@ export const DealerProductSchema = z
   })
   .passthrough();
 
-export type DealerProduct = z.infer<typeof DealerProductSchema>;
+export type OrganizationProduct = z.infer<typeof OrganizationProductSchema>;
 
-export const DealerProductListResponseSchema = z.object({
-  products: z.array(DealerProductSchema),
+export const OrganizationProductListResponseSchema = z.object({
+  products: z.array(OrganizationProductSchema),
   total: z.number(),
   skip: z.number(),
   limit: z.number(),
 });
 
-export const CreateDealerResponseSchema = z.object({
+export const CreateOrganizationResponseSchema = z.object({
   invitation_id: z.string(),
   organization_id: z.string(),
   email: z.string(),
   status: z.string(),
 });
 
-export type CreateDealerResponse = z.infer<typeof CreateDealerResponseSchema>;
+export type CreateOrganizationResponse = z.infer<typeof CreateOrganizationResponseSchema>;
 
-export const UpdateDealerResponseSchema = z
+export const UpdateOrganizationResponseSchema = z
   .object({
     id: z.string(),
     name: z.string(),
@@ -94,7 +94,7 @@ export const UpdateDealerResponseSchema = z
   })
   .passthrough();
 
-export type UpdateDealerResponse = z.infer<typeof UpdateDealerResponseSchema>;
+export type UpdateOrganizationResponse = z.infer<typeof UpdateOrganizationResponseSchema>;
 
 // Broker schemas
 export const BrokerSchema = z.object({

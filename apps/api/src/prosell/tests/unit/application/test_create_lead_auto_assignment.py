@@ -646,8 +646,8 @@ async def test_create_lead_auto_assigns_to_product_owner_with_combined_strategy(
     product_id = uuid4()
 
     lead_repo = InMemoryLeadRepository()
-    owner = build_active_user(owner_id, tenant_id, "Owner Dealer")
-    other = build_active_user(other_id, tenant_id, "Other Dealer")
+    owner = build_active_user(owner_id, tenant_id, "Owner Organization")
+    other = build_active_user(other_id, tenant_id, "Other Organization")
     product = Product(
         id=product_id,
         tenant_id=tenant_id,
@@ -685,8 +685,8 @@ async def test_create_lead_auto_assigns_using_configured_workload_strategy() -> 
     free_id = uuid4()
 
     lead_repo = InMemoryLeadRepository()
-    busy = build_active_user(busy_id, tenant_id, "Busy Dealer")
-    free = build_active_user(free_id, tenant_id, "Free Dealer")
+    busy = build_active_user(busy_id, tenant_id, "Busy Organization")
+    free = build_active_user(free_id, tenant_id, "Free Organization")
     team, members = build_team_with_members(tenant_id, [busy_id, free_id])
 
     for index in range(3):

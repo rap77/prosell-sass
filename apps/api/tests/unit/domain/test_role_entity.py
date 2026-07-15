@@ -102,7 +102,7 @@ class TestRolePermissionsMapping:
         assert Permission.VEHICLE_READ in super_admin_perms
         assert Permission.VEHICLE_UPDATE in super_admin_perms
         assert Permission.VEHICLE_DELETE in super_admin_perms
-        assert Permission.DEALER_ADMIN_VIEW_ALL in super_admin_perms
+        assert Permission.ORG_ADMIN_VIEW_ALL in super_admin_perms
         assert Permission.MARKETPLACE_PUBLISH in super_admin_perms
         assert Permission.ANALYTICS_VIEW in super_admin_perms
         assert Permission.ANALYTICS_EXPORT in super_admin_perms
@@ -112,7 +112,7 @@ class TestRolePermissionsMapping:
     def test_admin_has_core_permissions(self) -> None:
         """Test that ADMIN has core permissions (no user/role management)."""
         admin_perms = ROLE_PERMISSIONS[RoleType.ADMIN]
-        # Was 12; Subsystem D adds DEALER_ADMIN_VIEW_ALL + MARKETPLACE_PUBLISH = 14
+        # Was 12; Subsystem D adds ORG_ADMIN_VIEW_ALL + MARKETPLACE_PUBLISH = 14
         assert len(admin_perms) == 14
         # Should NOT have user management
         assert Permission.USER_CREATE not in admin_perms
@@ -120,7 +120,7 @@ class TestRolePermissionsMapping:
         assert Permission.ROLE_CREATE not in admin_perms
         assert Permission.ROLE_DELETE not in admin_perms
         # Subsystem D: admin gets both new perms
-        assert Permission.DEALER_ADMIN_VIEW_ALL in admin_perms
+        assert Permission.ORG_ADMIN_VIEW_ALL in admin_perms
         assert Permission.MARKETPLACE_PUBLISH in admin_perms
         # Should have other permissions
         assert Permission.USER_READ in admin_perms
@@ -140,7 +140,7 @@ class TestRolePermissionsMapping:
         assert Permission.ORG_DELETE not in manager_perms
         # Subsystem D: manager gets marketplace but NOT dealer admin view
         assert Permission.MARKETPLACE_PUBLISH in manager_perms
-        assert Permission.DEALER_ADMIN_VIEW_ALL not in manager_perms
+        assert Permission.ORG_ADMIN_VIEW_ALL not in manager_perms
         # Should have user read, org read, vehicle operations, analytics, settings
         assert Permission.USER_READ in manager_perms
         assert Permission.ORG_READ in manager_perms

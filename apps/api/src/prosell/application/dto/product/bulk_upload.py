@@ -10,9 +10,9 @@ class PreviewRowResponse(BaseModel):
 
     row_number: int = Field(description="Row number in the CSV (1-indexed, header is row 1)")
     vin: str = Field(description="VIN extracted from the row")
-    title: str = Field(description="Title/cod_dealer from the row")
+    title: str = Field(description="Title/cod_organization from the row")
     importable: bool = Field(description="Whether this row can be imported")
-    mapped_fields: dict[str, str | int | float | bool | list] = Field(
+    mapped_fields: dict[str, str | int | float | bool | list[object]] = Field(
         default_factory=dict,
         description="Fields that were successfully mapped to the ProSell model",
     )

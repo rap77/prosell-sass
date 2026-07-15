@@ -8,20 +8,20 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import { BrokerManager } from "@/components/admin/BrokerManager";
 
-const mockUseDealerBrokers = vi.fn();
+const mockUseOrganizationBrokers = vi.fn();
 const mockCreateMutateAsync = vi.fn();
 const mockUpdateMutateAsync = vi.fn();
-vi.mock("@/lib/api/dealers", () => ({
-  useDealerBrokers: () => mockUseDealerBrokers(),
-  useCreateDealerBroker: () => ({
+vi.mock("@/lib/api/organizations", () => ({
+  useOrganizationBrokers: () => mockUseOrganizationBrokers(),
+  useCreateOrganizationBroker: () => ({
     mutateAsync: mockCreateMutateAsync,
     isPending: false,
   }),
-  useUpdateDealerBroker: () => ({
+  useUpdateOrganizationBroker: () => ({
     mutateAsync: mockUpdateMutateAsync,
     isPending: false,
   }),
-  useDeleteDealerBroker: () => ({
+  useDeleteOrganizationBroker: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
@@ -49,20 +49,20 @@ describe("BrokerManager — phone", () => {
   });
 
   it("shows the broker phone in the list", () => {
-    mockUseDealerBrokers.mockReturnValue({
+    mockUseOrganizationBrokers.mockReturnValue({
       data: [makeBroker()],
       isLoading: false,
     });
 
-    render(<BrokerManager dealerId="dealer-1" />);
+    render(<BrokerManager organizationId="dealer-1" />);
 
     expect(screen.getByText("+58 412 5551234")).toBeInTheDocument();
   });
 
   it("sends phone when creating a broker", () => {
-    mockUseDealerBrokers.mockReturnValue({ data: [], isLoading: false });
+    mockUseOrganizationBrokers.mockReturnValue({ data: [], isLoading: false });
 
-    render(<BrokerManager dealerId="dealer-1" />);
+    render(<BrokerManager organizationId="dealer-1" />);
 
     fireEvent.click(screen.getByRole("button", { name: /agregar broker/i }));
     fireEvent.change(screen.getByPlaceholderText(/nombre del broker/i), {
@@ -77,7 +77,7 @@ describe("BrokerManager — phone", () => {
     fireEvent.click(screen.getByRole("button", { name: /^agregar$/i }));
 
     expect(mockCreateMutateAsync).toHaveBeenCalledWith({
-      dealerId: "dealer-1",
+      organizationId: "dealer-1",
       name: "Beto",
       email: "beto@x.com",
       phone: "+58 416 7778899",
@@ -85,12 +85,12 @@ describe("BrokerManager — phone", () => {
   });
 
   it("sends phone when editing a pending broker", () => {
-    mockUseDealerBrokers.mockReturnValue({
+    mockUseOrganizationBrokers.mockReturnValue({
       data: [makeBroker()],
       isLoading: false,
     });
 
-    render(<BrokerManager dealerId="dealer-1" />);
+    render(<BrokerManager organizationId="dealer-1" />);
 
     fireEvent.click(screen.getByTitle(/editar/i));
     fireEvent.change(screen.getByPlaceholderText(/teléfono/i), {
@@ -100,7 +100,7 @@ describe("BrokerManager — phone", () => {
     fireEvent.click(screen.getByTitle(/guardar/i));
 
     expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-      dealerId: "dealer-1",
+      organizationId: "dealer-1",
       brokerId: "broker-1",
       name: "Ana Broker",
       email: "ana@x.com",

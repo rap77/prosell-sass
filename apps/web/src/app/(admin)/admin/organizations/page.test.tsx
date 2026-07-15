@@ -1,7 +1,7 @@
 /**
  * AdminDealersPage.test.tsx — Subsystem D Phase 6.5
  *
- * Renders the dealers list for an admin; redirects a non-admin to /dashboard.
+ * Renders the organizations list for an admin; redirects a non-admin to /dashboard.
  */
 import { render, screen, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
@@ -12,9 +12,9 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-const mockUseDealers = vi.fn();
-vi.mock("@/lib/api/dealers", () => ({
-  useDealers: () => mockUseDealers(),
+const mockUseOrganizations = vi.fn();
+vi.mock("@/lib/api/organizations", () => ({
+  useOrganizations: () => mockUseOrganizations(),
 }));
 
 const mockReplace = vi.fn();
@@ -35,7 +35,7 @@ describe("AdminDealersPage", () => {
       isLoading: false,
       hasPermission: () => false,
     });
-    mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseOrganizations.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
 
@@ -44,17 +44,17 @@ describe("AdminDealersPage", () => {
     });
   });
 
-  it("renders the dealers list for an admin", async () => {
+  it("renders the organizations list for an admin", async () => {
     mockUseAuth.mockReturnValue({
       isAdmin: true,
       isAuthenticated: true,
       isLoading: false,
       hasPermission: () => false,
     });
-    mockUseDealers.mockReturnValue({
+    mockUseOrganizations.mockReturnValue({
       data: [
-        { id: "dealer-1", name: "Dealer One" },
-        { id: "dealer-2", name: "Dealer Two" },
+        { id: "organization-1", name: "Organization One" },
+        { id: "organization-2", name: "Organization Two" },
       ],
       isLoading: false,
       error: null,
@@ -62,38 +62,38 @@ describe("AdminDealersPage", () => {
 
     render(<AdminDealersPage />);
 
-    expect(screen.getByText("Dealer One")).toBeInTheDocument();
-    expect(screen.getByText("Dealer Two")).toBeInTheDocument();
+    expect(screen.getByText("Organization One")).toBeInTheDocument();
+    expect(screen.getByText("Organization Two")).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it("links each dealer to its detail page", async () => {
+  it("links each organization to its detail page", async () => {
     mockUseAuth.mockReturnValue({
       isAdmin: true,
       isAuthenticated: true,
       isLoading: false,
       hasPermission: () => false,
     });
-    mockUseDealers.mockReturnValue({
-      data: [{ id: "dealer-1", name: "Dealer One" }],
+    mockUseOrganizations.mockReturnValue({
+      data: [{ id: "organization-1", name: "Organization One" }],
       isLoading: false,
       error: null,
     });
 
     render(<AdminDealersPage />);
 
-    const link = screen.getByText("Dealer One").closest("a");
-    expect(link).toHaveAttribute("href", "/admin/organizations/dealer-1");
+    const link = screen.getByText("Organization One").closest("a");
+    expect(link).toHaveAttribute("href", "/admin/organizations/organization-1");
   });
 
-  it("links to /admin/organizations/new when the user can create dealers", () => {
+  it("links to /admin/organizations/new when the user can create organizations", () => {
     mockUseAuth.mockReturnValue({
       isAdmin: true,
       isAuthenticated: true,
       isLoading: false,
       hasPermission: () => true,
     });
-    mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseOrganizations.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
 
@@ -109,7 +109,7 @@ describe("AdminDealersPage", () => {
       isLoading: false,
       hasPermission: () => false,
     });
-    mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseOrganizations.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
 

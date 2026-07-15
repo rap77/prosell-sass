@@ -1,22 +1,22 @@
 /**
- * DealerPicker.test.tsx — Subsystem D Phase 6.2
+ * OrganizationPicker.test.tsx — Subsystem D Phase 6.2
  *
- * Renders only for admins (DEALER_ADMIN_VIEW_ALL) and updates
- * organizationStore.viewingOrgId when a dealer is selected.
+ * Renders only for admins (ORG_ADMIN_VIEW_ALL) and updates
+ * organizationStore.viewingOrgId when a organization is selected.
  */
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, beforeEach, describe, it, expect } from "vitest";
-import { DealerPicker } from "./DealerPicker";
+import { OrganizationPicker } from "./OrganizationPicker";
 
 const mockUseAuth = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-const mockUseDealers = vi.fn();
-vi.mock("@/lib/api/dealers", () => ({
-  useDealers: () => mockUseDealers(),
+const mockUseOrganizations = vi.fn();
+vi.mock("@/lib/api/organizations", () => ({
+  useOrganizations: () => mockUseOrganizations(),
 }));
 
 const mockSetViewingOrgId = vi.fn();
@@ -26,15 +26,15 @@ vi.mock("@/stores/organizationStore", () => ({
     selector(mockUseOrganizationStore()),
 }));
 
-const mockDealers = [
-  { id: "dealer-1", name: "Dealer One" },
-  { id: "dealer-2", name: "Dealer Two" },
+const mockOrganizations = [
+  { id: "organization-1", name: "Organization One" },
+  { id: "organization-2", name: "Organization Two" },
 ];
 
-describe("DealerPicker", () => {
+describe("OrganizationPicker", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseDealers.mockReturnValue({ data: mockDealers, isLoading: false });
+    mockUseOrganizations.mockReturnValue({ data: mockOrganizations, isLoading: false });
     mockUseOrganizationStore.mockReturnValue({
       viewingOrgId: null,
       setViewingOrgId: mockSetViewingOrgId,
@@ -44,7 +44,7 @@ describe("DealerPicker", () => {
   it("renders nothing for a non-admin user", () => {
     mockUseAuth.mockReturnValue({ isAdmin: false });
 
-    const { container } = render(<DealerPicker />);
+    const { container } = render(<OrganizationPicker />);
 
     expect(container).toBeEmptyDOMElement();
   });
@@ -52,24 +52,24 @@ describe("DealerPicker", () => {
   it("renders the picker for an admin user", () => {
     mockUseAuth.mockReturnValue({ isAdmin: true });
 
-    render(<DealerPicker />);
+    render(<OrganizationPicker />);
 
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
-  it("calls setViewingOrgId when a dealer is selected", async () => {
+  it("calls setViewingOrgId when a organization is selected", async () => {
     const user = userEvent.setup();
     mockUseAuth.mockReturnValue({ isAdmin: true });
 
-    render(<DealerPicker />);
+    render(<OrganizationPicker />);
 
     await user.click(screen.getByRole("button"));
 
-    const option = await screen.findByText("Dealer Two");
+    const option = await screen.findByText("Organization Two");
     await user.click(option);
 
     await waitFor(() => {
-      expect(mockSetViewingOrgId).toHaveBeenCalledWith("dealer-2");
+      expect(mockSetViewingOrgId).toHaveBeenCalledWith("organization-2");
     });
   });
 });

@@ -1,6 +1,7 @@
 """API schemas for ProSell SaaS."""
 
 from prosell.infrastructure.api.schemas.auth import (
+    AcceptOrgInvitationRequest,
     ChangePasswordRequest,
     Disable2FARequest,
     Enable2FARequest,
@@ -21,6 +22,7 @@ from prosell.infrastructure.api.schemas.responses import (
 )
 
 __all__ = [
+    "AcceptOrgInvitationRequest",
     "AuthStateResponse",
     "AuthTokenResponse",
     "ChangePasswordRequest",
