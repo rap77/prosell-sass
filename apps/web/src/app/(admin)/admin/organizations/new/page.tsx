@@ -7,7 +7,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { useCategories } from "@/lib/api/categories";
 import { useCreateOrganization, useUpdateOrganization } from "@/lib/api/organizations";
-import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
+import {
+  OrganizationFormFields,
+  isValidPhone,
+} from "@/components/admin/OrganizationFormFields";
 
 /**
  * Staff form to create a organization org + invite its owner — Subsystem E Task 16.
@@ -176,42 +179,7 @@ export default function AdminNewDealerPage() {
           maxWidth: 480,
         }}
       >
-        {/* Shared form fields — identity (name/code/color) + optional */}
-        <OrganizationFormFields
-          name={name}
-          code={code}
-          color={color}
-          onNameChange={setName}
-          onCodeChange={setCode}
-          onColorChange={setColor}
-          description={description}
-          website={website}
-          phone={phone}
-          email={email}
-          whatsapp={whatsapp}
-          streetAddress={streetAddress}
-          city={city}
-          state={state}
-          postalCode={postalCode}
-          country={country}
-          taxId={taxId}
-          instagram={instagram}
-          facebook={facebook}
-          onDescriptionChange={setDescription}
-          onWebsiteChange={setWebsite}
-          onPhoneChange={setPhone}
-          onEmailChange={setEmail}
-          onWhatsappChange={setWhatsapp}
-          onStreetAddressChange={setStreetAddress}
-          onCityChange={setCity}
-          onStateChange={setState}
-          onPostalCodeChange={setPostalCode}
-          onCountryChange={setCountry}
-          onTaxIdChange={setTaxId}
-          onInstagramChange={setInstagram}
-          onFacebookChange={setFacebook}
-        />
-
+        {/* Verticals — fundamental info first */}
         <fieldset
           style={{
             display: "flex",
@@ -221,7 +189,7 @@ export default function AdminNewDealerPage() {
             padding: 0,
           }}
         >
-          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals</legend>
+          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals *</legend>
           {categoriesLoading && <p>Cargando verticals…</p>}
           {!categoriesLoading && verticals.length === 0 && (
             <p style={{ color: "var(--ps-text-secondary)" }}>
@@ -257,6 +225,42 @@ export default function AdminNewDealerPage() {
             </label>
           ))}
         </fieldset>
+
+        {/* Shared form fields — identity (name/code/color) + optional */}
+        <OrganizationFormFields
+          name={name}
+          code={code}
+          color={color}
+          onNameChange={setName}
+          onCodeChange={setCode}
+          onColorChange={setColor}
+          description={description}
+          website={website}
+          phone={phone}
+          email={email}
+          whatsapp={whatsapp}
+          streetAddress={streetAddress}
+          city={city}
+          state={state}
+          postalCode={postalCode}
+          country={country}
+          taxId={taxId}
+          instagram={instagram}
+          facebook={facebook}
+          onDescriptionChange={setDescription}
+          onWebsiteChange={setWebsite}
+          onPhoneChange={setPhone}
+          onEmailChange={setEmail}
+          onWhatsappChange={setWhatsapp}
+          onStreetAddressChange={setStreetAddress}
+          onCityChange={setCity}
+          onStateChange={setState}
+          onPostalCodeChange={setPostalCode}
+          onCountryChange={setCountry}
+          onTaxIdChange={setTaxId}
+          onInstagramChange={setInstagram}
+          onFacebookChange={setFacebook}
+        />
 
         {/* Brokers section */}
         <fieldset
@@ -326,13 +330,15 @@ export default function AdminNewDealerPage() {
                   addBroker();
                 }
               }}
-              placeholder="Teléfono (opcional)"
+              placeholder="+54 9 11 1234-5678 (opcional)"
               style={{
                 flex: 1,
                 height: 38,
                 padding: "0 12px",
                 borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
+                border: !isValidPhone(brokerPhone)
+                  ? "1px solid var(--ps-error)"
+                  : "1px solid var(--ps-border-default)",
                 background: "var(--ps-bg-elevated)",
                 color: "var(--ps-text-primary)",
               }}
@@ -340,7 +346,11 @@ export default function AdminNewDealerPage() {
             <button
               type="button"
               onClick={addBroker}
-              disabled={!brokerName.trim() || !brokerEmail.trim()}
+              disabled={
+                !brokerName.trim() ||
+                !brokerEmail.trim() ||
+                !isValidPhone(brokerPhone)
+              }
               style={{
                 height: 38,
                 padding: "0 12px",
@@ -357,6 +367,17 @@ export default function AdminNewDealerPage() {
               <Plus size={14} /> Agregar
             </button>
           </div>
+          {!isValidPhone(brokerPhone) && brokerPhone.trim() && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: 11,
+                color: "var(--ps-error)",
+              }}
+            >
+              Formato E.164: +código país + número
+            </p>
+          )}
           {brokers.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {brokers.map((broker) => (
@@ -420,7 +441,9 @@ export default function AdminNewDealerPage() {
           disabled={
             createOrganization.isPending ||
             updateOrganization.isPending ||
-            verticalIds.length === 0
+            verticalIds.length === 0 ||
+            !isValidPhone(phone) ||
+            !isValidPhone(whatsapp)
           }
           style={{
             height: 40,

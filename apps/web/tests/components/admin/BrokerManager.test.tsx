@@ -71,9 +71,10 @@ describe("BrokerManager — phone", () => {
     fireEvent.change(screen.getByPlaceholderText(/^email$/i), {
       target: { value: "beto@x.com" },
     });
-    fireEvent.change(screen.getByPlaceholderText(/teléfono/i), {
-      target: { value: "+58 416 7778899" },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/\+54 9 11 1234-5678/i),
+      { target: { value: "+58 416 7778899" } },
+    );
     fireEvent.click(screen.getByRole("button", { name: /^agregar$/i }));
 
     expect(mockCreateMutateAsync).toHaveBeenCalledWith({
@@ -93,9 +94,10 @@ describe("BrokerManager — phone", () => {
     render(<BrokerManager organizationId="dealer-1" />);
 
     fireEvent.click(screen.getByTitle(/editar/i));
-    fireEvent.change(screen.getByPlaceholderText(/teléfono/i), {
-      target: { value: "+58 424 0000000" },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/\+54 9 11 1234-5678/i),
+      { target: { value: "+58 424 0000000" } },
+    );
     // ponytail: the check icon button is the only unnamed button in edit mode
     fireEvent.click(screen.getByTitle(/guardar/i));
 

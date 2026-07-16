@@ -3,6 +3,17 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
+// ponytail: E.164 format — + followed by 1-15 digits, optional spaces/dashes for readability
+const E164_REGEX = /^\+[1-9]\d{0,14}$/;
+
+/** Validate phone number. Empty is valid (optional field). */
+export function isValidPhone(value: string): boolean {
+  if (!value.trim()) return true;
+  // Strip formatting characters for validation
+  const cleaned = value.replace(/[\s\-()]/g, "");
+  return E164_REGEX.test(cleaned);
+}
+
 /**
  * Shared form fields for organization create/edit.
  * Used by both /admin/organizations/new and /admin/organizations/[id]/edit
@@ -58,6 +69,17 @@ const inputStyle = {
   border: "1px solid var(--ps-border-default)",
   background: "var(--ps-bg-elevated)",
   color: "var(--ps-text-primary)",
+};
+
+const inputErrorStyle = {
+  ...inputStyle,
+  border: "1px solid var(--ps-error)",
+};
+
+const errorTextStyle = {
+  fontSize: 11,
+  color: "var(--ps-error)",
+  marginTop: 4,
 };
 
 const sectionDividerStyle = {
@@ -151,6 +173,13 @@ export function OrganizationFormFields({
   const [showSocial, setShowSocial] = useState(
     defaultExpanded || !!(instagram || facebook),
   );
+
+  // ponytail: track touched state for validation UX
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [whatsappTouched, setWhatsappTouched] = useState(false);
+
+  const phoneError = phoneTouched && !isValidPhone(phone);
+  const whatsappError = whatsappTouched && !isValidPhone(whatsapp);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -247,8 +276,15 @@ export function OrganizationFormFields({
                   type="tel"
                   value={phone}
                   onChange={(e) => onPhoneChange(e.target.value)}
-                  style={inputStyle}
+                  onBlur={() => setPhoneTouched(true)}
+                  placeholder="+54 9 11 1234-5678"
+                  style={phoneError ? inputErrorStyle : inputStyle}
                 />
+                {phoneError && (
+                  <span style={errorTextStyle}>
+                    Formato E.164: +código país + número
+                  </span>
+                )}
               </label>
               <label
                 style={{ display: "flex", flexDirection: "column", gap: 6 }}
@@ -268,8 +304,15 @@ export function OrganizationFormFields({
                 type="tel"
                 value={whatsapp}
                 onChange={(e) => onWhatsappChange(e.target.value)}
-                style={inputStyle}
+                onBlur={() => setWhatsappTouched(true)}
+                placeholder="+54 9 11 1234-5678"
+                style={whatsappError ? inputErrorStyle : inputStyle}
               />
+              {whatsappError && (
+                <span style={errorTextStyle}>
+                  Formato E.164: +código país + número
+                </span>
+              )}
             </label>
           </div>
         )}

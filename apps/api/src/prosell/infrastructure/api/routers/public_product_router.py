@@ -127,9 +127,18 @@ async def get_public_product_image_urls(
             detail="Product not found or not published",
         )
 
-    # Generate signed download URLs for all images
+    # ponytail: reorder so cover is always first — frontend expects images[0] = cover
+    raw_keys = model.image_urls or []
+    cover_key = model.cover_image_key
+    if cover_key and cover_key in raw_keys:
+        ordered_keys = [cover_key, *(k for k in raw_keys if k != cover_key)]
+    elif cover_key:
+        ordered_keys = [cover_key, *raw_keys]
+    else:
+        ordered_keys = list(raw_keys)
+
     images: list[ProductImageUrlResponse] = []
-    for key in model.image_urls or []:
+    for key in ordered_keys:
         if key:
             signed_url = await spaces.generate_download_url(key, SIGNED_URL_EXPIRES_IN)
             images.append(
@@ -140,21 +149,8 @@ async def get_public_product_image_urls(
                 )
             )
 
-    # Add cover image if different from the list
-    if model.cover_image_key and model.cover_image_key not in (model.image_urls or []):
-        signed_url = await spaces.generate_download_url(
-            model.cover_image_key, SIGNED_URL_EXPIRES_IN
-        )
-        images.insert(
-            0,
-            ProductImageUrlResponse(
-                key=model.cover_image_key,
-                url=signed_url,
-                expires_in=SIGNED_URL_EXPIRES_IN,
-            ),
-        )
-
     return ProductImageUrlsResponse(
         product_id=model.id,
         images=images,
+        cover_image_key=cover_key,
     )

@@ -40,7 +40,8 @@ import {
 } from "@/components/images/CoverImageGallery";
 
 export function ProductCoverPicker() {
-  const { images, coverImageId, setCoverImage, removeEntry } = useUploadStore();
+  const { images, coverImageId, setCoverImage, removeEntry, reorderImages } =
+    useUploadStore();
 
   // Map the unified `ImageEntry` shape to the gallery's generic
   // shape. The gallery's `key` is what the form's submit handler
@@ -55,14 +56,29 @@ export function ProductCoverPicker() {
     url: entry.preview,
   }));
 
+  // ponytail: convert entry ID → storage key for the gallery's coverKey prop
+  // The gallery compares image.key === coverKey, so we need the key, not the ID
+  const coverEntry = images.find((e) => e.id === coverImageId);
+  const coverKey = coverEntry?.storageKey ?? coverEntry?.id ?? null;
+
+  // ponytail: convert storage key → entry ID when the gallery reports a cover change
+  // The store expects an entry ID, but the gallery passes the storage key
+  const handleCoverChange = (key: string) => {
+    const entry = images.find((e) => (e.storageKey ?? e.id) === key);
+    if (entry) {
+      setCoverImage(entry.id);
+    }
+  };
+
   if (items.length === 0) return null;
 
   return (
     <CoverImageGallery
       images={items}
-      coverKey={coverImageId}
-      onCoverChange={setCoverImage}
+      coverKey={coverKey}
+      onCoverChange={handleCoverChange}
       onRemove={removeEntry}
+      onReorder={reorderImages}
     />
   );
 }

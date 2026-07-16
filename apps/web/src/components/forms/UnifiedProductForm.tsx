@@ -288,8 +288,9 @@ export function UnifiedProductForm({
       const imageKeys = images
         .map((e) => e.storageKey)
         .filter((k): k is string => Boolean(k));
+      const coverEntry = images.find((e) => e.id === coverImageId);
       const coverKey = coverImageId
-        ? (images.find((e) => e.id === coverImageId)?.storageKey ?? null)
+        ? (coverEntry?.storageKey ?? null)
         : null;
 
       // Extract fixed fields
@@ -319,6 +320,8 @@ export function UnifiedProductForm({
           attributes,
           image_urls: imageKeys,
           ...(coverKey ? { cover_image_key: coverKey } : {}),
+          // ponytail: send org for admin cross-org product creation
+          ...(selectedOrgId ? { organization_id: selectedOrgId } : {}),
         });
 
         // Set ownership if any owners were selected

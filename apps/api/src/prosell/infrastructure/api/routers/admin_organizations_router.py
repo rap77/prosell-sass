@@ -11,6 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org.response import OrganizationListResponse, OrganizationResponse
@@ -52,6 +53,9 @@ from prosell.infrastructure.repositories.organization_invitation_repository_impl
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
 )
+from prosell.infrastructure.repositories.organization_vertical_repository_impl import (
+    SqlAlchemyOrganizationVerticalRepository,
+)
 from prosell.infrastructure.repositories.product_repository_impl import (
     SqlAlchemyProductRepository,
 )
@@ -60,6 +64,22 @@ router = APIRouter()
 
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
+
+
+class UpdateOrganizationVerticalsRequest(BaseModel):
+    vertical_ids: list[UUID]
+
+
+class VerticalWithProductCount(BaseModel):
+    vertical_id: UUID
+    product_count: int
+
+
+class OrganizationVerticalsResponse(BaseModel):
+    organization_id: UUID
+    vertical_ids: list[UUID]
+    # ponytail: product_counts for UX — disable removal if > 0
+    product_counts: list[VerticalWithProductCount]
 
 
 def _require_org_admin_view_all(current_user: User) -> None:
@@ -499,3 +519,121 @@ async def delete_organization_broker(
     deleted = await broker_repo.delete_broker(broker_id, organization_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Broker not found")
+
+
+async def _count_products_per_vertical(
+    db: AsyncSession, organization_id: UUID, tenant_id: UUID
+) -> dict[UUID, int]:
+    """Count products per root category (vertical) using recursive CTE.
+
+    Defense in depth: filters products by both `organization_id` (the
+    organization being managed) and `tenant_id` (the requester's tenant)
+    so cross-tenant data can never influence the count.
+    """
+    # ponytail: recursive CTE traces each product's category up to root (level=0)
+    query = text("""
+        WITH RECURSIVE category_tree AS (
+            SELECT c.id as leaf_id, c.id as current_id, c.parent_id, c.level
+            FROM categories c
+            WHERE c.id IN (
+                SELECT DISTINCT category_id
+                FROM products
+                WHERE organization_id = :org_id AND tenant_id = :tenant_id
+            )
+
+            UNION ALL
+
+            SELECT ct.leaf_id, parent.id, parent.parent_id, parent.level
+            FROM category_tree ct
+            JOIN categories parent ON ct.parent_id = parent.id
+        )
+        SELECT ct.current_id as root_id, COUNT(*) as cnt
+        FROM category_tree ct
+        JOIN products p
+            ON p.category_id = ct.leaf_id
+            AND p.organization_id = :org_id
+            AND p.tenant_id = :tenant_id
+        WHERE ct.level = 0
+        GROUP BY ct.current_id
+    """)
+    result = await db.execute(query, {"org_id": organization_id, "tenant_id": tenant_id})
+    return {row.root_id: row.cnt for row in result.fetchall()}
+
+
+@router.get("/{organization_id}/verticals", response_model=OrganizationVerticalsResponse)
+async def get_organization_verticals(
+    organization_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> OrganizationVerticalsResponse:
+    """Get an organization's verticals with product counts. Requires ORG_ADMIN_VIEW_ALL."""
+    _require_org_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
+    if organization is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+
+    vertical_repo = SqlAlchemyOrganizationVerticalRepository(db)
+    vertical_ids = await vertical_repo.list_root_category_ids(organization_id)
+
+    # Get product counts per vertical
+    product_counts = await _count_products_per_vertical(db, organization_id, organization.tenant_id)
+
+    return OrganizationVerticalsResponse(
+        organization_id=organization_id,
+        vertical_ids=vertical_ids,
+        product_counts=[
+            VerticalWithProductCount(vertical_id=vid, product_count=product_counts.get(vid, 0))
+            for vid in vertical_ids
+        ],
+    )
+
+
+@router.patch("/{organization_id}/verticals", response_model=OrganizationVerticalsResponse)
+async def update_organization_verticals(
+    organization_id: UUID,
+    request: UpdateOrganizationVerticalsRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> OrganizationVerticalsResponse:
+    """Update an organization's verticals. Requires ORG_ADMIN_VIEW_ALL."""
+    _require_org_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
+    if organization is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+
+    vertical_repo = SqlAlchemyOrganizationVerticalRepository(db)
+
+    # Get current verticals and product counts
+    current_vertical_ids = await vertical_repo.list_root_category_ids(organization_id)
+    product_counts = await _count_products_per_vertical(db, organization_id, organization.tenant_id)
+
+    # Validate: cannot remove verticals with products
+    verticals_to_remove = [v for v in current_vertical_ids if v not in request.vertical_ids]
+    blocked = [v for v in verticals_to_remove if product_counts.get(v, 0) > 0]
+    if blocked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot remove verticals with products: {[str(v) for v in blocked]}",
+        )
+
+    # Remove verticals that are no longer selected
+    for vertical_id in verticals_to_remove:
+        await vertical_repo.disable(organization_id, vertical_id)
+
+    # Add new verticals
+    for vertical_id in request.vertical_ids:
+        if vertical_id not in current_vertical_ids:
+            await vertical_repo.enable(organization_id, vertical_id)
+
+    return OrganizationVerticalsResponse(
+        organization_id=organization_id,
+        vertical_ids=request.vertical_ids,
+        product_counts=[
+            VerticalWithProductCount(vertical_id=vid, product_count=product_counts.get(vid, 0))
+            for vid in request.vertical_ids
+        ],
+    )
