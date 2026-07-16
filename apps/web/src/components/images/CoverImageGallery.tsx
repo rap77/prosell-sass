@@ -180,6 +180,7 @@ function SortableImageTile({
           type="button"
           {...attributes}
           {...listeners}
+          disabled={disabled}
           aria-label={`Drag to reorder image ${index + 1}`}
           className={cn(
             "absolute bottom-2 left-2 bg-background/80 hover:bg-background p-1.5 rounded-full transition-opacity z-20 cursor-grab active:cursor-grabbing",

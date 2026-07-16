@@ -202,14 +202,6 @@ describe("CoverImageGallery — interaction", () => {
   it("disables the tile buttons when disabled is true", () => {
     // While a mutation is in flight, the parent may want to lock
     // interaction. The component honors a `disabled` flag.
-    //
-    // The tile is a `<div role="button">` (not a native `<button>`)
-    // because the clickable tile wraps a smaller remove `<button>`
-    // — HTML does not allow `<button>` to nest another `<button>`.
-    // Native `disabled` is not available on a div, so we use
-    // `aria-disabled` instead. testing-library's `toBeDisabled()`
-    // only matches the native attribute; for the aria variant we
-    // assert the attribute directly.
     render(
       <CoverImageGallery
         images={makeImages()}
@@ -221,8 +213,7 @@ describe("CoverImageGallery — interaction", () => {
     const tiles = screen.getAllByRole("button");
     expect(tiles.length).toBeGreaterThan(0);
     for (const tile of tiles) {
-      expect(tile.getAttribute("aria-disabled")).toBe("true");
-      expect(tile.getAttribute("tabindex")).toBe("-1");
+      expect(tile).toBeDisabled();
     }
   });
 });

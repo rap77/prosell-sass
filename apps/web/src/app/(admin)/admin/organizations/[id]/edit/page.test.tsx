@@ -15,18 +15,26 @@ vi.mock("@/hooks/useRequireAdmin", () => ({
 }));
 
 const mockUseOrganization = vi.fn();
+const mockUseOrganizationVerticals = vi.fn();
 const mockUseUpdateOrganization = vi.fn();
+const mockUseUpdateOrganizationVerticals = vi.fn();
 const mockUseOrganizationBrokers = vi.fn();
 const mockUseCreateOrganizationBroker = vi.fn();
 const mockUseUpdateOrganizationBroker = vi.fn();
 const mockUseDeleteOrganizationBroker = vi.fn();
 vi.mock("@/lib/api/organizations", () => ({
   useOrganization: () => mockUseOrganization(),
+  useOrganizationVerticals: () => mockUseOrganizationVerticals(),
   useUpdateOrganization: () => mockUseUpdateOrganization(),
+  useUpdateOrganizationVerticals: () => mockUseUpdateOrganizationVerticals(),
   useOrganizationBrokers: () => mockUseOrganizationBrokers(),
   useCreateOrganizationBroker: () => mockUseCreateOrganizationBroker(),
   useUpdateOrganizationBroker: () => mockUseUpdateOrganizationBroker(),
   useDeleteOrganizationBroker: () => mockUseDeleteOrganizationBroker(),
+}));
+
+vi.mock("@/lib/api/categories", () => ({
+  useCategories: () => ({ data: [], isLoading: false }),
 }));
 
 const mockPush = vi.fn();
@@ -57,6 +65,14 @@ describe("AdminEditOrganizationPage — form structure", () => {
       mutateAsync: vi.fn(),
       isPending: false,
       error: null,
+    });
+    mockUseOrganizationVerticals.mockReturnValue({
+      data: { vertical_ids: [], product_counts: [] },
+      isLoading: false,
+    });
+    mockUseUpdateOrganizationVerticals.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
     });
     mockUseOrganizationBrokers.mockReturnValue({ data: [], isLoading: false });
     mockUseCreateOrganizationBroker.mockReturnValue({

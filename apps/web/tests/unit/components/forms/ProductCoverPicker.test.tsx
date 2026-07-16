@@ -134,11 +134,7 @@ describe("ProductCoverPicker — interaction", () => {
 
     render(<ProductCoverPicker />);
 
-    // Target the tile by data-testid — `getAllByRole('button')`
-    // would also pick up the per-tile remove (X) buttons, which
-    // call removeEntry, not setCoverImage.
-    const tileB = screen.getByTestId("cover-image-tile-b");
-    fireEvent.click(tileB);
+    fireEvent.click(screen.getByRole("button", { name: /set b as cover/i }));
 
     expect(mockStore.setCoverImage).toHaveBeenCalledTimes(1);
     expect(mockStore.setCoverImage).toHaveBeenCalledWith("b");
@@ -156,7 +152,7 @@ describe("ProductCoverPicker — interaction", () => {
 
     render(<ProductCoverPicker />);
 
-    fireEvent.click(screen.getByTestId("cover-image-tile-a"));
+    fireEvent.click(screen.getByRole("button", { name: /set a as cover/i }));
 
     expect(mockStore.setCoverImage).toHaveBeenCalledWith("a");
   });
