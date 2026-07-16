@@ -4,13 +4,14 @@
  * ProductOwnershipEditor — Edit product ownership with broker support.
  *
  * Flow:
- * 1. Select an organization (dealer)
+ * 1. Select an organization (organization)
  * 2. If org has brokers → select brokers as owners with percentages
  * 3. If org has NO brokers → org itself is the 100% owner
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Trash2, Loader2, Building2, User } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +20,23 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
-import { useDealers, useDealerBrokers } from "@/lib/api/dealers";
+import { useOrganizations, useOrganizationBrokers } from "@/lib/api/organizations";
 import {
   useProductOwnership,
   useSetProductOwnership,
 } from "@/lib/api/products";
 
+const OWNER_TYPE = {
+  ORGANIZATION: "organization",
+  USER: "user",
+} as const;
+
+type OwnerType = (typeof OWNER_TYPE)[keyof typeof OWNER_TYPE];
+
 interface OwnerEntry {
   owner_id: string;
-  owner_type: "organization" | "user";
+  owner_type: OwnerType;
   percentage: string;
 }
 
@@ -40,27 +47,24 @@ interface ProductOwnershipEditorProps {
 export function ProductOwnershipEditor({
   productId,
 }: ProductOwnershipEditorProps) {
-  const { data: dealers = [], isLoading: isLoadingDealers } = useDealers();
+  const queryClient = useQueryClient();
+  const { data: organizations = [], isLoading: isLoadingOrganizations } = useOrganizations();
   const { data: ownership, isLoading: isLoadingOwnership } =
     useProductOwnership(productId);
   const setOwnership = useSetProductOwnership();
 
   // Derive initial state from server data
-  const serverOwners = useMemo(
-    () =>
-      ownership?.owners.map((o) => ({
-        owner_id: o.owner_id,
-        owner_type: o.owner_type,
-        percentage: o.percentage,
-      })) ?? [],
-    [ownership],
-  );
+  const serverOwners =
+    ownership?.owners.map((o) => ({
+      owner_id: o.owner_id,
+      owner_type: o.owner_type,
+      percentage: o.percentage,
+    })) ?? [];
 
   // ponytail: derive default org from existing ownership, no useEffect needed
-  const defaultOrgId = useMemo(() => {
-    const orgOwner = serverOwners.find((o) => o.owner_type === "organization");
-    return orgOwner?.owner_id ?? null;
-  }, [serverOwners]);
+  const defaultOrgId =
+    serverOwners.find((o) => o.owner_type === OWNER_TYPE.ORGANIZATION)
+      ?.owner_id ?? null;
 
   // User can override the default by selecting a different org
   const [userSelectedOrgId, setUserSelectedOrgId] = useState<string | null>(
@@ -70,7 +74,7 @@ export function ProductOwnershipEditor({
   const setSelectedOrgId = setUserSelectedOrgId;
 
   // Fetch brokers for selected org
-  const { data: brokers = [], isLoading: isLoadingBrokers } = useDealerBrokers(
+  const { data: brokers = [], isLoading: isLoadingBrokers } = useOrganizationBrokers(
     selectedOrgId ?? undefined,
   );
 
@@ -82,10 +86,10 @@ export function ProductOwnershipEditor({
 
   const setOwners = (newOwners: OwnerEntry[]) => setLocalOwners(newOwners);
 
-  const selectedOrg = dealers.find((d) => d.id === selectedOrgId);
+  const selectedOrg = organizations.find((d) => d.id === selectedOrgId);
   const hasBrokers = (selectedOrg?.broker_count ?? 0) > 0;
 
-  const isLoading = isLoadingDealers || isLoadingOwnership;
+  const isLoading = isLoadingOrganizations || isLoadingOwnership;
 
   // Validation
   const total = owners.reduce(
@@ -97,7 +101,7 @@ export function ProductOwnershipEditor({
 
   const handleOrgChange = (orgId: string) => {
     setSelectedOrgId(orgId);
-    const org = dealers.find((d) => d.id === orgId);
+    const org = organizations.find((d) => d.id === orgId);
     const orgHasBrokers = (org?.broker_count ?? 0) > 0;
 
     if (orgHasBrokers) {
@@ -106,7 +110,11 @@ export function ProductOwnershipEditor({
     } else {
       // Org is the 100% owner
       setOwners([
-        { owner_id: orgId, owner_type: "organization", percentage: "100" },
+        {
+          owner_id: orgId,
+          owner_type: OWNER_TYPE.ORGANIZATION,
+          percentage: "100",
+        },
       ]);
     }
   };
@@ -120,7 +128,11 @@ export function ProductOwnershipEditor({
     const remaining = Math.max(0, 100 - used);
     setOwners([
       ...owners,
-      { owner_id: "", owner_type: "user", percentage: String(remaining) },
+      {
+        owner_id: "",
+        owner_type: OWNER_TYPE.USER,
+        percentage: String(remaining),
+      },
     ]);
   };
 
@@ -128,10 +140,10 @@ export function ProductOwnershipEditor({
     setOwners(owners.filter((_, i) => i !== index));
   };
 
-  const updateOwner = (
+  const updateOwner = <K extends keyof OwnerEntry>(
     index: number,
-    field: keyof OwnerEntry,
-    value: string,
+    field: K,
+    value: OwnerEntry[K],
   ) => {
     const updated = [...owners];
     updated[index] = { ...updated[index], [field]: value };
@@ -141,7 +153,9 @@ export function ProductOwnershipEditor({
   const handleSave = async () => {
     if (!isValid || hasEmptyOwner) return;
 
-    await setOwnership.mutateAsync({
+    // ponytail: use returned data directly to avoid race condition
+    // between setLocalOwners(null) and query refetch
+    const result = await setOwnership.mutateAsync({
       productId,
       owners: owners.map((o) => ({
         owner_id: o.owner_id,
@@ -149,12 +163,15 @@ export function ProductOwnershipEditor({
         percentage: parseFloat(o.percentage).toFixed(2),
       })),
     });
+    queryClient.setQueryData(["products", productId, "ownership"], result);
     setLocalOwners(null);
   };
 
   // Filter out already-selected brokers
   const selectedBrokerIds = new Set(
-    owners.filter((o) => o.owner_type === "user").map((o) => o.owner_id),
+    owners
+      .filter((o) => o.owner_type === OWNER_TYPE.USER)
+      .map((o) => o.owner_id),
   );
 
   if (isLoading) {
@@ -166,8 +183,8 @@ export function ProductOwnershipEditor({
     );
   }
 
-  // Only show for admins who can see dealers
-  if (dealers.length === 0) {
+  // Only show for admins who can see organizations
+  if (organizations.length === 0) {
     return null;
   }
 
@@ -199,18 +216,18 @@ export function ProductOwnershipEditor({
             )}
           </SelectTrigger>
           <SelectContent>
-            {dealers.map((dealer) => (
+            {organizations.map((organization) => (
               <SelectItem
-                key={dealer.id}
-                value={dealer.id}
-                textValue={dealer.name}
+                key={organization.id}
+                value={organization.id}
+                textValue={organization.name}
               >
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  {dealer.name}
-                  {(dealer.broker_count ?? 0) > 0 && (
+                  {organization.name}
+                  {(organization.broker_count ?? 0) > 0 && (
                     <span className="text-xs text-muted-foreground">
-                      ({dealer.broker_count} brokers)
+                      ({organization.broker_count} brokers)
                     </span>
                   )}
                 </div>

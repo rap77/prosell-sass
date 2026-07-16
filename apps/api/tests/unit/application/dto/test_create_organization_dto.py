@@ -1,4 +1,4 @@
-"""Unit tests for `CreateDealerRequest` DTO — name normalization.
+"""Unit tests for `CreateOrganizationRequest` DTO — name normalization.
 
 Why this test file exists: `owner_email` is normalized (`.lower().strip()`)
 inside the use case, but `name` had no equivalent guard anywhere — the DTO
@@ -11,13 +11,13 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
-from prosell.application.dto.organization.create_dealer import CreateDealerRequest
+from prosell.application.dto.organization.create_organization import CreateOrganizationRequest
 
 VERTICAL_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
-def _make_request(name: str) -> CreateDealerRequest:
-    return CreateDealerRequest(
+def _make_request(name: str) -> CreateOrganizationRequest:
+    return CreateOrganizationRequest(
         name=name,
         vertical_ids=[VERTICAL_ID],
         owner_email="owner@x.com",

@@ -1,8 +1,13 @@
 """Request schemas for authentication endpoints."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+
+NameField = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=100),
+]
 
 
 class RegisterRequest(BaseModel):
@@ -24,6 +29,15 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
     remember_me: bool = False
+
+
+class AcceptOrgInvitationRequest(BaseModel):
+    """Accept an organization invitation and create its owner account."""
+
+    token: str
+    password: str
+    first_name: NameField
+    last_name: NameField
 
 
 class RefreshTokenRequest(BaseModel):

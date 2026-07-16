@@ -1,11 +1,11 @@
 /**
- * AdminDealerDetailPage.test.tsx — Subsystem D Phase 6.7
+ * AdminOrganizationDetailPage.test.tsx — Subsystem D Phase 6.7
  *
- * Shows the dealer's info and links to its products page.
+ * Shows the organization's info and links to its products page.
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
-import AdminDealerDetailPage from "./page";
+import AdminOrganizationDetailPage from "./page";
 
 // Mock useRequireAdmin (the component uses this, not useAuth)
 const mockUseRequireAdmin = vi.fn();
@@ -13,30 +13,30 @@ vi.mock("@/hooks/useRequireAdmin", () => ({
   useRequireAdmin: () => mockUseRequireAdmin(),
 }));
 
-const mockUseDealer = vi.fn();
+const mockUseOrganization = vi.fn();
 const mockUseResendInvitation = vi.fn();
-const mockUseUpdateDealer = vi.fn();
-const mockUseDealerBrokers = vi.fn();
-const mockUseCreateDealerBroker = vi.fn();
-const mockUseUpdateDealerBroker = vi.fn();
-const mockUseDeleteDealerBroker = vi.fn();
-vi.mock("@/lib/api/dealers", () => ({
-  useDealer: () => mockUseDealer(),
-  useResendDealerInvitation: () => mockUseResendInvitation(),
-  useUpdateDealer: () => mockUseUpdateDealer(),
-  useDealerBrokers: () => mockUseDealerBrokers(),
-  useCreateDealerBroker: () => mockUseCreateDealerBroker(),
-  useUpdateDealerBroker: () => mockUseUpdateDealerBroker(),
-  useDeleteDealerBroker: () => mockUseDeleteDealerBroker(),
+const mockUseUpdateOrganization = vi.fn();
+const mockUseOrganizationBrokers = vi.fn();
+const mockUseCreateOrganizationBroker = vi.fn();
+const mockUseUpdateOrganizationBroker = vi.fn();
+const mockUseDeleteOrganizationBroker = vi.fn();
+vi.mock("@/lib/api/organizations", () => ({
+  useOrganization: () => mockUseOrganization(),
+  useResendOrganizationInvitation: () => mockUseResendInvitation(),
+  useUpdateOrganization: () => mockUseUpdateOrganization(),
+  useOrganizationBrokers: () => mockUseOrganizationBrokers(),
+  useCreateOrganizationBroker: () => mockUseCreateOrganizationBroker(),
+  useUpdateOrganizationBroker: () => mockUseUpdateOrganizationBroker(),
+  useDeleteOrganizationBroker: () => mockUseDeleteOrganizationBroker(),
 }));
 
 const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
-  useParams: () => ({ id: "dealer-1" }),
+  useParams: () => ({ id: "organization-1" }),
 }));
 
-describe("AdminDealerDetailPage", () => {
+describe("AdminOrganizationDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseRequireAdmin.mockReturnValue(true);
@@ -44,22 +44,22 @@ describe("AdminDealerDetailPage", () => {
       mutate: vi.fn(),
       isPending: false,
     });
-    mockUseUpdateDealer.mockReturnValue({
+    mockUseUpdateOrganization.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
       isPending: false,
     });
     // Broker hooks used by BrokerManager component
-    mockUseDealerBrokers.mockReturnValue({ data: [], isLoading: false });
-    mockUseCreateDealerBroker.mockReturnValue({
+    mockUseOrganizationBrokers.mockReturnValue({ data: [], isLoading: false });
+    mockUseCreateOrganizationBroker.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
-    mockUseUpdateDealerBroker.mockReturnValue({
+    mockUseUpdateOrganizationBroker.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
-    mockUseDeleteDealerBroker.mockReturnValue({
+    mockUseDeleteOrganizationBroker.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
@@ -67,65 +67,65 @@ describe("AdminDealerDetailPage", () => {
 
   it("returns null when not admin (useRequireAdmin handles redirect)", () => {
     mockUseRequireAdmin.mockReturnValue(false);
-    mockUseDealer.mockReturnValue({
-      dealer: undefined,
+    mockUseOrganization.mockReturnValue({
+      organization: undefined,
       isLoading: false,
       error: null,
     });
 
-    const { container } = render(<AdminDealerDetailPage />);
+    const { container } = render(<AdminOrganizationDetailPage />);
     expect(container.firstChild).toBeNull();
   });
 
-  it("shows the dealer's name and status", async () => {
-    mockUseDealer.mockReturnValue({
-      dealer: { id: "dealer-1", name: "Dealer One", status: "active" },
+  it("shows the organization's name and status", async () => {
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "organization-1", name: "Organization One", status: "active" },
       isLoading: false,
       error: null,
     });
 
-    render(<AdminDealerDetailPage />);
+    render(<AdminOrganizationDetailPage />);
 
-    expect(await screen.findByText("Dealer One")).toBeInTheDocument();
+    expect(await screen.findByText("Organization One")).toBeInTheDocument();
     expect(screen.getByText(/activo/i)).toBeInTheDocument();
   });
 
-  it("links to the dealer's products page", async () => {
-    mockUseDealer.mockReturnValue({
-      dealer: { id: "dealer-1", name: "Dealer One", status: "active" },
+  it("links to the organization's products page", async () => {
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "organization-1", name: "Organization One", status: "active" },
       isLoading: false,
       error: null,
     });
 
-    render(<AdminDealerDetailPage />);
+    render(<AdminOrganizationDetailPage />);
 
     const link = await screen.findByRole("link", { name: /productos/i });
     expect(link).toHaveAttribute(
       "href",
-      "/admin/organizations/dealer-1/products",
+      "/admin/organizations/organization-1/products",
     );
   });
 
-  it("shows a not-found message when the dealer doesn't exist", async () => {
-    mockUseDealer.mockReturnValue({
-      dealer: undefined,
+  it("shows a not-found message when the organization doesn't exist", async () => {
+    mockUseOrganization.mockReturnValue({
+      organization: undefined,
       isLoading: false,
       error: null,
     });
 
-    render(<AdminDealerDetailPage />);
+    render(<AdminOrganizationDetailPage />);
 
     expect(await screen.findByText(/no encontrad/i)).toBeInTheDocument();
   });
 
-  it("does not show the resend-invitation button when the dealer is active", async () => {
-    mockUseDealer.mockReturnValue({
-      dealer: { id: "dealer-1", name: "Acme Motors", status: "active" },
+  it("does not show the resend-invitation button when the organization is active", async () => {
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "organization-1", name: "Acme Motors", status: "active" },
       isLoading: false,
       error: null,
     });
 
-    render(<AdminDealerDetailPage />);
+    render(<AdminOrganizationDetailPage />);
 
     // Wait for content to render
     await screen.findByText("Acme Motors");
@@ -135,15 +135,15 @@ describe("AdminDealerDetailPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the resend-invitation button only when status is pending_verification and calls mutate with the dealer id", async () => {
+  it("shows the resend-invitation button only when status is pending_verification and calls mutate with the organization id", async () => {
     const mockMutate = vi.fn();
     mockUseResendInvitation.mockReturnValue({
       mutate: mockMutate,
       isPending: false,
     });
-    mockUseDealer.mockReturnValue({
-      dealer: {
-        id: "dealer-1",
+    mockUseOrganization.mockReturnValue({
+      organization: {
+        id: "organization-1",
         name: "Acme Motors",
         status: "pending_verification",
       },
@@ -151,13 +151,13 @@ describe("AdminDealerDetailPage", () => {
       error: null,
     });
 
-    render(<AdminDealerDetailPage />);
+    render(<AdminOrganizationDetailPage />);
 
     const button = await screen.findByRole("button", {
       name: /reenviar invitación/i,
     });
     fireEvent.click(button);
 
-    expect(mockMutate).toHaveBeenCalledWith("dealer-1");
+    expect(mockMutate).toHaveBeenCalledWith("organization-1");
   });
 });

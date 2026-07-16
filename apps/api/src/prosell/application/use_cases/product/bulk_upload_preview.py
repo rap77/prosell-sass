@@ -4,7 +4,7 @@ import csv
 import logging
 from dataclasses import dataclass
 from io import StringIO
-from typing import Any
+from typing import cast
 
 from prosell.application.dto.product.bulk_upload import (
     PreviewRowResponse,
@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 
 # Columns in the client CSV that have no mapping to ProSell fields
 UNMAPPED_COLUMNS = frozenset({"id", "type", "option"})
+
+# Values carried in `mapped_fields` per the PreviewRowResponse schema:
+# strings (cod_organization, vin, locations, etc.), ints/ floats
+# (year, mileage), bools (publicado), and string lists (facebook_groups).
+MappedFieldValue = str | int | float | bool | list[str]
 
 
 @dataclass
@@ -70,7 +75,10 @@ class BulkUploadPreviewUseCase:
 
                 images_count += len(preview_row.images_found)
 
-            except Exception as e:
+            except (ValueError, KeyError, TypeError) as e:
+                # ValueError: csv_field_mapper raises on bad VIN/price/missing required
+                # KeyError: row_dict missing expected column
+                # TypeError: a parsed field has the wrong shape
                 logger.warning("Preview row analysis failed: %s", e)
                 error_count += 1
                 rows.append(
@@ -107,7 +115,7 @@ class BulkUploadPreviewUseCase:
         mapped: MappedCSVRow = CSVFieldMapper.map_row(row, row_number)
 
         # Determine mapped fields (everything that has a value)
-        mapped_fields: dict[str, Any] = {}
+        mapped_fields: dict[str, MappedFieldValue] = {}
         missing_fields: list[str] = []
         errors: list[str] = []
 
@@ -124,8 +132,8 @@ class BulkUploadPreviewUseCase:
             missing_fields.append("price")
             errors.append("price is required and must be greater than 0")
 
-        if mapped.cod_dealer:
-            mapped_fields["title"] = mapped.cod_dealer
+        if mapped.cod_organization:
+            mapped_fields["title"] = mapped.cod_organization
 
         # Optional fields with values
         if mapped.location_city:
@@ -179,9 +187,9 @@ class BulkUploadPreviewUseCase:
         return PreviewRowResponse(
             row_number=mapped.row_number,
             vin=mapped.vin or "",
-            title=mapped.cod_dealer or "",
+            title=mapped.cod_organization or "",
             importable=importable,
-            mapped_fields=mapped_fields,
+            mapped_fields=cast(dict[str, str | int | float | bool | list[object]], mapped_fields),
             missing_fields=missing_fields,
             unmapped_csv_columns=unmapped_csv_columns,
             images_found=images_found,

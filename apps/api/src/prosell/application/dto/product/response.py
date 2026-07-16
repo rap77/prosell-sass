@@ -29,6 +29,11 @@ class ProductResponse(BaseModel):
     tenant_id: UUID
     organization_id: UUID
     org_code: str | None = None  # Organization abbreviation (for internal product cards)
+    # ponytail: owner org info — used by product cards to show the OWNER's tag,
+    # not the viewer's. Populated by router via JOIN with product_ownership.
+    owner_org_id: UUID | None = None
+    owner_org_code: str | None = None
+    owner_org_color: str | None = None
     category_id: UUID
     title: str
     slug: str | None = None
@@ -72,13 +77,24 @@ class ProductResponse(BaseModel):
         return self.price_cents / 100
 
     @classmethod
-    def from_entity(cls, product: Product, *, org_code: str | None = None) -> "ProductResponse":
+    def from_entity(
+        cls,
+        product: Product,
+        *,
+        org_code: str | None = None,
+        owner_org_id: UUID | None = None,
+        owner_org_code: str | None = None,
+        owner_org_color: str | None = None,
+    ) -> "ProductResponse":
         """Build response from domain entity."""
         return cls(
             id=product.id,
             tenant_id=product.tenant_id,
             organization_id=product.organization_id,
             org_code=org_code,
+            owner_org_id=owner_org_id,
+            owner_org_code=owner_org_code,
+            owner_org_color=owner_org_color,
             category_id=product.category_id,
             title=product.title,
             slug=product.slug,

@@ -1,10 +1,12 @@
+name: prosell-dev
+
 services:
   # =============================================================================
   # POSTGRESQL 17
   # =============================================================================
   db:
     image: postgres:17-alpine
-    container_name: prosell-db
+    container_name: prosell-dev-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -24,7 +26,7 @@ services:
   # =============================================================================
   redis:
     image: redis:7.4-alpine
-    container_name: prosell-redis
+    container_name: prosell-dev-redis
     ports:
       - "6379:6379"
     volumes:
@@ -41,7 +43,7 @@ services:
   # =============================================================================
   minio:
     image: minio/minio:latest
-    container_name: prosell-minio
+    container_name: prosell-dev-minio
     ports:
       - "9000:9000" # S3 API
       - "9001:9001" # Web console
@@ -62,7 +64,7 @@ services:
   # =============================================================================
   minio-init:
     image: minio/mc:latest
-    container_name: prosell-minio-init
+    container_name: prosell-dev-minio-init
     depends_on:
       minio:
         condition: service_healthy
@@ -80,7 +82,7 @@ services:
   # =============================================================================
   postgres-test:
     image: postgres:17
-    container_name: prosell-test-db
+    container_name: prosell-dev-test-db
     environment:
       POSTGRES_DB: prosell_test
       POSTGRES_USER: prosell
@@ -102,7 +104,7 @@ services:
     build:
       context: ..
       dockerfile: docker/api.Dockerfile
-    container_name: prosell-api
+    container_name: prosell-dev-api
     # Load .env from the repo root so DATABASE_URL, REDIS_URL, ADMIN_*, OAuth,
     # SendGrid, etc. are available inside the container.
     # Anything listed in `environment:` below overrides the value from .env.
@@ -179,7 +181,7 @@ services:
   # =============================================================================
   ngrok:
     image: ngrok/ngrok:latest
-    container_name: prosell-ngrok
+    container_name: prosell-dev-ngrok
     # Expose ngrok web UI and API
     ports:
       - "4040:4040"
@@ -202,7 +204,7 @@ services:
       dockerfile: docker/web-dev.Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
-    container_name: prosell-web
+    container_name: prosell-dev-web
     ports:
       - "3000:3000"
     environment:
@@ -231,7 +233,7 @@ services:
     build:
       context: ..
       dockerfile: docker/api.Dockerfile
-    container_name: prosell-worker
+    container_name: prosell-dev-worker
     env_file:
       - .env
     environment:

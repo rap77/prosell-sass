@@ -9,23 +9,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
+# DTOs - all from central dto module
 from prosell.application.dto.auth import (
-    AcceptOrgInvitationRequest,
+    ChangePasswordRequest as ChangePasswordUCRequest,
+)
+from prosell.application.dto.auth import (
     ChangePasswordResponse,
     Disable2FAResponse,
     Enable2FAResponse,
     LoginUserRequest,
     LoginUserResponse,
-    OAuthLoginResponse,
     RefreshTokenResponse,
     RegisterUserRequest,
     RegisterUserResponse,
     Verify2FAResponse,
-)
-
-# DTOs - all from central dto module
-from prosell.application.dto.auth import (
-    ChangePasswordRequest as ChangePasswordUCRequest,
 )
 from prosell.application.dto.auth import (
     Disable2FARequest as Disable2FAUCRequest,
@@ -91,6 +88,7 @@ from prosell.infrastructure.api.middleware.auth_middleware import (
     get_optional_user,
 )
 from prosell.infrastructure.api.schemas import (
+    AcceptOrgInvitationRequest,
     AuthStateResponse,
     ChangePasswordRequest,
     Disable2FARequest,
@@ -98,7 +96,6 @@ from prosell.infrastructure.api.schemas import (
     LoginRequest,
     LogoutResponse,
     MeResponse,
-    OAuthLoginRequest,
     RefreshTokenRequest,
     RegisterRequest,
     Verify2FARequest,
@@ -272,7 +269,7 @@ async def accept_org_invitation(
     ],
 ) -> LoginUserResponse:
     """
-    Accept a dealer-owner organization invitation.
+    Accept a organization-owner organization invitation.
 
     Creates the owner's account, assigns them ADMIN within their new org's
     tenant, activates the organization, and logs them in -- same cookies
@@ -308,33 +305,6 @@ async def refresh_token(
     """
     _ = request
     uc_request = RefreshTokenUCRequest(refresh_token=refresh_request.refresh_token)
-    return await use_case.execute(uc_request)
-
-
-@router.post("/oauth/{provider}", response_model=OAuthLoginResponse)
-@smart_rate_limit("auth")  # Higher rate limit for testing
-async def oauth_login(
-    provider: str,
-    request: Request,
-    oauth_request: OAuthLoginRequest,
-    use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
-) -> OAuthLoginResponse:
-    """
-    OAuth social login (direct).
-
-    This endpoint is for testing and direct OAuth login with pre-fetched user data.
-    For browser-based OAuth flow, use /oauth/{provider}/authorize instead.
-
-    Supports Google and Facebook OAuth.
-    """
-    _ = request
-    uc_request = OAuthLoginUCRequest(
-        provider=provider,
-        provider_user_id=oauth_request.provider_user_id,
-        email=oauth_request.email,
-        full_name=oauth_request.full_name,
-        avatar_url=oauth_request.avatar_url,
-    )
     return await use_case.execute(uc_request)
 
 
@@ -385,10 +355,7 @@ async def oauth_authorize(
             redirect_uri=redirect_uri,
         )
 
-        logger.info(
-            f"OAuth authorization initiated for provider={provider}, "
-            f"state={result.state_token[:8]}..."
-        )
+        logger.info(f"OAuth authorization initiated for provider={provider}")
 
         # Redirect user to OAuth provider authorization page
         return RedirectResponse(url=result.authorization_url, status_code=302)
@@ -418,9 +385,11 @@ async def oauth_callback(
     request: Request,
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
     oauth_use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
-    code: str | None = Query(None, description="Authorization code from OAuth provider"),
-    state: str | None = Query(None, description="State token for CSRF protection"),
-    error: str | None = Query(None, description="Error from OAuth provider (if auth failed)"),
+    code: Annotated[str | None, Query(description="Authorization code from OAuth provider")] = None,
+    state: Annotated[str | None, Query(description="State token for CSRF protection")] = None,
+    error: Annotated[
+        str | None, Query(description="Error from OAuth provider (if auth failed)")
+    ] = None,
 ) -> RedirectResponse:
     """
     OAuth callback endpoint.
@@ -574,12 +543,6 @@ async def oauth_callback(
     except (OAuthConfigurationError, OAuthCallbackError) as e:
         logger.error(f"OAuth error for provider={provider}: {e.message}")
         error_url = f"{settings.oauth_frontend_failure_url}oauth_failed"
-        return RedirectResponse(url=error_url, status_code=302)
-
-    except Exception as e:
-        # Unexpected error
-        logger.exception(f"Unexpected OAuth callback error for provider={provider}: {e}")
-        error_url = f"{settings.oauth_frontend_failure_url}internal_error"
         return RedirectResponse(url=error_url, status_code=302)
 
 

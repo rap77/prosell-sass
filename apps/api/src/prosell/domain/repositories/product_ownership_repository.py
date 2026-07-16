@@ -7,8 +7,10 @@ can have N owners (organizations/brokers). Percentages should sum to 100%.
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
+
+OwnerType = Literal["organization", "user"]
 
 
 @dataclass(frozen=True)
@@ -17,7 +19,7 @@ class ProductOwner:
 
     product_id: UUID
     owner_id: UUID
-    owner_type: str  # "organization" | "user"
+    owner_type: OwnerType
     percentage: Decimal
     created_at: datetime
 
@@ -28,7 +30,7 @@ class AbstractProductOwnershipRepository(Protocol):
         product_id: UUID,
         owner_id: UUID,
         percentage: Decimal,
-        owner_type: str = "organization",
+        owner_type: OwnerType = "organization",
     ) -> None:
         """Add an owner to a product with a percentage share."""
         ...

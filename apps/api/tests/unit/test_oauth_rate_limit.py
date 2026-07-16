@@ -6,6 +6,7 @@ import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
+from prosell.domain.exceptions.auth_exceptions import OAuthStateInvalidError
 from prosell.domain.ports.i_oauth_service import (
     OAuthAuthorizeResult,
 )
@@ -26,6 +27,7 @@ def mock_oauth_service():
             state_token="test-state-123",
         )
     )
+    service.process_callback = AsyncMock(side_effect=OAuthStateInvalidError())
     return service
 
 
@@ -79,9 +81,9 @@ class TestOAuthRateLimiting:
         """Test that rate limit allows the first callback request."""
         from prosell.infrastructure.api.dependencies import get_oauth_service
 
-        # Mock validate_state to avoid JWT key loading
+        # The callback service rejects the test state through its domain error.
         mock_service = app.dependency_overrides[get_oauth_service]()
-        mock_service.validate_state = AsyncMock(return_value=False)
+        mock_service.process_callback = AsyncMock(side_effect=OAuthStateInvalidError())
 
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

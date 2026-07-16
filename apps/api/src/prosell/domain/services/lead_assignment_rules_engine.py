@@ -1,14 +1,14 @@
 """Lead assignment rules engine domain service.
 
-This service is responsible for assigning leads to dealers based on
+This service is responsible for assigning leads to organizations based on
 configurable rules and strategies. It follows Clean Architecture
 principles as a domain service with no external dependencies.
 
 Assignment strategies:
-- ROUND_ROBIN: Distribute leads evenly across dealers
+- ROUND_ROBIN: Distribute leads evenly across organizations
 - VEHICLE_OWNER: Assign to the product/vehicle owner
-- WORKLOAD_BALANCING: Assign to dealer with fewest active leads
-- GEOGRAPHIC_PROXIMITY: Assign to nearest dealer (if location data available)
+- WORKLOAD_BALANCING: Assign to organization with fewest active leads
+- GEOGRAPHIC_PROXIMITY: Assign to nearest organization (if location data available)
 - COMBINED: Use all rules with priority-based scoring
 
 Thread safety:
@@ -17,12 +17,21 @@ Thread safety:
 
 import threading
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
+from prosell.domain.base import ValueObject
 from prosell.domain.entities.lead import Lead
+
+# Why `**context: Any` is acceptable here:
+# Each rule signature declares `**context: Any` because the keys consumed
+# differ per rule (candidate_index + organization_count for round_robin,
+# product for vehicle_owner, max_workload for workload_balancing,
+# lead_location for geographic_proximity). A TypedDict would force every
+# rule to know about every other rule's keys. The cost is acceptable:
+# each rule's `score()` reads only the keys it cares about via .get()
+# with explicit defaults.
 
 
 class AssignmentStrategy(StrEnum):
@@ -35,16 +44,15 @@ class AssignmentStrategy(StrEnum):
     COMBINED = "combined"
 
 
-@dataclass
-class AssignmentCandidate:
-    """Value object representing a dealer candidate for lead assignment.
+class AssignmentCandidate(ValueObject):
+    """Value object representing a organization candidate for lead assignment.
 
     Attributes:
-        user_id: Unique identifier for the dealer/user
+        user_id: Unique identifier for the organization/user
         name: Human-readable name
         active_lead_count: Current number of active leads assigned
-        location_city: City where dealer is located (optional)
-        location_state: State/province where dealer is located (optional)
+        location_city: City where organization is located (optional)
+        location_state: State/province where organization is located (optional)
     """
 
     user_id: UUID
@@ -54,12 +62,11 @@ class AssignmentCandidate:
     location_state: str | None = None
 
 
-@dataclass
-class AssignmentResult:
+class AssignmentResult(ValueObject):
     """Value object representing the result of lead assignment.
 
     Attributes:
-        assigned_to: The dealer candidate selected (None if no assignment)
+        assigned_to: The organization candidate selected (None if no assignment)
         strategy_used: Which assignment strategy was applied
         confidence_score: How confident the assignment is (0.0 to 1.0)
         rule_scores: Individual scores from each rule (for transparency)
@@ -75,7 +82,7 @@ class RoundRobinState:
     """
     Thread-safe round-robin state management.
 
-    Uses a lock to ensure thread-safe increments of the dealer index.
+    Uses a lock to ensure thread-safe increments of the organization index.
     This is critical for concurrent lead assignment scenarios.
     """
 
@@ -88,33 +95,32 @@ class RoundRobinState:
         """Get the current index without incrementing.
 
         Returns:
-            Current dealer index
+            Current organization index
         """
         with self._lock:
             return self._index
 
-    def next(self, dealer_count: int) -> int:
+    def next(self, organization_count: int) -> int:
         """
-        Get the next dealer index and increment.
+        Get the next organization index and increment.
 
-        Thread-safe operation that cycles through available dealers.
+        Thread-safe operation that cycles through available organizations.
 
         Args:
-            dealer_count: Total number of available dealers
+            organization_count: Total number of available organizations
 
         Returns:
-            Next dealer index (0 to dealer_count - 1)
+            Next organization index (0 to organization_count - 1)
         """
         with self._lock:
-            if dealer_count <= 0:
-                raise ValueError("dealer_count must be positive")
+            if organization_count <= 0:
+                raise ValueError("organization_count must be positive")
 
             current = self._index
-            self._index = (self._index + 1) % dealer_count
-            _ = dealer_count  # Mark as used to avoid linter warning
+            self._index = (self._index + 1) % organization_count
             return current
 
-    def next_index(self, dealer_count: int) -> int:
+    def next_index(self, organization_count: int) -> int:
         """
         Advance to the next index without returning the current one.
 
@@ -122,12 +128,12 @@ class RoundRobinState:
         after an assignment has been made.
 
         Args:
-            dealer_count: Total number of available dealers
+            organization_count: Total number of available organizations
 
         Returns:
             The new index value after incrementing
         """
-        return self.next(dealer_count)
+        return self.next(organization_count)
 
 
 class AssignmentRule(ABC):
@@ -135,7 +141,7 @@ class AssignmentRule(ABC):
     Abstract base class for lead assignment rules.
 
     Each rule implements a scoring algorithm that evaluates how well
-    a dealer matches a lead for assignment. Rules have priority to
+    a organization matches a lead for assignment. Rules have priority to
     support combined strategy execution.
     """
 
@@ -150,11 +156,11 @@ class AssignmentRule(ABC):
         **context: Any,
     ) -> float:
         """
-        Calculate assignment score for a candidate dealer.
+        Calculate assignment score for a candidate organization.
 
         Args:
             lead: The lead to assign
-            candidate: The dealer candidate to evaluate
+            candidate: The organization candidate to evaluate
             **context: Additional context (product, location, etc.)
 
         Returns:
@@ -167,7 +173,7 @@ class RoundRobinAssignmentRule(AssignmentRule):
     """
     Round-robin assignment rule.
 
-    Distributes leads evenly across all dealers by cycling through
+    Distributes leads evenly across all organizations by cycling through
     them in order. Uses thread-safe RoundRobinState for concurrency.
     """
 
@@ -186,19 +192,18 @@ class RoundRobinAssignmentRule(AssignmentRule):
         """
         Score based on round-robin position.
 
-        The dealer at the current round-robin index gets score 1.0,
+        The organization at the current round-robin index gets score 1.0,
         all others get 0.0.
 
         Args:
             lead: The lead to assign
-            candidate: The dealer candidate to evaluate
-            **context: Must include 'candidate_index' and 'dealer_count'
+            candidate: The organization candidate to evaluate
+            **context: Must include 'candidate_index' and 'organization_count'
 
         Returns:
             1.0 if this candidate is next in round-robin, 0.0 otherwise
         """
         candidate_index = context.get("candidate_index", 0)
-        _ = context.get("dealer_count", 1)  # Used for validation, not needed for scoring
 
         current_index = self.state.current_index()
 
@@ -215,7 +220,7 @@ class VehicleOwnerAssignmentRule(AssignmentRule):
 
     Note: This rule requires organization membership context to work.
     The Product entity has organization_id, so we need to know which
-    dealers belong to that organization to determine ownership.
+    organizations belong to that organization to determine ownership.
     """
 
     priority = 1  # Highest priority
@@ -231,7 +236,7 @@ class VehicleOwnerAssignmentRule(AssignmentRule):
 
         Args:
             lead: The lead to assign
-            candidate: The dealer candidate to evaluate
+            candidate: The organization candidate to evaluate
             **context: Must include 'product' (Product entity)
                       May include 'organization_members' (set of user IDs)
 
@@ -271,7 +276,7 @@ class WorkloadBalancingAssignmentRule(AssignmentRule):
     """
     Workload balancing assignment rule.
 
-    Assigns leads to dealers with the fewest active leads to
+    Assigns leads to organizations with the fewest active leads to
     ensure even distribution of work.
     """
 
@@ -288,11 +293,11 @@ class WorkloadBalancingAssignmentRule(AssignmentRule):
 
         Args:
             lead: The lead to assign
-            candidate: The dealer candidate to evaluate
+            candidate: The organization candidate to evaluate
             **context: May include 'max_workload' for normalization
 
         Returns:
-            Score from 0.0 to 1.0, higher for less loaded dealers
+            Score from 0.0 to 1.0, higher for less loaded organizations
         """
         max_workload = context.get("max_workload", 20)  # Default max for normalization
 
@@ -312,8 +317,8 @@ class GeographicProximityAssignmentRule(AssignmentRule):
     """
     Geographic proximity assignment rule.
 
-    Assigns leads to the geographically closest dealer when
-    location data is available for both lead and dealer.
+    Assigns leads to the geographically closest organization when
+    location data is available for both lead and organization.
     """
 
     priority = 5  # Medium priority
@@ -329,7 +334,7 @@ class GeographicProximityAssignmentRule(AssignmentRule):
 
         Args:
             lead: The lead to assign
-            candidate: The dealer candidate to evaluate
+            candidate: The organization candidate to evaluate
             **context: May include 'lead_location' dict with city/state
 
         Returns:
@@ -367,7 +372,7 @@ class LeadAssignmentRulesEngine:
     """
     Domain service for lead assignment using configurable rules.
 
-    This service encapsulates the logic for assigning leads to dealers
+    This service encapsulates the logic for assigning leads to organizations
     based on multiple strategies and rules. It follows Clean Architecture
     by being a pure domain service with no external dependencies.
 
@@ -375,7 +380,7 @@ class LeadAssignmentRulesEngine:
         engine = LeadAssignmentRulesEngine()
         result = engine.assign_lead(
             lead=lead,
-            candidates=dealers,
+            candidates=organizations,
             strategy=AssignmentStrategy.ROUND_ROBIN
         )
     """
@@ -403,22 +408,22 @@ class LeadAssignmentRulesEngine:
         **context: Any,
     ) -> AssignmentResult:
         """
-        Assign a lead to a dealer using the specified strategy.
+        Assign a lead to a organization using the specified strategy.
 
         Args:
             lead: The lead to assign
-            candidates: List of dealer candidates
+            candidates: List of organization candidates
             strategy: Assignment strategy to use
             **context: Additional context (product, location, etc.)
 
         Returns:
-            AssignmentResult with selected dealer and metadata
+            AssignmentResult with selected organization and metadata
 
         Example:
             >>> engine = LeadAssignmentRulesEngine()
             >>> result = engine.assign_lead(
             ...     lead=lead,
-            ...     candidates=dealers,
+            ...     candidates=organizations,
             ...     strategy=AssignmentStrategy.ROUND_ROBIN
             ... )
             >>> print(f"Assigned to: {result.assigned_to.name}")
@@ -452,7 +457,7 @@ class LeadAssignmentRulesEngine:
         context: dict[str, Any],  # noqa: ARG002
     ) -> AssignmentResult:
         """Assign using round-robin strategy."""
-        dealer_count = len(candidates)
+        organization_count = len(candidates)
         rule_scores: dict[str, float] = {}
 
         # Score each candidate
@@ -461,7 +466,7 @@ class LeadAssignmentRulesEngine:
                 lead,
                 candidate,
                 candidate_index=idx,
-                dealer_count=dealer_count,
+                organization_count=organization_count,
             )
             rule_scores[candidate.user_id.hex] = score
 
@@ -469,7 +474,7 @@ class LeadAssignmentRulesEngine:
         best_candidate = max(candidates, key=lambda c: rule_scores[c.user_id.hex])
 
         # Advance round-robin state for next assignment
-        self._round_robin_rule.state.next(dealer_count)
+        self._round_robin_rule.state.next(organization_count)
 
         return AssignmentResult(
             assigned_to=best_candidate,
@@ -595,7 +600,7 @@ class LeadAssignmentRulesEngine:
             candidate.user_id.hex: {} for candidate in candidates
         }
 
-        dealer_count = len(candidates)
+        organization_count = len(candidates)
         for rule in self._rules:
             rule_name = rule.__class__.__name__
             for idx, candidate in enumerate(candidates):
@@ -603,7 +608,7 @@ class LeadAssignmentRulesEngine:
                     lead,
                     candidate,
                     candidate_index=idx,
-                    dealer_count=dealer_count,
+                    organization_count=organization_count,
                     **context,
                 )
                 all_rule_scores[candidate.user_id.hex][rule_name] = score

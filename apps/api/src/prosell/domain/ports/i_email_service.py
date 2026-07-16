@@ -111,5 +111,5 @@ class AbstractEmailService(Protocol):
         inviter_name: str,
         invitation_token: str,
     ) -> Awaitable[None]:
-        """Send dealer-owner organization invitation email."""
+        """Send organization-owner organization invitation email."""
         ...

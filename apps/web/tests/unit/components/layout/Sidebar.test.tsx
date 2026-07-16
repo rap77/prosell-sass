@@ -168,7 +168,7 @@ describe("Sidebar", () => {
   });
 
   describe("Subsystem D Phase 5.3 — concesionarios group permission gate", () => {
-    it("shows Organizaciones when the user has DEALER_ADMIN_VIEW_ALL", () => {
+    it("shows Organizaciones when the user has ORG_ADMIN_VIEW_ALL", () => {
       vi.mocked(useAuth).mockReturnValue({
         user: {
           id: "1",
@@ -181,7 +181,7 @@ describe("Sidebar", () => {
         isLoading: false,
         hasPermission: vi.fn(
           (permission: Permission) =>
-            permission === Permission.DEALER_ADMIN_VIEW_ALL,
+            permission === Permission.ORG_ADMIN_VIEW_ALL,
         ),
       } as unknown as ReturnType<typeof useAuth>);
 
@@ -194,7 +194,7 @@ describe("Sidebar", () => {
       expect(screen.getAllByText("Organizaciones").length).toBeGreaterThan(0);
     });
 
-    it("excludes Organizaciones when the user lacks DEALER_ADMIN_VIEW_ALL, even if the group is requested", () => {
+    it("excludes Organizaciones when the user lacks ORG_ADMIN_VIEW_ALL, even if the group is requested", () => {
       vi.mocked(useAuth).mockReturnValue({
         user: {
           id: "1",

@@ -6,37 +6,39 @@ import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { useCategories } from "@/lib/api/categories";
-import { useCreateDealer, useUpdateDealer } from "@/lib/api/dealers";
+import { useCreateOrganization, useUpdateOrganization } from "@/lib/api/organizations";
 import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
 
 /**
- * Staff form to create a dealer org + invite its owner — Subsystem E Task 16.
+ * Staff form to create a organization org + invite its owner — Subsystem E Task 16.
  *
- * Gates on hasPermission(DEALER_ADMIN_VIEW_ALL) directly rather than
+ * Gates on hasPermission(ORG_ADMIN_VIEW_ALL) directly rather than
  * useRequireAdmin(), which checks role-identity (isAdmin) instead of the
  * permission itself.
  */
 export default function AdminNewDealerPage() {
   const router = useRouter();
   const { hasPermission, isLoading: authLoading } = useAuth();
-  const canCreate = hasPermission(Permission.DEALER_ADMIN_VIEW_ALL);
+  const canCreate = hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
 
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
 
   // ponytail: Only level 0 categories are verticals (top-level industry niches)
   const verticals = categories.filter((c) => c.level === 0);
-  const createDealer = useCreateDealer();
-  const updateDealer = useUpdateDealer();
+  const createOrganization = useCreateOrganization();
+  const updateOrganization = useUpdateOrganization();
 
   const [name, setName] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [color, setColor] = useState("#4DB8FF");
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
   const [brokers, setBrokers] = useState<
-    Array<{ name: string; email: string }>
+    Array<{ name: string; email: string; phone?: string }>
   >([]);
   const [brokerName, setBrokerName] = useState("");
   const [brokerEmail, setBrokerEmail] = useState("");
+  const [brokerPhone, setBrokerPhone] = useState("");
 
   // Optional fields
   const [description, setDescription] = useState("");
@@ -74,6 +76,7 @@ export default function AdminNewDealerPage() {
   const addBroker = () => {
     const trimmedName = brokerName.trim();
     const trimmedEmail = brokerEmail.trim().toLowerCase();
+    const trimmedPhone = brokerPhone.trim();
     if (
       trimmedName &&
       trimmedEmail &&
@@ -81,10 +84,15 @@ export default function AdminNewDealerPage() {
     ) {
       setBrokers((prev) => [
         ...prev,
-        { name: trimmedName, email: trimmedEmail },
+        {
+          name: trimmedName,
+          email: trimmedEmail,
+          phone: trimmedPhone || undefined,
+        },
       ]);
       setBrokerName("");
       setBrokerEmail("");
+      setBrokerPhone("");
     }
   };
 
@@ -110,18 +118,19 @@ export default function AdminNewDealerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await createDealer.mutateAsync({
+      const result = await createOrganization.mutateAsync({
         name,
         vertical_ids: verticalIds,
-        owner_email: ownerEmail,
         brokers: brokers.length > 0 ? brokers : undefined,
       });
 
-      // If optional fields were filled, update the org immediately
-      if (hasOptionalFields()) {
-        await updateDealer.mutateAsync({
-          dealerId: result.organization_id,
+      // ponytail: always update to set code/color if provided
+      if (code || color || hasOptionalFields()) {
+        await updateOrganization.mutateAsync({
+          organizationId: result.organization_id,
           data: {
+            code: code || undefined,
+            color: color || undefined,
             description: description || undefined,
             website: website || undefined,
             phone: phone || undefined,
@@ -167,23 +176,41 @@ export default function AdminNewDealerPage() {
           maxWidth: 480,
         }}
       >
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Nombre
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            style={{
-              height: 38,
-              padding: "0 12px",
-              borderRadius: 8,
-              border: "1px solid var(--ps-border-default)",
-              background: "var(--ps-bg-elevated)",
-              color: "var(--ps-text-primary)",
-            }}
-          />
-        </label>
+        {/* Shared form fields — identity (name/code/color) + optional */}
+        <OrganizationFormFields
+          name={name}
+          code={code}
+          color={color}
+          onNameChange={setName}
+          onCodeChange={setCode}
+          onColorChange={setColor}
+          description={description}
+          website={website}
+          phone={phone}
+          email={email}
+          whatsapp={whatsapp}
+          streetAddress={streetAddress}
+          city={city}
+          state={state}
+          postalCode={postalCode}
+          country={country}
+          taxId={taxId}
+          instagram={instagram}
+          facebook={facebook}
+          onDescriptionChange={setDescription}
+          onWebsiteChange={setWebsite}
+          onPhoneChange={setPhone}
+          onEmailChange={setEmail}
+          onWhatsappChange={setWhatsapp}
+          onStreetAddressChange={setStreetAddress}
+          onCityChange={setCity}
+          onStateChange={setState}
+          onPostalCodeChange={setPostalCode}
+          onCountryChange={setCountry}
+          onTaxIdChange={setTaxId}
+          onInstagramChange={setInstagram}
+          onFacebookChange={setFacebook}
+        />
 
         <fieldset
           style={{
@@ -231,24 +258,6 @@ export default function AdminNewDealerPage() {
           ))}
         </fieldset>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Email del owner
-          <input
-            type="email"
-            value={ownerEmail}
-            onChange={(e) => setOwnerEmail(e.target.value)}
-            required
-            style={{
-              height: 38,
-              padding: "0 12px",
-              borderRadius: 8,
-              border: "1px solid var(--ps-border-default)",
-              background: "var(--ps-bg-elevated)",
-              color: "var(--ps-text-primary)",
-            }}
-          />
-        </label>
-
         {/* Brokers section */}
         <fieldset
           style={{
@@ -294,13 +303,30 @@ export default function AdminNewDealerPage() {
               type="email"
               value={brokerEmail}
               onChange={(e) => setBrokerEmail(e.target.value)}
+              placeholder="Email"
+              style={{
+                flex: 1,
+                height: 38,
+                padding: "0 12px",
+                borderRadius: 8,
+                border: "1px solid var(--ps-border-default)",
+                background: "var(--ps-bg-elevated)",
+                color: "var(--ps-text-primary)",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="tel"
+              value={brokerPhone}
+              onChange={(e) => setBrokerPhone(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   addBroker();
                 }
               }}
-              placeholder="Email"
+              placeholder="Teléfono (opcional)"
               style={{
                 flex: 1,
                 height: 38,
@@ -356,6 +382,7 @@ export default function AdminNewDealerPage() {
                       }}
                     >
                       {broker.email}
+                      {broker.phone && ` · ${broker.phone}`}
                     </div>
                   </div>
                   <button
@@ -382,55 +409,17 @@ export default function AdminNewDealerPage() {
           )}
         </fieldset>
 
-        {/* Shared form fields - same component as edit page */}
-        <div
-          style={{
-            borderTop: "1px solid var(--ps-border-default)",
-            paddingTop: 16,
-            marginTop: 8,
-          }}
-        >
-          <OrganizationFormFields
-            description={description}
-            website={website}
-            phone={phone}
-            email={email}
-            whatsapp={whatsapp}
-            streetAddress={streetAddress}
-            city={city}
-            state={state}
-            postalCode={postalCode}
-            country={country}
-            taxId={taxId}
-            instagram={instagram}
-            facebook={facebook}
-            onDescriptionChange={setDescription}
-            onWebsiteChange={setWebsite}
-            onPhoneChange={setPhone}
-            onEmailChange={setEmail}
-            onWhatsappChange={setWhatsapp}
-            onStreetAddressChange={setStreetAddress}
-            onCityChange={setCity}
-            onStateChange={setState}
-            onPostalCodeChange={setPostalCode}
-            onCountryChange={setCountry}
-            onTaxIdChange={setTaxId}
-            onInstagramChange={setInstagram}
-            onFacebookChange={setFacebook}
-          />
-        </div>
-
-        {(createDealer.error || updateDealer.error) && (
+        {(createOrganization.error || updateOrganization.error) && (
           <p style={{ color: "var(--ps-error)" }}>
-            {createDealer.error?.message || updateDealer.error?.message}
+            {createOrganization.error?.message || updateOrganization.error?.message}
           </p>
         )}
 
         <button
           type="submit"
           disabled={
-            createDealer.isPending ||
-            updateDealer.isPending ||
+            createOrganization.isPending ||
+            updateOrganization.isPending ||
             verticalIds.length === 0
           }
           style={{
@@ -443,7 +432,7 @@ export default function AdminNewDealerPage() {
             cursor: "pointer",
           }}
         >
-          {createDealer.isPending || updateDealer.isPending
+          {createOrganization.isPending || updateOrganization.isPending
             ? "Creando..."
             : "Crear organización"}
         </button>

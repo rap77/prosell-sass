@@ -110,7 +110,7 @@ async def test_update_persists_token_and_expiry_after_regenerate(
 ) -> None:
     """Bug found while implementing T12: update() only wrote status/accepted_by_user_id.
 
-    InviteDealerOwnerUseCase's reuse branch calls `regenerate_token()` (which
+    InviteOrganizationOwnerUseCase's reuse branch calls `regenerate_token()` (which
     mutates `token` and `expires_at` in memory) then `repository.update()`,
     expecting the new hash to be persisted. Without this, a resent invitation
     emails a raw token whose hash never matches what's stored -- the

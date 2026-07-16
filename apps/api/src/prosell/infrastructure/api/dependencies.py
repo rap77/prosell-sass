@@ -33,8 +33,8 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.organization.accept_organization_invitation import (
         AcceptOrganizationInvitationUseCase,
     )
-    from prosell.application.use_cases.organization.create_dealer_organization import (
-        CreateDealerOrganizationUseCase,
+    from prosell.application.use_cases.organization.create_organization import (
+        CreateOrganizationUseCase,
     )
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
     from prosell.application.use_cases.user_branch.assign_user_branch import (
@@ -63,8 +63,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
-from prosell.application.use_cases.organization.invite_dealer_owner import (
-    InviteDealerOwnerUseCase,
+from prosell.application.use_cases.organization.invite_organization_owner import (
+    InviteOrganizationOwnerUseCase,
 )
 from prosell.core.config import get_oauth_settings, get_settings, settings
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
@@ -201,7 +201,7 @@ async def get_infer_category_use_case(
     """Get InferCategoryUseCase instance (Subsystem C T4)."""
     # Lazy import: keeps the inference DTOs and domain scorer out of the
     # import graph for other factories. Mirrors the pattern used by
-    # get_create_dealer_organization_use_case above.
+    # get_create_organization_use_case above.
     from prosell.application.use_cases.category.infer_category import (
         InferCategoryUseCase,
     )
@@ -276,8 +276,11 @@ def get_oauth_service() -> IOAuthService:
 # =============================================================================
 
 
+_http_bearer = HTTPBearer(scheme_name="JWT", bearerFormat="JWT")
+
+
 async def get_current_auth_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_http_bearer)],
     jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
     user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
 ) -> User:
@@ -519,17 +522,17 @@ async def get_login_user_use_case(
     return LoginUserUseCase(user_repository, password_service, issue_session_use_case)
 
 
-async def get_invite_dealer_owner_use_case(
+async def get_invite_organization_owner_use_case(
     invitation_repository: Annotated[
         AbstractOrganizationInvitationRepository, Depends(get_organization_invitation_repository)
     ],
     email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
-) -> InviteDealerOwnerUseCase:
-    """Get InviteDealerOwner use case instance."""
-    return InviteDealerOwnerUseCase(invitation_repository, email_service)
+) -> InviteOrganizationOwnerUseCase:
+    """Get InviteOrganizationOwner use case instance."""
+    return InviteOrganizationOwnerUseCase(invitation_repository, email_service)
 
 
-async def get_create_dealer_organization_use_case(
+async def get_create_organization_use_case(
     organization_repository: Annotated[
         AbstractOrganizationRepository, Depends(get_organization_repository)
     ],
@@ -538,21 +541,21 @@ async def get_create_dealer_organization_use_case(
     ],
     user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
     category_repository: Annotated[AbstractCategoryRepository, Depends(get_category_repository)],
-    invite_dealer_owner_use_case: Annotated[
-        InviteDealerOwnerUseCase, Depends(get_invite_dealer_owner_use_case)
+    invite_organization_owner_use_case: Annotated[
+        InviteOrganizationOwnerUseCase, Depends(get_invite_organization_owner_use_case)
     ],
-) -> CreateDealerOrganizationUseCase:
-    """Get CreateDealerOrganization use case instance."""
-    from prosell.application.use_cases.organization.create_dealer_organization import (
-        CreateDealerOrganizationUseCase,
+) -> CreateOrganizationUseCase:
+    """Get CreateOrganization use case instance."""
+    from prosell.application.use_cases.organization.create_organization import (
+        CreateOrganizationUseCase,
     )
 
-    return CreateDealerOrganizationUseCase(
+    return CreateOrganizationUseCase(
         organization_repository,
         vertical_repository,
         user_repository,
         category_repository,
-        invite_dealer_owner_use_case,
+        invite_organization_owner_use_case,
     )
 
 
@@ -880,7 +883,7 @@ async def get_publish_vehicle_use_case(
 
 
 # =============================================================================
-# USER-DEALER DEPENDENCIES
+# USER-ORGANIZATION DEPENDENCIES
 # =============================================================================
 
 

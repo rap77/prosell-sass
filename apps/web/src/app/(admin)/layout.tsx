@@ -11,7 +11,7 @@ import { NavigationCleanup } from "@/components/layout/NavigationCleanup";
  * Navigation groups:
  * - Inventario: Catálogo, Publicaciones
  * - Ventas: Leads, Citas
- * - Concesionarios: cross-dealer admin view (Subsystem D)
+ * - Concesionarios: cross-organization admin view (Subsystem D)
  * - Configuración: Settings, Logs (full access)
  *
  * Server Component by default (minimize client JS).

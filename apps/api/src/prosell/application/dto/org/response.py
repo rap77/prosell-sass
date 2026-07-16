@@ -43,11 +43,16 @@ class OrganizationResponse(BaseModel):
     settings: dict[str, object] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
-    broker_count: int | None = None  # populated when listing dealers
+    broker_count: int | None = None  # populated when listing organizations
+    owner_email: str | None = None  # populated when listing organizations (latest invitation)
 
     @classmethod
     def from_entity(
-        cls, org: Organization, *, broker_count: int | None = None
+        cls,
+        org: Organization,
+        *,
+        broker_count: int | None = None,
+        owner_email: str | None = None,
     ) -> "OrganizationResponse":
         """Build response from domain entity."""
         return cls(
@@ -79,6 +84,7 @@ class OrganizationResponse(BaseModel):
             created_at=org.created_at,
             updated_at=org.updated_at,
             broker_count=broker_count,
+            owner_email=owner_email,
         )
 
 

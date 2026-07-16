@@ -56,6 +56,10 @@ const productSchema = z.object({
   id: z.string(),
   tenant_id: z.string(),
   organization_id: z.string(),
+  // ponytail: owner org info — the ACTUAL owner (from product_ownership)
+  owner_org_id: z.string().nullish(),
+  owner_org_code: z.string().nullish(),
+  owner_org_color: z.string().nullish(),
   category_id: z.string(),
   title: z.string(),
   slug: z.string().nullish(),

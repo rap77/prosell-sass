@@ -76,7 +76,7 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:update": True,
         "vehicle:delete": True,
         # Subsystem D — cross-dealer marketplace
-        "dealer:admin_view_all": True,
+        "org:admin_view_all": True,
         "marketplace:publish": True,
         # Analytics
         "analytics:view": True,
@@ -105,7 +105,7 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:delete": True,
         # Subsystem D — manager can publish their own dealer's products,
         # but not browse cross-dealer
-        "dealer:admin_view_all": False,
+        "org:admin_view_all": False,
         "marketplace:publish": True,
         "analytics:view": True,
         "analytics:export": True,
@@ -131,7 +131,7 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:update": True,
         "vehicle:delete": False,
         # Subsystem D — sellers don't publish or browse cross-dealer
-        "dealer:admin_view_all": False,
+        "org:admin_view_all": False,
         "marketplace:publish": False,
         "analytics:view": True,
         "analytics:export": False,
@@ -157,7 +157,7 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:update": False,
         "vehicle:delete": False,
         # Subsystem D — viewers don't publish or browse cross-dealer
-        "dealer:admin_view_all": False,
+        "org:admin_view_all": False,
         "marketplace:publish": False,
         "analytics:view": True,
         "analytics:export": False,
@@ -1001,13 +1001,13 @@ class TestPermissionMatrixDocumentation:
 
     def test_doc_admin_has_14_permissions(self) -> None:
         """ADMIN has 14 perms: user R+U, no role mgmt, org R+U, vehicle CRUD,
-        DEALER_ADMIN_VIEW_ALL + MARKETPLACE_PUBLISH (Subsystem D), analytics."""
+        ORG_ADMIN_VIEW_ALL + MARKETPLACE_PUBLISH (Subsystem D), analytics."""
         assert len(_perms_for(RoleType.ADMIN)) == 14
 
     def test_doc_manager_has_10_permissions(self) -> None:
         """MANAGER has 10 permissions (user R, org R, vehicle CRUD, MARKETPLACE_PUBLISH,
         analytics, settings R). Subsystem D adds MARKETPLACE_PUBLISH but NOT
-        DEALER_ADMIN_VIEW_ALL (managers stay scoped to their own dealer)."""
+        ORG_ADMIN_VIEW_ALL (managers stay scoped to their own dealer)."""
         assert len(_perms_for(RoleType.MANAGER)) == 10
 
     def test_doc_vendedor_has_4_permissions(self) -> None:

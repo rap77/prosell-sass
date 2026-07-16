@@ -16,41 +16,45 @@ import { Plus, Trash2, Loader2, User, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  useDealerBrokers,
-  useCreateDealerBroker,
-  useUpdateDealerBroker,
-  useDeleteDealerBroker,
-} from "@/lib/api/dealers";
-import type { Broker } from "@/lib/api/schemas/dealers";
+  useOrganizationBrokers,
+  useCreateOrganizationBroker,
+  useUpdateOrganizationBroker,
+  useDeleteOrganizationBroker,
+} from "@/lib/api/organizations";
+import type { Broker } from "@/lib/api/schemas/organizations";
 
 interface BrokerManagerProps {
-  dealerId: string;
+  organizationId: string;
 }
 
-export function BrokerManager({ dealerId }: BrokerManagerProps) {
-  const { data: brokers = [], isLoading } = useDealerBrokers(dealerId);
-  const createBroker = useCreateDealerBroker();
-  const updateBroker = useUpdateDealerBroker();
-  const deleteBroker = useDeleteDealerBroker();
+export function BrokerManager({ organizationId }: BrokerManagerProps) {
+  const { data: brokers = [], isLoading } = useOrganizationBrokers(organizationId);
+  const createBroker = useCreateOrganizationBroker();
+  const updateBroker = useUpdateOrganizationBroker();
+  const deleteBroker = useDeleteOrganizationBroker();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
 
   const handleCreate = async () => {
     if (!newName.trim() || !newEmail.trim()) return;
     try {
       await createBroker.mutateAsync({
-        dealerId,
+        organizationId,
         name: newName.trim(),
         email: newEmail.trim(),
+        phone: newPhone.trim() || undefined,
       });
       setNewName("");
       setNewEmail("");
+      setNewPhone("");
       setShowAddForm(false);
     } catch {
       // Error handled by mutation
@@ -62,22 +66,26 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
     setEditingId(broker.id);
     setEditName(broker.name);
     setEditEmail(broker.email);
+    setEditPhone(broker.phone ?? "");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditName("");
     setEditEmail("");
+    setEditPhone("");
   };
 
   const handleUpdate = async () => {
     if (!editingId || !editName.trim() || !editEmail.trim()) return;
     try {
       await updateBroker.mutateAsync({
-        dealerId,
+        organizationId,
         brokerId: editingId,
         name: editName.trim(),
         email: editEmail.trim(),
+        // ponytail: backend PATCH ignores undefined; clearing a phone needs explicit-null support
+        phone: editPhone.trim() || undefined,
       });
       cancelEdit();
     } catch {
@@ -86,7 +94,7 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
   };
 
   const handleDelete = async (brokerId: string) => {
-    await deleteBroker.mutateAsync({ dealerId, brokerId });
+    await deleteBroker.mutateAsync({ organizationId, brokerId });
   };
 
   if (isLoading) {
@@ -128,6 +136,13 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
                     placeholder="Email"
                     className="h-8 flex-1"
                   />
+                  <Input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="Teléfono"
+                    className="h-8 flex-1"
+                  />
                   <Button
                     type="button"
                     variant="ghost"
@@ -135,6 +150,7 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
                     onClick={handleUpdate}
                     disabled={updateBroker.isPending}
                     className="h-8 w-8 text-green-600"
+                    title="Guardar"
                   >
                     {updateBroker.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -170,6 +186,11 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
                       <div className="text-xs text-muted-foreground">
                         {broker.email}
                       </div>
+                      {broker.phone && (
+                        <div className="text-xs text-muted-foreground">
+                          {broker.phone}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -224,6 +245,13 @@ export function BrokerManager({ dealerId }: BrokerManagerProps) {
               className="flex-1"
             />
           </div>
+          <Input
+            type="tel"
+            placeholder="Teléfono (opcional)"
+            value={newPhone}
+            onChange={(e) => setNewPhone(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+          />
           <div className="flex gap-2">
             <Button
               type="button"

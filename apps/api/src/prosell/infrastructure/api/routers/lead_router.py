@@ -31,9 +31,13 @@ from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
     LeadStateTransitionException,
 )
+from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.services.lead_assignment_rules_engine import LeadAssignmentRulesEngine
 from prosell.domain.services.lead_duplicate_detector import DuplicateMatch, LeadDuplicateDetector
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user_from_cookie,
+    get_user_repository,
+)
 from prosell.infrastructure.api.schemas.lead_schemas import (
     DuplicateMatchResponse,
     DuplicatesResponse,
@@ -56,7 +60,7 @@ from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyU
 router = APIRouter()
 
 # Shared assignment engine singleton — round-robin state must persist across requests
-# so that consecutive leads are distributed evenly across dealers.
+# so that consecutive leads are distributed evenly across organizations.
 _shared_assignment_engine = LeadAssignmentRulesEngine()
 
 
@@ -122,11 +126,9 @@ async def get_assign_lead_use_case(
 
 async def get_team_metrics_use_case(
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+    user_repo: Annotated[AbstractUserRepository, Depends(get_user_repository)],
 ) -> GetTeamMetricsUseCase:
     """Get TeamMetrics use case instance."""
-    from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
-
-    user_repo = SqlAlchemyUserRepository(lead_repo.session)
     return GetTeamMetricsUseCase(lead_repo, user_repo)
 
 
@@ -187,10 +189,10 @@ async def list_leads(
     use_case: Annotated[ListLeadsUseCase, Depends(get_list_leads_use_case)],
     limit: Annotated[int, Query(ge=1, le=500)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-    lead_status: LeadStatus | None = Query(default=None, alias="status"),
-    vendedor_id: UUID | None = Query(
-        default=None, description="Filter by vendedor ID (manager-only)"
-    ),
+    lead_status: Annotated[LeadStatus | None, Query(alias="status")] = None,
+    vendedor_id: Annotated[
+        UUID | None, Query(description="Filter by vendedor ID (manager-only)")
+    ] = None,
 ) -> LeadListResponse:
     """
     List leads with pagination and role-based filtering.

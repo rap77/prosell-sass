@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCreateDealer, useResendDealerInvitation } from "@/lib/api/dealers";
+import { useCreateOrganization, useResendOrganizationInvitation } from "@/lib/api/organizations";
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient();
@@ -10,7 +10,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-describe("useCreateDealer", () => {
+describe("useCreateOrganization", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
@@ -26,8 +26,8 @@ describe("useCreateDealer", () => {
     );
   });
 
-  it("POSTs to /api/v1/admin/dealers and returns the parsed response", async () => {
-    const { result } = renderHook(() => useCreateDealer(), { wrapper });
+  it("POSTs to /api/v1/admin/organizations and returns the parsed response", async () => {
+    const { result } = renderHook(() => useCreateOrganization(), { wrapper });
 
     result.current.mutate({
       name: "Acme Motors",
@@ -38,13 +38,13 @@ describe("useCreateDealer", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.organization_id).toBe("org-1");
     expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/admin/dealers",
+      "/api/v1/admin/organizations",
       expect.objectContaining({ method: "POST" }),
     );
   });
 });
 
-describe("useResendDealerInvitation", () => {
+describe("useResendOrganizationInvitation", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
@@ -60,8 +60,8 @@ describe("useResendDealerInvitation", () => {
     );
   });
 
-  it("POSTs to /api/v1/admin/dealers/{id}/resend-invitation", async () => {
-    const { result } = renderHook(() => useResendDealerInvitation(), {
+  it("POSTs to /api/v1/admin/organizations/{id}/resend-invitation", async () => {
+    const { result } = renderHook(() => useResendOrganizationInvitation(), {
       wrapper,
     });
 
@@ -69,7 +69,7 @@ describe("useResendDealerInvitation", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/admin/dealers/org-1/resend-invitation",
+      "/api/v1/admin/organizations/org-1/resend-invitation",
       expect.objectContaining({ method: "POST" }),
     );
   });

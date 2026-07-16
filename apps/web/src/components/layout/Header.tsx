@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { formatBreadcrumbLabel } from "@/lib/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,26 +27,60 @@ import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { TeamSwitcher } from "@/components/teams/TeamSwitcher";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { DealerPicker } from "@/components/admin/DealerPicker";
+import { OrganizationPicker } from "@/components/admin/OrganizationPicker";
 
 /**
  * Props for Header component.
  */
+interface HeaderUser {
+  name?: string;
+  email?: string;
+  role?: string;
+  initials?: string;
+}
+
+interface HeaderOrganization {
+  id?: string;
+  name?: string;
+}
+
 interface HeaderProps {
-  /** User data from auth context */
-  user?: {
-    name?: string;
-    email?: string;
-    role?: string;
-    initials?: string;
-  };
-  /** Organization data - placeholder for Phase 5 multi-brancheship */
-  organization?: {
-    id?: string;
-    name?: string;
-  };
+  user?: HeaderUser;
+  organization?: HeaderOrganization;
   /** Tenant ID for multi-tenancy */
   tenantId?: string;
+}
+
+type AuthUser = ReturnType<typeof useAuth>["user"];
+
+function getInitials(firstName?: string | null, lastName?: string | null): string {
+  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  if (firstName) return firstName.substring(0, 2).toUpperCase();
+  return "??";
+}
+
+function resolveUserData(user: HeaderUser | undefined, authUser: AuthUser): HeaderUser {
+  if (user) return user;
+  if (!authUser) {
+    return {
+      name: "John Doe",
+      email: "john.doe@example.com",
+      role: "Seller",
+      initials: "JD",
+    };
+  }
+
+  const name =
+    authUser.first_name && authUser.last_name
+      ? `${authUser.first_name} ${authUser.last_name}`
+      : authUser.email?.split("@")[0] || "User";
+
+  return {
+    name,
+    email: authUser.email,
+    role: authUser.role || "Seller",
+    initials: getInitials(authUser.first_name, authUser.last_name),
+  };
 }
 
 /**
@@ -67,36 +100,8 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
   const breadcrumbOverrides = useBreadcrumbStore((state) => state.labels);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Helper function to get user initials from name
-  const getInitials = (firstName?: string, lastName?: string): string => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    if (firstName) {
-      return firstName.substring(0, 2).toUpperCase();
-    }
-    return "??";
-  };
-
   // Use real user data from auth context, fallback to placeholder
-  const userData =
-    user ||
-    (authUser
-      ? {
-          name:
-            authUser.first_name && authUser.last_name
-              ? `${authUser.first_name} ${authUser.last_name}`
-              : authUser.email?.split("@")[0] || "User",
-          email: authUser.email,
-          role: authUser.role || "Seller",
-          initials: getInitials(authUser.first_name, authUser.last_name),
-        }
-      : {
-          name: "John Doe",
-          email: "john.doe@example.com",
-          role: "Seller",
-          initials: "JD",
-        });
+  const userData = resolveUserData(user, authUser);
 
   // TODO: Replace with real org data from user context
   const orgData = organization || {
@@ -199,10 +204,10 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
           </div>
         </div>
 
-        {/* Admins get the cross-dealer DealerPicker (Subsystem D); everyone
+        {/* Admins get the cross-organization OrganizationPicker (Subsystem D); everyone
             else keeps the single-org switcher placeholder. */}
         {isAdmin ? (
-          <DealerPicker />
+          <OrganizationPicker />
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

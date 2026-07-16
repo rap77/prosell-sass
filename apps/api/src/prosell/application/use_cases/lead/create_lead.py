@@ -37,7 +37,7 @@ class CreateLeadUseCase:
     - At least buyer_name must be provided.
     - vendedor_id is optional — if not provided, auto-assign using LeadAssignmentRulesEngine.
     - Uses LeadDuplicateDetector for enhanced duplicate detection.
-    - Uses LeadAssignmentRulesEngine for automatic dealer assignment (B4.3.06).
+    - Uses LeadAssignmentRulesEngine for automatic organization assignment (B4.3.06).
     """
 
     def __init__(
@@ -180,22 +180,22 @@ class CreateLeadUseCase:
         tenant_id: UUID,
     ) -> UUID | None:
         """
-        Automatically assign lead to a dealer using LeadAssignmentRulesEngine.
+        Automatically assign lead to a organization using LeadAssignmentRulesEngine.
 
         This method implements B4.3.06: Integration of LeadAssignmentRulesEngine
-        into CreateLeadUseCase for automatic dealer assignment.
+        into CreateLeadUseCase for automatic organization assignment.
 
         Assignment Strategy:
         - Uses the configured strategy (COMBINED by default)
         - Respects vehicle ownership if product ownership data is available
-        - Falls back gracefully if no dealers are available
+        - Falls back gracefully if no organizations are available
 
         Args:
             request: CreateLeadRequest with lead details
             tenant_id: Tenant UUID for isolation
 
         Returns:
-            Assigned dealer's user_id, or None if assignment failed
+            Assigned organization's user_id, or None if assignment failed
         """
         # Skip assignment if dependencies are not available
         if not all(
@@ -218,7 +218,7 @@ class CreateLeadUseCase:
             if not teams:
                 return None
 
-            # Collect all team members (dealers) from all teams
+            # Collect all team members (organizations) from all teams
             candidates: list[AssignmentCandidate] = []
             organization_members: set[UUID] = set()
 
@@ -231,7 +231,7 @@ class CreateLeadUseCase:
                     # Fetch user details to get name and workload
                     user = await self.user_repository.get_by_id(member.user_id)
                     if user and user.status.value == "active":  # Only active users
-                        # Count active leads for this dealer
+                        # Count active leads for this organization
                         active_leads = await self.lead_repository.count_by_vendedor(
                             vendedor_id=user.id,
                             tenant_id=tenant_id,
@@ -248,7 +248,7 @@ class CreateLeadUseCase:
                         organization_members.add(user.id)
 
             if not candidates:
-                # No active dealers available
+                # No active organizations available
                 return None
 
             # Prepare context for assignment rules

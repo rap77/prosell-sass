@@ -11,17 +11,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { useDealers } from "@/lib/api/dealers";
+import { useOrganizations } from "@/lib/api/organizations";
 import { useOrganizationStore } from "@/stores/organizationStore";
 
 /**
- * Header control that lets an admin "view as" another dealer's
+ * Header control that lets an admin "view as" another organization's
  * organization (Subsystem D). Renders nothing for non-admins — the
- * backend re-enforces DEALER_ADMIN_VIEW_ALL regardless, this is UI-only.
+ * backend re-enforces ORG_ADMIN_VIEW_ALL regardless, this is UI-only.
  */
-export function DealerPicker() {
+export function OrganizationPicker() {
   const { isAdmin } = useAuth();
-  const { data: dealers = [], isLoading } = useDealers();
+  const { data: organizations = [], isLoading } = useOrganizations();
   const viewingOrgId = useOrganizationStore((state) => state.viewingOrgId);
   const setViewingOrgId = useOrganizationStore(
     (state) => state.setViewingOrgId,
@@ -31,8 +31,8 @@ export function DealerPicker() {
     return null;
   }
 
-  const currentDealer = dealers.find((d) => d.id === viewingOrgId);
-  const displayName = currentDealer?.name ?? "Todos los concesionarios";
+  const currentOrganization = organizations.find((d) => d.id === viewingOrgId);
+  const displayName = currentOrganization?.name ?? "Todos los concesionarios";
 
   return (
     <DropdownMenu>
@@ -58,14 +58,14 @@ export function DealerPicker() {
           <span>Todos los concesionarios</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {dealers.map((dealer) => (
+        {organizations.map((organization) => (
           <DropdownMenuItem
-            key={dealer.id}
-            onClick={() => setViewingOrgId(dealer.id)}
-            className={viewingOrgId === dealer.id ? "bg-accent" : ""}
+            key={organization.id}
+            onClick={() => setViewingOrgId(organization.id)}
+            className={viewingOrgId === organization.id ? "bg-accent" : ""}
           >
             <Building2 className="mr-2 h-4 w-4" />
-            <span>{dealer.name}</span>
+            <span>{organization.name}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

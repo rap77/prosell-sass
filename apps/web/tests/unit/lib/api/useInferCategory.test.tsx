@@ -22,13 +22,13 @@ describe("useInferCategory", () => {
         ok: true,
         json: async () => ({
           suggestion: {
-            category_id: "11111111-1111-1111-1111-111111111111",
+            category_id: "11111111-1111-4111-8111-111111111111",
             name: "Vehicles",
             score: 0.87,
           },
           alternatives: [
             {
-              category_id: "11111111-1111-1111-1111-111111111111",
+              category_id: "11111111-1111-4111-8111-111111111111",
               name: "Vehicles",
               score: 0.87,
             },

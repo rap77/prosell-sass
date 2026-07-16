@@ -69,17 +69,17 @@ describe("useAuth — RBAC getters", () => {
     expect(renderHook(() => useAuth()).result.current.isSuperAdmin).toBe(false);
   });
 
-  it("hasPermission reflects DEALER_ADMIN_VIEW_ALL for admin but not sales_user", () => {
+  it("hasPermission reflects ORG_ADMIN_VIEW_ALL for admin but not sales_user", () => {
     setUserRole("admin");
     const admin = renderHook(() => useAuth());
     expect(
-      admin.result.current.hasPermission(Permission.DEALER_ADMIN_VIEW_ALL),
+      admin.result.current.hasPermission(Permission.ORG_ADMIN_VIEW_ALL),
     ).toBe(true);
 
     setUserRole("sales_user");
     const seller = renderHook(() => useAuth());
     expect(
-      seller.result.current.hasPermission(Permission.DEALER_ADMIN_VIEW_ALL),
+      seller.result.current.hasPermission(Permission.ORG_ADMIN_VIEW_ALL),
     ).toBe(false);
   });
 

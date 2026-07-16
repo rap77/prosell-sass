@@ -6,10 +6,20 @@ import { useState } from "react";
 /**
  * Shared form fields for organization create/edit.
  * Used by both /admin/organizations/new and /admin/organizations/[id]/edit
+ *
+ * Includes identity fields (name/code/color) + optional fields
+ * (description, contact, address, fiscal, social).
  */
 
 interface OrganizationFormFieldsProps {
-  // Values
+  // Identity
+  name: string;
+  code: string;
+  color: string;
+  onNameChange: (v: string) => void;
+  onCodeChange: (v: string) => void;
+  onColorChange: (v: string) => void;
+  // Optional fields
   description: string;
   website: string;
   phone: string;
@@ -23,7 +33,6 @@ interface OrganizationFormFieldsProps {
   taxId: string;
   instagram: string;
   facebook: string;
-  // Setters
   onDescriptionChange: (v: string) => void;
   onWebsiteChange: (v: string) => void;
   onPhoneChange: (v: string) => void;
@@ -41,6 +50,7 @@ interface OrganizationFormFieldsProps {
   defaultExpanded?: boolean;
 }
 
+// ponytail: extracted to module scope to satisfy React Compiler
 const inputStyle = {
   height: 38,
   padding: "0 12px",
@@ -48,6 +58,18 @@ const inputStyle = {
   border: "1px solid var(--ps-border-default)",
   background: "var(--ps-bg-elevated)",
   color: "var(--ps-text-primary)",
+};
+
+const sectionDividerStyle = {
+  borderTop: "1px solid var(--ps-border-default)",
+  paddingTop: 8,
+};
+
+const sectionBodyStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 12,
+  marginTop: 8,
 };
 
 // ponytail: extracted outside render to satisfy React Compiler
@@ -84,6 +106,12 @@ function SectionHeader({
 }
 
 export function OrganizationFormFields({
+  name,
+  code,
+  color,
+  onNameChange,
+  onCodeChange,
+  onColorChange,
   description,
   website,
   phone,
@@ -126,6 +154,52 @@ export function OrganizationFormFields({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Identity row: Name + Siglas + Color */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto auto",
+          gap: 12,
+          alignItems: "end",
+        }}
+      >
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          Nombre *
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            required
+            style={inputStyle}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          Siglas
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => onCodeChange(e.target.value.toUpperCase().slice(0, 5))}
+            maxLength={5}
+            placeholder="ACME"
+            style={{ ...inputStyle, width: 80, textTransform: "uppercase" }}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          Color
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => onColorChange(e.target.value)}
+            style={{
+              ...inputStyle,
+              width: 50,
+              padding: 4,
+              cursor: "pointer",
+            }}
+          />
+        </label>
+      </div>
+
       {/* Description */}
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         Descripción
@@ -150,26 +224,14 @@ export function OrganizationFormFields({
       </label>
 
       {/* Contact section */}
-      <div
-        style={{
-          borderTop: "1px solid var(--ps-border-default)",
-          paddingTop: 8,
-        }}
-      >
+      <div style={sectionDividerStyle}>
         <SectionHeader
           title="Contacto"
           isOpen={showContact}
           onToggle={() => setShowContact(!showContact)}
         />
         {showContact && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              marginTop: 8,
-            }}
-          >
+          <div style={sectionBodyStyle}>
             <div
               style={{
                 display: "grid",
@@ -214,26 +276,14 @@ export function OrganizationFormFields({
       </div>
 
       {/* Address section */}
-      <div
-        style={{
-          borderTop: "1px solid var(--ps-border-default)",
-          paddingTop: 8,
-        }}
-      >
+      <div style={sectionDividerStyle}>
         <SectionHeader
           title="Dirección"
           isOpen={showAddress}
           onToggle={() => setShowAddress(!showAddress)}
         />
         {showAddress && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              marginTop: 8,
-            }}
-          >
+          <div style={sectionBodyStyle}>
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               Calle y número
               <input
@@ -308,12 +358,7 @@ export function OrganizationFormFields({
       </div>
 
       {/* Fiscal section */}
-      <div
-        style={{
-          borderTop: "1px solid var(--ps-border-default)",
-          paddingTop: 8,
-        }}
-      >
+      <div style={sectionDividerStyle}>
         <SectionHeader
           title="Información fiscal"
           isOpen={showFiscal}
@@ -335,12 +380,7 @@ export function OrganizationFormFields({
       </div>
 
       {/* Social section */}
-      <div
-        style={{
-          borderTop: "1px solid var(--ps-border-default)",
-          paddingTop: 8,
-        }}
-      >
+      <div style={sectionDividerStyle}>
         <SectionHeader
           title="Redes sociales"
           isOpen={showSocial}

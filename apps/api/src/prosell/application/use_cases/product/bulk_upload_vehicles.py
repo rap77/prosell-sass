@@ -15,7 +15,7 @@ import csv
 import logging
 from dataclasses import asdict, dataclass
 from io import StringIO
-from typing import Any
+from typing import cast
 from uuid import UUID
 
 from prosell.application.dto.product.create import CreateProductRequest
@@ -27,6 +27,11 @@ from prosell.domain.services.csv_image_mapper import CSVImageMapper, ImageMappin
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 logger = logging.getLogger(__name__)
+
+# Vehicle attribute values come from the CSV (year/mileage as ints/floats,
+# make/model/trim/color/etc. as strings, flags like publicado as bools,
+# and string lists like facebook_groups).
+VehicleAttributeValue = str | int | float | bool | list[str]
 
 
 @dataclass
@@ -190,7 +195,7 @@ class BulkUploadVehiclesUseCase:
                     MappedCSVRow(
                         row_number=row_number,
                         vin=row_dict.get("VIN", "").strip(),
-                        cod_dealer=row_dict.get("title", "").strip(),
+                        cod_organization=row_dict.get("title", "").strip(),
                         price_cents=0,
                     )
                 )
@@ -227,14 +232,14 @@ class BulkUploadVehiclesUseCase:
 
         # Build CreateProductRequest
         request = CreateProductRequest(
-            title=mapped_row.cod_dealer or f"Vehicle {vin}",
+            title=mapped_row.cod_organization or f"Vehicle {vin}",
             price_cents=mapped_row.price_cents,
             tenant_id=tenant_id,
             organization_id=organization_id,
             category_id=category_id,
             description=mapped_row.description,
             condition=ProductCondition.USED,
-            attributes=attributes,
+            attributes=cast(dict[str, object], attributes),
             location_city=mapped_row.location_city,
             location_state=mapped_row.location_state,
         )
@@ -306,7 +311,7 @@ class BulkUploadVehiclesUseCase:
             errors=[],
         )
 
-    def _build_attributes(self, mapped_row: MappedCSVRow) -> dict[str, Any]:
+    def _build_attributes(self, mapped_row: MappedCSVRow) -> dict[str, VehicleAttributeValue]:
         """
         Build attributes dict from MappedCSVRow.
 
@@ -316,7 +321,7 @@ class BulkUploadVehiclesUseCase:
         Returns:
             Attributes dict for CreateProductRequest
         """
-        attributes: dict[str, Any] = {}
+        attributes: dict[str, VehicleAttributeValue] = {}
 
         # Core vehicle attributes
         if mapped_row.year is not None:

@@ -14,6 +14,7 @@ from uuid import UUID
 from sqlalchemy import DateTime, ForeignKey, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from prosell.domain.repositories.product_ownership_repository import OwnerType
 from prosell.infrastructure.database.base import Base
 
 
@@ -31,7 +32,7 @@ class ProductOwnershipModel(Base):
         primary_key=True,
     )
     # Discriminator: "organization" | "user"
-    owner_type: Mapped[str] = mapped_column(
+    owner_type: Mapped[OwnerType] = mapped_column(
         String(20),
         default="organization",
         nullable=False,

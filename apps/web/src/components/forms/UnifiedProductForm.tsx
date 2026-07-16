@@ -11,14 +11,11 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Building2, Loader2, Plus, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
-
-import { Building2, User } from "lucide-react";
 
 import { ImageDropzone } from "@/components/upload/ImageDropzone";
 import { Button } from "@/components/ui/button";
@@ -29,10 +26,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useDealers, useDealerBrokers } from "@/lib/api/dealers";
+import { useOrganizations, useOrganizationBrokers } from "@/lib/api/organizations";
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -44,6 +40,7 @@ import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { logger } from "@/lib/logger";
 import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
 import type { CategoryNode } from "@/types/category";
+import type { ProductAttributes } from "@/types/vehicle";
 
 import { ProductCoverPicker } from "./ProductCoverPicker";
 import { buildZodSchema, getSchemaDefaults } from "./schema/buildZodSchema";
@@ -52,7 +49,13 @@ import {
   SchemaFormSection,
 } from "./schema/SchemaFormSection";
 
-export type UnifiedProductFormMode = "create" | "edit";
+export const UNIFIED_PRODUCT_FORM_MODE = {
+  CREATE: "create",
+  EDIT: "edit",
+} as const;
+
+export type UnifiedProductFormMode =
+  (typeof UNIFIED_PRODUCT_FORM_MODE)[keyof typeof UNIFIED_PRODUCT_FORM_MODE];
 
 export interface UnifiedProductFormProps {
   /** The selected category (with attribute_schema and attribute_groups) */
@@ -65,9 +68,34 @@ export interface UnifiedProductFormProps {
 
 // Fixed fields schema (price, description)
 const FIXED_FIELDS_SCHEMA = z.object({
-  price: z.coerce.number().min(0, "Price must be positive"),
+  // The app currently pins Zod 3.25, whose constraint error key is `message`.
+  price: z.coerce.number().min(0, { message: "Price must be positive" }),
   description: z.string().max(5000).optional(),
 });
+
+const CATEGORY_TYPE = {
+  VEHICLE: "vehicle",
+  REAL_ESTATE: "real_estate",
+  GENERIC: "generic",
+} as const;
+
+type CategoryType = (typeof CATEGORY_TYPE)[keyof typeof CATEGORY_TYPE];
+
+function getCategoryType(category: CategoryNode): CategoryType {
+  if ("vin" in category.attribute_schema) return CATEGORY_TYPE.VEHICLE;
+  if ("operation" in category.attribute_schema) return CATEGORY_TYPE.REAL_ESTATE;
+  return CATEGORY_TYPE.GENERIC;
+}
+
+function isProductAttributes(value: unknown): value is ProductAttributes {
+  if (typeof value !== "object" || value === null || !("category" in value)) {
+    return false;
+  }
+
+  return Object.values(CATEGORY_TYPE).some(
+    (categoryType) => value.category === categoryType,
+  );
+}
 
 /**
  * Generate a title from the category's title_template and form values.
@@ -85,9 +113,16 @@ function generateTitle(
 
 interface OwnerEntry {
   owner_id: string;
-  owner_type: "organization" | "user";
+  owner_type: OwnerType;
   percentage: string;
 }
+
+const OWNER_TYPE = {
+  ORGANIZATION: "organization",
+  USER: "user",
+} as const;
+
+type OwnerType = (typeof OWNER_TYPE)[keyof typeof OWNER_TYPE];
 
 export function UnifiedProductForm({
   category,
@@ -103,14 +138,14 @@ export function UnifiedProductForm({
   // Ownership state (create mode only)
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [pendingOwners, setPendingOwners] = useState<OwnerEntry[]>([]);
-  const { data: dealers = [] } = useDealers();
-  const { data: brokers = [], isLoading: isLoadingBrokers } = useDealerBrokers(
+  const { data: organizations = [] } = useOrganizations();
+  const { data: brokers = [], isLoading: isLoadingBrokers } = useOrganizationBrokers(
     selectedOrgId ?? undefined,
   );
   const setOwnership = useSetProductOwnership();
 
   // Derive if selected org has brokers
-  const selectedOrg = dealers.find((d) => d.id === selectedOrgId);
+  const selectedOrg = organizations.find((d) => d.id === selectedOrgId);
   const hasBrokers = (selectedOrg?.broker_count ?? 0) > 0;
 
   // Hooks
@@ -258,18 +293,17 @@ export function UnifiedProductForm({
         : null;
 
       // Extract fixed fields
-      const { price, description, ...formAttributes } = data;
+      const { price, description, ...formAttributes } =
+        FIXED_FIELDS_SCHEMA.passthrough().parse(data);
 
       // Determine category type based on schema fields
       // ponytail: simple heuristic — vin = vehicle, operation = real estate, else generic
-      const categoryType =
-        "vin" in category.attribute_schema
-          ? "vehicle"
-          : "operation" in category.attribute_schema
-            ? "real_estate"
-            : "generic";
+      const categoryType = getCategoryType(category);
 
       const attributes = { category: categoryType, ...formAttributes };
+      if (!isProductAttributes(attributes)) {
+        throw new Error("Invalid product attributes");
+      }
 
       // Generate title from template
       const titleTemplate = category.presentation?.title_template;
@@ -279,12 +313,10 @@ export function UnifiedProductForm({
       if (mode === "create") {
         const newProduct = await createProduct.mutateAsync({
           title,
-          price_cents: Math.round((price as number) * 100),
+          price_cents: Math.round(price * 100),
           category_id: category.id,
-          description: description as string | undefined,
-          // ponytail: cast to ProductAttributes — runtime adds `category` discriminator
-          attributes:
-            attributes as unknown as import("@/types/vehicle").ProductAttributes,
+          description,
+          attributes,
           image_urls: imageKeys,
           ...(coverKey ? { cover_image_key: coverKey } : {}),
         });
@@ -320,11 +352,9 @@ export function UnifiedProductForm({
           productId,
           data: {
             title,
-            price_cents: Math.round((price as number) * 100),
-            description: description as string | undefined,
-            // ponytail: cast to ProductAttributes — runtime adds `category` discriminator
-            attributes:
-              attributes as unknown as import("@/types/vehicle").ProductAttributes,
+            price_cents: Math.round(price * 100),
+            description,
+            attributes,
             image_urls: imageKeys,
             ...(coverKey ? { cover_image_key: coverKey } : {}),
           },
@@ -464,8 +494,8 @@ export function UnifiedProductForm({
         />
       </section>
 
-      {/* Ownership (create mode only, only for admins who can see dealers) */}
-      {mode === "create" && dealers.length > 0 && (
+      {/* Ownership (create mode only, only for admins who can see organizations) */}
+      {mode === "create" && organizations.length > 0 && (
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Propietarios</h2>
           <p className="text-sm text-muted-foreground">
@@ -482,7 +512,7 @@ export function UnifiedProductForm({
               value={selectedOrgId ?? undefined}
               onValueChange={(orgId) => {
                 setSelectedOrgId(orgId);
-                const org = dealers.find((d) => d.id === orgId);
+                const org = organizations.find((d) => d.id === orgId);
                 const orgHasBrokers = (org?.broker_count ?? 0) > 0;
                 if (orgHasBrokers) {
                   // Clear owners, let user select brokers
@@ -517,18 +547,18 @@ export function UnifiedProductForm({
                 )}
               </SelectTrigger>
               <SelectContent>
-                {dealers.map((dealer) => (
+                {organizations.map((organization) => (
                   <SelectItem
-                    key={dealer.id}
-                    value={dealer.id}
-                    textValue={dealer.name}
+                    key={organization.id}
+                    value={organization.id}
+                    textValue={organization.name}
                   >
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
-                      {dealer.name}
-                      {(dealer.broker_count ?? 0) > 0 && (
+                      {organization.name}
+                      {(organization.broker_count ?? 0) > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          ({dealer.broker_count} brokers)
+                          ({organization.broker_count} brokers)
                         </span>
                       )}
                     </div>

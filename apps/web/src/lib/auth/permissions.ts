@@ -28,7 +28,7 @@ export enum Permission {
   VEHICLE_UPDATE = "vehicle:update",
   VEHICLE_DELETE = "vehicle:delete",
 
-  DEALER_ADMIN_VIEW_ALL = "dealer:admin_view_all",
+  ORG_ADMIN_VIEW_ALL = "org:admin_view_all",
   MARKETPLACE_PUBLISH = "marketplace:publish",
 
   ANALYTICS_VIEW = "analytics:view",
@@ -57,7 +57,7 @@ export const ROLE_PERMISSIONS: Record<RoleType, Permission[]> = {
     Permission.VEHICLE_READ,
     Permission.VEHICLE_UPDATE,
     Permission.VEHICLE_DELETE,
-    Permission.DEALER_ADMIN_VIEW_ALL,
+    Permission.ORG_ADMIN_VIEW_ALL,
     Permission.MARKETPLACE_PUBLISH,
     Permission.ANALYTICS_VIEW,
     Permission.ANALYTICS_EXPORT,

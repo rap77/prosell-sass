@@ -17,6 +17,10 @@ export interface Product {
   organization_id: string;
   /** Organization abbreviation (max 5 chars, uppercase) — shown on internal product cards */
   org_code?: string | null;
+  // ponytail: owner org info — the ACTUAL owner (from product_ownership), not the viewer
+  owner_org_id?: string | null;
+  owner_org_code?: string | null;
+  owner_org_color?: string | null;
   category_id: string;
 
   // Basic info

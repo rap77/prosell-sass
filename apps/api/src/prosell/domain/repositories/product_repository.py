@@ -80,7 +80,7 @@ class AbstractProductRepository(ABC):
         Args:
             tenant_id: Tenant UUID. None lifts tenant isolation entirely —
                 callers MUST only pass None for a user holding
-                Permission.DEALER_ADMIN_VIEW_ALL.
+                Permission.ORG_ADMIN_VIEW_ALL.
             organization_id: Filter by organization
             category_id: Filter by category
             status: Filter by status

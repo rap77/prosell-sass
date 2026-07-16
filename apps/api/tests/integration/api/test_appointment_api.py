@@ -63,7 +63,7 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
                     user_id=str(request.user_id),
                     conflicts=[
                         SimpleNamespace(
-                            type=ConflictType.DEALER_UNAVAILABLE,
+                            type=ConflictType.ORG_UNAVAILABLE,
                             message="Dealer already has an appointment at this time.",
                             conflicting_appointment_id=str(uuid4()),
                         )

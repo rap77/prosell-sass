@@ -45,8 +45,8 @@ class Permission(StrEnum):
     VEHICLE_UPDATE = "vehicle:update"
     VEHICLE_DELETE = "vehicle:delete"
 
-    # Dealer (Subsystem D) — cross-dealer marketplace visibility
-    DEALER_ADMIN_VIEW_ALL = "dealer:admin_view_all"
+    # Organization (Subsystem D) — cross-organization marketplace visibility
+    ORG_ADMIN_VIEW_ALL = "org:admin_view_all"
     MARKETPLACE_PUBLISH = "marketplace:publish"
 
     # Analytics
@@ -78,7 +78,7 @@ ROLE_PERMISSIONS: dict[RoleType, set[Permission]] = {
         Permission.VEHICLE_READ,
         Permission.VEHICLE_UPDATE,
         Permission.VEHICLE_DELETE,
-        Permission.DEALER_ADMIN_VIEW_ALL,
+        Permission.ORG_ADMIN_VIEW_ALL,
         Permission.MARKETPLACE_PUBLISH,
         Permission.ANALYTICS_VIEW,
         Permission.ANALYTICS_EXPORT,
@@ -94,7 +94,7 @@ ROLE_PERMISSIONS: dict[RoleType, set[Permission]] = {
         Permission.VEHICLE_READ,
         Permission.VEHICLE_UPDATE,
         Permission.VEHICLE_DELETE,
-        Permission.DEALER_ADMIN_VIEW_ALL,
+        Permission.ORG_ADMIN_VIEW_ALL,
         Permission.MARKETPLACE_PUBLISH,
         Permission.ANALYTICS_VIEW,
         Permission.ANALYTICS_EXPORT,

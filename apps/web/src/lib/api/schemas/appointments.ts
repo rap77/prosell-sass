@@ -3,7 +3,7 @@
  *
  * Validates the wire shape at the HTTP boundary instead of trusting an
  * `as BackendXResponse` cast on `res.json()` (mirrors the
- * `dealers.ts`/`leads.ts` schema convention).
+ * `organizations.ts`/`leads.ts` schema convention).
  */
 
 import { z } from "zod";

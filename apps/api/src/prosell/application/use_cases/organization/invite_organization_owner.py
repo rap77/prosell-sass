@@ -1,4 +1,4 @@
-"""Invite (or resend an invitation to) a dealer organization's owner."""
+"""Invite (or resend an invitation to) a organization organization's owner."""
 
 from uuid import UUID
 
@@ -11,10 +11,10 @@ from prosell.domain.repositories.organization_invitation_repository import (
 )
 
 
-class InviteDealerOwnerUseCase:
+class InviteOrganizationOwnerUseCase:
     """Create-or-reuse a pending OrganizationInvitation and email it.
 
-    Called both at dealer-org creation time and by the standalone resend
+    Called both at organization-org creation time and by the standalone resend
     endpoint — kept as its own use case so a lost/expired invite email has a
     recovery path that doesn't require recreating the organization.
 
@@ -64,7 +64,7 @@ class InviteDealerOwnerUseCase:
             invitation = await self.invitation_repository.create(new_invitation)
 
         # Not caught — propagates to roll back the caller's transaction when
-        # called from CreateDealerOrganizationUseCase (Task 9). Consistent
+        # called from CreateOrganizationUseCase (Task 9). Consistent
         # with invite_team_member.py, which has the same non-handling.
         await self.email_service.send_org_invitation(
             email=invitation.email,

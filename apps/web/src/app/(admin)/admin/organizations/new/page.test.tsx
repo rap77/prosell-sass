@@ -17,15 +17,15 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
 }));
 
-const mockMutateAsync = vi.fn().mockResolvedValue({ id: "new-dealer-id" });
-vi.mock("@/lib/api/dealers", () => ({
-  useCreateDealer: () => ({
+const mockMutateAsync = vi.fn().mockResolvedValue({ id: "new-organization-id" });
+vi.mock("@/lib/api/organizations", () => ({
+  useCreateOrganization: () => ({
     mutateAsync: mockMutateAsync,
     isPending: false,
     error: null,
   }),
   // ponytail: page imports this but doesn't use it in create flow
-  useUpdateDealer: () => ({
+  useUpdateOrganization: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
     error: null,
@@ -61,7 +61,7 @@ describe("AdminNewDealerPage", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it("redirects with router.replace (not push) when the user lacks DEALER_ADMIN_VIEW_ALL", () => {
+  it("redirects with router.replace (not push) when the user lacks ORG_ADMIN_VIEW_ALL", () => {
     mockHasPermission.mockReturnValue(false);
     render(<AdminNewDealerPage />);
     expect(mockReplace).toHaveBeenCalledWith("/dashboard");
@@ -78,7 +78,7 @@ describe("AdminNewDealerPage", () => {
     expect(screen.getByText(/no hay verticals activos/i)).toBeInTheDocument();
   });
 
-  it("renders the form and submits with selected verticals", async () => {
+  it("renders the form and submits with selected verticals (no owner_email required)", async () => {
     mockHasPermission.mockReturnValue(true);
     render(<AdminNewDealerPage />);
 
@@ -86,17 +86,21 @@ describe("AdminNewDealerPage", () => {
       target: { value: "Acme Motors" },
     });
     fireEvent.click(screen.getByLabelText("Vehicles"));
-    fireEvent.change(screen.getByLabelText(/email/i), {
-      target: { value: "owner@x.com" },
-    });
     fireEvent.click(screen.getByRole("button", { name: /crear/i }));
 
     await waitFor(() =>
       expect(mockMutateAsync).toHaveBeenCalledWith({
         name: "Acme Motors",
         vertical_ids: ["cat-1"],
-        owner_email: "owner@x.com",
+        brokers: undefined,
       }),
     );
+  });
+
+  it("does not render the legacy 'Email del owner' required input", () => {
+    mockHasPermission.mockReturnValue(true);
+    render(<AdminNewDealerPage />);
+
+    expect(screen.queryByLabelText(/email del owner/i)).not.toBeInTheDocument();
   });
 });

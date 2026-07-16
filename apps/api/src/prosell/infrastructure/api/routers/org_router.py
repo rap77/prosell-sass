@@ -14,6 +14,7 @@ from prosell.application.dto.org import (
     UploadUrlRequest,
     UploadUrlResponse,
 )
+from prosell.application.dto.org.complete_setup import CompleteSetupRequest
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.org import (
     CompleteSetupUseCase,
@@ -26,7 +27,6 @@ from prosell.application.use_cases.org import (
     UpdateOrganizationUseCase,
     VerifyOrganizationUseCase,
 )
-from prosell.domain.base import DomainModel
 from prosell.domain.entities.role import Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
@@ -138,7 +138,7 @@ async def list_organizations(
     """
     effective_tenant = (
         None
-        if current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
+        if current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
         else current_user.tenant_id
     )
     use_case = ListOrganizationsUseCase(org_repository=org_repo)
@@ -166,12 +166,6 @@ async def get_my_organization(
         return await use_case.execute(tenant_id=current_user.tenant_id)
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
-
-
-class CompleteSetupRequest(DomainModel):
-    """Request body for completing onboarding setup."""
-
-    setup_complete: bool = True
 
 
 @router.patch(
