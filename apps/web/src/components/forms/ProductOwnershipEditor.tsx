@@ -21,7 +21,10 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { useOrganizations, useOrganizationBrokers } from "@/lib/api/organizations";
+import {
+  useOrganizations,
+  useOrganizationBrokers,
+} from "@/lib/api/organizations";
 import {
   useProductOwnership,
   useSetProductOwnership,
@@ -48,7 +51,8 @@ export function ProductOwnershipEditor({
   productId,
 }: ProductOwnershipEditorProps) {
   const queryClient = useQueryClient();
-  const { data: organizations = [], isLoading: isLoadingOrganizations } = useOrganizations();
+  const { data: organizations = [], isLoading: isLoadingOrganizations } =
+    useOrganizations();
   const { data: ownership, isLoading: isLoadingOwnership } =
     useProductOwnership(productId);
   const setOwnership = useSetProductOwnership();
@@ -74,9 +78,8 @@ export function ProductOwnershipEditor({
   const setSelectedOrgId = setUserSelectedOrgId;
 
   // Fetch brokers for selected org
-  const { data: brokers = [], isLoading: isLoadingBrokers } = useOrganizationBrokers(
-    selectedOrgId ?? undefined,
-  );
+  const { data: brokers = [], isLoading: isLoadingBrokers } =
+    useOrganizationBrokers(selectedOrgId ?? undefined);
 
   const [localOwners, setLocalOwners] = useState<OwnerEntry[] | null>(null);
 

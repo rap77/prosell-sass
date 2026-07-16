@@ -9,20 +9,18 @@ describe("userHasPermission", () => {
   });
 
   it("returns false when the role's permission set lacks it", () => {
-    expect(
-      userHasPermission("sales_user", Permission.ORG_ADMIN_VIEW_ALL),
-    ).toBe(false);
-  });
-
-  it("returns false for a null role", () => {
-    expect(userHasPermission(null, Permission.ORG_ADMIN_VIEW_ALL)).toBe(
+    expect(userHasPermission("sales_user", Permission.ORG_ADMIN_VIEW_ALL)).toBe(
       false,
     );
   });
 
+  it("returns false for a null role", () => {
+    expect(userHasPermission(null, Permission.ORG_ADMIN_VIEW_ALL)).toBe(false);
+  });
+
   it("returns false for an unknown role string", () => {
-    expect(
-      userHasPermission("not-a-role", Permission.ORG_ADMIN_VIEW_ALL),
-    ).toBe(false);
+    expect(userHasPermission("not-a-role", Permission.ORG_ADMIN_VIEW_ALL)).toBe(
+      false,
+    );
   });
 });

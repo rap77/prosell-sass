@@ -207,7 +207,9 @@ export function OrganizationFormFields({
           <input
             type="text"
             value={code}
-            onChange={(e) => onCodeChange(e.target.value.toUpperCase().slice(0, 5))}
+            onChange={(e) =>
+              onCodeChange(e.target.value.toUpperCase().slice(0, 5))
+            }
             maxLength={5}
             placeholder="ACME"
             style={{ ...inputStyle, width: 80, textTransform: "uppercase" }}

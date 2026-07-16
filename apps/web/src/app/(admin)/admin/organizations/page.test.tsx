@@ -35,7 +35,11 @@ describe("AdminDealersPage", () => {
       isLoading: false,
       hasPermission: () => false,
     });
-    mockUseOrganizations.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseOrganizations.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
 
     render(<AdminDealersPage />);
 
@@ -93,7 +97,11 @@ describe("AdminDealersPage", () => {
       isLoading: false,
       hasPermission: () => true,
     });
-    mockUseOrganizations.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseOrganizations.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
 
     render(<AdminDealersPage />);
 
@@ -109,7 +117,11 @@ describe("AdminDealersPage", () => {
       isLoading: false,
       hasPermission: () => false,
     });
-    mockUseOrganizations.mockReturnValue({ data: [], isLoading: false, error: null });
+    mockUseOrganizations.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
 
     render(<AdminDealersPage />);
 

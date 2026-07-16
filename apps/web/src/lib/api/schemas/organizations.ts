@@ -99,7 +99,9 @@ export const CreateOrganizationResponseSchema = z.object({
   status: z.string().nullable(),
 });
 
-export type CreateOrganizationResponse = z.infer<typeof CreateOrganizationResponseSchema>;
+export type CreateOrganizationResponse = z.infer<
+  typeof CreateOrganizationResponseSchema
+>;
 
 export const UpdateOrganizationResponseSchema = z
   .object({
@@ -109,7 +111,9 @@ export const UpdateOrganizationResponseSchema = z
   })
   .passthrough();
 
-export type UpdateOrganizationResponse = z.infer<typeof UpdateOrganizationResponseSchema>;
+export type UpdateOrganizationResponse = z.infer<
+  typeof UpdateOrganizationResponseSchema
+>;
 
 // Broker schemas
 export const BrokerSchema = z.object({

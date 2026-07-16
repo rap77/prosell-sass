@@ -17,7 +17,9 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
 }));
 
-const mockMutateAsync = vi.fn().mockResolvedValue({ id: "new-organization-id" });
+const mockMutateAsync = vi
+  .fn()
+  .mockResolvedValue({ id: "new-organization-id" });
 vi.mock("@/lib/api/organizations", () => ({
   useCreateOrganization: () => ({
     mutateAsync: mockMutateAsync,

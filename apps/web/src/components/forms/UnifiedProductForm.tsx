@@ -28,7 +28,10 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useOrganizations, useOrganizationBrokers } from "@/lib/api/organizations";
+import {
+  useOrganizations,
+  useOrganizationBrokers,
+} from "@/lib/api/organizations";
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -83,7 +86,8 @@ type CategoryType = (typeof CATEGORY_TYPE)[keyof typeof CATEGORY_TYPE];
 
 function getCategoryType(category: CategoryNode): CategoryType {
   if ("vin" in category.attribute_schema) return CATEGORY_TYPE.VEHICLE;
-  if ("operation" in category.attribute_schema) return CATEGORY_TYPE.REAL_ESTATE;
+  if ("operation" in category.attribute_schema)
+    return CATEGORY_TYPE.REAL_ESTATE;
   return CATEGORY_TYPE.GENERIC;
 }
 
@@ -139,9 +143,8 @@ export function UnifiedProductForm({
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [pendingOwners, setPendingOwners] = useState<OwnerEntry[]>([]);
   const { data: organizations = [] } = useOrganizations();
-  const { data: brokers = [], isLoading: isLoadingBrokers } = useOrganizationBrokers(
-    selectedOrgId ?? undefined,
-  );
+  const { data: brokers = [], isLoading: isLoadingBrokers } =
+    useOrganizationBrokers(selectedOrgId ?? undefined);
   const setOwnership = useSetProductOwnership();
 
   // Derive if selected org has brokers
@@ -289,9 +292,7 @@ export function UnifiedProductForm({
         .map((e) => e.storageKey)
         .filter((k): k is string => Boolean(k));
       const coverEntry = images.find((e) => e.id === coverImageId);
-      const coverKey = coverImageId
-        ? (coverEntry?.storageKey ?? null)
-        : null;
+      const coverKey = coverImageId ? (coverEntry?.storageKey ?? null) : null;
 
       // Extract fixed fields
       const { price, description, ...formAttributes } =

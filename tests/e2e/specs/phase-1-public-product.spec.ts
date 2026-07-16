@@ -27,7 +27,7 @@ test.describe("Phase-1: Public Product Page /p/[slug]", () => {
       `${API_URL}/api/v1/public/products`,
       {
         headers: { Accept: "application/json" },
-      }
+      },
     );
 
     // If no products, skip this test (need to populate DB first)
@@ -77,7 +77,7 @@ test.describe("Phase-1: Public Product Page /p/[slug]", () => {
         headers: {
           Accept: "application/json",
         },
-      }
+      },
     );
 
     // Should be 200 (exists and published) or 404 (doesn't exist)
@@ -96,7 +96,7 @@ test.describe("Phase-1: Public Product Page /p/[slug]", () => {
       `${API_URL}/api/v1/public/products/${testSlug}/image-urls`,
       {
         headers: { Accept: "application/json" },
-      }
+      },
     );
 
     // Should be 200 (exists and published) or 404 (doesn't exist)
@@ -130,18 +130,20 @@ test.describe("Phase-1: Public Product Page /p/[slug]", () => {
     const testSlug = "phase1-test-open-graph";
 
     // Navigate to page
-    await page.goto(`${WEB_URL}/p/${testSlug}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${WEB_URL}/p/${testSlug}`, {
+      waitUntil: "domcontentloaded",
+    });
 
     // Check for Open Graph meta tags
-    const ogTitle = await page.locator('meta[property="og:title"]').getAttribute(
-      "content"
-    );
+    const ogTitle = await page
+      .locator('meta[property="og:title"]')
+      .getAttribute("content");
     const ogDescription = await page
       .locator('meta[property="og:description"]')
       .getAttribute("content");
-    const ogImage = await page.locator('meta[property="og:image"]').getAttribute(
-      "content"
-    );
+    const ogImage = await page
+      .locator('meta[property="og:image"]')
+      .getAttribute("content");
 
     // If page loaded (not 404), these should exist
     // (May be empty if product doesn't exist, but structure should be there)
@@ -169,7 +171,7 @@ test.describe("Phase-1: Public Product Page /p/[slug]", () => {
       `${API_URL}/api/v1/public/products/${draftSlug}`,
       {
         headers: { Accept: "application/json" },
-      }
+      },
     );
 
     // If this product exists but is a draft, should be 404
@@ -196,7 +198,7 @@ test.describe("Phase-1: Public Product Page /p/[slug]", () => {
       `${API_URL}/api/v1/public/products/${testSlug}`,
       {
         headers: { Accept: "application/json" },
-      }
+      },
     );
 
     if (response.ok()) {

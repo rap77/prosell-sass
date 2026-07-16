@@ -56,10 +56,16 @@ export default function AdminEditOrganizationPage() {
   }
 
   // ponytail: key={organization.id} resets form state when organization changes
-  return <EditOrganizationForm key={organization.id} organization={organization} />;
+  return (
+    <EditOrganizationForm key={organization.id} organization={organization} />
+  );
 }
 
-function EditOrganizationForm({ organization }: { organization: Organization }) {
+function EditOrganizationForm({
+  organization,
+}: {
+  organization: Organization;
+}) {
   const router = useRouter();
   const updateOrganization = useUpdateOrganization();
   const updateVerticals = useUpdateOrganizationVerticals();
@@ -67,12 +73,16 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
     data: verticalsData = { vertical_ids: [], product_counts: [] },
     isLoading: verticalsLoading,
   } = useOrganizationVerticals(organization.id);
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories();
   const verticals = categories.filter((c) => c.level === 0);
 
   // ponytail: map vertical_id -> product_count for quick lookup
   const productCountMap = new Map(
-    verticalsData.product_counts.map((pc) => [pc.vertical_id, pc.product_count]),
+    verticalsData.product_counts.map((pc) => [
+      pc.vertical_id,
+      pc.product_count,
+    ]),
   );
 
   // Track selected verticals (initialized from API once loaded)
@@ -105,7 +115,9 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
   const [name, setName] = useState(organization.name);
   const [code, setCode] = useState(organization.code ?? "");
   const [color, setColor] = useState(organization.color ?? "#4DB8FF");
-  const [description, setDescription] = useState(organization.description ?? "");
+  const [description, setDescription] = useState(
+    organization.description ?? "",
+  );
   const [website, setWebsite] = useState(organization.website ?? "");
   const [phone, setPhone] = useState(organization.phone ?? "");
   const [email, setEmail] = useState(organization.email ?? "");
@@ -217,60 +229,66 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
         >
           <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals</legend>
           {(verticalsLoading || categoriesLoading) && (
-            <p style={{ color: "var(--ps-text-secondary)" }}>Cargando verticals…</p>
-          )}
-          {!verticalsLoading && !categoriesLoading && verticals.length === 0 && (
             <p style={{ color: "var(--ps-text-secondary)" }}>
-              No hay verticals disponibles.
+              Cargando verticals…
             </p>
           )}
-          {!verticalsLoading && !categoriesLoading && verticals.map((vertical) => {
-            const productCount = productCountMap.get(vertical.id) ?? 0;
-            const isSelected = verticalIds.includes(vertical.id);
-            // ponytail: cannot uncheck if has products
-            const isLocked = isSelected && productCount > 0;
+          {!verticalsLoading &&
+            !categoriesLoading &&
+            verticals.length === 0 && (
+              <p style={{ color: "var(--ps-text-secondary)" }}>
+                No hay verticals disponibles.
+              </p>
+            )}
+          {!verticalsLoading &&
+            !categoriesLoading &&
+            verticals.map((vertical) => {
+              const productCount = productCountMap.get(vertical.id) ?? 0;
+              const isSelected = verticalIds.includes(vertical.id);
+              // ponytail: cannot uncheck if has products
+              const isLocked = isSelected && productCount > 0;
 
-            return (
-              <label
-                key={vertical.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 12px",
-                  borderRadius: 6,
-                  background: isSelected
-                    ? "var(--ps-cyan-10)"
-                    : "var(--ps-bg-elevated)",
-                  border: isSelected
-                    ? "1px solid var(--ps-cyan)"
-                    : "1px solid var(--ps-border-default)",
-                  cursor: isLocked ? "not-allowed" : "pointer",
-                  opacity: isLocked ? 0.7 : 1,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleVertical(vertical.id)}
-                  disabled={isLocked}
-                  aria-label={vertical.name}
-                />
-                <span>{vertical.name}</span>
-                {productCount > 0 && (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: "var(--ps-text-tertiary)",
-                      marginLeft: "auto",
-                    }}
-                  >
-                    ({productCount} producto{productCount !== 1 ? "s" : ""})
-                  </span>
-                )}
-              </label>
-            );
-          })}
+              return (
+                <label
+                  key={vertical.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 12px",
+                    borderRadius: 6,
+                    background: isSelected
+                      ? "var(--ps-cyan-10)"
+                      : "var(--ps-bg-elevated)",
+                    border: isSelected
+                      ? "1px solid var(--ps-cyan)"
+                      : "1px solid var(--ps-border-default)",
+                    cursor: isLocked ? "not-allowed" : "pointer",
+                    opacity: isLocked ? 0.7 : 1,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleVertical(vertical.id)}
+                    disabled={isLocked}
+                    aria-label={vertical.name}
+                  />
+                  <span>{vertical.name}</span>
+                  {productCount > 0 && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "var(--ps-text-tertiary)",
+                        marginLeft: "auto",
+                      }}
+                    >
+                      ({productCount} producto{productCount !== 1 ? "s" : ""})
+                    </span>
+                  )}
+                </label>
+              );
+            })}
         </fieldset>
 
         {/* Shared form fields — identity (name/code/color) + optional */}
@@ -324,7 +342,8 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
         {/* Error */}
         {(updateOrganization.error || updateVerticals.error) && (
           <p style={{ color: "var(--ps-error)" }}>
-            {updateOrganization.error?.message || updateVerticals.error?.message}
+            {updateOrganization.error?.message ||
+              updateVerticals.error?.message}
           </p>
         )}
 

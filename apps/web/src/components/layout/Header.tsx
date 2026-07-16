@@ -53,13 +53,20 @@ interface HeaderProps {
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
-function getInitials(firstName?: string | null, lastName?: string | null): string {
-  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+function getInitials(
+  firstName?: string | null,
+  lastName?: string | null,
+): string {
+  if (firstName && lastName)
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
   if (firstName) return firstName.substring(0, 2).toUpperCase();
   return "??";
 }
 
-function resolveUserData(user: HeaderUser | undefined, authUser: AuthUser): HeaderUser {
+function resolveUserData(
+  user: HeaderUser | undefined,
+  authUser: AuthUser,
+): HeaderUser {
   if (user) return user;
   if (!authUser) {
     return {

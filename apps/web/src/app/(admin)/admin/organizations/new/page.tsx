@@ -6,7 +6,10 @@ import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { useCategories } from "@/lib/api/categories";
-import { useCreateOrganization, useUpdateOrganization } from "@/lib/api/organizations";
+import {
+  useCreateOrganization,
+  useUpdateOrganization,
+} from "@/lib/api/organizations";
 import {
   OrganizationFormFields,
   isValidPhone,
@@ -189,7 +192,9 @@ export default function AdminNewDealerPage() {
             padding: 0,
           }}
         >
-          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals *</legend>
+          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>
+            Verticals *
+          </legend>
           {categoriesLoading && <p>Cargando verticals…</p>}
           {!categoriesLoading && verticals.length === 0 && (
             <p style={{ color: "var(--ps-text-secondary)" }}>
@@ -432,7 +437,8 @@ export default function AdminNewDealerPage() {
 
         {(createOrganization.error || updateOrganization.error) && (
           <p style={{ color: "var(--ps-error)" }}>
-            {createOrganization.error?.message || updateOrganization.error?.message}
+            {createOrganization.error?.message ||
+              updateOrganization.error?.message}
           </p>
         )}
 

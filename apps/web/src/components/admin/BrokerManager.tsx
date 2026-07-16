@@ -29,7 +29,8 @@ interface BrokerManagerProps {
 }
 
 export function BrokerManager({ organizationId }: BrokerManagerProps) {
-  const { data: brokers = [], isLoading } = useOrganizationBrokers(organizationId);
+  const { data: brokers = [], isLoading } =
+    useOrganizationBrokers(organizationId);
   const createBroker = useCreateOrganizationBroker();
   const updateBroker = useUpdateOrganizationBroker();
   const deleteBroker = useDeleteOrganizationBroker();
@@ -149,7 +150,9 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                     variant="ghost"
                     size="icon"
                     onClick={handleUpdate}
-                    disabled={updateBroker.isPending || !isValidPhone(editPhone)}
+                    disabled={
+                      updateBroker.isPending || !isValidPhone(editPhone)
+                    }
                     className="h-8 w-8 text-green-600"
                     title="Guardar"
                   >

@@ -34,7 +34,10 @@ const mockOrganizations = [
 describe("OrganizationPicker", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseOrganizations.mockReturnValue({ data: mockOrganizations, isLoading: false });
+    mockUseOrganizations.mockReturnValue({
+      data: mockOrganizations,
+      isLoading: false,
+    });
     mockUseOrganizationStore.mockReturnValue({
       viewingOrgId: null,
       setViewingOrgId: mockSetViewingOrgId,

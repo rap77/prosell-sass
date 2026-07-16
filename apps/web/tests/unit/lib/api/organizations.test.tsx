@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCreateOrganization, useResendOrganizationInvitation } from "@/lib/api/organizations";
+import {
+  useCreateOrganization,
+  useResendOrganizationInvitation,
+} from "@/lib/api/organizations";
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient();

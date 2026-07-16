@@ -84,7 +84,9 @@ export function useOrganizations(): UseQueryResult<Organization[], Error> {
 /** Find a single organization by id from the organizations list (no dedicated GET-by-id endpoint). */
 export function useOrganization(
   organizationId: string | undefined,
-): UseQueryResult<Organization[], Error> & { organization: Organization | undefined } {
+): UseQueryResult<Organization[], Error> & {
+  organization: Organization | undefined;
+} {
   const query = useOrganizations();
   const organization = query.data?.find((d) => d.id === organizationId);
   return { ...query, organization };
@@ -97,7 +99,9 @@ export function useOrganizationProducts(
   return useQuery({
     queryKey: ["admin-organization-products", organizationId],
     queryFn: async () => {
-      const raw = await getJson(`/api/v1/admin/organizations/${organizationId}/products`);
+      const raw = await getJson(
+        `/api/v1/admin/organizations/${organizationId}/products`,
+      );
       return OrganizationProductListResponseSchema.parse(raw).products;
     },
     enabled: !!organizationId,
@@ -123,7 +127,9 @@ export function useCreateOrganization() {
 /** Resend (or freshly issue) the owner invitation for an existing organization. */
 export function useResendOrganizationInvitation() {
   return useMutation({
-    mutationFn: async (organizationId: string): Promise<CreateOrganizationResponse> => {
+    mutationFn: async (
+      organizationId: string,
+    ): Promise<CreateOrganizationResponse> => {
       const raw = await postJson(
         `/api/v1/admin/organizations/${organizationId}/resend-invitation`,
         {},
@@ -171,7 +177,9 @@ export function useUpdateOrganization() {
       });
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
-        throw new Error(extractErrorMessage(body, "Error updating organization"));
+        throw new Error(
+          extractErrorMessage(body, "Error updating organization"),
+        );
       }
       return UpdateOrganizationResponseSchema.parse(await res.json());
     },
@@ -192,7 +200,9 @@ export function useOrganizationBrokers(
   return useQuery({
     queryKey: ["admin-organization-brokers", organizationId],
     queryFn: async () => {
-      const raw = await getJson(`/api/v1/admin/organizations/${organizationId}/brokers`);
+      const raw = await getJson(
+        `/api/v1/admin/organizations/${organizationId}/brokers`,
+      );
       return BrokerListResponseSchema.parse(raw).brokers;
     },
     enabled: !!organizationId,
@@ -214,12 +224,15 @@ export function useCreateOrganizationBroker() {
       email: string;
       phone?: string;
     }): Promise<Broker> => {
-      const res = await fetch(`/api/v1/admin/organizations/${organizationId}/brokers`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone }),
-      });
+      const res = await fetch(
+        `/api/v1/admin/organizations/${organizationId}/brokers`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, phone }),
+        },
+      );
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
         throw new Error(extractErrorMessage(body, "Error creating broker"));

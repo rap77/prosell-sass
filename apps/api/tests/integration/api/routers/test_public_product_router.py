@@ -17,7 +17,7 @@ from prosell.infrastructure.models.product_model import ProductModel
 class TestPublicProductRouter:
     """Test GET /api/v1/public/products/{slug} and /image-urls endpoints."""
 
-    async def test_get_published_product_returns_product(self, async_session: AsyncSession):
+    async def test_get_published_product_returns_product(self, test_db_session: AsyncSession):
         """GET /{slug} returns published product with marketplace=true."""
         # Setup: Create a published product
         product = ProductModel(
@@ -40,8 +40,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act: Call endpoint
         client = TestClient(app)
@@ -57,7 +57,7 @@ class TestPublicProductRouter:
         assert data["published_to_marketplace"] is True
         assert data["view_count"] == 6  # Should be incremented from 5
 
-    async def test_get_product_not_found(self, _async_session: AsyncSession):
+    async def test_get_product_not_found(self) -> None:
         """GET /{slug} returns 404 when product doesn't exist."""
         client = TestClient(app)
         response = client.get("/api/v1/public/products/nonexistent-slug")
@@ -65,7 +65,7 @@ class TestPublicProductRouter:
         assert response.status_code == 404
         assert "Product not found" in response.json()["detail"]
 
-    async def test_get_unpublished_product_returns_404(self, async_session: AsyncSession):
+    async def test_get_unpublished_product_returns_404(self, test_db_session: AsyncSession):
         """GET /{slug} returns 404 when product status != published."""
         # Setup: Create unpublished product
         product = ProductModel(
@@ -80,8 +80,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act
         client = TestClient(app)
@@ -91,7 +91,7 @@ class TestPublicProductRouter:
         assert response.status_code == 404
         assert "Product not found" in response.json()["detail"]
 
-    async def test_get_not_marketplace_product_returns_404(self, async_session: AsyncSession):
+    async def test_get_not_marketplace_product_returns_404(self, test_db_session: AsyncSession):
         """GET /{slug} returns 404 when published_to_marketplace=false."""
         # Setup: Create product that's published but not to marketplace
         product = ProductModel(
@@ -106,8 +106,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act
         client = TestClient(app)
@@ -116,7 +116,7 @@ class TestPublicProductRouter:
         # Assert
         assert response.status_code == 404
 
-    async def test_get_product_increments_view_count(self, async_session: AsyncSession):
+    async def test_get_product_increments_view_count(self, test_db_session: AsyncSession):
         """GET /{slug} increments view_count."""
         # Setup
         product = ProductModel(
@@ -132,8 +132,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
         product_id = product.id
 
         # Act: Call endpoint 3 times
@@ -144,13 +144,13 @@ class TestPublicProductRouter:
 
         # Assert: Check view_count was incremented
         stmt = select(ProductModel).where(ProductModel.id == product_id)
-        result = await async_session.execute(stmt)
+        result = await test_db_session.execute(stmt)
         updated_product = result.scalar_one()
         assert updated_product.view_count == 13  # Started at 10, incremented 3 times
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_returns_signed_urls(
-        self, mock_spaces_dep, async_session: AsyncSession
+        self, mock_spaces_dep, test_db_session: AsyncSession
     ):
         """GET /{slug}/image-urls returns signed URLs for all images."""
         # Setup: Mock DO Spaces service
@@ -176,8 +176,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act
         client = TestClient(app)
@@ -193,7 +193,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_cover_image_first_when_separate(
-        self, mock_spaces_dep, async_session: AsyncSession
+        self, mock_spaces_dep, test_db_session: AsyncSession
     ):
         """GET /{slug}/image-urls puts cover_image first if not in image_urls."""
         # Setup: Mock DO Spaces
@@ -220,8 +220,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act
         client = TestClient(app)
@@ -235,7 +235,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_reorders_cover_to_first(
-        self, mock_spaces_dep, async_session: AsyncSession
+        self, mock_spaces_dep, test_db_session: AsyncSession
     ):
         """GET /{slug}/image-urls moves cover to first position when it's in the list."""
         # Setup: Mock DO Spaces — order of calls matches reordered list
@@ -262,8 +262,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act
         client = TestClient(app)
@@ -281,14 +281,14 @@ class TestPublicProductRouter:
         # cover_image_key should be in response
         assert data["cover_image_key"] == "car-side.jpg"
 
-    async def test_get_product_image_urls_not_found(self, _async_session: AsyncSession):
+    async def test_get_product_image_urls_not_found(self) -> None:
         """GET /{slug}/image-urls returns 404 if product doesn't exist."""
         client = TestClient(app)
         response = client.get("/api/v1/public/products/nonexistent/image-urls")
 
         assert response.status_code == 404
 
-    async def test_get_product_image_urls_not_published(self, async_session: AsyncSession):
+    async def test_get_product_image_urls_not_published(self, test_db_session: AsyncSession):
         """GET /{slug}/image-urls returns 404 if product not published."""
         # Setup: Unpublished product
         product = ProductModel(
@@ -303,8 +303,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        async_session.add(product)
-        await async_session.commit()
+        test_db_session.add(product)
+        await test_db_session.commit()
 
         # Act
         client = TestClient(app)

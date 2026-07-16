@@ -79,7 +79,11 @@ describe("AdminOrganizationDetailPage", () => {
 
   it("shows the organization's name and status", async () => {
     mockUseOrganization.mockReturnValue({
-      organization: { id: "organization-1", name: "Organization One", status: "active" },
+      organization: {
+        id: "organization-1",
+        name: "Organization One",
+        status: "active",
+      },
       isLoading: false,
       error: null,
     });
@@ -92,7 +96,11 @@ describe("AdminOrganizationDetailPage", () => {
 
   it("links to the organization's products page", async () => {
     mockUseOrganization.mockReturnValue({
-      organization: { id: "organization-1", name: "Organization One", status: "active" },
+      organization: {
+        id: "organization-1",
+        name: "Organization One",
+        status: "active",
+      },
       isLoading: false,
       error: null,
     });
@@ -120,7 +128,11 @@ describe("AdminOrganizationDetailPage", () => {
 
   it("does not show the resend-invitation button when the organization is active", async () => {
     mockUseOrganization.mockReturnValue({
-      organization: { id: "organization-1", name: "Acme Motors", status: "active" },
+      organization: {
+        id: "organization-1",
+        name: "Acme Motors",
+        status: "active",
+      },
       isLoading: false,
       error: null,
     });
