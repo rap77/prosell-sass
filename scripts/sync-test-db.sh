@@ -6,6 +6,12 @@ set -e
 
 cd "$(dirname "$0")/../apps/api"
 
+if ! python3 -c 'import socket; socket.create_connection(("127.0.0.1", 5433), timeout=1).close()' \
+  2>/dev/null; then
+  echo "⏭️  Test DB unavailable on localhost:5433; integration tests will be skipped."
+  exit 0
+fi
+
 echo "🔄 Syncing test DB migrations..."
 source .venv/bin/activate
 

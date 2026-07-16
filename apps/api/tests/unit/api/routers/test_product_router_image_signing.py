@@ -20,6 +20,7 @@ from uuid import UUID
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product.response import ProductResponse
 from prosell.application.use_cases.product.list_products import (
@@ -33,6 +34,7 @@ from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
 )
 from prosell.infrastructure.api.main import app
+from prosell.infrastructure.database.session import get_async_session
 
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 TEST_USER_ID = UUID("22222222-2222-2222-2222-222222222222")
@@ -80,14 +82,21 @@ def _make_product(image_urls: list[str]) -> ProductResponse:
 async def async_client() -> AsyncGenerator[AsyncClient]:
     """Async client with auth overridden (no spaces service needed post-fix)."""
     user = _make_user()
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(return_value=[])
+
+    async def override_session() -> AsyncGenerator[AsyncSession]:
+        yield db
 
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: user
+    app.dependency_overrides[get_async_session] = override_session
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
     app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
+    app.dependency_overrides.pop(get_async_session, None)
 
 
 def _assert_bare_key(url: str) -> None:
