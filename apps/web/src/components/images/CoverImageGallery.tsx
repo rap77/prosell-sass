@@ -2,7 +2,7 @@
 
 /**
  * CoverImageGallery — single source of truth for the "grid of images
- * with click-to-set cover" UX.
+ * with click-to-set cover" UX, now with drag & drop reordering.
  *
  * Consumed today by `forms/ProductCoverPicker.tsx`, the single
  * store-backed picker used by ProductForm for BOTH create and edit.
@@ -10,10 +10,9 @@
  * the Zustand `uploadStore` and renders it through this gallery.
  *
  * The component is PURE: it does not know about stores, fetch, or
- * router. It takes data in and emits cover-pick events out. That keeps
- * the contract small, the test surface tight, and the same UX
- * available to any future consumer (catalog quick-edit, drag-and-drop
- * reorder extension, etc.) without re-implementing it.
+ * router. It takes data in and emits cover-pick/reorder events out.
+ * That keeps the contract small, the test surface tight, and the
+ * same UX available to any future consumer.
  *
  * Image source: the consumer passes the `url` (blob URL for fresh
  * uploads, signed URL for existing images). The component renders
@@ -24,8 +23,24 @@
  */
 
 import Image from "next/image";
-import { Star, X } from "lucide-react";
+import { GripVertical, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 /**
  * One tile in the gallery.
@@ -58,8 +73,143 @@ export interface CoverImageGalleryProps {
    * detail view) omit this and get a clean grid with no X buttons.
    */
   onRemove?: (id: string) => void;
+  /**
+   * Optional. When provided, enables drag & drop reordering. Called
+   * with (fromIndex, toIndex) when an image is dragged to a new position.
+   */
+  onReorder?: (fromIndex: number, toIndex: number) => void;
   /** Locks interaction while a mutation is in flight. */
   disabled?: boolean;
+}
+
+/**
+ * SortableImageTile — individual draggable tile within the gallery.
+ * Extracted to use the useSortable hook per-item.
+ */
+function SortableImageTile({
+  image,
+  index,
+  isCover,
+  onCoverChange,
+  onRemove,
+  isDraggable,
+  disabled,
+}: {
+  image: CoverImageItem;
+  index: number;
+  isCover: boolean;
+  onCoverChange: (key: string) => void;
+  onRemove?: (id: string) => void;
+  isDraggable: boolean;
+  disabled: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id, disabled: !isDraggable || disabled });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      data-testid={`cover-image-tile-${image.id}`}
+      className={cn(
+        "relative group aspect-square rounded-lg overflow-hidden border cursor-pointer transition-shadow",
+        "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
+        isCover && "ring-2 ring-primary ring-offset-2",
+        disabled && "opacity-50 cursor-not-allowed",
+        isDragging && "shadow-2xl scale-105 opacity-90",
+      )}
+    >
+      {/* Clickable area for setting cover */}
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) return;
+          onCoverChange(image.key);
+        }}
+        disabled={disabled}
+        aria-label={`Set ${image.key.split("/").pop()} as cover`}
+        aria-pressed={isCover}
+        className="absolute inset-0 z-0 focus:outline-none"
+      />
+
+      <Image
+        src={image.url}
+        alt={`Imagen ${index + 1}`}
+        fill
+        unoptimized
+        className="object-cover pointer-events-none"
+        draggable={false}
+      />
+
+      {/* Cover badge — only on the cover tile */}
+      {isCover && (
+        <div
+          data-testid="cover-badge"
+          className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 z-10"
+        >
+          <Star className="w-3 h-3" />
+          Cover
+        </div>
+      )}
+
+      {/* Set-as-cover hint — only on non-cover tiles, only on hover */}
+      {!isCover && !isDragging && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <span className="text-white text-sm font-medium flex items-center gap-1">
+            <Star className="w-4 h-4" />
+            Set as Cover
+          </span>
+        </div>
+      )}
+
+      {/* Drag handle — only when reordering is enabled */}
+      {isDraggable && (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label={`Drag to reorder image ${index + 1}`}
+          className={cn(
+            "absolute bottom-2 left-2 bg-background/80 hover:bg-background p-1.5 rounded-full transition-opacity z-20 cursor-grab active:cursor-grabbing",
+            "opacity-0 group-hover:opacity-100",
+            isDragging && "opacity-100",
+          )}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* Optional remove button — opt-in via `onRemove` */}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (disabled) return;
+            onRemove(image.id);
+          }}
+          disabled={disabled}
+          aria-label={`Remove image ${index + 1}`}
+          data-testid={`cover-image-remove-${image.id}`}
+          className="absolute top-2 right-2 bg-background/80 hover:bg-background p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function CoverImageGallery({
@@ -67,101 +217,66 @@ export function CoverImageGallery({
   coverKey,
   onCoverChange,
   onRemove,
+  onReorder,
   disabled = false,
 }: CoverImageGalleryProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        // Require 8px movement before drag starts to avoid
+        // accidental drags when clicking to set cover
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !onReorder) return;
+
+    const oldIndex = images.findIndex((img) => img.id === active.id);
+    const newIndex = images.findIndex((img) => img.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      onReorder(oldIndex, newIndex);
+    }
+  };
+
   if (images.length === 0) return null;
 
+  const isDraggable = !!onReorder;
+
   return (
-    <div
-      data-testid="cover-image-gallery"
-      className="grid grid-cols-2 md:grid-cols-4 gap-4"
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
     >
-      {images.map((image, index) => {
-        const isCover = image.key === coverKey;
-
-        return (
-          <div
-            key={image.id}
-            data-testid={`cover-image-tile-${image.id}`}
-            role="button"
-            tabIndex={disabled ? -1 : 0}
-            aria-label={`Set ${image.key.split("/").pop()} as cover`}
-            aria-pressed={isCover}
-            aria-disabled={disabled || undefined}
-            className={cn(
-              "relative group aspect-square rounded-lg overflow-hidden border cursor-pointer transition-all",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              isCover && "ring-2 ring-primary ring-offset-2",
-              disabled && "opacity-50 cursor-not-allowed",
-            )}
-            // The whole tile is the click target for "set as cover".
-            // The remove button stops propagation so clicking X
-            // doesn't also fire a cover change.
-            onClick={() => {
-              if (disabled) return;
-              onCoverChange(image.key);
-            }}
-            // Keyboard accessibility — Enter/Space do the same as
-            // click. The role="button" + tabIndex make this discoverable
-            // to screen readers; the keydown handler makes it actually
-            // operable for keyboard users.
-            onKeyDown={(e) => {
-              if (disabled) return;
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onCoverChange(image.key);
-              }
-            }}
-          >
-            <Image
-              src={image.url}
-              alt={`Imagen ${index + 1}`}
-              fill
-              unoptimized
-              className="object-cover"
+      <SortableContext
+        items={images.map((img) => img.id)}
+        strategy={rectSortingStrategy}
+      >
+        <div
+          data-testid="cover-image-gallery"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          {images.map((image, index) => (
+            <SortableImageTile
+              key={image.id}
+              image={image}
+              index={index}
+              isCover={image.key === coverKey}
+              onCoverChange={onCoverChange}
+              onRemove={onRemove}
+              isDraggable={isDraggable}
+              disabled={disabled}
             />
-
-            {/* Cover badge — only on the cover tile */}
-            {isCover && (
-              <div
-                data-testid="cover-badge"
-                className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-              >
-                <Star className="w-3 h-3" />
-                Cover
-              </div>
-            )}
-
-            {/* Set-as-cover hint — only on non-cover tiles, only on hover */}
-            {!isCover && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-white text-sm font-medium flex items-center gap-1">
-                  <Star className="w-4 h-4" />
-                  Set as Cover
-                </span>
-              </div>
-            )}
-
-            {/* Optional remove button — opt-in via `onRemove` */}
-            {onRemove && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (disabled) return;
-                  onRemove(image.id);
-                }}
-                disabled={disabled}
-                aria-label={`Remove image ${index + 1}`}
-                data-testid={`cover-image-remove-${image.id}`}
-                className="absolute top-2 right-2 bg-background/80 hover:bg-background p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        );
-      })}
-    </div>
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }

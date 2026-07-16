@@ -62,6 +62,8 @@ interface UploadStore {
   removeEntry: (id: string) => void;
   /** Set the cover (by entry id). */
   setCoverImage: (id: string) => void;
+  /** Reorder images by moving an entry from one index to another. */
+  reorderImages: (fromIndex: number, toIndex: number) => void;
   /**
    * Seed the store with entries loaded from an existing product
    * (edit flow). Each entry MUST have a `storageKey` and a
@@ -116,6 +118,14 @@ export const useUploadStore = create<UploadStore>((set) => ({
     }),
 
   setCoverImage: (id) => set({ coverImageId: id }),
+
+  reorderImages: (fromIndex, toIndex) =>
+    set((state) => {
+      const images = [...state.images];
+      const [moved] = images.splice(fromIndex, 1);
+      images.splice(toIndex, 0, moved);
+      return { images };
+    }),
 
   seedImages: (entries) =>
     set({

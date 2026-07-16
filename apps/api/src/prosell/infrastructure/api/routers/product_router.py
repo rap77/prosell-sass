@@ -232,18 +232,27 @@ async def create_product(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    # Always use auth context — never trust tenant_id/organization_id from the client
+    # ponytail: Admins with ORG_ADMIN_VIEW_ALL can create products for other orgs
+    # Regular users always create in their own org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    target_org_id = (
+        request.organization_id
+        if is_org_admin and request.organization_id is not None
+        else current_user.tenant_id
+    )
+
     request = request.model_copy(
         update={
-            "tenant_id": current_user.tenant_id,
-            "organization_id": current_user.tenant_id,
+            "tenant_id": target_org_id,
+            "organization_id": target_org_id,
         }
     )
 
-    # Defense in depth: reject image_urls not under the caller's tenant
+    # Defense in depth: reject image_urls not under the target tenant
     # before they reach the use case / DB. The DTO format check has
     # already filtered out malformed URLs and non-http(s) schemes.
-    validate_image_urls_for_tenant(request.image_urls, current_user.tenant_id)
+    # ponytail: admins upload to target org's tenant, not their own
+    validate_image_urls_for_tenant(request.image_urls, target_org_id)
 
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
@@ -689,20 +698,23 @@ async def get_product(
     - **internal**: When True, skip view_count increment. Use this for
       seller-side reads (edit forms, admin panels) to avoid polluting
       analytics with internal traffic.
+
+    Admins with ORG_ADMIN_VIEW_ALL can view products from any organization.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
 
+    # ponytail: admins can view products from any org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
     # Only increment view count for public/buyer reads, not internal seller reads
     if not internal:
-        await repo.increment_view_count(product_id, tenant_id)
+        await repo.increment_view_count(product_id, product.tenant_id)
 
     # image_urls are returned as bare storage keys. The browser fetches
     # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
@@ -722,19 +734,22 @@ async def get_product_image_urls(
     time-limited signed download URLs for each image key stored in
     product.image_urls.
 
-    SECURITY: only keys under the caller's tenant prefix are signed.
+    SECURITY: only keys under the product's tenant prefix are signed.
+    Admins with ORG_ADMIN_VIEW_ALL can view images from any organization.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
 
+    # ponytail: admins can view products from any org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    tenant_prefix = f"orgs/{tenant_id}/"
+    # ponytail: use product's tenant for URL signing, not caller's
+    tenant_prefix = f"orgs/{product.tenant_id}/"
 
     # Merge URL candidates from BOTH sources. Legacy data lives in
     # `product.attributes.image_urls` (the pre-migration location); newer
@@ -742,6 +757,13 @@ async def get_product_image_urls(
     # must sign entries from both so that legacy products render their photos.
     # Deduped (order-preserving) so an URL in both sources is signed once.
     merged_urls = _merged_image_url_candidates(product)
+
+    # ponytail: reorder so cover is always first — frontend expects images[0] = cover
+    cover_key = product.cover_image_key
+    if cover_key and cover_key in merged_urls:
+        merged_urls = [cover_key, *(u for u in merged_urls if u != cover_key)]
+    elif cover_key:
+        merged_urls = [cover_key, *merged_urls]
 
     signed_images: list[ProductImageUrlResponse] = []
     for url in merged_urls:
@@ -752,9 +774,9 @@ async def get_product_image_urls(
         key = _extract_storage_key_from_value(url) if isinstance(url, str) else None
         if not key:
             continue
-        # Defense in depth: only sign keys under the caller's tenant. The
-        # product itself is tenant-scoped, but its `attributes` JSONB column
-        # is attacker-influenceable in some flows, so we re-verify here.
+        # Defense in depth: only sign keys under the product's tenant. The
+        # `attributes` JSONB column is attacker-influenceable in some flows,
+        # so we re-verify the key prefix matches the product's tenant here.
         if not key.startswith(tenant_prefix):
             continue
         signed_images.append(
@@ -783,17 +805,28 @@ async def update_product(
     Update a product.
 
     Only DRAFT, REJECTED, and PAUSED products can be edited.
+    Admins with ORG_ADMIN_VIEW_ALL can edit products from any organization.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
 
-    # Defense in depth: reject image_urls not under the caller's tenant
+    # ponytail: admins can edit products from any org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    product_repo = SqlAlchemyProductRepository(db)
+
+    # Fetch product first to get its tenant_id for validation
+    product = await product_repo.get_by_id(
+        product_id, None if is_org_admin else current_user.tenant_id
+    )
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    # Defense in depth: reject image_urls not under the product's tenant
     # before they reach the use case / DB. The DTO format check has already
-    # filtered out malformed URLs and non-http(s) schemes. Kept at the
-    # router boundary (it depends on the auth context, not the entity).
+    # filtered out malformed URLs and non-http(s) schemes.
+    # ponytail: validate against product's tenant, not caller's
     if request.image_urls is not None:
-        validate_image_urls_for_tenant(request.image_urls, tenant_id)
+        validate_image_urls_for_tenant(request.image_urls, product.tenant_id)
 
     # Gate `published_to_marketplace` behind MARKETPLACE_PUBLISH. Checked at
     # the router boundary (depends on the auth context, not the entity).
@@ -808,12 +841,12 @@ async def update_product(
     # All field application, the cover cross-field checks, and server-side
     # title recomposition live in the use case (it needs both the product
     # AND the category loaded — see UpdateProductUseCase).
-    product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateProductUseCase(product_repo, category_repo)
 
     try:
-        return await use_case.execute(product_id, tenant_id, request)
+        # ponytail: pass product's tenant, not caller's
+        return await use_case.execute(product_id, product.tenant_id, request)
     except ProductNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except ValueError as e:
@@ -1255,11 +1288,22 @@ async def set_product_ownership(
     """Set ownership for a product, replacing any existing ownership.
 
     Percentages must sum to 100%.
+    Admins with ORG_ADMIN_VIEW_ALL can set ownership for any organization.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=403, detail="No tenant context")
 
+    # ponytail: admins can set ownership for products from any org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     product_repo = SqlAlchemyProductRepository(db)
+
+    # Fetch product first to get its tenant_id
+    product = await product_repo.get_by_id(
+        product_id, None if is_org_admin else current_user.tenant_id
+    )
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
     ownership_repo = SqlAlchemyProductOwnershipRepository(db)
 
     use_case = SetProductOwnershipUseCase(
@@ -1270,9 +1314,10 @@ async def set_product_ownership(
     from decimal import Decimal
 
     try:
+        # ponytail: use product's tenant, not caller's
         await use_case.execute(
             product_id=product_id,
-            tenant_id=current_user.tenant_id,
+            tenant_id=product.tenant_id,
             owners=[
                 OwnerShare(
                     owner_id=o.owner_id,
@@ -1311,12 +1356,19 @@ async def get_product_ownership(
     current_user: CurrentUser,
     db: DbSession,
 ) -> OwnershipResponse:
-    """Get ownership for a product."""
+    """Get ownership for a product.
+
+    Admins with ORG_ADMIN_VIEW_ALL can view ownership from any organization.
+    """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=403, detail="No tenant context")
 
+    # ponytail: admins can view products from any org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     product_repo = SqlAlchemyProductRepository(db)
-    product = await product_repo.get_by_id(product_id, current_user.tenant_id)
+    product = await product_repo.get_by_id(
+        product_id, None if is_org_admin else current_user.tenant_id
+    )
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 

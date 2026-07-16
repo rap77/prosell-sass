@@ -77,11 +77,26 @@ export const OrganizationProductListResponseSchema = z.object({
   limit: z.number(),
 });
 
-export const CreateOrganizationResponseSchema = z.object({
-  invitation_id: z.string(),
+export const VerticalWithProductCountSchema = z.object({
+  vertical_id: z.string(),
+  product_count: z.number(),
+});
+
+export const OrganizationVerticalsResponseSchema = z.object({
   organization_id: z.string(),
-  email: z.string(),
-  status: z.string(),
+  vertical_ids: z.array(z.string()),
+  product_counts: z.array(VerticalWithProductCountSchema),
+});
+
+export type OrganizationVerticalsResponse = z.infer<
+  typeof OrganizationVerticalsResponseSchema
+>;
+
+export const CreateOrganizationResponseSchema = z.object({
+  invitation_id: z.string().nullable(),
+  organization_id: z.string(),
+  email: z.string().nullable(),
+  status: z.string().nullable(),
 });
 
 export type CreateOrganizationResponse = z.infer<typeof CreateOrganizationResponseSchema>;

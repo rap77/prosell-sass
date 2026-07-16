@@ -20,6 +20,7 @@ import {
   CreateOrganizationResponseSchema,
   OrganizationListResponseSchema,
   OrganizationProductListResponseSchema,
+  OrganizationVerticalsResponseSchema,
   UpdateOrganizationResponseSchema,
   type Broker,
   type CreateOrganizationResponse,
@@ -297,6 +298,70 @@ export function useDeleteOrganizationBroker() {
     onSuccess: (_, { organizationId }) => {
       queryClient.invalidateQueries({
         queryKey: ["admin-organization-brokers", organizationId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
+    },
+  });
+}
+
+interface VerticalWithProductCount {
+  vertical_id: string;
+  product_count: number;
+}
+
+interface OrganizationVerticalsData {
+  organization_id: string;
+  vertical_ids: string[];
+  product_counts: VerticalWithProductCount[];
+}
+
+/** Get organization verticals with product counts. */
+export function useOrganizationVerticals(organizationId: string | undefined) {
+  return useQuery({
+    queryKey: ["admin-organization-verticals", organizationId],
+    queryFn: async (): Promise<OrganizationVerticalsData> => {
+      if (!organizationId) {
+        return { organization_id: "", vertical_ids: [], product_counts: [] };
+      }
+      const raw = await getJson(
+        `/api/v1/admin/organizations/${organizationId}/verticals`,
+      );
+      return OrganizationVerticalsResponseSchema.parse(raw);
+    },
+    enabled: !!organizationId,
+  });
+}
+
+/** Update organization verticals. */
+export function useUpdateOrganizationVerticals() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      organizationId,
+      verticalIds,
+    }: {
+      organizationId: string;
+      verticalIds: string[];
+    }): Promise<OrganizationVerticalsData> => {
+      const res = await fetch(
+        `/api/v1/admin/organizations/${organizationId}/verticals`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vertical_ids: verticalIds }),
+        },
+      );
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null);
+        throw new Error(extractErrorMessage(body, "Error updating verticals"));
+      }
+      const body: unknown = await res.json();
+      return OrganizationVerticalsResponseSchema.parse(body);
+    },
+    onSuccess: (_, { organizationId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-organization-verticals", organizationId],
       });
       queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
     },

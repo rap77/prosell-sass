@@ -22,6 +22,7 @@ import {
   useDeleteOrganizationBroker,
 } from "@/lib/api/organizations";
 import type { Broker } from "@/lib/api/schemas/organizations";
+import { isValidPhone } from "./OrganizationFormFields";
 
 interface BrokerManagerProps {
   organizationId: string;
@@ -140,15 +141,15 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                     type="tel"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder="Teléfono"
-                    className="h-8 flex-1"
+                    placeholder="+54 9 11 1234-5678"
+                    className={`h-8 flex-1 ${!isValidPhone(editPhone) ? "border-red-500" : ""}`}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     onClick={handleUpdate}
-                    disabled={updateBroker.isPending}
+                    disabled={updateBroker.isPending || !isValidPhone(editPhone)}
                     className="h-8 w-8 text-green-600"
                     title="Guardar"
                   >
@@ -247,18 +248,27 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
           </div>
           <Input
             type="tel"
-            placeholder="Teléfono (opcional)"
+            placeholder="+54 9 11 1234-5678 (opcional)"
             value={newPhone}
             onChange={(e) => setNewPhone(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            className={!isValidPhone(newPhone) ? "border-red-500" : ""}
           />
+          {!isValidPhone(newPhone) && newPhone.trim() && (
+            <p className="text-xs text-red-500">
+              Formato E.164: +código país + número
+            </p>
+          )}
           <div className="flex gap-2">
             <Button
               type="button"
               size="sm"
               onClick={handleCreate}
               disabled={
-                !newName.trim() || !newEmail.trim() || createBroker.isPending
+                !newName.trim() ||
+                !newEmail.trim() ||
+                createBroker.isPending ||
+                !isValidPhone(newPhone)
               }
             >
               {createBroker.isPending ? (

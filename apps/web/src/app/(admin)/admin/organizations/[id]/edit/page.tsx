@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useOrganization, useUpdateOrganization } from "@/lib/api/organizations";
+import {
+  useOrganization,
+  useOrganizationVerticals,
+  useUpdateOrganization,
+  useUpdateOrganizationVerticals,
+} from "@/lib/api/organizations";
+import { useCategories } from "@/lib/api/categories";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { BrokerManager } from "@/components/admin/BrokerManager";
-import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
+import {
+  OrganizationFormFields,
+  isValidPhone,
+} from "@/components/admin/OrganizationFormFields";
 import type { Organization } from "@/lib/api/schemas/organizations";
 
 /**
@@ -53,6 +62,44 @@ export default function AdminEditOrganizationPage() {
 function EditOrganizationForm({ organization }: { organization: Organization }) {
   const router = useRouter();
   const updateOrganization = useUpdateOrganization();
+  const updateVerticals = useUpdateOrganizationVerticals();
+  const {
+    data: verticalsData = { vertical_ids: [], product_counts: [] },
+    isLoading: verticalsLoading,
+  } = useOrganizationVerticals(organization.id);
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const verticals = categories.filter((c) => c.level === 0);
+
+  // ponytail: map vertical_id -> product_count for quick lookup
+  const productCountMap = new Map(
+    verticalsData.product_counts.map((pc) => [pc.vertical_id, pc.product_count]),
+  );
+
+  // Track selected verticals (initialized from API once loaded)
+  const [verticalIds, setVerticalIds] = useState<string[]>([]);
+  // ponytail: store original IDs to compare against (not the potentially-refetched data)
+  const [originalVerticalIds, setOriginalVerticalIds] = useState<string[]>([]);
+  const [verticalsInitialized, setVerticalsInitialized] = useState(false);
+
+  // ponytail: initialize once API returns (even if empty array)
+  // Use verticalsLoading to detect when fetch completes
+  useEffect(() => {
+    if (!verticalsLoading && !verticalsInitialized) {
+      setVerticalIds(verticalsData.vertical_ids);
+      setOriginalVerticalIds(verticalsData.vertical_ids);
+      setVerticalsInitialized(true);
+    }
+  }, [verticalsLoading, verticalsData.vertical_ids, verticalsInitialized]);
+
+  const toggleVertical = (id: string) => {
+    // Cannot uncheck if vertical has products
+    const hasProducts = (productCountMap.get(id) ?? 0) > 0;
+    if (hasProducts && verticalIds.includes(id)) return;
+
+    setVerticalIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
+    );
+  };
 
   // Form state initialized from organization (no useEffect needed)
   const [name, setName] = useState(organization.name);
@@ -74,9 +121,16 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
   const [instagram, setInstagram] = useState(organization.instagram ?? "");
   const [facebook, setFacebook] = useState(organization.facebook ?? "");
 
+  // Check if verticals changed (compare against original, not refetched data)
+  const verticalsChanged =
+    verticalsInitialized &&
+    (verticalIds.length !== originalVerticalIds.length ||
+      verticalIds.some((id) => !originalVerticalIds.includes(id)));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Update org details
       await updateOrganization.mutateAsync({
         organizationId: organization.id,
         data: {
@@ -98,6 +152,15 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
           facebook: facebook || undefined,
         },
       });
+
+      // Update verticals if changed
+      if (verticalsChanged) {
+        await updateVerticals.mutateAsync({
+          organizationId: organization.id,
+          verticalIds,
+        });
+      }
+
       router.push(`/admin/organizations/${organization.id}`);
     } catch {
       // Error handled by mutation state
@@ -142,6 +205,74 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
           maxWidth: 600,
         }}
       >
+        {/* Verticals — fundamental info first */}
+        <fieldset
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            border: "none",
+            padding: 0,
+          }}
+        >
+          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals</legend>
+          {(verticalsLoading || categoriesLoading) && (
+            <p style={{ color: "var(--ps-text-secondary)" }}>Cargando verticals…</p>
+          )}
+          {!verticalsLoading && !categoriesLoading && verticals.length === 0 && (
+            <p style={{ color: "var(--ps-text-secondary)" }}>
+              No hay verticals disponibles.
+            </p>
+          )}
+          {!verticalsLoading && !categoriesLoading && verticals.map((vertical) => {
+            const productCount = productCountMap.get(vertical.id) ?? 0;
+            const isSelected = verticalIds.includes(vertical.id);
+            // ponytail: cannot uncheck if has products
+            const isLocked = isSelected && productCount > 0;
+
+            return (
+              <label
+                key={vertical.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  background: isSelected
+                    ? "var(--ps-cyan-10)"
+                    : "var(--ps-bg-elevated)",
+                  border: isSelected
+                    ? "1px solid var(--ps-cyan)"
+                    : "1px solid var(--ps-border-default)",
+                  cursor: isLocked ? "not-allowed" : "pointer",
+                  opacity: isLocked ? 0.7 : 1,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleVertical(vertical.id)}
+                  disabled={isLocked}
+                  aria-label={vertical.name}
+                />
+                <span>{vertical.name}</span>
+                {productCount > 0 && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "var(--ps-text-tertiary)",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    ({productCount} producto{productCount !== 1 ? "s" : ""})
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </fieldset>
+
         {/* Shared form fields — identity (name/code/color) + optional */}
         <OrganizationFormFields
           name={name}
@@ -191,9 +322,9 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
         </div>
 
         {/* Error */}
-        {updateOrganization.error && (
+        {(updateOrganization.error || updateVerticals.error) && (
           <p style={{ color: "var(--ps-error)" }}>
-            {updateOrganization.error.message}
+            {updateOrganization.error?.message || updateVerticals.error?.message}
           </p>
         )}
 
@@ -201,7 +332,13 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
         <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
           <button
             type="submit"
-            disabled={updateOrganization.isPending || !name.trim()}
+            disabled={
+              updateOrganization.isPending ||
+              updateVerticals.isPending ||
+              !name.trim() ||
+              !isValidPhone(phone) ||
+              !isValidPhone(whatsapp)
+            }
             style={{
               flex: 1,
               height: 40,
@@ -213,7 +350,9 @@ function EditOrganizationForm({ organization }: { organization: Organization }) 
               cursor: "pointer",
             }}
           >
-            {updateOrganization.isPending ? "Guardando..." : "Guardar cambios"}
+            {updateOrganization.isPending || updateVerticals.isPending
+              ? "Guardando..."
+              : "Guardar cambios"}
           </button>
           <Link
             href={`/admin/organizations/${organization.id}`}

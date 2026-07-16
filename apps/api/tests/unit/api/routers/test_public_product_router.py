@@ -192,7 +192,7 @@ class TestPublicProductRouter:
         assert data["images"][1]["key"] == "car-side.jpg"
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
-    async def test_get_product_image_urls_cover_image_first(
+    async def test_get_product_image_urls_cover_image_first_when_separate(
         self, mock_spaces_dep, async_session: AsyncSession
     ):
         """GET /{slug}/image-urls puts cover_image first if not in image_urls."""
@@ -232,6 +232,54 @@ class TestPublicProductRouter:
         data = response.json()
         assert len(data["images"]) == 3
         assert data["images"][0]["key"] == "cover-image.jpg"  # Cover image first
+
+    @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
+    async def test_get_product_image_urls_reorders_cover_to_first(
+        self, mock_spaces_dep, async_session: AsyncSession
+    ):
+        """GET /{slug}/image-urls moves cover to first position when it's in the list."""
+        # Setup: Mock DO Spaces — order of calls matches reordered list
+        mock_spaces = AsyncMock()
+        mock_spaces.generate_download_url.side_effect = [
+            "https://do.spaces.com/car-side-signed",  # cover first
+            "https://do.spaces.com/car-front-signed",
+            "https://do.spaces.com/car-back-signed",
+        ]
+        mock_spaces_dep.return_value = mock_spaces
+
+        # Setup: Product where cover_image is in the list but NOT first
+        product = ProductModel(
+            id=uuid4(),
+            tenant_id=uuid4(),
+            organization_id=uuid4(),
+            category_id=uuid4(),
+            title="Reorder Cover Car",
+            slug="reorder-cover-car",
+            status=ProductStatus.PUBLISHED.value,
+            published_to_marketplace=True,
+            image_urls=["car-front.jpg", "car-side.jpg", "car-back.jpg"],
+            cover_image_key="car-side.jpg",  # In list but not first!
+            condition="good",
+            attributes={},
+        )
+        async_session.add(product)
+        await async_session.commit()
+
+        # Act
+        client = TestClient(app)
+        response = client.get("/api/v1/public/products/reorder-cover-car/image-urls")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["images"]) == 3
+        # Cover should be moved to first position
+        assert data["images"][0]["key"] == "car-side.jpg"
+        # Others maintain relative order
+        assert data["images"][1]["key"] == "car-front.jpg"
+        assert data["images"][2]["key"] == "car-back.jpg"
+        # cover_image_key should be in response
+        assert data["cover_image_key"] == "car-side.jpg"
 
     async def test_get_product_image_urls_not_found(self, _async_session: AsyncSession):
         """GET /{slug}/image-urls returns 404 if product doesn't exist."""

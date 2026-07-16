@@ -9,7 +9,7 @@ rather than a unique-violation error.
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +30,14 @@ class SqlAlchemyOrganizationVerticalRepository:
                 root_category_id=root_category_id,
             )
             .on_conflict_do_nothing()
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()
+
+    async def disable(self, organization_id: UUID, root_category_id: UUID) -> None:
+        stmt = delete(OrganizationVerticalModel).where(
+            OrganizationVerticalModel.organization_id == organization_id,
+            OrganizationVerticalModel.root_category_id == root_category_id,
         )
         await self.session.execute(stmt)
         await self.session.flush()

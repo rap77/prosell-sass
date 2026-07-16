@@ -95,13 +95,12 @@ export function ProductPublicView({
     .filter(Boolean)
     .join(", ");
 
-  const whatsappText = `
-🚗 ${vehicleName}
-💰 ${price}
-${location ? `📍 ${location}` : ""}
+  // ponytail: plain text — emojis break on some WhatsApp clients
+  const whatsappText = `${vehicleName}
+${price}
+${location ? location : ""}
 
-${shareUrl}
-`.trim();
+${shareUrl}`.trim();
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
@@ -133,6 +132,7 @@ ${shareUrl}
               style={{ objectFit: "cover" }}
               priority
               sizes="(max-width: 800px) 100vw, 800px"
+              unoptimized // ponytail: signed URLs are host-bound to localhost:9000
             />
             {/* Navigation arrows */}
             {images.length > 1 && (
@@ -257,6 +257,7 @@ ${shareUrl}
                 width={64}
                 height={48}
                 style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                unoptimized
               />
             </button>
           ))}
