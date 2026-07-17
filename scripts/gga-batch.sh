@@ -13,9 +13,43 @@ FALLBACK_PROVIDERS="${GGA_FALLBACK_PROVIDERS:-codex}"
 
 if [[ -z "$PRIMARY_PROVIDER" && -f ".gga" ]]; then
   PRIMARY_PROVIDER="$(
-    sed -n 's/^PROVIDER=\"\\([^\"]*\\)\"/\\1/p' .gga | head -n 1
+    sed -n 's/^PROVIDER="\([^"]*\)"/\1/p' .gga | head -n 1
   )"
 fi
+
+FILE_PATTERNS=""
+EXCLUDE_PATTERNS=""
+if [[ -f ".gga" ]]; then
+  FILE_PATTERNS="$(sed -n 's/^FILE_PATTERNS="\([^"]*\)"/\1/p' .gga)"
+  EXCLUDE_PATTERNS="$(sed -n 's/^EXCLUDE_PATTERNS="\([^"]*\)"/\1/p' .gga)"
+fi
+
+is_reviewable_file() {
+  local file_path="$1"
+  local pattern
+  local included=false
+  local -a include_patterns=()
+  local -a exclude_patterns=()
+
+  IFS=',' read -r -a include_patterns <<< "$FILE_PATTERNS"
+  for pattern in "${include_patterns[@]}"; do
+    if [[ "$file_path" == $pattern ]]; then
+      included=true
+      break
+    fi
+  done
+
+  [[ "$included" == true ]] || return 1
+
+  IFS=',' read -r -a exclude_patterns <<< "$EXCLUDE_PATTERNS"
+  for pattern in "${exclude_patterns[@]}"; do
+    if [[ "$file_path" == $pattern ]]; then
+      return 1
+    fi
+  done
+
+  return 0
+}
 
 if [[ "$#" -gt 0 ]]; then
   STAGED_FILES=("$@")
@@ -23,8 +57,16 @@ else
   mapfile -t STAGED_FILES < <(git diff --cached --name-only --diff-filter=ACMRD)
 fi
 
+REVIEWABLE_FILES=()
+for file_path in "${STAGED_FILES[@]}"; do
+  if is_reviewable_file "$file_path"; then
+    REVIEWABLE_FILES+=("$file_path")
+  fi
+done
+STAGED_FILES=("${REVIEWABLE_FILES[@]}")
+
 if [[ "${#STAGED_FILES[@]}" -eq 0 ]]; then
-  echo "No staged files to review."
+  echo "No reviewable staged files to review."
   exit 0
 fi
 

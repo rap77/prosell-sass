@@ -13,6 +13,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { OrgVerticalsResponse } from "@/types/category";
+import type { Product } from "@/types/product";
 
 const mockPush = vi.fn();
 let mockSearchParams = new URLSearchParams();
@@ -57,7 +58,9 @@ vi.mock("@/lib/api/userApi", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/userApi")>();
   return {
     ...actual,
-    useCurrentOrganizationProfile: () => ({ data: { id: "org-1" } }),
+    useCurrentOrganizationProfile: () => ({
+      data: { id: "org-1", code: "PS", color: "#4DB8FF" },
+    }),
   };
 });
 
@@ -71,6 +74,7 @@ vi.mock("@/lib/api/verticals", async (importOriginal) => {
 });
 
 const mockUseInfiniteProducts = vi.fn();
+let mockProducts: Product[] = [];
 vi.mock("@/lib/api/products", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/products")>();
   return {
@@ -78,7 +82,7 @@ vi.mock("@/lib/api/products", async (importOriginal) => {
     useInfiniteProducts: (...args: unknown[]) => {
       mockUseInfiniteProducts(...args);
       return {
-        data: { pages: [{ items: [] }] },
+        data: { pages: [{ items: mockProducts }] },
         isLoading: false,
         error: null,
         hasNextPage: false,
@@ -95,6 +99,14 @@ vi.mock("@/lib/api/productImageUrlsBatch", () => ({
   useProductImageUrlsBatch: () => ({ urls: new Map(), isLoading: false }),
 }));
 
+const mockProductCard = vi.fn();
+vi.mock("@/components/catalog/ProductCard", () => ({
+  ProductCard: (props: unknown) => {
+    mockProductCard(props);
+    return <div data-testid="product-card" />;
+  },
+}));
+
 vi.mock("@/lib/api/branches", () => ({
   useBranches: () => ({ data: undefined, isLoading: false }),
   useBulkAssignProductsToBranch: () => ({ mutate: vi.fn(), isPending: false }),
@@ -107,6 +119,39 @@ describe("CatalogPage — dynamic filters", () => {
     mockSearchParams = new URLSearchParams();
     mockPush.mockClear();
     mockUseInfiniteProducts.mockClear();
+    mockProductCard.mockClear();
+    mockProducts = [];
+  });
+
+  it("does not fall back to the viewer organization when ownership is null", () => {
+    mockProducts = [
+      {
+        id: "product-1",
+        tenant_id: "org-1",
+        organization_id: "org-1",
+        owner_org_id: null,
+        owner_org_code: null,
+        owner_org_color: null,
+        category_id: "c1",
+        title: "Product without owner",
+        price_cents: 100,
+        currency: "USD",
+        condition: "used",
+        status: "draft",
+        attributes: { category: "generic" },
+        is_featured: false,
+        view_count: 0,
+        favorite_count: 0,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+
+    render(<CatalogPage />);
+
+    expect(mockProductCard).toHaveBeenCalledWith(
+      expect.objectContaining({ orgCode: null, orgColor: null }),
+    );
   });
 
   it("renders the category selector and the generic filter sidebar", () => {

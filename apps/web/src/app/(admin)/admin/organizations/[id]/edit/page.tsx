@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -12,12 +12,22 @@ import {
 } from "@/lib/api/organizations";
 import { useCategories } from "@/lib/api/categories";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
+import { logger } from "@/lib/logger";
 import { BrokerManager } from "@/components/admin/BrokerManager";
 import {
   OrganizationFormFields,
   isValidPhone,
 } from "@/components/admin/OrganizationFormFields";
-import type { Organization } from "@/lib/api/schemas/organizations";
+import type {
+  Organization,
+  OrganizationVerticalsResponse,
+} from "@/lib/api/schemas/organizations";
+
+const EMPTY_VERTICALS_DATA: OrganizationVerticalsResponse = {
+  organization_id: "",
+  vertical_ids: [],
+  product_counts: [],
+};
 
 /**
  * Edit organization page — uses shared OrganizationFormFields component
@@ -70,7 +80,7 @@ function EditOrganizationForm({
   const updateOrganization = useUpdateOrganization();
   const updateVerticals = useUpdateOrganizationVerticals();
   const {
-    data: verticalsData = { vertical_ids: [], product_counts: [] },
+    data: verticalsData = EMPTY_VERTICALS_DATA,
     isLoading: verticalsLoading,
   } = useOrganizationVerticals(organization.id);
   const { data: categories = [], isLoading: categoriesLoading } =
@@ -85,30 +95,22 @@ function EditOrganizationForm({
     ]),
   );
 
-  // Track selected verticals (initialized from API once loaded)
-  const [verticalIds, setVerticalIds] = useState<string[]>([]);
-  // ponytail: store original IDs to compare against (not the potentially-refetched data)
-  const [originalVerticalIds, setOriginalVerticalIds] = useState<string[]>([]);
-  const [verticalsInitialized, setVerticalsInitialized] = useState(false);
-
-  // ponytail: initialize once API returns (even if empty array)
-  // Use verticalsLoading to detect when fetch completes
-  useEffect(() => {
-    if (!verticalsLoading && !verticalsInitialized) {
-      setVerticalIds(verticalsData.vertical_ids);
-      setOriginalVerticalIds(verticalsData.vertical_ids);
-      setVerticalsInitialized(true);
-    }
-  }, [verticalsLoading, verticalsData.vertical_ids, verticalsInitialized]);
+  const [verticalIdsOverride, setVerticalIdsOverride] = useState<
+    string[] | null
+  >(null);
+  const verticalIds = verticalIdsOverride ?? verticalsData.vertical_ids;
 
   const toggleVertical = (id: string) => {
     // Cannot uncheck if vertical has products
     const hasProducts = (productCountMap.get(id) ?? 0) > 0;
     if (hasProducts && verticalIds.includes(id)) return;
 
-    setVerticalIds((prev) =>
-      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
-    );
+    setVerticalIdsOverride((override) => {
+      const current = override ?? verticalsData.vertical_ids;
+      return current.includes(id)
+        ? current.filter((verticalId) => verticalId !== id)
+        : [...current, id];
+    });
   };
 
   // Form state initialized from organization (no useEffect needed)
@@ -133,11 +135,11 @@ function EditOrganizationForm({
   const [instagram, setInstagram] = useState(organization.instagram ?? "");
   const [facebook, setFacebook] = useState(organization.facebook ?? "");
 
-  // Check if verticals changed (compare against original, not refetched data)
+  // A null override means the user has not touched vertical assignments.
   const verticalsChanged =
-    verticalsInitialized &&
-    (verticalIds.length !== originalVerticalIds.length ||
-      verticalIds.some((id) => !originalVerticalIds.includes(id)));
+    verticalIdsOverride !== null &&
+    (verticalIds.length !== verticalsData.vertical_ids.length ||
+      verticalIds.some((id) => !verticalsData.vertical_ids.includes(id)));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,8 +176,8 @@ function EditOrganizationForm({
       }
 
       router.push(`/admin/organizations/${organization.id}`);
-    } catch {
-      // Error handled by mutation state
+    } catch (error) {
+      logger.error("Failed to update organization", error);
     }
   };
 

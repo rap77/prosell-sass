@@ -37,6 +37,7 @@ import {
   useUpdateProduct,
   useProduct,
   useProductImageUrls,
+  useProductOwnership,
   useSetProductOwnership,
 } from "@/lib/api/products";
 import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
@@ -139,17 +140,48 @@ export function UnifiedProductForm({
   const [isPending, startTransition] = useTransition();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
-  // Ownership state (create mode only)
+  // Ownership state shared by create and edit modes.
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [pendingOwners, setPendingOwners] = useState<OwnerEntry[]>([]);
+  const [ownershipInitialized, setOwnershipInitialized] = useState(false);
+  const [ownershipDirty, setOwnershipDirty] = useState(false);
   const { data: organizations = [] } = useOrganizations();
   const { data: brokers = [], isLoading: isLoadingBrokers } =
     useOrganizationBrokers(selectedOrgId ?? undefined);
   const setOwnership = useSetProductOwnership();
+  const { data: existingOwnership, isLoading: isLoadingOwnership } =
+    useProductOwnership(mode === "edit" ? productId : undefined);
 
   // Derive if selected org has brokers
   const selectedOrg = organizations.find((d) => d.id === selectedOrgId);
   const hasBrokers = (selectedOrg?.broker_count ?? 0) > 0;
+  const usesBrokerOwners = pendingOwners.some(
+    (owner) => owner.owner_type === OWNER_TYPE.USER,
+  );
+  const ownershipTotal = pendingOwners.reduce(
+    (sum, owner) => sum + (parseFloat(owner.percentage) || 0),
+    0,
+  );
+  const ownershipIsValid =
+    pendingOwners.length > 0 &&
+    pendingOwners.every((owner) => owner.owner_id) &&
+    Math.abs(ownershipTotal - 100) < 0.01;
+
+  const updatePendingOwners = (owners: OwnerEntry[]) => {
+    setPendingOwners(owners);
+    setOwnershipDirty(true);
+  };
+
+  const handleOrganizationChange = (organizationId: string) => {
+    setSelectedOrgId(organizationId);
+    updatePendingOwners([
+      {
+        owner_id: organizationId,
+        owner_type: OWNER_TYPE.ORGANIZATION,
+        percentage: "100",
+      },
+    ]);
+  };
 
   // Hooks
   const createProduct = useCreateProduct();
@@ -205,6 +237,25 @@ export function UnifiedProductForm({
       });
     }
   }, [mode, existingProduct, reset]);
+
+  useEffect(() => {
+    if (mode !== "edit" || !existingOwnership || ownershipInitialized) {
+      return;
+    }
+
+    const owners = existingOwnership.owners.map((owner) => ({
+      owner_id: owner.owner_id,
+      owner_type: owner.owner_type,
+      percentage: owner.percentage,
+    }));
+    const organizationOwner = owners.find(
+      (owner) => owner.owner_type === OWNER_TYPE.ORGANIZATION,
+    );
+
+    setPendingOwners(owners);
+    setSelectedOrgId(organizationOwner?.owner_id ?? null);
+    setOwnershipInitialized(true);
+  }, [mode, existingOwnership, ownershipInitialized]);
 
   // Clear store when productId changes or on create mode
   useEffect(() => {
@@ -275,17 +326,117 @@ export function UnifiedProductForm({
     isPending ||
     isUploadingImages ||
     createProduct.isPending ||
-    updateProduct.isPending;
+    updateProduct.isPending ||
+    setOwnership.isPending;
+  const isSubmitDisabled = isDisabled || (ownershipDirty && !ownershipIsValid);
 
   // Submit handler
+  const handleImagesUpload = async () => {
+    setIsUploadingImages(true);
+    try {
+      await uploadImages();
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
+
+  const buildProductPayload = (
+    data: Record<string, unknown>,
+    imageKeys: string[],
+    coverKey: string | null,
+  ) => {
+    const { price, description, ...formAttributes } =
+      FIXED_FIELDS_SCHEMA.passthrough().parse(data);
+
+    // ponytail: simple heuristic — vin = vehicle, operation = real estate, else generic
+    const categoryType = getCategoryType(category);
+    const attributes = { category: categoryType, ...formAttributes };
+    if (!isProductAttributes(attributes)) {
+      throw new Error("Invalid product attributes");
+    }
+
+    const titleTemplate = category.presentation?.title_template;
+    const title = generateTitle(titleTemplate, formAttributes) || category.name;
+
+    return {
+      title,
+      price_cents: Math.round(price * 100),
+      description,
+      attributes,
+      image_urls: imageKeys,
+      ...(coverKey ? { cover_image_key: coverKey } : {}),
+    };
+  };
+
+  const persistOwnership = async (targetProductId: string) => {
+    if (pendingOwners.length === 0) return;
+
+    const total = pendingOwners.reduce(
+      (sum, o) => sum + (parseFloat(o.percentage) || 0),
+      0,
+    );
+    if (Math.abs(total - 100) >= 0.01) return;
+
+    await setOwnership.mutateAsync({
+      productId: targetProductId,
+      owners: pendingOwners.map((o) => ({
+        owner_id: o.owner_id,
+        owner_type: o.owner_type,
+        percentage: parseFloat(o.percentage).toFixed(2),
+      })),
+    });
+  };
+
+  const handleCreateProduct = async (
+    data: Record<string, unknown>,
+    imageKeys: string[],
+    coverKey: string | null,
+  ) => {
+    const payload = buildProductPayload(data, imageKeys, coverKey);
+    const newProduct = await createProduct.mutateAsync({
+      ...payload,
+      category_id: category.id,
+      // ponytail: send org for admin cross-org product creation
+      ...(selectedOrgId ? { organization_id: selectedOrgId } : {}),
+    });
+
+    await persistOwnership(newProduct.id);
+    clearAll();
+    // ponytail: toast handled by hook (createProduct.onSuccess)
+
+    if (onSuccess) onSuccess();
+    else startTransition(() => router.push("/catalog"));
+  };
+
+  const handleUpdateProduct = async (
+    data: Record<string, unknown>,
+    imageKeys: string[],
+    coverKey: string | null,
+  ) => {
+    if (!productId) return;
+
+    const payload = buildProductPayload(data, imageKeys, coverKey);
+    await updateProduct.mutateAsync({
+      productId,
+      data: payload,
+    });
+
+    if (ownershipDirty) {
+      await persistOwnership(productId);
+      setOwnershipDirty(false);
+    }
+
+    // ponytail: toast handled by hook (updateProduct.onSuccess)
+
+    if (onSuccess) onSuccess();
+    else startTransition(() => router.push("/catalog"));
+  };
+
   const onSubmit = async (data: Record<string, unknown>) => {
     logger.debug("UnifiedProductForm onSubmit", data);
 
     try {
-      // Upload images
-      setIsUploadingImages(true);
-      await uploadImages();
-      setIsUploadingImages(false);
+      await handleImagesUpload();
 
       const { images, coverImageId } = useUploadStore.getState();
       const imageKeys = images
@@ -294,83 +445,10 @@ export function UnifiedProductForm({
       const coverEntry = images.find((e) => e.id === coverImageId);
       const coverKey = coverImageId ? (coverEntry?.storageKey ?? null) : null;
 
-      // Extract fixed fields
-      const { price, description, ...formAttributes } =
-        FIXED_FIELDS_SCHEMA.passthrough().parse(data);
-
-      // Determine category type based on schema fields
-      // ponytail: simple heuristic — vin = vehicle, operation = real estate, else generic
-      const categoryType = getCategoryType(category);
-
-      const attributes = { category: categoryType, ...formAttributes };
-      if (!isProductAttributes(attributes)) {
-        throw new Error("Invalid product attributes");
-      }
-
-      // Generate title from template
-      const titleTemplate = category.presentation?.title_template;
-      const title =
-        generateTitle(titleTemplate, formAttributes) || category.name;
-
       if (mode === "create") {
-        const newProduct = await createProduct.mutateAsync({
-          title,
-          price_cents: Math.round(price * 100),
-          category_id: category.id,
-          description,
-          attributes,
-          image_urls: imageKeys,
-          ...(coverKey ? { cover_image_key: coverKey } : {}),
-          // ponytail: send org for admin cross-org product creation
-          ...(selectedOrgId ? { organization_id: selectedOrgId } : {}),
-        });
-
-        // Set ownership if any owners were selected
-        if (pendingOwners.length > 0) {
-          const total = pendingOwners.reduce(
-            (sum, o) => sum + (parseFloat(o.percentage) || 0),
-            0,
-          );
-          if (Math.abs(total - 100) < 0.01) {
-            await setOwnership.mutateAsync({
-              productId: newProduct.id,
-              owners: pendingOwners.map((o) => ({
-                owner_id: o.owner_id,
-                owner_type: o.owner_type,
-                percentage: parseFloat(o.percentage).toFixed(2),
-              })),
-            });
-          }
-        }
-
-        clearAll();
-        // ponytail: toast handled by hook (createProduct.onSuccess)
-
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          startTransition(() => router.push("/catalog"));
-        }
-      } else if (mode === "edit" && productId) {
-        await updateProduct.mutateAsync({
-          productId,
-          data: {
-            title,
-            price_cents: Math.round(price * 100),
-            description,
-            attributes,
-            image_urls: imageKeys,
-            ...(coverKey ? { cover_image_key: coverKey } : {}),
-          },
-        });
-
-        // ponytail: toast handled by hook (updateProduct.onSuccess)
-
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          startTransition(() => router.push("/catalog"));
-        }
+        await handleCreateProduct(data, imageKeys, coverKey);
+      } else if (mode === "edit") {
+        await handleUpdateProduct(data, imageKeys, coverKey);
       }
     } catch (error) {
       setIsUploadingImages(false);
@@ -379,7 +457,7 @@ export function UnifiedProductForm({
     }
   };
 
-  if (mode === "edit" && isLoadingProduct) {
+  if (mode === "edit" && (isLoadingProduct || isLoadingOwnership)) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -498,8 +576,8 @@ export function UnifiedProductForm({
         />
       </section>
 
-      {/* Ownership (create mode only, only for admins who can see organizations) */}
-      {mode === "create" && organizations.length > 0 && (
+      {/* Ownership (only for admins who can see organizations) */}
+      {organizations.length > 0 && (
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Propietarios</h2>
           <p className="text-sm text-muted-foreground">
@@ -514,24 +592,7 @@ export function UnifiedProductForm({
             </Label>
             <Select
               value={selectedOrgId ?? undefined}
-              onValueChange={(orgId) => {
-                setSelectedOrgId(orgId);
-                const org = organizations.find((d) => d.id === orgId);
-                const orgHasBrokers = (org?.broker_count ?? 0) > 0;
-                if (orgHasBrokers) {
-                  // Clear owners, let user select brokers
-                  setPendingOwners([]);
-                } else {
-                  // Org is the 100% owner
-                  setPendingOwners([
-                    {
-                      owner_id: orgId,
-                      owner_type: "organization",
-                      percentage: "100",
-                    },
-                  ]);
-                }
-              }}
+              onValueChange={handleOrganizationChange}
             >
               <SelectTrigger className="w-full">
                 {selectedOrgId ? (
@@ -575,7 +636,7 @@ export function UnifiedProductForm({
           {/* Step 2: Show owners based on org type */}
           {selectedOrgId && (
             <>
-              {hasBrokers ? (
+              {hasBrokers && usesBrokerOwners ? (
                 // Org has brokers — user selects broker owners
                 <>
                   {isLoadingBrokers ? (
@@ -610,7 +671,7 @@ export function UnifiedProductForm({
                                       ...updated[index],
                                       owner_id: v,
                                     };
-                                    setPendingOwners(updated);
+                                    updatePendingOwners(updated);
                                   }}
                                 >
                                   <SelectTrigger className="flex-1">
@@ -670,7 +731,7 @@ export function UnifiedProductForm({
                                         ...updated[index],
                                         percentage: e.target.value,
                                       };
-                                      setPendingOwners(updated);
+                                      updatePendingOwners(updated);
                                     }}
                                     className="text-right"
                                     disabled={isDisabled}
@@ -685,7 +746,7 @@ export function UnifiedProductForm({
                                   variant="ghost"
                                   size="icon"
                                   onClick={() =>
-                                    setPendingOwners(
+                                    updatePendingOwners(
                                       pendingOwners.filter(
                                         (_, i) => i !== index,
                                       ),
@@ -730,7 +791,7 @@ export function UnifiedProductForm({
                             0,
                           );
                           const remaining = Math.max(0, 100 - used);
-                          setPendingOwners([
+                          updatePendingOwners([
                             ...pendingOwners,
                             {
                               owner_id: "",
@@ -751,7 +812,7 @@ export function UnifiedProductForm({
                   )}
                 </>
               ) : (
-                // Org has NO brokers — org is the owner
+                // Organization ownership is the default, even when it has brokers.
                 <div className="flex items-center gap-2 rounded-md bg-muted/50 p-3 text-sm">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                   <span>
@@ -760,14 +821,41 @@ export function UnifiedProductForm({
                   </span>
                 </div>
               )}
+              {hasBrokers && !usesBrokerOwners && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    updatePendingOwners([
+                      {
+                        owner_id: "",
+                        owner_type: OWNER_TYPE.USER,
+                        percentage: "100",
+                      },
+                    ])
+                  }
+                  disabled={isDisabled}
+                  className="w-fit"
+                >
+                  <User className="mr-1 h-4 w-4" />
+                  Distribuir entre brokers
+                </Button>
+              )}
             </>
+          )}
+          {ownershipDirty && !ownershipIsValid && (
+            <p className="text-sm text-destructive">
+              La distribución de propietarios debe sumar 100% y no puede tener
+              propietarios vacíos.
+            </p>
           )}
         </section>
       )}
 
       {/* Actions */}
       <div className="flex gap-4">
-        <Button type="submit" disabled={isDisabled}>
+        <Button type="submit" disabled={isSubmitDisabled}>
           {isDisabled ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

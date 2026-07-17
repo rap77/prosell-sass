@@ -10,9 +10,8 @@
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
-import { ProductOwnershipEditor } from "@/components/forms/ProductOwnershipEditor";
 import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
 import { useProduct } from "@/lib/api/products";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
@@ -64,10 +63,8 @@ export default function EditProductPage() {
   // Find the category in the verticals tree
   const categoryId = product?.category_id;
   const verticals = verticalsData?.verticals;
-  const category = useMemo(() => {
-    if (!categoryId || !verticals) return null;
-    return findCategoryById(verticals, categoryId);
-  }, [categoryId, verticals]);
+  const category =
+    categoryId && verticals ? findCategoryById(verticals, categoryId) : null;
 
   // Breadcrumb
   const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
@@ -175,6 +172,7 @@ export default function EditProductPage() {
       </div>
 
       <UnifiedProductForm
+        key={productId}
         category={category}
         mode="edit"
         productId={productId}
@@ -183,11 +181,6 @@ export default function EditProductPage() {
           router.refresh();
         }}
       />
-
-      {/* Ownership section - separate from main form, has own save */}
-      <div className="mt-6">
-        <ProductOwnershipEditor productId={productId} />
-      </div>
     </div>
   );
 }

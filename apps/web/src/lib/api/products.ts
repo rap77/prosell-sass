@@ -390,7 +390,7 @@ export function useUpdateProduct(): UseMutationResult<
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<string, Error, string, { previousProducts?: Product[] }>({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/v1/products/${id}`, {
         method: "DELETE",
@@ -607,7 +607,7 @@ export function transformProductToVehicle(product: Product): {
     price: product.price_cents / 100,
     // Map product status to vehicle status (product.status is more granular)
     status: mapProductStatusToVehicleStatus(product.status),
-    photo_url: coverKey,
+    photo_url: coverKey ?? undefined,
     year,
     make,
     model,
@@ -650,6 +650,7 @@ export function useInfiniteProducts(
     if (value) queryParams.append(`attr.${key}`, value);
   }
   queryParams.append("limit", limit.toString());
+  const initialPageParam: string | null = null;
 
   return useInfiniteQuery({
     queryKey: ["products", "infinite", filters, limit],
@@ -676,7 +677,7 @@ export function useInfiniteProducts(
         has_more: data.products.length === limit,
       } as const;
     },
-    initialPageParam: null as string | null,
+    initialPageParam,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minute
   });
@@ -969,10 +970,8 @@ export function useSetProductOwnership() {
       return productOwnershipSchema.parse(await res.json());
     },
 
-    onSuccess: (_, { productId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ["products", productId, "ownership"],
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Ownership updated");
     },
 

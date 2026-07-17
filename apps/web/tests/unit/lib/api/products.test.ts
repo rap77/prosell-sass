@@ -10,9 +10,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
  * - Query invalidation after mutation
  */
 
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCreateProduct, createProductWithVehicle } from "@/lib/api/products";
+import {
+  useCreateProduct,
+  createProductWithVehicle,
+  useSetProductOwnership,
+} from "@/lib/api/products";
 import type { CreateProductRequest, Product } from "@/types/product";
 
 // Mock fetch globally
@@ -51,6 +55,60 @@ function createWrapper() {
   }
   return Wrapper;
 }
+
+describe("useSetProductOwnership", () => {
+  it("invalidates product lists after ownership changes", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        product_id: "product-1",
+        owners: [
+          {
+            owner_id: "organization-1",
+            owner_type: "organization",
+            percentage: "100.00",
+          },
+        ],
+      }),
+    });
+
+    function Wrapper({ children }: { children: React.ReactNode }) {
+      return createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
+    }
+
+    const { result } = renderHook(() => useSetProductOwnership(), {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        productId: "product-1",
+        owners: [
+          {
+            owner_id: "organization-1",
+            owner_type: "organization",
+            percentage: "100.00",
+          },
+        ],
+      });
+    });
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["products"],
+    });
+  });
+});
 
 describe("createProductWithVehicle", () => {
   beforeEach(() => {

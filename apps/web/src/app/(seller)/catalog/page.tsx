@@ -61,13 +61,20 @@ import type {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ViewMode = "grilla" | "tabla" | "estado" | "carga";
+const VIEW_MODE = {
+  GRID: "grilla",
+  TABLE: "tabla",
+  STATUS: "estado",
+  BULK: "carga",
+} as const;
+
+type ViewMode = (typeof VIEW_MODE)[keyof typeof VIEW_MODE];
 
 const TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
-  { id: "grilla", label: "Grilla", icon: LayoutGrid },
-  { id: "tabla", label: "Tabla", icon: TableIcon },
-  { id: "estado", label: "Por estado", icon: Layers },
-  { id: "carga", label: "Carga masiva", icon: Upload },
+  { id: VIEW_MODE.GRID, label: "Grilla", icon: LayoutGrid },
+  { id: VIEW_MODE.TABLE, label: "Tabla", icon: TableIcon },
+  { id: VIEW_MODE.STATUS, label: "Por estado", icon: Layers },
+  { id: VIEW_MODE.BULK, label: "Carga masiva", icon: Upload },
 ];
 
 const STATUS_ORDER: VehicleStatus[] = [
@@ -372,7 +379,8 @@ export default function CatalogPage() {
   // check). `rows` is kept as the legacy transform for the tabla view
   // (DataGrid expects the transformed shape with `price: number` and
   // `status: VehicleStatus`).
-  const products = data?.pages[0]?.items ?? [];
+  const productItems = data?.pages[0]?.items;
+  const products = productItems ?? [];
   // Transform to the generic catalog-row shape the table view needs
   const rows = products.map(transformProductToVehicle);
 
@@ -412,6 +420,15 @@ export default function CatalogPage() {
     setShowBulkBranchAssign(true);
   };
 
+  const handleBulkUploadSuccess = () => {
+    toast.success("Carga completada");
+    setViewMode("grilla");
+  };
+
+  const handleBulkUploadCancel = () => {
+    setViewMode("grilla");
+  };
+
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -419,8 +436,10 @@ export default function CatalogPage() {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage)
-          fetchNextPage();
+        if (!entry.isIntersecting || !hasNextPage || isFetchingNextPage) {
+          return;
+        }
+        void fetchNextPage();
       },
       { threshold: 1.0 },
     );
@@ -642,11 +661,8 @@ export default function CatalogPage() {
             {/* CARGA MASIVA */}
             {viewMode === "carga" && (
               <BulkUploadCSV
-                onSuccess={() => {
-                  toast.success("Carga completada");
-                  setViewMode("grilla");
-                }}
-                onCancel={() => setViewMode("grilla")}
+                onSuccess={handleBulkUploadSuccess}
+                onCancel={handleBulkUploadCancel}
               />
             )}
 
@@ -697,12 +713,8 @@ export default function CatalogPage() {
                             productAttributes={vm.productAttributes}
                             verticalSlug={vm.verticalSlug}
                             imageUrl={vm.imageUrl}
-                            orgCode={
-                              vm.product.owner_org_code ?? orgProfile?.code
-                            }
-                            orgColor={
-                              vm.product.owner_org_color ?? orgProfile?.color
-                            }
+                            orgCode={vm.product.owner_org_code}
+                            orgColor={vm.product.owner_org_color}
                             onView={() => handleView(vm.product.id)}
                             onEdit={() => handleEdit(vm.product.id)}
                             onDelete={() => handleDelete(vm.product.id)}
@@ -786,14 +798,8 @@ export default function CatalogPage() {
                                   productAttributes={vm.productAttributes}
                                   verticalSlug={vm.verticalSlug}
                                   imageUrl={vm.imageUrl}
-                                  orgCode={
-                                    vm.product.owner_org_code ??
-                                    orgProfile?.code
-                                  }
-                                  orgColor={
-                                    vm.product.owner_org_color ??
-                                    orgProfile?.color
-                                  }
+                                  orgCode={vm.product.owner_org_code}
+                                  orgColor={vm.product.owner_org_color}
                                   onView={() => handleView(vm.product.id)}
                                   onEdit={() => handleEdit(vm.product.id)}
                                   onDelete={() => handleDelete(vm.product.id)}
