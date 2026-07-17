@@ -1,0 +1,14 @@
+.git
+.env*
+**/.env*
+**/.next
+**/.turbo
+**/node_modules
+**/coverage
+**/playwright-report
+**/test-results
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+backups
+deploys.log
