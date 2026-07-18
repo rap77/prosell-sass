@@ -9,11 +9,11 @@ This module provides:
 """
 
 import asyncio
+import os
 import shutil
 import tempfile
 from collections.abc import AsyncGenerator, Callable, Iterator
 from pathlib import Path
-from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -22,10 +22,24 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+# Load .env.test BEFORE any Settings import so the test DATABASE_URL wins over
+# the dev .env. pydantic-settings only auto-loads `.env` (the prod/dev default),
+# so we have to do this manually. Without it, the test_database_url fixture below
+# falls back to settings.database_url (which is prosell_dev@5432 — wrong DB,
+# wrong port) and integration tests connect to a non-existent database.
+_ENV_TEST_PATH = Path(__file__).parent / ".env.test"
+if _ENV_TEST_PATH.exists():
+    for _line in _ENV_TEST_PATH.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith("#") or "=" not in _line:
+            continue
+        _k, _, _v = _line.partition("=")
+        os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 # Import all models so they register with Base.metadata
-import prosell.infrastructure.models  # noqa: F401
-from prosell.core.config import Settings, get_settings
-from prosell.infrastructure.database.base import Base
+import prosell.infrastructure.models  # noqa: E402, F401
+from prosell.core.config import Settings, get_settings  # noqa: E402
+from prosell.infrastructure.database.base import Base  # noqa: E402
 
 # DDL statements interpolate the test database name as an identifier, which
 # cannot be passed as a bound parameter. Quote it through the dialect preparer
@@ -70,14 +84,6 @@ def ensure_jwt_keys() -> None:
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
     )
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -126,11 +132,22 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
     # Create test database (quote the name so it is a safe SQL identifier)
     db_name = parsed.path[1:]
     quoted_db = _PG_IDENTIFIER_PREPARER.quote(db_name)
-    engine = create_engine(postgres_url, poolclass=NullPool)
-    with engine.connect() as conn:
-        conn.execution_options(isolation_level="AUTOCOMMIT")
-        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {quoted_db}"))
-        conn.execute(sa_text(f"CREATE DATABASE {quoted_db}"))
+
+    # DDL like DROP/CREATE DATABASE is intentionally run through a sync engine
+    # inside run_in_executor so the test's event loop is never blocked. The
+    # sync path uses NullPool + AUTOCOMMIT isolation (DDL can't run inside a
+    # transaction), which is the standard psycopg2/sqlalchemy pattern.
+    loop = asyncio.get_running_loop()
+
+    def _create_test_db() -> None:
+        sync_engine = create_engine(postgres_url, poolclass=NullPool)
+        with sync_engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {quoted_db}"))
+            conn.execute(sa_text(f"CREATE DATABASE {quoted_db}"))
+        sync_engine.dispose()
+
+    await loop.run_in_executor(None, _create_test_db)
 
     # Create async engine for test database
     async_engine = create_async_engine(test_database_url, poolclass=NullPool)
@@ -153,10 +170,12 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
             await session.begin()
             yield session
 
-        except Exception as e:
-            # Rollback on error
+        except BaseException:
+            # Rollback on error (broad catch is intentional: the finally block
+            # needs to run for ANY exit path, including KeyboardInterrupt).
+            # Bare `raise` preserves the original traceback.
             await session.rollback()
-            raise e
+            raise
 
         finally:
             # Rollback after test (clean state)
@@ -165,10 +184,15 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
             # Close session
             await session.close()
 
-    # Drop test database
-    with engine.connect() as conn:
-        conn.execution_options(isolation_level="AUTOCOMMIT")
-        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {quoted_db}"))
+    # Drop test database — same executor pattern as the create step above.
+    def _drop_test_db() -> None:
+        sync_engine = create_engine(postgres_url, poolclass=NullPool)
+        with sync_engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {quoted_db}"))
+        sync_engine.dispose()
+
+    await loop.run_in_executor(None, _drop_test_db)
 
 
 @pytest.fixture(scope="function")
@@ -216,36 +240,31 @@ async def seeded_test_db(test_db_session: AsyncSession) -> AsyncGenerator[AsyncS
 @pytest.fixture(scope="function")
 def mock_external_services() -> Iterator[dict[str, str]]:
     """Mock external services for testing."""
-    # Mock Redis
     with pytest.MonkeyPatch().context() as m:
-        # Mock Redis operations
+        # In-memory Redis stub. Uses a typed class (NOT a lambda-built type()
+        # with function attrs) so the methods get bound `self` correctly and
+        # pyright can check the signatures.
         mock_redis: dict[str, str] = {}
 
-        def mock_redis_get(key: str) -> str | None:
-            return mock_redis.get(key)
+        class _MockRedis:
+            def get(self, key: str) -> str | None:
+                return mock_redis.get(key)
 
-        def mock_redis_set(key: str, value: str, _ex: int | None = None) -> bool:
-            mock_redis[key] = value
-            return True
+            def set(self, key: str, value: str, _ex: int | None = None) -> bool:
+                mock_redis[key] = value
+                return True
 
-        def mock_redis_delete(key: str) -> int:
-            mock_redis.pop(key, None)
-            return 1
+            def delete(self, key: str) -> int:
+                mock_redis.pop(key, None)
+                return 1
 
-        # Apply mocks
-        m.setattr(
-            "redis.Redis",
-            lambda *_args, **_kwargs: type(
-                "MockRedis",
-                (),
-                {
-                    "get": mock_redis_get,
-                    "set": mock_redis_set,
-                    "delete": mock_redis_delete,
-                    "flushdb": lambda: mock_redis.clear(),
-                },
-            )(),
-        )
+            def flushdb(self) -> None:
+                mock_redis.clear()
+
+        def _factory(*_args: object, **_kwargs: object) -> _MockRedis:
+            return _MockRedis()
+
+        m.setattr("redis.Redis", _factory)
 
         yield mock_redis
 
@@ -257,8 +276,8 @@ class UserFactory:
         self.counter = 0
 
     def create_user(
-        self, email: str | None = None, password: str | None = None, **kwargs: Any
-    ) -> dict[str, Any]:
+        self, email: str | None = None, password: str | None = None, **kwargs: object
+    ) -> dict[str, object]:
         """Create a test user with unique email."""
         self.counter += 1
         return {
@@ -283,7 +302,7 @@ class OrganizationFactory:
     def __init__(self) -> None:
         self.counter = 0
 
-    def create_organization(self, name: str | None = None, **kwargs: Any) -> dict[str, Any]:
+    def create_organization(self, name: str | None = None, **kwargs: object) -> dict[str, object]:
         """Create a test organization with unique name."""
         self.counter += 1
         return {
