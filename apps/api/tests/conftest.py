@@ -124,8 +124,10 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
 
     parsed = urllib.parse.urlparse(test_database_url)
 
-    # Connect to postgres database to create test database
-    postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
+    # Connect to the postgres admin database so we can DROP/CREATE the test DB.
+    # `parsed.path` is the database name; replace it with `/postgres` (the
+    # default admin DB that always exists in a Postgres cluster).
+    postgres_url = parsed._replace(path="/postgres").geturl()
 
     from sqlalchemy import text as sa_text
 
