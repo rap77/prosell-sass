@@ -293,7 +293,13 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def update(self, product: Product) -> Product:
         """Update an existing product."""
-        stmt = select(ProductModel).where(ProductModel.id == product.id)
+        # Defense in depth: filter by tenant_id even though the caller
+        # (use case) already validated ownership. Prevents cross-tenant
+        # updates if a product entity is incorrectly constructed.
+        stmt = select(ProductModel).where(
+            ProductModel.id == product.id,
+            ProductModel.tenant_id == product.tenant_id,
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
@@ -308,6 +314,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.condition = product.condition.value
         model.status = product.status.value
         model.attributes = product.attributes
+        model.organization_id = product.organization_id
         model.image_urls = product.image_urls
         model.cover_image_key = product.cover_image_key
         model.location_city = product.location_city
