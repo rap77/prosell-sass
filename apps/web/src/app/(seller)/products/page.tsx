@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Plus, Filter } from "lucide-react";
 import {
   useProducts,
@@ -46,8 +44,7 @@ export default function ProductsPage() {
         title: formData.title,
         price_cents: parseFloat(formData.price) * 100,
         category_id: formData.category_id,
-        tenant_id: "", // Will be filled by API middleware
-        organization_id: "", // Will be filled by API middleware
+        // organization_id filled by API from auth context
         attributes: {
           category: "generic" as const,
           condition: formData.condition,
@@ -62,7 +59,7 @@ export default function ProductsPage() {
         condition: "",
         category_id: "",
       });
-    } catch (err) {
+    } catch {
       // Error is handled by the mutation hook
     }
   };

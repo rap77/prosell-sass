@@ -166,7 +166,7 @@ if [[ "$SKIP_BUILD" == false ]]; then
   # now comes from the compose file (http://localhost:8000), which is the
   # correct value for this local-host staging.
   cd "$DOCKER_DIR"
-  docker compose -f docker-compose.staging.yml build || {
+  docker compose --env-file "$ENV_FILE" -f docker-compose.staging.yml build || {
     log_error "Failed to build Docker images"
     exit 1
   }
@@ -181,14 +181,14 @@ fi
 
 log_info "Stopping existing services..."
 cd "$DOCKER_DIR"
-docker compose -f docker-compose.staging.yml down || true
+docker compose --env-file "$ENV_FILE" -f docker-compose.staging.yml down || true
 
 # =============================================================================
 # START INFRASTRUCTURE SERVICES
 # =============================================================================
 
 log_info "Starting infrastructure services (DB, Redis)..."
-docker compose -f docker-compose.staging.yml up -d db redis
+docker compose --env-file "$ENV_FILE" -f docker-compose.staging.yml up -d db redis
 
 # Wait for DB to be ready
 log_info "Waiting for database to be ready..."
@@ -232,7 +232,7 @@ done
 # removed. The container is the single place migrations and seeding happen.
 
 log_info "Starting application services (API, Web)..."
-docker compose -f docker-compose.staging.yml up -d
+docker compose --env-file "$ENV_FILE" -f docker-compose.staging.yml up -d
 
 # Wait for MinIO bucket prosell-assets to be ready (depends on minio-init
 # creating it on startup). We probe via the host-mapped port (9002) so we
@@ -302,7 +302,7 @@ log_info "Running post-deployment verification..."
 # services are db, redis, api, web, minio (5). minio-init is restart:"no"
 # and exits after setting up the bucket, so it isn't counted here.
 EXPECTED_RUNNING=5
-RUNNING_CONTAINERS=$(docker compose -f docker-compose.staging.yml ps -q | wc -l)
+RUNNING_CONTAINERS=$(docker compose --env-file "$ENV_FILE" -f docker-compose.staging.yml ps -q | wc -l)
 if [[ $RUNNING_CONTAINERS -eq $EXPECTED_RUNNING ]]; then
   log_success "All $EXPECTED_RUNNING containers are running (db, redis, api, web, minio)"
 else
@@ -311,7 +311,7 @@ fi
 
 # Show container status
 log_info "Container status:"
-docker compose -f docker-compose.staging.yml ps
+docker compose --env-file "$ENV_FILE" -f docker-compose.staging.yml ps
 
 # =============================================================================
 # DEPLOYMENT COMPLETE
@@ -331,7 +331,7 @@ log_info "Logs:"
 log_info "  API:  docker logs prosell-staging-api -f"
 log_info "  Web:  docker logs prosell-staging-web -f"
 log_info "  DB:   docker logs prosell-staging-db"
-log_info "  All:  docker compose -f docker-compose.staging.yml logs -f"
+log_info "  All:  docker compose --env-file $ENV_FILE -f docker-compose.staging.yml logs -f"
 echo ""
 log_info "Next steps:"
 log_info "  1. Run smoke tests from checklist:"

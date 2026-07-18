@@ -11,12 +11,29 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Loader2, Plus, Trash2, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  Loader2,
+  Plus,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ImageDropzone } from "@/components/upload/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +55,11 @@ import {
   useProduct,
   useProductImageUrls,
   useProductOwnership,
-  useSetProductOwnership,
+  useSetProductBrokers,
 } from "@/lib/api/products";
 import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
 import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
 import type { CategoryNode } from "@/types/category";
 import type { ProductAttributes } from "@/types/vehicle";
@@ -116,18 +134,12 @@ function generateTitle(
     .trim();
 }
 
-interface OwnerEntry {
+interface BrokerEntry {
+  /** Stable ID for React key (not the owner_id, which changes on selection) */
+  id: string;
   owner_id: string;
-  owner_type: OwnerType;
   percentage: string;
 }
-
-const OWNER_TYPE = {
-  ORGANIZATION: "organization",
-  USER: "user",
-} as const;
-
-type OwnerType = (typeof OWNER_TYPE)[keyof typeof OWNER_TYPE];
 
 export function UnifiedProductForm({
   category,
@@ -140,47 +152,75 @@ export function UnifiedProductForm({
   const [isPending, startTransition] = useTransition();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
-  // Ownership state shared by create and edit modes.
+  // Tenant cascade (PROP-001):
+  //   - `selectedOrgId` is the pending owner organization (products.organization_id).
+  //   - `pendingBrokers` is the pending broker shares (product_ownership user rows).
+  //   - `orgDirty` is true when the user changed the organization in this session.
+  //   - `brokersDirty` is true when the user changed the broker shares in this session.
+  // Each dirty flag drives a different endpoint on save.
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [pendingOwners, setPendingOwners] = useState<OwnerEntry[]>([]);
-  const [ownershipInitialized, setOwnershipInitialized] = useState(false);
-  const [ownershipDirty, setOwnershipDirty] = useState(false);
+  const [pendingBrokers, setPendingBrokers] = useState<BrokerEntry[]>([]);
+  const [orgDirty, setOrgDirty] = useState(false);
+  const [brokersDirty, setBrokersDirty] = useState(false);
+  // Transfer confirmation dialog state (EDIT mode only)
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [pendingTransferOrgId, setPendingTransferOrgId] = useState<
+    string | null
+  >(null);
+  const initializedOwnershipProductId = useRef<string | null>(null);
   const { data: organizations = [] } = useOrganizations();
   const { data: brokers = [], isLoading: isLoadingBrokers } =
     useOrganizationBrokers(selectedOrgId ?? undefined);
-  const setOwnership = useSetProductOwnership();
+  const setBrokersApi = useSetProductBrokers();
   const { data: existingOwnership, isLoading: isLoadingOwnership } =
     useProductOwnership(mode === "edit" ? productId : undefined);
 
-  // Derive if selected org has brokers
   const selectedOrg = organizations.find((d) => d.id === selectedOrgId);
+  const pendingTransferOrg = organizations.find(
+    (d) => d.id === pendingTransferOrgId,
+  );
   const hasBrokers = (selectedOrg?.broker_count ?? 0) > 0;
-  const usesBrokerOwners = pendingOwners.some(
-    (owner) => owner.owner_type === OWNER_TYPE.USER,
-  );
-  const ownershipTotal = pendingOwners.reduce(
-    (sum, owner) => sum + (parseFloat(owner.percentage) || 0),
-    0,
-  );
-  const ownershipIsValid =
-    pendingOwners.length > 0 &&
-    pendingOwners.every((owner) => owner.owner_id) &&
-    Math.abs(ownershipTotal - 100) < 0.01;
+  // ProSell admins see the org selector; org required in CREATE to avoid orphan products
+  const isOrgSelectorVisible = organizations.length > 0;
+  const isOrgRequired = mode === "create" && isOrgSelectorVisible;
 
-  const updatePendingOwners = (owners: OwnerEntry[]) => {
-    setPendingOwners(owners);
-    setOwnershipDirty(true);
+  const updatePendingBrokers = (newBrokers: BrokerEntry[]) => {
+    setPendingBrokers(newBrokers);
+    setBrokersDirty(true);
   };
 
-  const handleOrganizationChange = (organizationId: string) => {
+  // Apply org change (called directly in CREATE, or after dialog confirm in EDIT)
+  const applyOrganizationChange = (organizationId: string) => {
     setSelectedOrgId(organizationId);
-    updatePendingOwners([
-      {
-        owner_id: organizationId,
-        owner_type: OWNER_TYPE.ORGANIZATION,
-        percentage: "100",
-      },
-    ]);
+    setOrgDirty(true);
+    // Reset broker edits — they belong to the previous org
+    setPendingBrokers([]);
+    setBrokersDirty(false);
+  };
+
+  // In EDIT mode, org changes require confirmation because brokers get deleted
+  const handleOrganizationChange = (organizationId: string) => {
+    if (mode === "edit" && selectedOrgId && organizationId !== selectedOrgId) {
+      // Show confirmation dialog before applying
+      setPendingTransferOrgId(organizationId);
+      setTransferDialogOpen(true);
+    } else {
+      // CREATE mode or first selection — apply directly
+      applyOrganizationChange(organizationId);
+    }
+  };
+
+  const confirmTransfer = () => {
+    if (pendingTransferOrgId) {
+      applyOrganizationChange(pendingTransferOrgId);
+    }
+    setPendingTransferOrgId(null);
+    setTransferDialogOpen(false);
+  };
+
+  const cancelTransfer = () => {
+    setPendingTransferOrgId(null);
+    setTransferDialogOpen(false);
   };
 
   // Hooks
@@ -239,23 +279,35 @@ export function UnifiedProductForm({
   }, [mode, existingProduct, reset]);
 
   useEffect(() => {
-    if (mode !== "edit" || !existingOwnership || ownershipInitialized) {
+    if (mode !== "edit") {
+      initializedOwnershipProductId.current = null;
       return;
     }
 
-    const owners = existingOwnership.owners.map((owner) => ({
-      owner_id: owner.owner_id,
-      owner_type: owner.owner_type,
-      percentage: owner.percentage,
-    }));
-    const organizationOwner = owners.find(
-      (owner) => owner.owner_type === OWNER_TYPE.ORGANIZATION,
-    );
+    if (
+      !productId ||
+      !existingProduct ||
+      !existingOwnership ||
+      initializedOwnershipProductId.current === productId
+    ) {
+      return;
+    }
 
-    setPendingOwners(owners);
-    setSelectedOrgId(organizationOwner?.owner_id ?? null);
-    setOwnershipInitialized(true);
-  }, [mode, existingOwnership, ownershipInitialized]);
+    // Existing brokers only (org rows are no longer stored separately).
+    const existingBrokers = existingOwnership.owners
+      .filter((owner) => owner.owner_type === "user")
+      .map((owner) => ({
+        id: crypto.randomUUID(),
+        owner_id: owner.owner_id,
+        percentage: owner.percentage,
+      }));
+
+    setPendingBrokers(existingBrokers);
+    setSelectedOrgId(existingProduct.organization_id);
+    setOrgDirty(false);
+    setBrokersDirty(false);
+    initializedOwnershipProductId.current = productId;
+  }, [mode, productId, existingProduct, existingOwnership]);
 
   // Clear store when productId changes or on create mode
   useEffect(() => {
@@ -327,8 +379,22 @@ export function UnifiedProductForm({
     isUploadingImages ||
     createProduct.isPending ||
     updateProduct.isPending ||
-    setOwnership.isPending;
-  const isSubmitDisabled = isDisabled || (ownershipDirty && !ownershipIsValid);
+    setBrokersApi.isPending;
+  // The button only blocks save when broker edits leave the distribution invalid.
+  // The org change is fine on its own — backend clears brokers but the user can
+  // re-add them if needed.
+  const brokersTotal = pendingBrokers.reduce(
+    (sum, broker) => sum + (parseFloat(broker.percentage) || 0),
+    0,
+  );
+  const brokersIsValid =
+    pendingBrokers.length === 0 ||
+    (pendingBrokers.every((broker) => broker.owner_id) &&
+      Math.abs(brokersTotal - 100) < 0.01);
+  // Block submit if org required but not selected, or brokers invalid
+  const orgMissing = isOrgRequired && !selectedOrgId;
+  const isSubmitDisabled =
+    isDisabled || orgMissing || (brokersDirty && !brokersIsValid);
 
   // Submit handler
   const handleImagesUpload = async () => {
@@ -368,21 +434,20 @@ export function UnifiedProductForm({
     };
   };
 
-  const persistOwnership = async (targetProductId: string) => {
-    if (pendingOwners.length === 0) return;
+  const persistBrokers = async (targetProductId: string) => {
+    if (pendingBrokers.length === 0) return;
 
-    const total = pendingOwners.reduce(
-      (sum, o) => sum + (parseFloat(o.percentage) || 0),
+    const total = pendingBrokers.reduce(
+      (sum, b) => sum + (parseFloat(b.percentage) || 0),
       0,
     );
     if (Math.abs(total - 100) >= 0.01) return;
 
-    await setOwnership.mutateAsync({
+    await setBrokersApi.mutateAsync({
       productId: targetProductId,
-      owners: pendingOwners.map((o) => ({
-        owner_id: o.owner_id,
-        owner_type: o.owner_type,
-        percentage: parseFloat(o.percentage).toFixed(2),
+      owners: pendingBrokers.map((b) => ({
+        owner_id: b.owner_id,
+        percentage: parseFloat(b.percentage).toFixed(2),
       })),
     });
   };
@@ -400,7 +465,9 @@ export function UnifiedProductForm({
       ...(selectedOrgId ? { organization_id: selectedOrgId } : {}),
     });
 
-    await persistOwnership(newProduct.id);
+    if (brokersDirty) {
+      await persistBrokers(newProduct.id);
+    }
     clearAll();
     // ponytail: toast handled by hook (createProduct.onSuccess)
 
@@ -416,14 +483,30 @@ export function UnifiedProductForm({
     if (!productId) return;
 
     const payload = buildProductPayload(data, imageKeys, coverKey);
-    await updateProduct.mutateAsync({
-      productId,
-      data: payload,
-    });
 
-    if (ownershipDirty) {
-      await persistOwnership(productId);
-      setOwnershipDirty(false);
+    // Tenant cascade: if the org changed, send it via PATCH and let the
+    // backend clear broker shares (they belong to the previous org).
+    // We skip the brokers endpoint this round because the new org starts
+    // with no broker splits — the user can add them in a follow-up edit.
+    if (orgDirty) {
+      await updateProduct.mutateAsync({
+        productId,
+        data: {
+          ...payload,
+          organization_id: selectedOrgId ?? undefined,
+        },
+      });
+      setOrgDirty(false);
+    } else {
+      await updateProduct.mutateAsync({
+        productId,
+        data: payload,
+      });
+
+      if (brokersDirty) {
+        await persistBrokers(productId);
+        setBrokersDirty(false);
+      }
     }
 
     // ponytail: toast handled by hook (updateProduct.onSuccess)
@@ -576,25 +659,41 @@ export function UnifiedProductForm({
         />
       </section>
 
-      {/* Ownership (only for admins who can see organizations) */}
-      {organizations.length > 0 && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold">Propietarios</h2>
-          <p className="text-sm text-muted-foreground">
-            Opcional. Seleccioná una organización. Si tiene brokers, podés
-            asignar porcentajes. Si no, la organización es propietaria al 100%.
-          </p>
-
-          {/* Step 1: Select Organization */}
+      {/* Tenant cascade — two distinct blocks:
+          (1) Organización dueña — visible only for ProSell (admins with
+              ORG_ADMIN_VIEW_ALL). Changes here persist via PATCH on the
+              product's organization_id; the backend clears broker shares.
+          (2) Brokers — visible whenever the selected organization has
+              brokers. Changes here persist via PUT /brokers. */}
+      {isOrgSelectorVisible && (
+        <section
+          aria-labelledby="ownership-heading"
+          className="flex flex-col gap-4"
+        >
+          <div>
+            <h2 id="ownership-heading" className="text-lg font-semibold">
+              {mode === "create" ? "Propiedad" : "Transferir producto"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {mode === "create"
+                ? "Definí quién va a ser dueño de este producto."
+                : "Cambiá la organización propietaria."}
+            </p>
+          </div>
           <div>
             <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-              Organización
+              Organización dueña{" "}
+              {isOrgRequired && <span className="text-destructive">*</span>}
             </Label>
             <Select
               value={selectedOrgId ?? undefined}
               onValueChange={handleOrganizationChange}
+              aria-required={isOrgRequired}
+              aria-invalid={orgMissing}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className={cn("w-full", orgMissing && "border-destructive")}
+              >
                 {selectedOrgId ? (
                   <span className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
@@ -607,7 +706,7 @@ export function UnifiedProductForm({
                   </span>
                 ) : (
                   <span className="text-muted-foreground">
-                    Seleccionar organización
+                    Elegí una organización
                   </span>
                 )}
               </SelectTrigger>
@@ -631,223 +730,266 @@ export function UnifiedProductForm({
                 ))}
               </SelectContent>
             </Select>
+            {orgMissing && (
+              <p className="mt-1.5 text-sm text-destructive" role="alert">
+                Tenés que elegir una organización antes de crear el producto.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Transfer confirmation dialog (EDIT mode only) */}
+      <AlertDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Transferir producto
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Vas a transferir este producto de{" "}
+                  <strong>{selectedOrg?.name}</strong> a{" "}
+                  <strong>{pendingTransferOrg?.name}</strong>.
+                </p>
+                {pendingBrokers.length > 0 && (
+                  <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                    <p className="font-medium text-destructive">
+                      Se van a borrar {pendingBrokers.length} broker
+                      {pendingBrokers.length > 1 ? "s" : ""} asignado
+                      {pendingBrokers.length > 1 ? "s" : ""}:
+                    </p>
+                    <ul className="mt-2 list-inside list-disc text-sm">
+                      {pendingBrokers.map((b) => {
+                        const brokerInfo = brokers.find(
+                          (br) => br.id === b.owner_id,
+                        );
+                        return (
+                          <li key={b.owner_id}>
+                            {brokerInfo?.name ?? b.owner_id} ({b.percentage}%)
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Después de transferir, podés asignar brokers de la nueva
+                  organización.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelTransfer}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmTransfer}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Sí, transferir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Brokers — visible for both ProSell and the owning org. The brokers
+          list comes from useOrganizationBrokers(selectedOrgId). When the
+          org is changed by ProSell above, this section resets because the
+          new org's brokers are loaded fresh. Visual hierarchy: indented
+          with border-l to show brokers belong to the selected organization. */}
+      {selectedOrgId && hasBrokers && (
+        <section
+          aria-labelledby="brokers-heading"
+          className="ml-4 flex flex-col gap-4 border-l-4 border-l-primary/20 pl-4"
+        >
+          <div>
+            <h2 id="brokers-heading" className="text-lg font-semibold">
+              Distribución de comisiones
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Asigná porcentajes a los brokers de {selectedOrg?.name}. La suma
+              debe ser 100%.
+            </p>
           </div>
 
-          {/* Step 2: Show owners based on org type */}
-          {selectedOrgId && (
+          {isLoadingBrokers ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Cargando brokers...
+            </div>
+          ) : pendingBrokers.length === 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                updatePendingBrokers([
+                  { id: crypto.randomUUID(), owner_id: "", percentage: "100" },
+                ])
+              }
+              disabled={isDisabled}
+              className="w-fit"
+            >
+              <User className="mr-1 h-4 w-4" />
+              Distribuir entre brokers
+            </Button>
+          ) : (
             <>
-              {hasBrokers && usesBrokerOwners ? (
-                // Org has brokers — user selects broker owners
-                <>
-                  {isLoadingBrokers ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Cargando brokers...
-                    </div>
-                  ) : (
-                    <>
-                      {pendingOwners.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Seleccioná los brokers propietarios del producto.
-                        </p>
-                      ) : (
-                        <div className="space-y-3">
-                          {pendingOwners.map((owner, index) => {
-                            const selectedBrokerIds = new Set(
-                              pendingOwners
-                                .filter((o) => o.owner_type === "user")
-                                .map((o) => o.owner_id),
-                            );
-                            return (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2"
+              <div className="space-y-3">
+                {pendingBrokers.map((broker, index) => {
+                  const selectedBrokerIds = new Set(
+                    pendingBrokers
+                      .filter((b) => b.owner_id)
+                      .map((b) => b.owner_id),
+                  );
+                  return (
+                    <div key={broker.id} className="flex items-center gap-2">
+                      <Select
+                        value={broker.owner_id || undefined}
+                        onValueChange={(v) => {
+                          const updated = [...pendingBrokers];
+                          updated[index] = {
+                            ...updated[index],
+                            owner_id: v,
+                          };
+                          updatePendingBrokers(updated);
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          {broker.owner_id ? (
+                            <span className="flex items-center gap-2 truncate">
+                              <User className="h-4 w-4" />
+                              {brokers.find((b) => b.id === broker.owner_id)
+                                ?.name ?? broker.owner_id}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Seleccionar broker
+                            </span>
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brokers
+                            .filter(
+                              (b) =>
+                                b.id === broker.owner_id ||
+                                !selectedBrokerIds.has(b.id),
+                            )
+                            .map((brokerOption) => (
+                              <SelectItem
+                                key={brokerOption.id}
+                                value={brokerOption.id}
+                                textValue={brokerOption.name}
                               >
-                                <Select
-                                  value={owner.owner_id || undefined}
-                                  onValueChange={(v) => {
-                                    const updated = [...pendingOwners];
-                                    updated[index] = {
-                                      ...updated[index],
-                                      owner_id: v,
-                                    };
-                                    updatePendingOwners(updated);
-                                  }}
-                                >
-                                  <SelectTrigger className="flex-1">
-                                    {owner.owner_id ? (
-                                      <span className="flex items-center gap-2 truncate">
-                                        <User className="h-4 w-4" />
-                                        {brokers.find(
-                                          (b) => b.id === owner.owner_id,
-                                        )?.name ?? owner.owner_id}
-                                      </span>
-                                    ) : (
-                                      <span className="text-muted-foreground">
-                                        Seleccionar broker
-                                      </span>
-                                    )}
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {brokers
-                                      .filter(
-                                        (b) =>
-                                          b.id === owner.owner_id ||
-                                          !selectedBrokerIds.has(b.id),
-                                      )
-                                      .map((broker) => (
-                                        <SelectItem
-                                          key={broker.id}
-                                          value={broker.id}
-                                          textValue={broker.name}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <User className="h-4 w-4" />
-                                            {broker.name}
-                                            <span className="text-xs text-muted-foreground">
-                                              ({broker.email})
-                                            </span>
-                                            {broker.status === "pending" && (
-                                              <span className="text-[10px] text-orange-500">
-                                                (pendiente)
-                                              </span>
-                                            )}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-
-                                <div className="flex w-24 items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    value={owner.percentage}
-                                    onChange={(e) => {
-                                      const updated = [...pendingOwners];
-                                      updated[index] = {
-                                        ...updated[index],
-                                        percentage: e.target.value,
-                                      };
-                                      updatePendingOwners(updated);
-                                    }}
-                                    className="text-right"
-                                    disabled={isDisabled}
-                                  />
-                                  <span className="text-sm text-muted-foreground">
-                                    %
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4" />
+                                  {brokerOption.name}
+                                  <span className="text-xs text-muted-foreground">
+                                    ({brokerOption.email})
                                   </span>
+                                  {brokerOption.status === "pending" && (
+                                    <span className="text-[10px] text-orange-500">
+                                      (pendiente)
+                                    </span>
+                                  )}
                                 </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
 
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    updatePendingOwners(
-                                      pendingOwners.filter(
-                                        (_, i) => i !== index,
-                                      ),
-                                    )
-                                  }
-                                  className="h-8 w-8 text-destructive"
-                                  disabled={isDisabled}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            );
-                          })}
-
-                          {/* Total indicator */}
-                          {(() => {
-                            const total = pendingOwners.reduce(
-                              (sum, o) => sum + (parseFloat(o.percentage) || 0),
-                              0,
-                            );
-                            return (
-                              <p
-                                className={`text-sm ${Math.abs(total - 100) < 0.01 ? "text-green-600" : "text-destructive"}`}
-                              >
-                                Total: {total.toFixed(2)}%
-                                {Math.abs(total - 100) >= 0.01 &&
-                                  " (debe ser 100%)"}
-                              </p>
-                            );
-                          })()}
-                        </div>
-                      )}
+                      <div className="flex w-24 items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={broker.percentage}
+                          onChange={(e) => {
+                            const updated = [...pendingBrokers];
+                            updated[index] = {
+                              ...updated[index],
+                              percentage: e.target.value,
+                            };
+                            updatePendingBrokers(updated);
+                          }}
+                          className="text-right"
+                          disabled={isDisabled}
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
 
                       <Button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // ponytail: auto-fill remaining percentage to complete 100
-                          const used = pendingOwners.reduce(
-                            (sum, o) => sum + (parseFloat(o.percentage) || 0),
-                            0,
-                          );
-                          const remaining = Math.max(0, 100 - used);
-                          updatePendingOwners([
-                            ...pendingOwners,
-                            {
-                              owner_id: "",
-                              owner_type: "user",
-                              percentage: String(remaining),
-                            },
-                          ]);
-                        }}
-                        disabled={
-                          isDisabled || brokers.length === pendingOwners.length
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          updatePendingBrokers(
+                            pendingBrokers.filter((_, i) => i !== index),
+                          )
                         }
-                        className="w-fit"
+                        className="h-8 w-8 text-destructive"
+                        disabled={isDisabled}
                       >
-                        <Plus className="mr-1 h-4 w-4" />
-                        Agregar propietario
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    </>
+                    </div>
+                  );
+                })}
+
+                <p
+                  className={cn(
+                    "text-sm",
+                    Math.abs(brokersTotal - 100) < 0.01
+                      ? "text-green-600"
+                      : "text-destructive",
                   )}
-                </>
-              ) : (
-                // Organization ownership is the default, even when it has brokers.
-                <div className="flex items-center gap-2 rounded-md bg-muted/50 p-3 text-sm">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    <strong>{selectedOrg?.name}</strong> es el propietario
-                    (100%)
-                  </span>
-                </div>
-              )}
-              {hasBrokers && !usesBrokerOwners && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    updatePendingOwners([
-                      {
-                        owner_id: "",
-                        owner_type: OWNER_TYPE.USER,
-                        percentage: "100",
-                      },
-                    ])
-                  }
-                  disabled={isDisabled}
-                  className="w-fit"
                 >
-                  <User className="mr-1 h-4 w-4" />
-                  Distribuir entre brokers
-                </Button>
-              )}
+                  Total: {brokersTotal.toFixed(2)}%
+                  {Math.abs(brokersTotal - 100) >= 0.01 && " (debe ser 100%)"}
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const used = pendingBrokers.reduce(
+                    (sum, b) => sum + (parseFloat(b.percentage) || 0),
+                    0,
+                  );
+                  const remaining = Math.max(0, 100 - used);
+                  updatePendingBrokers([
+                    ...pendingBrokers,
+                    {
+                      id: crypto.randomUUID(),
+                      owner_id: "",
+                      percentage: String(remaining),
+                    },
+                  ]);
+                }}
+                disabled={
+                  isDisabled || brokers.length === pendingBrokers.length
+                }
+                className="w-fit"
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Agregar broker
+              </Button>
             </>
           )}
-          {ownershipDirty && !ownershipIsValid && (
+          {brokersDirty && !brokersIsValid && (
             <p className="text-sm text-destructive">
-              La distribución de propietarios debe sumar 100% y no puede tener
-              propietarios vacíos.
+              La distribución de brokers debe sumar 100% y no puede tener
+              brokers vacíos.
             </p>
           )}
         </section>

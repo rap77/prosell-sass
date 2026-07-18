@@ -84,7 +84,6 @@ describe("Products API Client - createProductWithVehicle", () => {
     const requestData = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
@@ -145,7 +144,6 @@ describe("Products API Client - createProductWithVehicle", () => {
     const requestData = {
       title: "2017 Chevrolet Equinox",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
@@ -203,7 +201,6 @@ describe("Products API Client - createProductWithVehicle", () => {
     const result = await createProductWithVehicle({
       title: "Vehicle Title",
       price_cents: 10000_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-456",
       attributes: {
@@ -233,7 +230,6 @@ describe("Products API Client - createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test Vehicle",
         price_cents: 1000_00,
-        tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
@@ -255,7 +251,6 @@ describe("Products API Client - createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test Vehicle",
         price_cents: 1000_00,
-        tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
@@ -276,7 +271,6 @@ describe("Products API Client - createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test Vehicle",
         price_cents: 1000_00,
-        tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
@@ -335,7 +329,6 @@ describe("Products API Client - useCreateProduct", () => {
     const requestData = {
       title: "2017 Toyota Camry",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
@@ -389,7 +382,6 @@ describe("Products API Client - useCreateProduct", () => {
     const requestData = {
       title: "Vehicle",
       price_cents: 1000_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
@@ -441,7 +433,6 @@ describe("Products API Client - useCreateProduct", () => {
       await result.current.mutateAsync({
         title: "Vehicle",
         price_cents: 1000_00,
-        tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
@@ -471,7 +462,6 @@ describe("Products API Client - useCreateProduct", () => {
         await result.current.mutateAsync({
           title: "Vehicle",
           price_cents: 1000_00,
-          tenant_id: "tenant-1",
           organization_id: "org-1",
           category_id: "cat-123",
           attributes: {
@@ -502,7 +492,6 @@ describe("Products API Client - useCreateProduct", () => {
     result.current.mutate({
       title: "Vehicle",
       price_cents: 1000_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
@@ -560,7 +549,6 @@ describe("Products API Client - useCreateProduct", () => {
         await result.current.mutateAsync({
           title: "Vehicle",
           price_cents: 1000_00,
-          tenant_id: "tenant-1",
           organization_id: "org-1",
           category_id: "cat-123",
           attributes: {

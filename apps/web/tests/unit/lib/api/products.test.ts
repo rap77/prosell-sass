@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   useCreateProduct,
   createProductWithVehicle,
-  useSetProductOwnership,
+  useSetProductBrokers,
 } from "@/lib/api/products";
 import type { CreateProductRequest, Product } from "@/types/product";
 
@@ -56,8 +56,8 @@ function createWrapper() {
   return Wrapper;
 }
 
-describe("useSetProductOwnership", () => {
-  it("invalidates product lists after ownership changes", async () => {
+describe("useSetProductBrokers", () => {
+  it("PUTs broker shares to /brokers and invalidates product lists", async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -71,8 +71,8 @@ describe("useSetProductOwnership", () => {
         product_id: "product-1",
         owners: [
           {
-            owner_id: "organization-1",
-            owner_type: "organization",
+            owner_id: "broker-1",
+            owner_type: "user",
             percentage: "100.00",
           },
         ],
@@ -87,23 +87,27 @@ describe("useSetProductOwnership", () => {
       );
     }
 
-    const { result } = renderHook(() => useSetProductOwnership(), {
+    const { result } = renderHook(() => useSetProductBrokers(), {
       wrapper: Wrapper,
     });
 
     await act(async () => {
       await result.current.mutateAsync({
         productId: "product-1",
-        owners: [
-          {
-            owner_id: "organization-1",
-            owner_type: "organization",
-            percentage: "100.00",
-          },
-        ],
+        owners: [{ owner_id: "broker-1", percentage: "100.00" }],
       });
     });
 
+    // Tenant cascade: brokers endpoint is /brokers (not /ownership) and
+    // sends only user shares — no owner_type field needed.
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/products/product-1/brokers",
+      expect.objectContaining({ method: "PUT" }),
+    );
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.owners).toEqual([
+      { owner_id: "broker-1", percentage: "100.00" },
+    ]);
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["products"],
     });
@@ -144,7 +148,6 @@ describe("createProductWithVehicle", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       currency: "USD",
@@ -211,8 +214,6 @@ describe("createProductWithVehicle", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
-      organization_id: "org-1",
       category_id: "cat-1",
       currency: "USD",
       condition: "used",
@@ -265,7 +266,6 @@ describe("createProductWithVehicle", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       currency: "USD",
@@ -295,7 +295,6 @@ describe("createProductWithVehicle", () => {
     expect(requestBody).toEqual({
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       currency: "USD",
@@ -341,7 +340,6 @@ describe("createProductWithVehicle", () => {
     const result = await createProductWithVehicle({
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       currency: "USD",
@@ -378,7 +376,6 @@ describe("createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test",
         price_cents: 1000_00,
-        tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-1",
         attributes: {
@@ -405,7 +402,6 @@ describe("createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test",
         price_cents: 1000_00,
-        tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-1",
         attributes: { category: "generic" as const },
@@ -472,7 +468,6 @@ describe("useCreateProduct", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       attributes: {
@@ -514,7 +509,6 @@ describe("useCreateProduct", () => {
     const requestData: CreateProductRequest = {
       title: "Test",
       price_cents: 1000_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       attributes: { category: "generic" as const },
@@ -543,7 +537,6 @@ describe("useCreateProduct", () => {
     const requestData: CreateProductRequest = {
       title: "Test",
       price_cents: 1000_00,
-      tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
       attributes: { category: "generic" as const },

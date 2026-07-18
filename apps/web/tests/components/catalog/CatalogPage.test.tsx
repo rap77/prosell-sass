@@ -129,9 +129,11 @@ describe("CatalogPage — dynamic filters", () => {
         id: "product-1",
         tenant_id: "org-1",
         organization_id: "org-1",
-        owner_org_id: null,
-        owner_org_code: null,
-        owner_org_color: null,
+        // ponytail: org_code/org_color come from products.organization_id
+        // JOIN organizations (tenant cascade). When the API returns null
+        // (no org found), the card should NOT fall back to the viewer.
+        org_code: null,
+        org_color: null,
         category_id: "c1",
         title: "Product without owner",
         price_cents: 100,
