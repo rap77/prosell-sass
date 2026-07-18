@@ -72,7 +72,7 @@ from prosell.infrastructure.api.dependencies import (
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
-from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
+from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -232,14 +232,25 @@ async def create_product(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    # ponytail: Admins with ORG_ADMIN_VIEW_ALL can create products for other orgs
-    # Regular users always create in their own org
+    # ponytail: Admins with ORG_ADMIN_VIEW_ALL can create products for other
+    # orgs; regular users always create in their own org. The chosen
+    # organization_id is validated against the database below to prevent
+    # IDOR — the client claim is only honored if the org actually exists.
     is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
-    target_org_id = (
-        request.organization_id
-        if is_org_admin and request.organization_id is not None
-        else current_user.tenant_id
-    )
+    if is_org_admin and request.organization_id is not None:
+        # Defense in depth: never trust an org id from the client without
+        # verifying it exists. tenant_id and organization_id share the same
+        # value (per the model documented in admin_organizations_router.list_organization_products).
+        org_repo = SqlAlchemyOrganizationRepository(db)
+        target_org = await org_repo.get_by_tenant_id(request.organization_id)
+        if target_org is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Organization not found: {request.organization_id}",
+            )
+        target_org_id = target_org.id
+    else:
+        target_org_id = current_user.tenant_id
 
     request = request.model_copy(
         update={
@@ -534,38 +545,32 @@ async def list_products(
         limit=limit,
     )
 
-    # ponytail: batch-fetch ownership info for all products in one query
-    # JOIN with organizations to get code/color for the owner org
+    # ponytail: batch-fetch the owning organization's code/color in a single
+    # query. products.organization_id IS the tenant that owns the product,
+    # so we JOIN directly against organizations — no product_ownership
+    # hop and no owner_type discriminator (the table now only stores
+    # broker (user) shares; see PROP-001-tenant-cascade).
     if result.products:
         product_ids = [p.id for p in result.products]
-        ownership_query = (
+        owner_query = (
             select(
-                ProductOwnershipModel.product_id,
-                OrganizationModel.id.label("org_id"),
+                ProductModel.id.label("product_id"),
                 OrganizationModel.code,
                 OrganizationModel.color,
             )
-            .join(
-                OrganizationModel,
-                ProductOwnershipModel.owner_id == OrganizationModel.id,
-            )
-            .where(
-                ProductOwnershipModel.product_id.in_(product_ids),
-                ProductOwnershipModel.owner_type == "organization",
-            )
+            .join(OrganizationModel, ProductModel.organization_id == OrganizationModel.id)
+            .where(ProductModel.id.in_(product_ids))
         )
-        ownership_rows = await db.execute(ownership_query)
-        owner_map: dict[UUID, tuple[UUID, str | None, str | None]] = {
-            row.product_id: (row.org_id, row.code, row.color) for row in ownership_rows
+        owner_rows = await db.execute(owner_query)
+        owner_map: dict[UUID, tuple[str | None, str | None]] = {
+            row.product_id: (row.code, row.color) for row in owner_rows
         }
 
-        # Enrich ProductResponse with owner info
         enriched = [
             p.model_copy(
                 update={
-                    "owner_org_id": owner_map.get(p.id, (None, None, None))[0],
-                    "owner_org_code": owner_map.get(p.id, (None, None, None))[1],
-                    "owner_org_color": owner_map.get(p.id, (None, None, None))[2],
+                    "org_code": owner_map.get(p.id, (None, None))[0],
+                    "org_color": owner_map.get(p.id, (None, None))[1],
                 }
             )
             for p in result.products
@@ -838,17 +843,35 @@ async def update_product(
             detail="User lacks permission to publish products to the marketplace",
         )
 
+    # Tenant cascade: only ProSell can transfer a product to another
+    # organization. Reject 403 at the router boundary before the use case
+    # even sees the request. The use case still re-checks as defense in
+    # depth so a non-admin caller can't reach it via a different code path.
+    if request.organization_id is not None and not is_org_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Changing organization_id requires ORG_ADMIN_VIEW_ALL",
+        )
+
     # All field application, the cover cross-field checks, and server-side
     # title recomposition live in the use case (it needs both the product
     # AND the category loaded — see UpdateProductUseCase).
     category_repo = SqlAlchemyCategoryRepository(db)
-    use_case = UpdateProductUseCase(product_repo, category_repo)
+    ownership_repo = SqlAlchemyProductOwnershipRepository(db)
+    use_case = UpdateProductUseCase(product_repo, category_repo, ownership_repo)
 
     try:
         # ponytail: pass product's tenant, not caller's
-        return await use_case.execute(product_id, product.tenant_id, request)
+        return await use_case.execute(
+            product_id,
+            product.tenant_id,
+            request,
+            is_org_admin=is_org_admin,
+        )
     except ProductNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
@@ -1240,12 +1263,32 @@ async def bulk_upload_with_images(
 
 
 # =============================================================================
-# PRODUCT OWNERSHIP - Multi-owner support
+# PRODUCT BROKERS — tenant cascade split
+# =============================================================================
+# After the tenant cascade (PROP-001), product_ownership only stores broker
+# shares (owner_type='user'). The product's owning organization is the
+# products.organization_id column. The "ownership" endpoint was renamed to
+# "brokers" to make the split explicit; the old endpoint stays as a
+# deprecation alias that rejects organization shares explicitly.
 # =============================================================================
 
 
+class BrokerShareRequest(BaseModel):
+    """Single broker share in request. Always owner_type='user'."""
+
+    owner_id: UUID
+    percentage: str  # Decimal as string for precision
+    owner_type: Literal["user"] = "user"
+
+
+class SetBrokersRequest(BaseModel):
+    """Request to set broker shares for a product."""
+
+    owners: list[BrokerShareRequest]
+
+
 class OwnerShareRequest(BaseModel):
-    """Single owner share in request."""
+    """Deprecated. Use BrokerShareRequest. Kept for the legacy endpoint."""
 
     owner_id: UUID
     owner_type: Literal["organization", "user"] = "organization"
@@ -1253,13 +1296,29 @@ class OwnerShareRequest(BaseModel):
 
 
 class SetOwnershipRequest(BaseModel):
-    """Request to set product ownership."""
+    """Deprecated. Use SetBrokersRequest. Kept for the legacy endpoint."""
 
     owners: list[OwnerShareRequest]
 
 
+class BrokerShareResponse(BaseModel):
+    """Single broker share in response."""
+
+    owner_id: UUID
+    owner_type: Literal["user"] = "user"
+    percentage: str
+    created_at: datetime
+
+
+class BrokersResponse(BaseModel):
+    """Response with broker shares for a product."""
+
+    product_id: UUID
+    owners: list[BrokerShareResponse]
+
+
 class OwnerShareResponse(BaseModel):
-    """Single owner share in response."""
+    """Deprecated. Use BrokerShareResponse."""
 
     owner_id: UUID
     owner_type: Literal["organization", "user"]
@@ -1268,36 +1327,34 @@ class OwnerShareResponse(BaseModel):
 
 
 class OwnershipResponse(BaseModel):
-    """Response with product ownership."""
+    """Deprecated. Use BrokersResponse."""
 
     product_id: UUID
     owners: list[OwnerShareResponse]
 
 
 @router.put(
-    "/{product_id}/ownership",
-    response_model=OwnershipResponse,
-    summary="Set product ownership",
+    "/{product_id}/brokers",
+    response_model=BrokersResponse,
+    summary="Set product broker shares",
 )
-async def set_product_ownership(
+async def set_product_brokers(
     product_id: UUID,
-    request: SetOwnershipRequest,
+    request: SetBrokersRequest,
     current_user: CurrentUser,
     db: DbSession,
-) -> OwnershipResponse:
-    """Set ownership for a product, replacing any existing ownership.
+) -> BrokersResponse:
+    """Set broker shares for a product, replacing any existing broker rows.
 
-    Percentages must sum to 100%.
-    Admins with ORG_ADMIN_VIEW_ALL can set ownership for any organization.
+    Percentages must sum to 100%. Admins with ORG_ADMIN_VIEW_ALL can set
+    brokers for any organization. Product-level ownership is governed by
+    products.organization_id and changed via PATCH /products/{id}.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=403, detail="No tenant context")
 
-    # ponytail: admins can set ownership for products from any org
     is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     product_repo = SqlAlchemyProductRepository(db)
-
-    # Fetch product first to get its tenant_id
     product = await product_repo.get_by_id(
         product_id, None if is_org_admin else current_user.tenant_id
     )
@@ -1305,7 +1362,6 @@ async def set_product_ownership(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     ownership_repo = SqlAlchemyProductOwnershipRepository(db)
-
     use_case = SetProductOwnershipUseCase(
         ownership_repository=ownership_repo,
         product_repository=product_repo,
@@ -1314,7 +1370,6 @@ async def set_product_ownership(
     from decimal import Decimal
 
     try:
-        # ponytail: use product's tenant, not caller's
         await use_case.execute(
             product_id=product_id,
             tenant_id=product.tenant_id,
@@ -1322,7 +1377,7 @@ async def set_product_ownership(
                 OwnerShare(
                     owner_id=o.owner_id,
                     percentage=Decimal(o.percentage),
-                    owner_type=o.owner_type,
+                    owner_type="user",  # ponytail: brokers endpoint is user-only by schema
                 )
                 for o in request.owners
             ],
@@ -1330,7 +1385,84 @@ async def set_product_ownership(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-    # Return current ownership
+    owners = await ownership_repo.list_owners(product_id)
+    return BrokersResponse(
+        product_id=product_id,
+        owners=[
+            BrokerShareResponse(
+                owner_id=o.owner_id,
+                owner_type="user",
+                percentage=str(o.percentage),
+                created_at=o.created_at,
+            )
+            for o in owners
+        ],
+    )
+
+
+@router.put(
+    "/{product_id}/ownership",
+    response_model=OwnershipResponse,
+    summary="Set product ownership (deprecated, use /brokers)",
+    deprecated=True,
+)
+async def set_product_ownership(
+    product_id: UUID,
+    request: SetOwnershipRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> OwnershipResponse:
+    """Deprecated alias for PUT /products/{id}/brokers.
+
+    Accepts only owner_type='user' rows. Organization-level ownership has
+    moved to PATCH /products/{id} with the `organization_id` field. This
+    endpoint is kept temporarily so external scripts keep working; it
+    will be removed once the /brokers path is fully adopted.
+    """
+    if any(o.owner_type != "user" for o in request.owners):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Setting organization ownership here is no longer supported. "
+                "Use PATCH /products/{id} with the `organization_id` field, "
+                "and POST /products/{id}/brokers for broker shares."
+            ),
+        )
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=403, detail="No tenant context")
+
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    product_repo = SqlAlchemyProductRepository(db)
+    product = await product_repo.get_by_id(
+        product_id, None if is_org_admin else current_user.tenant_id
+    )
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    ownership_repo = SqlAlchemyProductOwnershipRepository(db)
+    use_case = SetProductOwnershipUseCase(
+        ownership_repository=ownership_repo,
+        product_repository=product_repo,
+    )
+
+    from decimal import Decimal
+
+    try:
+        await use_case.execute(
+            product_id=product_id,
+            tenant_id=product.tenant_id,
+            owners=[
+                OwnerShare(
+                    owner_id=o.owner_id,
+                    percentage=Decimal(o.percentage),
+                    owner_type="user",
+                )
+                for o in request.owners
+            ],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
     owners = await ownership_repo.list_owners(product_id)
     return OwnershipResponse(
         product_id=product_id,

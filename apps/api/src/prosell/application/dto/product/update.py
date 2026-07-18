@@ -34,6 +34,11 @@ class UpdateProductRequest(BaseModel):
     # the DTO accepts the field unconditionally; the permission check
     # depends on the auth context, not the request shape.
     published_to_marketplace: bool | None = None
+    # ponytail: tenant cascade — ProSell transfers a product to another
+    # organization by sending a new organization_id. The router enforces
+    # ORG_ADMIN_VIEW_ALL; the use case clears broker shares on change
+    # because they belong to the previous organization, not the product.
+    organization_id: UUID | None = None
 
     # Reuse the format validator from create.py. None means
     # "do not change this field" (PATCH semantics); an empty list means

@@ -713,8 +713,8 @@ export default function CatalogPage() {
                             productAttributes={vm.productAttributes}
                             verticalSlug={vm.verticalSlug}
                             imageUrl={vm.imageUrl}
-                            orgCode={vm.product.owner_org_code}
-                            orgColor={vm.product.owner_org_color}
+                            orgCode={vm.product.org_code}
+                            orgColor={vm.product.org_color}
                             onView={() => handleView(vm.product.id)}
                             onEdit={() => handleEdit(vm.product.id)}
                             onDelete={() => handleDelete(vm.product.id)}
@@ -798,8 +798,8 @@ export default function CatalogPage() {
                                   productAttributes={vm.productAttributes}
                                   verticalSlug={vm.verticalSlug}
                                   imageUrl={vm.imageUrl}
-                                  orgCode={vm.product.owner_org_code}
-                                  orgColor={vm.product.owner_org_color}
+                                  orgCode={vm.product.org_code}
+                                  orgColor={vm.product.org_color}
                                   onView={() => handleView(vm.product.id)}
                                   onEdit={() => handleEdit(vm.product.id)}
                                   onDelete={() => handleDelete(vm.product.id)}

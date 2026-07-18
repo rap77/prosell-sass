@@ -12,6 +12,9 @@ from prosell.application.dto.product import ProductResponse
 from prosell.application.dto.product.update import UpdateProductRequest
 from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
+from prosell.domain.repositories.product_ownership_repository import (
+    AbstractProductOwnershipRepository,
+)
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.template_composer import resolve_title
 
@@ -23,15 +26,21 @@ class UpdateProductUseCase:
         self,
         product_repository: AbstractProductRepository,
         category_repository: AbstractCategoryRepository,
+        ownership_repository: AbstractProductOwnershipRepository | None = None,
     ) -> None:
         self.product_repository = product_repository
         self.category_repository = category_repository
+        # Optional: only required when callers may change organization_id
+        # (the tenant cascade in PROP-001). Other update paths leave it None.
+        self.ownership_repository = ownership_repository
 
     async def execute(
         self,
         product_id: UUID,
         tenant_id: UUID,
         request: UpdateProductRequest,
+        *,
+        is_org_admin: bool = False,
     ) -> ProductResponse:
         """
         Execute a product update.
@@ -41,12 +50,17 @@ class UpdateProductUseCase:
             tenant_id: Caller's tenant (isolation)
             request: UpdateProductRequest DTO (PATCH semantics — None means
                 "leave unchanged")
+            is_org_admin: True when the caller has ORG_ADMIN_VIEW_ALL. Only
+                such callers may change organization_id (tenant cascade).
 
         Returns:
             ProductResponse DTO
 
         Raises:
             ProductNotFoundError: If the product does not exist for this tenant
+            PermissionError: If a non-admin caller attempts to change
+                organization_id (defense in depth — the router should also
+                reject this with 403).
             ValueError: If cover_image_key is not in the product's image list
         """
         product = await self.product_repository.get_by_id(product_id, tenant_id)
@@ -68,6 +82,20 @@ class UpdateProductUseCase:
             product.attributes = request.attributes
         if request.image_urls is not None:
             product.image_urls = request.image_urls
+
+        # Tenant cascade: changing organization_id transfers ownership of the
+        # product to another organization. Only ProSell (ORG_ADMIN_VIEW_ALL)
+        # can do this. We additionally clear broker shares because brokers
+        # belong to the previous organization, not the product itself —
+        # leaving stale user rows would let Concesionario 1's brokers be
+        # listed against a product now owned by Concesionario 2.
+        org_changed = False
+        if request.organization_id is not None:
+            if not is_org_admin:
+                raise PermissionError("Changing organization_id requires ORG_ADMIN_VIEW_ALL")
+            if request.organization_id != product.organization_id:
+                product.organization_id = request.organization_id
+                org_changed = True
 
         # `cover_image_key` cross-field checks (the DTO cannot enforce these
         # against live product state — see UpdateProductRequest).
@@ -112,4 +140,12 @@ class UpdateProductUseCase:
             product.title = new_title
 
         product = await self.product_repository.update(product)
+
+        # Tenant cascade: drop broker shares when ownership transfers.
+        # Done after the product update so a failed update leaves brokers
+        # intact (no orphan data). The ownership repository is optional so
+        # callers that never change org can skip wiring it.
+        if org_changed and self.ownership_repository is not None:
+            await self.ownership_repository.clear_ownership(product_id)
+
         return ProductResponse.from_entity(product)

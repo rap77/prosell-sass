@@ -56,10 +56,10 @@ const productSchema = z.object({
   id: z.string(),
   tenant_id: z.string(),
   organization_id: z.string(),
-  // ponytail: owner org info — the ACTUAL owner (from product_ownership)
-  owner_org_id: z.string().nullish(),
-  owner_org_code: z.string().nullish(),
-  owner_org_color: z.string().nullish(),
+  // ponytail: org info derived from products.organization_id JOIN organizations.
+  // Single source of truth for who owns the product (tenant cascade).
+  org_code: z.string().nullish(),
+  org_color: z.string().nullish(),
   category_id: z.string(),
   title: z.string(),
   slug: z.string().nullish(),
@@ -245,10 +245,14 @@ export function useProducts(): UseQueryResult<Product[], Error> {
 
 /**
  * Update a product
+ *
+ * Payload accepts the fields of UpdateProductRequest, including
+ * `organization_id` (tenant cascade — ProSell can transfer a product to
+ * another organization; the backend clears broker shares on change).
  */
 export async function updateProduct(
   productId: string,
-  data: Partial<CreateProductRequest>,
+  data: Partial<CreateProductRequest> & { organization_id?: string | null },
 ): Promise<Product> {
   const res = await fetch(`/api/v1/products/${productId}`, {
     method: "PATCH",
@@ -356,12 +360,20 @@ export function useProduct(
 }
 
 /**
- * Mutation hook for updating products
+ * Mutation hook for updating products.
+ *
+ * `data.organization_id` (tenant cascade) is allowed only for callers
+ * with ORG_ADMIN_VIEW_ALL; the backend returns 403 otherwise.
  */
 export function useUpdateProduct(): UseMutationResult<
   Product,
   Error,
-  { productId: string; data: Partial<CreateProductRequest> },
+  {
+    productId: string;
+    data: Partial<CreateProductRequest> & {
+      organization_id?: string | null;
+    };
+  },
   unknown
 > {
   const queryClient = useQueryClient();
@@ -933,9 +945,14 @@ export function useProductOwnership(
 }
 
 /**
- * Set ownership for a product (replaces existing).
+ * Set broker shares for a product (replaces existing broker rows).
+ *
+ * Product-level ownership (the tenant) is changed via PATCH /products/{id}
+ * with the `organization_id` field; this hook is for broker (user) shares
+ * only — owner_type is forced to "user" because the /brokers endpoint
+ * rejects organization shares (use organization_id for that).
  */
-export function useSetProductOwnership() {
+export function useSetProductBrokers() {
   const queryClient = useQueryClient();
 
   return useMutation<
@@ -943,40 +960,30 @@ export function useSetProductOwnership() {
     Error,
     {
       productId: string;
-      owners: Array<{
-        owner_id: string;
-        owner_type?: "organization" | "user";
-        percentage: string;
-      }>;
+      owners: Array<{ owner_id: string; percentage: string }>;
     }
   >({
     mutationFn: async ({ productId, owners }) => {
-      // Include owner_type in payload
-      const payload = owners.map((o) => ({
-        owner_id: o.owner_id,
-        owner_type: o.owner_type ?? "organization",
-        percentage: o.percentage,
-      }));
-      const res = await fetch(`/api/v1/products/${productId}/ownership`, {
+      const res = await fetch(`/api/v1/products/${productId}/brokers`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owners: payload }),
+        body: JSON.stringify({ owners }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to set ownership"));
+        throw new Error(extractErrorMessage(body, "Failed to set brokers"));
       }
       return productOwnershipSchema.parse(await res.json());
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Ownership updated");
+      toast.success("Brokers updated");
     },
 
     onError: (err) => {
-      toast.error(err.message || "Failed to update ownership");
+      toast.error(err.message || "Failed to update brokers");
     },
   });
 }

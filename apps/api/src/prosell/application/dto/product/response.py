@@ -28,12 +28,13 @@ class ProductResponse(BaseModel):
     id: UUID
     tenant_id: UUID
     organization_id: UUID
-    org_code: str | None = None  # Organization abbreviation (for internal product cards)
-    # ponytail: owner org info — used by product cards to show the OWNER's tag,
-    # not the viewer's. Populated by router via JOIN with product_ownership.
-    owner_org_id: UUID | None = None
-    owner_org_code: str | None = None
-    owner_org_color: str | None = None
+    # ponytail: derived directly from products.organization_id JOIN organizations.
+    # Single source of truth for who owns the product — the tenant column.
+    # The old `owner_org_*` fields came from a JOIN with product_ownership
+    # type=organization that duplicated this intent; that table now only
+    # stores broker (user) shares.
+    org_code: str | None = None
+    org_color: str | None = None
     category_id: UUID
     title: str
     slug: str | None = None
@@ -82,9 +83,7 @@ class ProductResponse(BaseModel):
         product: Product,
         *,
         org_code: str | None = None,
-        owner_org_id: UUID | None = None,
-        owner_org_code: str | None = None,
-        owner_org_color: str | None = None,
+        org_color: str | None = None,
     ) -> "ProductResponse":
         """Build response from domain entity."""
         return cls(
@@ -92,9 +91,7 @@ class ProductResponse(BaseModel):
             tenant_id=product.tenant_id,
             organization_id=product.organization_id,
             org_code=org_code,
-            owner_org_id=owner_org_id,
-            owner_org_code=owner_org_code,
-            owner_org_color=owner_org_color,
+            org_color=org_color,
             category_id=product.category_id,
             title=product.title,
             slug=product.slug,

@@ -17,10 +17,8 @@ export interface Product {
   organization_id: string;
   /** Organization abbreviation (max 5 chars, uppercase) — shown on internal product cards */
   org_code?: string | null;
-  // ponytail: owner org info — the ACTUAL owner (from product_ownership), not the viewer
-  owner_org_id?: string | null;
-  owner_org_code?: string | null;
-  owner_org_color?: string | null;
+  /** Organization tag color (hex). Derived from products.organization_id JOIN organizations. */
+  org_color?: string | null;
   category_id: string;
 
   // Basic info
@@ -94,11 +92,12 @@ export interface Product {
 export interface CreateProductRequest {
   title: string;
   price_cents: number;
-  // tenant_id / organization_id are injected by the backend from the
-  // authenticated JWT context (see product_router.create_product) and
-  // must NOT be sent from the client (IDOR prevention). Optional here
-  // only so internal/test callers can set them; the prod flow omits them.
-  tenant_id?: string;
+  // ponytail: organization_id is a client field for admins only
+  // (ORG_ADMIN_VIEW_ALL). Regular users MUST omit it; the backend uses
+  // their current_user.tenant_id. Admins send it to create a product on
+  // behalf of a specific organization; the backend validates the org
+  // exists server-side (see product_router.create_product). tenant_id is
+  // never a client field — it is injected from the JWT.
   organization_id?: string;
   category_id: string;
   slug?: string;
