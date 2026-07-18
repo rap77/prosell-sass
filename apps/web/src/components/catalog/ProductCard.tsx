@@ -13,6 +13,15 @@ import { formatCardField } from "@/lib/utils/formatCardField";
 import { placeholderForVertical } from "@/lib/utils/placeholderForVertical";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 
+// ponytail: WCAG luminance check — returns true if color is light (needs dark text)
+function isLightColor(hex: string): boolean {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  return r * 0.299 + g * 0.587 + b * 0.114 > 150;
+}
+
 const MAX_META_CELLS = 4;
 
 export interface ProductCardProps {
@@ -133,7 +142,11 @@ export function ProductCard({
             when provided, else falls back to primary tokens. */}
         {orgCode && (
           <span
-            className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm"
+            className={`absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase shadow-sm ${
+              orgColor && isLightColor(orgColor)
+                ? "text-gray-900"
+                : "text-white"
+            }`}
             style={
               orgColor
                 ? { backgroundColor: orgColor }

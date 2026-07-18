@@ -113,14 +113,17 @@ export async function pollProcessingStatus(
  * Upload image directly to backend with optimization
  * Backend will: optimize image, upload to DO Spaces, return presigned URL + key
  * @param file - File to upload
+ * @param organizationId - Optional target org (admin cross-org product creation)
  * @returns `url` (presigned, expires in 1h — for browser preview only) and
  *          `key` (raw storage path — persist this in `product.image_urls`).
  */
 export async function uploadImageDirect(
   file: File,
+  organizationId?: string,
 ): Promise<{ url: string; key: string }> {
   const formData = new FormData();
   formData.append("file", file);
+  if (organizationId) formData.append("organization_id", organizationId);
 
   const res = await fetch("/api/v1/images/upload", {
     method: "POST",

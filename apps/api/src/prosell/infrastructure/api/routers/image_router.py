@@ -8,7 +8,7 @@ import logging
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
 from prosell.application.dto.image import (
@@ -18,8 +18,12 @@ from prosell.application.dto.image import (
 )
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
+from prosell.domain.repositories.organization_repository import (
+    AbstractOrganizationRepository,
+)
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
+    get_organization_repository,
     get_spaces_service,
 )
 from prosell.infrastructure.images.image_optimizer import ImageOptimizer
@@ -184,7 +188,7 @@ async def get_storage_optimizer() -> ImageOptimizer:
     return ImageOptimizer(output_format="WEBP")
 
 
-@router.post("/optimize", status_code=status.HTTP_200_OK)
+@router.post("/optimize", status_code=status.HTTP_200_OK, response_class=Response)
 async def optimize_image(
     file: Annotated[UploadFile, File()],
     optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
@@ -245,6 +249,8 @@ async def upload_image(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     optimizer: Annotated[ImageOptimizer, Depends(get_storage_optimizer)],
     spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
+    org_repository: Annotated[AbstractOrganizationRepository, Depends(get_organization_repository)],
+    organization_id: Annotated[UUID | None, Form()] = None,
 ) -> ImageUploadResponse:
     """
     Upload, optimize, and store vehicle/product image.
@@ -289,9 +295,29 @@ async def upload_image(
         ) from e
 
     # Generate file path
+    # ponytail: super_admin can upload to a different org's bucket (cross-org product
+    # creation). We validate the target org server-side (exists + can operate) so a
+    # compromised super_admin cannot push to arbitrary UUIDs — only to real, active orgs.
+    target_tenant = current_user.tenant_id
+    if organization_id and current_user.has_role("super_admin"):
+        target_org = await org_repository.get_by_tenant_id(organization_id)
+        if target_org is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Organization {organization_id} not found",
+            )
+        if not target_org.status.can_operate():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Organization {target_org.name} is "
+                    f"{target_org.status.value} and cannot receive uploads"
+                ),
+            )
+        target_tenant = organization_id
     file_id = str(uuid4())
     ext = ".webp"  # Storage path outputs WebP (see get_storage_optimizer)
-    file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
+    file_path = f"orgs/{target_tenant}/vehicles/{file_id}{ext}"
 
     logger.info(
         "Uploading optimized image: %s (original: %d bytes, optimized: %d bytes)",

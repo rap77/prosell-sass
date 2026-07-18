@@ -36,18 +36,20 @@ export function useImageUploadOptimized() {
    * Server handles: optimization + upload to DO Spaces.
    * @param file The file to upload
    * @param fileId Existing entry id from the upload store
+   * @param organizationId Optional target org (admin cross-org product creation)
    * @returns The signed `url` (preview, expires in 1h) AND the raw storage `key`
    *          (persist this in `product.image_urls`).
    */
   async function uploadImage(
     file: File,
     fileId: string,
+    organizationId?: string,
   ): Promise<UploadedImage> {
     try {
       updateEntry(fileId, { status: "uploading" });
 
       // Upload to backend (optimizes + uploads to cloud)
-      const { url, key } = await uploadImageDirect(file);
+      const { url, key } = await uploadImageDirect(file, organizationId);
 
       // Mark complete with the real storage key. The picker's tile
       // and the form's submit handler now both have a real key to
@@ -76,11 +78,12 @@ export function useImageUploadOptimized() {
    * (in input order), so the caller can build the final image
    * list (seeded + in-flight, by id) at submit time.
    *
+   * @param organizationId Optional target org (admin cross-org product creation)
    * @returns Array of `{id, key}` records, one per in-flight entry.
    */
-  async function uploadImages(): Promise<
-    Array<{ id: string; key: string; url: string }>
-  > {
+  async function uploadImages(
+    organizationId?: string,
+  ): Promise<Array<{ id: string; key: string; url: string }>> {
     const { images } = useUploadStore.getState();
     const inFlight = images.filter((e) => e.file);
     if (inFlight.length === 0) return [];
@@ -95,7 +98,7 @@ export function useImageUploadOptimized() {
         chunk.map(({ id, file }) => {
           if (!file)
             throw new Error(`In-flight entry ${id} is missing its file`);
-          return uploadImage(file, id);
+          return uploadImage(file, id, organizationId);
         }),
       );
       for (const r of chunkResults) {

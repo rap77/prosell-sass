@@ -409,10 +409,11 @@ export function UnifiedProductForm({
     isDisabled || orgMissing || (brokersDirty && !brokersIsValid);
 
   // Submit handler
+  // ponytail: pass selectedOrgId so images are uploaded to the target org's bucket
   const handleImagesUpload = async () => {
     setIsUploadingImages(true);
     try {
-      await uploadImages();
+      await uploadImages(selectedOrgId ?? undefined);
     } finally {
       setIsUploadingImages(false);
     }
