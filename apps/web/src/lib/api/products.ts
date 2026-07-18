@@ -382,10 +382,14 @@ export function useUpdateProduct(): UseMutationResult<
     mutationFn: ({ productId, data }) => updateProduct(productId, data),
 
     onSuccess: (updatedProduct) => {
-      // Invalidate products queries
+      // Invalidate products queries (list + single + ownership)
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({
         queryKey: ["products", updatedProduct.id],
+      });
+      // Ownership may have changed if organization_id was updated
+      queryClient.invalidateQueries({
+        queryKey: ["products", updatedProduct.id, "ownership"],
       });
       toast.success("Product updated successfully");
     },
