@@ -281,15 +281,27 @@ export function UnifiedProductForm({
   useEffect(() => {
     if (mode !== "edit") {
       initializedOwnershipProductId.current = null;
+      setPendingBrokers([]);
+      setSelectedOrgId(null);
       return;
     }
 
-    if (
-      !productId ||
-      !existingProduct ||
-      !existingOwnership ||
-      initializedOwnershipProductId.current === productId
-    ) {
+    // Reset state immediately when switching to a different product
+    // (prevents stale brokers from previous product showing in dialog)
+    if (initializedOwnershipProductId.current !== productId) {
+      setPendingBrokers([]);
+      setSelectedOrgId(null);
+      setOrgDirty(false);
+      setBrokersDirty(false);
+    }
+
+    // Wait for data before initializing
+    if (!productId || !existingProduct || !existingOwnership) {
+      return;
+    }
+
+    // Skip if already initialized for this product
+    if (initializedOwnershipProductId.current === productId) {
       return;
     }
 
@@ -762,20 +774,25 @@ export function UnifiedProductForm({
                     <p className="font-medium text-destructive">
                       Se van a borrar {pendingBrokers.length} broker
                       {pendingBrokers.length > 1 ? "s" : ""} asignado
-                      {pendingBrokers.length > 1 ? "s" : ""}:
+                      {pendingBrokers.length > 1 ? "s" : ""}.
                     </p>
-                    <ul className="mt-2 list-inside list-disc text-sm">
-                      {pendingBrokers.map((b) => {
-                        const brokerInfo = brokers.find(
-                          (br) => br.id === b.owner_id,
-                        );
-                        return (
-                          <li key={b.owner_id}>
-                            {brokerInfo?.name ?? b.owner_id} ({b.percentage}%)
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    {/* Only show names if we have broker data loaded */}
+                    {brokers.length > 0 && (
+                      <ul className="mt-2 list-inside list-disc text-sm">
+                        {pendingBrokers.map((b) => {
+                          const brokerInfo = brokers.find(
+                            (br) => br.id === b.owner_id,
+                          );
+                          // Skip if broker not found (stale data)
+                          if (!brokerInfo) return null;
+                          return (
+                            <li key={b.owner_id}>
+                              {brokerInfo.name} ({b.percentage}%)
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
