@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-// ponytail: official WhatsApp brand color #25D366
+// ponytail: official WhatsApp brand color via --ps-whatsapp token
 export function WhatsAppIcon({ className = "" }: SVGProps<SVGSVGElement>) {
   return (
     <svg

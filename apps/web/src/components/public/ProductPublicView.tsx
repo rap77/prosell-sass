@@ -418,7 +418,7 @@ ${shareUrl}`.trim();
             margin: "0 auto",
             padding: "14px 24px",
             borderRadius: 12,
-            background: "#25D366",
+            background: "var(--ps-whatsapp)",
             color: "#fff",
             fontSize: 17,
             fontWeight: 600,

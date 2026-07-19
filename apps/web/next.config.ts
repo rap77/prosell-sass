@@ -66,6 +66,8 @@ const nextConfig: NextConfig = {
     // Backend API URL - must be http://localhost:8000 for OAuth to work
     NEXT_PUBLIC_API_URL:
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+    // Public site URL for sharing links (WhatsApp, social, etc.)
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || "",
   },
 
   // Proxy API requests to backend during development

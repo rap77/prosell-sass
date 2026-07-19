@@ -121,6 +121,9 @@
     --ps-violet-bg: rgba(139, 92, 246, 0.12);
     --ps-violet: #a78bfa;
 
+    /* Social brand colors */
+    --ps-whatsapp: #25d366;
+
     /* Shadow overlay (modals) */
     --ps-shadow-overlay: rgba(6, 13, 36, 0.4);
   }
@@ -253,6 +256,9 @@
     /* Violet (sold status) */
     --ps-violet-bg: rgba(109, 40, 217, 0.08);
     --ps-violet: #5b21b6;
+
+    /* Social brand colors */
+    --ps-whatsapp: #25d366;
 
     /* Shadow overlay (modals) */
     --ps-shadow-overlay: rgba(14, 23, 48, 0.12);

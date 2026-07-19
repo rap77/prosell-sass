@@ -77,7 +77,7 @@ const SOURCE_LABELS: Record<string, string> = {
 const SOURCE_COLORS: Record<string, string> = {
   facebook: "#1877F2",
   instagram: "#E1306C",
-  whatsapp: "#25D366",
+  whatsapp: "var(--ps-whatsapp)",
   web: "var(--ps-cyan)",
   manual: "var(--ps-text-secondary)",
   email: "#f59e0b",
