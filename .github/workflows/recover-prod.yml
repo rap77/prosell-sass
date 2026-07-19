@@ -1,0 +1,58 @@
+name: Recover Production
+
+# EMERGENCY RECOVERY workflow. Use ONLY when the normal promote-prod
+# workflow fails after build (e.g. SSH rate limit, timeout mid-build) and
+# the prod containers are in a broken state. This workflow does NOT
+# rebuild images — it just runs `docker compose up -d` against the
+# already-built images on disk. Drop this file once the incident is
+# resolved and promote-prod is healthy again.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Escribí "recover" para confirmar el recovery de PRODUCCIÓN'
+        required: true
+        type: string
+
+concurrency:
+  group: recover-production
+  cancel-in-progress: false
+
+jobs:
+  recover-production:
+    if: ${{ inputs.confirm == 'recover' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recover production containers
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd ${{ secrets.PROD_REPO_PATH || '/prosell' }}
+            # No --build: images already exist on the host from the previous
+            # (failed) deploy attempt. Just start them.
+            docker compose -f docker/docker-compose.prod.yml up -d
+            docker system prune -f
+
+      - name: Health check post-recover
+        run: |
+          sleep 30
+          curl -fL --retry 5 --retry-delay 10 --retry-connrefused \
+            https://api.prosellweb.com/api/v1/health/
+
+      - name: Notify recovery done
+        if: success()
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -X POST "$WEBHOOK_URL" \
+              -H 'Content-Type: application/json' \
+              -d '{"text":"🩹 Production recovery done (no rebuild)."}' \
+              || echo "⚠️ notify failed (non-fatal)"
+          fi
