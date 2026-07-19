@@ -1,7 +1,7 @@
-"""Integration tests for product ownership endpoints.
+"""Integration tests for product ownership (broker) endpoints.
 
-NOTE: Uses test_organization from tests/integration/conftest.py (same as admin_user).
-Do NOT redefine test_organization locally - causes tenant mismatch.
+NOTE: Uses fixtures from tests/integration/conftest.py.
+After PROP-001 tenant cascade, ownership only stores brokers (owner_type='user').
 """
 
 from uuid import uuid4
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.user_model import UserModel
 
 
 @pytest_asyncio.fixture
@@ -25,7 +26,7 @@ async def ownership_category(
         id=uuid4(),
         name="Test Vehicles",
         slug=f"test-vehicles-{uuid4().hex[:8]}",
-        tenant_id=test_organization.id,  # Use org.id as tenant_id per schema
+        tenant_id=test_organization.id,
         level=0,
         parent_id=None,
         is_active=True,
@@ -44,10 +45,10 @@ async def test_product(
     test_organization: OrganizationModel,
     ownership_category: CategoryModel,
 ) -> ProductModel:
-    """A product for ownership tests (uses shared test_organization)."""
+    """A product for broker ownership tests."""
     product = ProductModel(
         id=uuid4(),
-        tenant_id=test_organization.id,  # Use org.id as tenant_id per schema
+        tenant_id=test_organization.id,
         organization_id=test_organization.id,
         category_id=ownership_category.id,
         title="Test Vehicle",
@@ -64,33 +65,20 @@ async def test_product(
     return product
 
 
-@pytest_asyncio.fixture
-async def second_org(db_session: AsyncSession) -> OrganizationModel:
-    """A second organization for multi-owner tests."""
-    org_id = uuid4()
-    org = OrganizationModel(
-        id=org_id,
-        tenant_id=org_id,
-        name="Second Org",
-        status="active",
-        description="Second org for ownership tests",
-        settings={},
-    )
-    db_session.add(org)
-    await db_session.flush()
-    return org
-
-
 @pytest.mark.asyncio
 async def test_set_ownership_single_owner(
     async_client_as_admin: AsyncClient,
     test_product: ProductModel,
-    test_organization: OrganizationModel,
+    test_user: UserModel,
 ):
-    """Set single owner with 100%."""
+    """Set single broker with 100%."""
     response = await async_client_as_admin.put(
         f"/api/v1/products/{test_product.id}/ownership",
-        json={"owners": [{"owner_id": str(test_organization.id), "percentage": "100.00"}]},
+        json={
+            "owners": [
+                {"owner_id": str(test_user.id), "owner_type": "user", "percentage": "100.00"}
+            ]
+        },
     )
 
     assert response.status_code == 200
@@ -103,16 +91,16 @@ async def test_set_ownership_single_owner(
 async def test_set_ownership_multiple_owners(
     async_client_as_admin: AsyncClient,
     test_product: ProductModel,
-    test_organization: OrganizationModel,
-    second_org: OrganizationModel,
+    test_user: UserModel,
+    test_seller_user: UserModel,
 ):
-    """Set multiple owners with percentages summing to 100%."""
+    """Set multiple brokers with percentages summing to 100%."""
     response = await async_client_as_admin.put(
         f"/api/v1/products/{test_product.id}/ownership",
         json={
             "owners": [
-                {"owner_id": str(test_organization.id), "percentage": "60.00"},
-                {"owner_id": str(second_org.id), "percentage": "40.00"},
+                {"owner_id": str(test_user.id), "owner_type": "user", "percentage": "60.00"},
+                {"owner_id": str(test_seller_user.id), "owner_type": "user", "percentage": "40.00"},
             ]
         },
     )
@@ -126,12 +114,14 @@ async def test_set_ownership_multiple_owners(
 async def test_set_ownership_invalid_sum(
     async_client_as_admin: AsyncClient,
     test_product: ProductModel,
-    test_organization: OrganizationModel,
+    test_user: UserModel,
 ):
     """Percentages not summing to 100% should return 400."""
     response = await async_client_as_admin.put(
         f"/api/v1/products/{test_product.id}/ownership",
-        json={"owners": [{"owner_id": str(test_organization.id), "percentage": "90.00"}]},
+        json={
+            "owners": [{"owner_id": str(test_user.id), "owner_type": "user", "percentage": "90.00"}]
+        },
     )
 
     assert response.status_code == 400
@@ -156,13 +146,17 @@ async def test_set_ownership_empty_owners(
 async def test_get_ownership(
     async_client_as_admin: AsyncClient,
     test_product: ProductModel,
-    test_organization: OrganizationModel,
+    test_user: UserModel,
 ):
-    """Get ownership for a product."""
-    # First set ownership
+    """Get broker ownership for a product."""
+    # First set ownership (broker)
     await async_client_as_admin.put(
         f"/api/v1/products/{test_product.id}/ownership",
-        json={"owners": [{"owner_id": str(test_organization.id), "percentage": "100.00"}]},
+        json={
+            "owners": [
+                {"owner_id": str(test_user.id), "owner_type": "user", "percentage": "100.00"}
+            ]
+        },
     )
 
     # Then get it

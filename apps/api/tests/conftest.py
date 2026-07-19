@@ -155,7 +155,9 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
     # Connect to the postgres admin database so we can DROP/CREATE the test DB.
     # `parsed.path` is the database name; replace it with `/postgres` (the
     # default admin DB that always exists in a Postgres cluster).
+    # ponytail: sync DDL needs sync driver (psycopg2), not asyncpg
     postgres_url = parsed._replace(path="/postgres").geturl()
+    postgres_url = postgres_url.replace("postgresql+asyncpg://", "postgresql://")
 
     from sqlalchemy import text as sa_text
 
