@@ -44,7 +44,30 @@ if _ENV_TEST_PATH.exists():
 # Import all models so they register with Base.metadata
 import prosell.infrastructure.models  # noqa: E402, F401
 from prosell.core.config import Settings, get_settings  # noqa: E402
+from prosell.infrastructure.database import session as _db_session  # noqa: E402
 from prosell.infrastructure.database.base import Base  # noqa: E402
+
+# Replace the application-level engine with a NullPool one for tests.
+# The default engine in prosell.infrastructure.database.session is created
+# at module import time and binds its connection pool to whatever event loop
+# is active then. Under pytest-asyncio with function-scoped loops the pool
+# ends up attached to loop N while tests run on loop N+1, N+2, ... — every
+# connection close on a stale loop raises
+# `RuntimeError: Event loop is closed` inside SQLAlchemy's greenlet_spawn
+# wrapper. NullPool skips pooling entirely (each AsyncSession opens a
+# fresh connection bound to the current loop), which is the standard fix
+# for this exact pattern. See encode/starlette#1438 for the broader
+# middleware context.
+
+_db_session.engine = create_async_engine(
+    str(get_settings().database_url),
+    poolclass=NullPool,
+)
+_db_session.async_session_maker = async_sessionmaker(
+    _db_session.engine,
+    class_=_db_session.AsyncSession,
+    expire_on_commit=False,
+)
 
 # DDL statements interpolate the test database name as an identifier, which
 # cannot be passed as a bound parameter. Quote it through the dialect preparer
