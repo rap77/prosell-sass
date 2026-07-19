@@ -40,6 +40,18 @@ jobs:
             cd ${{ secrets.PROD_REPO_PATH || '/prosell' }}
             git pull origin main
             docker compose -f docker/docker-compose.prod.yml up -d --build
+
+            # Run pending migrations (wait for API to be healthy first)
+            echo "Waiting for API container to be ready..."
+            for i in {1..30}; do
+              if docker exec prosell-prod-api python -c "print('ready')" 2>/dev/null; then
+                break
+              fi
+              sleep 2
+            done
+            echo "Running database migrations..."
+            docker exec prosell-prod-api python -m alembic upgrade head
+
             docker system prune -f
 
       - name: Health check post-deploy
