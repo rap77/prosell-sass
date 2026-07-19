@@ -1,5 +1,6 @@
 """Product entity - Pure domain logic for products."""
 
+import re
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -123,15 +124,19 @@ class Product(DomainModel):
         Returns:
             New Product entity in DRAFT status
         """
+        product_id = uuid4()
+        # Auto-generate slug if not provided
+        final_slug = slug if slug else cls._generate_slug(title, product_id)
+
         return cls(
-            id=uuid4(),
+            id=product_id,
             title=title,
             price_cents=price_cents,
             tenant_id=tenant_id,
             organization_id=organization_id,
             category_id=category_id,
             condition=condition,
-            slug=slug,
+            slug=final_slug,
             description=description,
             currency=currency,
             attributes=attributes if attributes is not None else {},
@@ -144,6 +149,22 @@ class Product(DomainModel):
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
+
+    @staticmethod
+    def _generate_slug(title: str, product_id: UUID) -> str:
+        """
+        Generate SEO-friendly slug from title with unique suffix.
+
+        Format: {slugified-title}-{last-6-chars-of-uuid}
+        Example: "Toyota Corolla 2024" → "toyota-corolla-2024-a1b2c3"
+        """
+        # Convert to lowercase and replace non-alphanumeric with hyphens
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower())
+        # Remove leading/trailing hyphens
+        slug = slug.strip("-")
+        # Add unique suffix from UUID (last 6 chars)
+        suffix = str(product_id).replace("-", "")[-6:]
+        return f"{slug}-{suffix}"
 
     # ==================== Status Transition Methods ====================
 
