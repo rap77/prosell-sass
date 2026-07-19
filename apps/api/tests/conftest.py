@@ -104,7 +104,7 @@ async def test_database_url() -> str:
         import urllib.parse
 
         parsed = urllib.parse.urlparse(base_url)
-        test_url = parsed._replace(database=test_db_name, path=f"/{test_db_name}").geturl()
+        test_url = parsed._replace(path=f"/{test_db_name}").geturl()
 
         return test_url
 
