@@ -106,7 +106,16 @@ async def rate_limit_exceeded_handler(_request: Request, exc: RateLimitExceeded)
 
 # Register rate limiter with the app
 app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
+# SlowAPIMiddleware extends BaseHTTPMiddleware, which has a known cross-loop
+# TaskGroup issue (encode/starlette#1438). It surfaces as
+# `RuntimeError: Task got Future ... attached to a different loop` when the
+# FastAPI app is exercised under pytest-asyncio with multiple event loops.
+# In tests the limiter is already disabled via limiter.enabled = False in
+# tests/integration/conftest.py::disable_rate_limiting, so dropping the
+# middleware in the testing environment has no observable effect — requests
+# just skip the rate-limit dispatch entirely.
+if settings.environment != "testing":
+    app.add_middleware(SlowAPIMiddleware)
 
 
 # =============================================================================
