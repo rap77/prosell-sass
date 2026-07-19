@@ -15,6 +15,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, PencilLine, Send, AlertCircle } from "lucide-react";
+import { ShareMenu } from "@/components/ui/ShareMenu";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
 import type { ProductRow } from "@/components/datagrid/DataGrid";
@@ -534,6 +535,11 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
               <Send size={14} strokeWidth={2} />
               Publicar
             </button>
+            <ShareMenu
+              productTitle={product.title}
+              productSlug={product.slug}
+              isPublished={product.published_to_marketplace ?? false}
+            />
             <Link
               href={`/catalog/${product.id}/edit`}
               style={{

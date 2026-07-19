@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
+import { ShareMenu } from "@/components/ui/ShareMenu";
 import type { Product } from "@/types/product";
 import type {
   AttributeSchemaEntry,
@@ -197,7 +198,7 @@ export function ProductCard({
         data-testid="product-card-actions"
         role="toolbar"
         aria-label="Acciones del producto"
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-border bg-card/95 px-2 py-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto"
+        className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-border bg-card/95 px-2 py-1.5 transition-opacity md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100"
       >
         <button
           type="button"
@@ -215,6 +216,11 @@ export function ProductCard({
         >
           <Pencil className="h-4 w-4" />
         </button>
+        <ShareMenu
+          productTitle={product.title}
+          productSlug={product.slug}
+          isPublished={product.published_to_marketplace ?? false}
+        />
         <button
           type="button"
           onClick={onDelete}

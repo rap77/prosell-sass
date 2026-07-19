@@ -13,7 +13,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MapPin, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 
 interface ProductData {
   id: string;
@@ -425,7 +426,7 @@ ${shareUrl}`.trim();
             cursor: "pointer",
           }}
         >
-          <Share2 size={20} />
+          <WhatsAppIcon className="h-5 w-5" />
           Compartir por WhatsApp
         </a>
       </div>
