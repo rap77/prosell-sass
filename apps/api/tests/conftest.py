@@ -22,18 +22,23 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-# Load .env.test BEFORE any Settings import so the test DATABASE_URL wins over
-# the dev .env. pydantic-settings only auto-loads `.env` (the prod/dev default),
-# so we have to do this manually. Without it, the test_database_url fixture below
-# falls back to settings.database_url (which is prosell_dev@5432 — wrong DB,
-# wrong port) and integration tests connect to a non-existent database.
-_ENV_TEST_PATH = Path(__file__).parent / ".env.test"
+# Load ONLY the test DB URLs from .env.test BEFORE any Settings import.
+# We can't naively load the whole file: pydantic-settings is strict about
+# list types (rate_limit_exempt_ips needs JSON, not comma-separated) and
+# Literal fields (environment) — loading them all would crash Settings()
+# before pytest even gets to run a test. The DB URLs are what we actually
+# need; other settings stay at their .env defaults which already work for
+# tests. The file lives at apps/api/.env.test (one directory up from this
+# conftest).
+_ENV_TEST_PATH = Path(__file__).parent.parent / ".env.test"
 if _ENV_TEST_PATH.exists():
     for _line in _ENV_TEST_PATH.read_text(encoding="utf-8").splitlines():
         _line = _line.strip()
         if not _line or _line.startswith("#") or "=" not in _line:
             continue
         _k, _, _v = _line.partition("=")
+        if _k.strip() not in {"DATABASE_URL", "TEST_DATABASE_URL"}:
+            continue
         os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
 
 # Import all models so they register with Base.metadata
