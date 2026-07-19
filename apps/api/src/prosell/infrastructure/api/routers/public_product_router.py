@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -37,8 +38,8 @@ async def _increment_view_count(product_id: UUID, db: AsyncSession) -> None:
         )
         await db.execute(stmt)
         # ponytail: no commit here - let the request's transaction handle it
-    except Exception:
-        pass
+    except SQLAlchemyError:
+        pass  # ponytail: analytics failure should not break the page
 
 
 @router.get("/{slug}", response_model=ProductResponse)
@@ -48,16 +49,15 @@ async def get_public_product(
 ) -> ProductResponse:
     """Get a published product by slug. No authentication required.
 
-    Only returns products that are:
-    - status = 'published'
-    - published_to_marketplace = True
+    Returns any product with status='published'. The published_to_marketplace
+    flag is reserved for the future global marketplace feed.
 
     Increments view_count for analytics.
     """
+    # ponytail: any published product is shareable — marketplace flag for future global feed
     stmt = select(ProductModel).where(
         ProductModel.slug == slug,
         ProductModel.status == ProductStatus.PUBLISHED.value,
-        ProductModel.published_to_marketplace.is_(True),
     )
     result = await db.execute(stmt)
     model = result.scalar_one_or_none()
@@ -113,10 +113,10 @@ async def get_public_product_image_urls(
     spaces: SpacesService,
 ) -> ProductImageUrlsResponse:
     """Get signed image URLs for a published product. No authentication required."""
+    # ponytail: any published product is shareable — marketplace flag for future global feed
     stmt = select(ProductModel).where(
         ProductModel.slug == slug,
         ProductModel.status == ProductStatus.PUBLISHED.value,
-        ProductModel.published_to_marketplace.is_(True),
     )
     result = await db.execute(stmt)
     model = result.scalar_one_or_none()
