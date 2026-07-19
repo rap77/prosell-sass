@@ -57,8 +57,8 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
   experimental: {
-    // ponytail: limit workers to avoid OOM on small VPS during build
-    cpus: 2,
+    // ponytail: limit workers to avoid OOM on small VPS (1 CPU) during build
+    cpus: 1,
     optimizePackageImports: [
       "lucide-react", // Icon library used in chadcn/ui components
       "@/components/icons", // Local icon components with barrel file
