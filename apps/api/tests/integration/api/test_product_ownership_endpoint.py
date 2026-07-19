@@ -1,8 +1,13 @@
-"""Integration tests for product ownership endpoints."""
+"""Integration tests for product ownership endpoints.
+
+NOTE: Uses test_organization from tests/integration/conftest.py (same as admin_user).
+Do NOT redefine test_organization locally - causes tenant mismatch.
+"""
 
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,16 +16,16 @@ from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 
 
-@pytest.fixture
-async def test_category(
+@pytest_asyncio.fixture
+async def ownership_category(
     db_session: AsyncSession, test_organization: OrganizationModel
 ) -> CategoryModel:
-    """A category for product creation."""
+    """A category for product creation (uses shared test_organization)."""
     category = CategoryModel(
         id=uuid4(),
         name="Test Vehicles",
         slug=f"test-vehicles-{uuid4().hex[:8]}",
-        tenant_id=test_organization.tenant_id,
+        tenant_id=test_organization.id,  # Use org.id as tenant_id per schema
         level=0,
         parent_id=None,
         is_active=True,
@@ -33,18 +38,18 @@ async def test_category(
     return category
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_product(
     db_session: AsyncSession,
     test_organization: OrganizationModel,
-    test_category: CategoryModel,
+    ownership_category: CategoryModel,
 ) -> ProductModel:
-    """A product for ownership tests."""
+    """A product for ownership tests (uses shared test_organization)."""
     product = ProductModel(
         id=uuid4(),
-        tenant_id=test_organization.tenant_id,
+        tenant_id=test_organization.id,  # Use org.id as tenant_id per schema
         organization_id=test_organization.id,
-        category_id=test_category.id,
+        category_id=ownership_category.id,
         title="Test Vehicle",
         slug=f"test-vehicle-{uuid4().hex[:8]}",
         price_cents=2500000,
@@ -59,7 +64,7 @@ async def test_product(
     return product
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def second_org(db_session: AsyncSession) -> OrganizationModel:
     """A second organization for multi-owner tests."""
     org_id = uuid4()
