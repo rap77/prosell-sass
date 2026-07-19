@@ -14,7 +14,6 @@ from prosell.application.dto.product import (
     ProductResponse,
 )
 from prosell.application.ports.ido_spaces import IDOSpacesService
-from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import get_spaces_service
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.product_model import ProductModel
@@ -47,25 +46,22 @@ async def get_public_product(
     slug: str,
     db: DbSession,
 ) -> ProductResponse:
-    """Get a published product by slug. No authentication required.
+    """Get a product by slug. No authentication required.
 
-    Returns any product with status='published'. The published_to_marketplace
-    flag is reserved for the future global marketplace feed.
+    Returns any product with a slug (draft, published, etc.). The slug acts as
+    a secret link — only people who have the link can access the product.
 
     Increments view_count for analytics.
     """
-    # ponytail: any published product is shareable — marketplace flag for future global feed
-    stmt = select(ProductModel).where(
-        ProductModel.slug == slug,
-        ProductModel.status == ProductStatus.PUBLISHED.value,
-    )
+    # ponytail: any product with slug is shareable — slug is the "secret link"
+    stmt = select(ProductModel).where(ProductModel.slug == slug)
     result = await db.execute(stmt)
     model = result.scalar_one_or_none()
 
     if not model:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found or not published",
+            detail="Product not found",
         )
 
     # Track view (fire-and-forget, <1ms)
@@ -112,19 +108,16 @@ async def get_public_product_image_urls(
     db: DbSession,
     spaces: SpacesService,
 ) -> ProductImageUrlsResponse:
-    """Get signed image URLs for a published product. No authentication required."""
-    # ponytail: any published product is shareable — marketplace flag for future global feed
-    stmt = select(ProductModel).where(
-        ProductModel.slug == slug,
-        ProductModel.status == ProductStatus.PUBLISHED.value,
-    )
+    """Get signed image URLs for a product. No authentication required."""
+    # ponytail: any product with slug is shareable — slug is the "secret link"
+    stmt = select(ProductModel).where(ProductModel.slug == slug)
     result = await db.execute(stmt)
     model = result.scalar_one_or_none()
 
     if not model:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found or not published",
+            detail="Product not found",
         )
 
     # ponytail: reorder so cover is always first — frontend expects images[0] = cover
