@@ -48,16 +48,7 @@ export function ThemeToggle() {
 
   // Avoid hydration mismatch — render a placeholder until mounted
   if (!mounted) {
-    return (
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
-          background: "transparent",
-        }}
-      />
-    );
+    return <div className="w-9 h-9 rounded-lg bg-transparent" />;
   }
 
   const isLight = theme === "light";
@@ -68,19 +59,12 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={isLight ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
       title={isLight ? "Modo oscuro" : "Modo claro"}
+      className="w-9 h-9 rounded-lg inline-flex items-center justify-center cursor-pointer shrink-0"
       style={{
-        width: 36,
-        height: 36,
-        borderRadius: 8,
         border: "1px solid var(--ps-border-default)",
         background: "transparent",
         color: "var(--ps-text-secondary)",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
         transition: "all 180ms cubic-bezier(0.16, 1, 0.3, 1)",
-        flexShrink: 0,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "var(--ps-cyan)";
