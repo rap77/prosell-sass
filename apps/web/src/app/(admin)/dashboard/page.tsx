@@ -1,8 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useLeads, useTeamMetrics, LeadStatus } from "@/lib/api/leads";
+import { cn } from "@/lib/utils";
 import {
   Inbox,
   Briefcase,
@@ -139,23 +141,9 @@ const PIPELINE_STAGES = [
 
 // ─── Card wrapper ──────────────────────────────────────────────────────────────
 
-function Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}) {
+function Card({ children }: { children: ReactNode }) {
   return (
-    <section
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-subtle)",
-        borderRadius: 12,
-        padding: 20,
-        ...style,
-      }}
-    >
+    <section className="bg-ps-surface border border-ps-border-subtle rounded-xl p-5">
       {children}
     </section>
   );
@@ -171,37 +159,155 @@ function CardHead({
   linkHref?: string;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 14,
-      }}
-    >
-      <h2
-        style={{
-          margin: 0,
-          fontSize: 15,
-          fontWeight: 600,
-          color: "var(--ps-text-primary)",
-        }}
-      >
+    <div className="flex items-center justify-between mb-3.5">
+      <h2 className="m-0 text-[15px] font-semibold text-ps-text-primary">
         {title}
       </h2>
       {linkLabel && linkHref && (
         <Link
           href={linkHref}
-          style={{
-            fontSize: 12,
-            color: "var(--ps-cyan)",
-            fontWeight: 500,
-            textDecoration: "none",
-          }}
+          className="text-xs text-ps-cyan font-medium no-underline"
         >
           {linkLabel}
         </Link>
       )}
+    </div>
+  );
+}
+
+// ─── Recent leads body ────────────────────────────────────────────────────────
+
+type RecentLead = NonNullable<
+  ReturnType<typeof useLeads>["data"]
+>[number];
+
+function RecentLeadsList({
+  leads,
+  isLoading,
+}: {
+  leads: RecentLead[];
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="py-6 text-center text-ps-text-secondary text-[13px]">
+        Cargando…
+      </div>
+    );
+  }
+  if (leads.length === 0) {
+    return (
+      <div className="py-6 text-center text-ps-text-secondary text-[13px]">
+        No hay leads aún
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-0.5">
+      {leads.map((lead) => {
+        const ss = STATUS_BADGE[lead.status];
+        const src = getSourceStyle(lead.source);
+        const [g1, g2] = getAvatarGradient(lead.id);
+        return (
+          <Link
+            key={lead.id}
+            href="/vendedor/leads"
+            className="flex items-center gap-3 py-[10px] px-3 rounded-lg no-underline transition-colors duration-[180ms] min-w-0 hover:bg-ps-table-row-hover"
+          >
+            <div
+              className="w-9 h-9 rounded-full inline-flex items-center justify-center text-xs font-bold tracking-[0.02em] text-ps-base flex-shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${g1}, ${g2})`,
+              }}
+            >
+              {getInitials(lead.buyer_name)}
+            </div>
+            <div className="flex-1 min-w-0 overflow-hidden flex flex-col gap-[3px]">
+              <div className="flex items-center gap-2 text-[13.5px] font-semibold text-ps-text-primary min-w-0">
+                <span className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                  {lead.buyer_name}
+                </span>
+                <span
+                  className="text-[9.5px] font-bold py-0.5 px-1.5 rounded tracking-[0.04em] flex-shrink-0"
+                  style={{ background: src.bg, color: src.color }}
+                >
+                  {src.label}
+                </span>
+              </div>
+              <span className="text-[11.5px] text-ps-text-tertiary font-mono">
+                {formatRelativeTime(lead.created_at)}
+              </span>
+            </div>
+            <span
+              className="inline-flex items-center gap-[5px] text-[11.5px] font-semibold py-1 px-2.5 rounded-full whitespace-nowrap"
+              style={{ background: ss.bg, color: ss.color }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+              {ss.label}
+            </span>
+            <span className="text-ps-text-tertiary inline-flex">
+              <ChevronRight size={16} strokeWidth={2} />
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Team breakdown body ───────────────────────────────────────────────────────
+
+type VendedorBreakdown = NonNullable<
+  ReturnType<typeof useTeamMetrics>["data"]
+>["vendedor_breakdown"][number];
+
+function TeamBreakdown({
+  breakdown,
+  isLoading,
+}: {
+  breakdown: VendedorBreakdown[] | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="py-3 text-center text-ps-text-secondary text-[13px]">
+        Cargando…
+      </div>
+    );
+  }
+  if (!breakdown?.length) {
+    return (
+      <div className="py-3 text-center text-ps-text-secondary text-[13px]">
+        Sin vendedores asignados
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      {breakdown.slice(0, 5).map((v) => {
+        const [g1, g2] = getAvatarGradient(v.vendedor_id);
+        return (
+          <div
+            key={v.vendedor_id}
+            className="flex items-center gap-2.5 py-1.5 px-1"
+          >
+            <div
+              className="flex-shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[11px] font-bold text-ps-base"
+              style={{
+                background: `linear-gradient(135deg, ${g1}, ${g2})`,
+              }}
+            >
+              {getInitials(v.vendedor_name)}
+            </div>
+            <span className="flex-1 text-[13px] font-medium text-ps-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+              {v.vendedor_name}
+            </span>
+            <span className="text-[12.5px] font-mono text-ps-text-secondary flex-shrink-0">
+              {v.total_leads} lead{v.total_leads !== 1 ? "s" : ""}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -285,37 +391,16 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="flex flex-col gap-6">
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 24,
-        }}
-      >
+      <div className="flex items-center justify-between gap-6">
         <div>
-          <h1
-            style={{
-              margin: "0 0 4px",
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.015em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h1 className="mb-1 text-[22px] font-bold tracking-[-0.015em] text-ps-text-primary">
             {greeting}, {firstName}
           </h1>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="m-0 text-[13px] text-ps-text-secondary">
             Hoy ·{" "}
-            <b style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}>
+            <b className="text-ps-text-primary font-semibold">
               {isLoading
                 ? "…"
                 : `${newLeadsToday} lead${newLeadsToday !== 1 ? "s" : ""} nuevo${newLeadsToday !== 1 ? "s" : ""}`}
@@ -325,30 +410,7 @@ export default function DashboardPage() {
 
         <Link
           href="/publications"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            background: "var(--ps-cyan)",
-            color: "var(--ps-bg-base)",
-            padding: "9px 16px",
-            borderRadius: 8,
-            fontSize: 13.5,
-            fontWeight: 600,
-            textDecoration: "none",
-            transition: "all 180ms cubic-bezier(0.16,1,0.3,1)",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--ps-cyan-hover)";
-            e.currentTarget.style.boxShadow = "0 6px 20px rgba(77,184,255,0.3)";
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "var(--ps-cyan)";
-            e.currentTarget.style.boxShadow = "";
-            e.currentTarget.style.transform = "";
-          }}
+          className="inline-flex items-center gap-2 bg-ps-cyan text-ps-base py-[9px] px-4 rounded-lg text-[13.5px] font-semibold no-underline transition-all duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0 hover:bg-ps-cyan-hover hover:shadow-[0_6px_20px_rgba(77,184,255,0.3)] hover:-translate-y-px"
         >
           <Plus size={14} strokeWidth={2.5} />
           Nueva publicación
@@ -356,75 +418,24 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI row ───────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 14,
-        }}
-      >
+      <div className="grid grid-cols-4 gap-3.5">
         {KPIS.map(({ label, value, delta, trend, Icon }) => (
           <div
             key={label}
-            style={{
-              position: "relative",
-              background: "var(--ps-bg-surface)",
-              border: "1px solid var(--ps-border-subtle)",
-              borderRadius: 12,
-              padding: 20,
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              transition: "border-color 200ms",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.borderColor = "var(--ps-border-medium)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.borderColor = "var(--ps-border-subtle)")
-            }
+            className="relative bg-ps-surface border border-ps-border-subtle rounded-xl p-5 flex flex-col gap-1.5 transition-colors duration-200 hover:border-ps-border-medium"
           >
-            <div
-              style={{
-                position: "absolute",
-                top: 18,
-                right: 18,
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "rgba(77,184,255,0.10)",
-                border: "1px solid rgba(77,184,255,0.18)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--ps-cyan)",
-              }}
-            >
+            <div className="absolute top-[18px] right-[18px] w-8 h-8 rounded-lg bg-ps-accent-glow-soft border border-ps-border-default inline-flex items-center justify-center text-ps-cyan">
               <Icon size={16} strokeWidth={2} />
             </div>
-            <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
-              {label}
-            </span>
-            <span
-              style={{
-                fontSize: 36,
-                fontWeight: 800,
-                letterSpacing: "-0.03em",
-                lineHeight: 1,
-                color: "var(--ps-text-primary)",
-                margin: "2px 0 4px",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+            <span className="text-[13px] text-ps-text-secondary">{label}</span>
+            <span className="text-[36px] font-extrabold tracking-[-0.03em] leading-none text-ps-text-primary mt-0.5 mb-1 tabular-nums">
               {value}
             </span>
             <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color:
-                  trend === "up" ? "var(--ps-success)" : "var(--ps-warning)",
-              }}
+              className={cn(
+                "text-xs font-semibold",
+                trend === "up" ? "text-ps-success" : "text-ps-warning",
+              )}
             >
               {delta}
             </span>
@@ -433,13 +444,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Two-column section ────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)",
-          gap: 16,
-        }}
-      >
+      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-4">
         {/* Leads recientes */}
         <Card>
           <CardHead
@@ -448,186 +453,12 @@ export default function DashboardPage() {
             linkHref="/vendedor/leads"
           />
 
-          {isLoading ? (
-            <div
-              style={{
-                padding: "24px 0",
-                textAlign: "center",
-                color: "var(--ps-text-secondary)",
-                fontSize: 13,
-              }}
-            >
-              Cargando…
-            </div>
-          ) : recentLeads.length === 0 ? (
-            <div
-              style={{
-                padding: "24px 0",
-                textAlign: "center",
-                color: "var(--ps-text-secondary)",
-                fontSize: 13,
-              }}
-            >
-              No hay leads aún
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {recentLeads.map((lead) => {
-                const ss = STATUS_BADGE[lead.status];
-                const src = getSourceStyle(lead.source);
-                const [g1, g2] = getAvatarGradient(lead.id);
-                return (
-                  <Link
-                    key={lead.id}
-                    href="/vendedor/leads"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "10px 12px",
-                      borderRadius: 8,
-                      textDecoration: "none",
-                      transition: "background 180ms",
-                      minWidth: 0,
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background =
-                        "var(--ps-table-row-hover)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "50%",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        letterSpacing: "0.02em",
-                        color: "var(--ps-bg-base)",
-                        flexShrink: 0,
-                        background: `linear-gradient(135deg, ${g1}, ${g2})`,
-                      }}
-                    >
-                      {getInitials(lead.buyer_name)}
-                    </div>
-                    <div
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        overflow: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 3,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          fontSize: 13.5,
-                          fontWeight: 600,
-                          color: "var(--ps-text-primary)",
-                          minWidth: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            flex: 1,
-                            minWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {lead.buyer_name}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 9.5,
-                            fontWeight: 700,
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            letterSpacing: "0.04em",
-                            background: src.bg,
-                            color: src.color,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {src.label}
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 11.5,
-                          color: "var(--ps-text-tertiary)",
-                          fontFamily: "ui-monospace, monospace",
-                        }}
-                      >
-                        {formatRelativeTime(lead.created_at)}
-                      </span>
-                    </div>
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 5,
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        padding: "4px 10px",
-                        borderRadius: 100,
-                        whiteSpace: "nowrap",
-                        background: ss.bg,
-                        color: ss.color,
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          background: "currentColor",
-                          flexShrink: 0,
-                        }}
-                      />
-                      {ss.label}
-                    </span>
-                    <span
-                      style={{
-                        color: "var(--ps-text-tertiary)",
-                        display: "inline-flex",
-                      }}
-                    >
-                      <ChevronRight size={16} strokeWidth={2} />
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+          <RecentLeadsList leads={recentLeads} isLoading={isLoading} />
 
-          <div
-            style={{
-              textAlign: "center",
-              paddingTop: 12,
-              marginTop: 8,
-              borderTop: "1px solid var(--ps-border-subtle)",
-            }}
-          >
+          <div className="text-center pt-3 mt-2 border-t border-ps-border-subtle">
             <Link
               href="/vendedor/leads"
-              style={{
-                fontSize: 13,
-                color: "var(--ps-cyan)",
-                fontWeight: 500,
-                textDecoration: "none",
-              }}
+              className="text-[13px] text-ps-cyan font-medium no-underline"
             >
               Ver todos los leads →
             </Link>
@@ -635,7 +466,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="flex flex-col gap-4">
           {/* Pipeline */}
           <Card>
             <CardHead
@@ -643,74 +474,40 @@ export default function DashboardPage() {
               linkLabel="Ver completo →"
               linkHref="/pipeline"
             />
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="flex flex-col gap-3">
               {PIPELINE_STAGES.map((stage) => {
                 const count = pipelineCounts[stage.status];
                 const pct = Math.round((count / maxPipelineCount) * 100);
                 return (
                   <div
                     key={stage.status}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "90px 1fr 44px",
-                      gap: 12,
-                      alignItems: "center",
-                    }}
+                    className="grid grid-cols-[90px_1fr_44px] gap-3 items-center"
                   >
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--ps-text-primary)",
-                      }}
-                    >
+                    <span className="text-[13px] font-semibold text-ps-text-primary">
                       {stage.label}
                     </span>
-                    <div
-                      style={{
-                        height: 8,
-                        borderRadius: 100,
-                        background: "rgba(77,184,255,0.08)",
-                        overflow: "hidden",
-                      }}
-                    >
+                    <div className="h-2 rounded-full bg-ps-accent-glow-soft overflow-hidden">
                       <div
+                        className="h-full rounded-full"
                         style={{
-                          height: "100%",
-                          borderRadius: 100,
                           width: `${pct}%`,
                           background: stage.fill,
                           boxShadow:
-                            "glow" in stage ? `0 0 10px ${stage.glow}` : "none",
+                            "glow" in stage
+                              ? `0 0 10px ${stage.glow}`
+                              : "none",
                         }}
                       />
                     </div>
-                    <span
-                      style={{
-                        textAlign: "right",
-                        fontSize: 12.5,
-                        fontWeight: 700,
-                        fontFamily: "ui-monospace, monospace",
-                        color: "var(--ps-text-primary)",
-                        letterSpacing: "-0.01em",
-                      }}
-                    >
+                    <span className="text-right text-[12.5px] font-bold font-mono text-ps-text-primary tracking-[-0.01em]">
                       {isLoading ? "—" : count}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div
-              style={{
-                marginTop: 12,
-                paddingTop: 12,
-                borderTop: "1px solid var(--ps-border-subtle)",
-                fontSize: 12,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
-              <b style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}>
+            <div className="mt-3 pt-3 border-t border-ps-border-subtle text-xs text-ps-text-secondary">
+              <b className="text-ps-text-primary font-semibold">
                 {isLoading ? "—" : activeLeads} lead
                 {activeLeads !== 1 ? "s" : ""}
               </b>{" "}
@@ -721,87 +518,10 @@ export default function DashboardPage() {
           {/* Equipo */}
           <Card>
             <CardHead title="Equipo · Leads" />
-            {isLoading ? (
-              <div
-                style={{
-                  padding: "12px 0",
-                  textAlign: "center",
-                  color: "var(--ps-text-secondary)",
-                  fontSize: 13,
-                }}
-              >
-                Cargando…
-              </div>
-            ) : !metrics?.vendedor_breakdown?.length ? (
-              <div
-                style={{
-                  padding: "12px 0",
-                  textAlign: "center",
-                  color: "var(--ps-text-secondary)",
-                  fontSize: 13,
-                }}
-              >
-                Sin vendedores asignados
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {metrics.vendedor_breakdown.slice(0, 5).map((v) => {
-                  const [g1, g2] = getAvatarGradient(v.vendedor_id);
-                  return (
-                    <div
-                      key={v.vendedor_id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "6px 4px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          flexShrink: 0,
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 11,
-                          fontWeight: 700,
-                          background: `linear-gradient(135deg, ${g1}, ${g2})`,
-                          color: "var(--ps-bg-base)",
-                        }}
-                      >
-                        {getInitials(v.vendedor_name)}
-                      </div>
-                      <span
-                        style={{
-                          flex: 1,
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "var(--ps-text-primary)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {v.vendedor_name}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 12.5,
-                          fontFamily: "ui-monospace, monospace",
-                          color: "var(--ps-text-secondary)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {v.total_leads} lead{v.total_leads !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <TeamBreakdown
+              breakdown={metrics?.vendedor_breakdown}
+              isLoading={isLoading}
+            />
           </Card>
         </div>
       </div>
