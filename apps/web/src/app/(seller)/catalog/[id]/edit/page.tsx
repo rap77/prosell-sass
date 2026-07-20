@@ -81,15 +81,7 @@ export default function EditProductPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          maxWidth: 896,
-          margin: "0 auto",
-          display: "flex",
-          justifyContent: "center",
-          padding: 64,
-        }}
-      >
+      <div className="max-w-[896px] mx-auto flex justify-center p-16">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -97,7 +89,7 @@ export default function EditProductPage() {
 
   if (!product) {
     return (
-      <div style={{ maxWidth: 896, margin: "0 auto" }}>
+      <div className="max-w-[896px] mx-auto">
         <p>Producto no encontrado.</p>
       </div>
     );
@@ -105,7 +97,7 @@ export default function EditProductPage() {
 
   if (!category) {
     return (
-      <div style={{ maxWidth: 896, margin: "0 auto" }}>
+      <div className="max-w-[896px] mx-auto">
         <p>
           Categoría no encontrada. El producto puede pertenecer a una categoría
           deshabilitada.
@@ -115,57 +107,22 @@ export default function EditProductPage() {
   }
 
   return (
-    <div style={{ maxWidth: 896, margin: "0 auto" }}>
+    <div className="max-w-[896px] mx-auto">
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 16,
-          marginBottom: 28,
-        }}
-      >
+      <div className="flex items-start gap-4 mb-7">
         <Link
           href="/catalog"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            height: 36,
-            padding: "0 12px",
-            marginTop: 2,
-            background: "var(--ps-bg-elevated)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 8,
-            color: "var(--ps-text-secondary)",
-            fontSize: 13,
-            textDecoration: "none",
-            flexShrink: 0,
-          }}
+          className="inline-flex items-center gap-1.5 h-9 px-3 mt-0.5 bg-bg-elevated border border-border-default rounded-lg text-text-secondary text-sm no-underline flex-shrink-0"
         >
           <ArrowLeft size={13} strokeWidth={2} />
           Volver
         </Link>
 
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">
             Editar {category.name}
           </h1>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="m-0 mt-1 text-sm text-text-secondary">
             Actualizá la información y las fotos del producto.
           </p>
         </div>
