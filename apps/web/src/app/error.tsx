@@ -50,23 +50,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
         {/* Icon + copy */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 14,
-          }}
+          className="flex flex-col items-center gap-3.5"
         >
           <div
+            className="w-[52px] h-[52px] rounded-[14px] border flex items-center justify-center"
             style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
               background: "var(--ps-warning-bg)",
-              border: "1px solid var(--ps-warning)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              borderColor: "var(--ps-warning)",
             }}
           >
             <AlertTriangle
@@ -77,11 +67,8 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           </div>
           <div>
             <p
+              className="m-0 text-xs font-bold uppercase"
               style={{
-                margin: 0,
-                fontSize: 12,
-                fontWeight: 700,
-                textTransform: "uppercase",
                 letterSpacing: "0.14em",
                 color: "var(--ps-warning)",
               }}
@@ -89,10 +76,8 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               Algo salió mal
             </p>
             <h1
+              className="mt-2 text-2xl font-bold"
               style={{
-                margin: "8px 0 0",
-                fontSize: 24,
-                fontWeight: 700,
                 letterSpacing: "-0.02em",
                 color: "var(--ps-text-primary)",
               }}
@@ -100,11 +85,9 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               No pudimos cargar esta vista
             </h1>
             <p
+              className="mt-2 text-sm leading-relaxed"
               style={{
-                margin: "8px 0 0",
-                fontSize: 13,
                 color: "var(--ps-text-secondary)",
-                lineHeight: 1.6,
               }}
             >
               Ocurrió un problema inesperado. Intentá de nuevo o volvé al
@@ -115,61 +98,39 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
         {/* Action card */}
         <div
+          className="rounded-[14px] p-6 flex flex-col gap-2.5"
           style={{
             background: "var(--ps-bg-surface)",
             border: "1px solid var(--ps-border-default)",
-            borderRadius: 14,
-            padding: "24px 24px 20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
             boxShadow: "0 4px 24px rgba(6,13,36,0.3)",
           }}
         >
           <button
             type="button"
             onClick={reset}
+            className="inline-flex w-full items-center justify-center h-[42px] rounded-lg border-none font-bold text-sm cursor-pointer"
             style={{
-              display: "inline-flex",
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 42,
-              borderRadius: 8,
-              border: "none",
               background: "var(--ps-cyan)",
               color: "var(--ps-bg-base)",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: "pointer",
             }}
           >
             Intentar de nuevo
           </button>
           <Link
             href="/dashboard"
+            className="inline-flex w-full items-center justify-center h-[42px] rounded-lg font-medium text-sm no-underline"
             style={{
-              display: "inline-flex",
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 42,
-              borderRadius: 8,
               background: "var(--ps-bg-elevated)",
               border: "1px solid var(--ps-border-default)",
               color: "var(--ps-text-secondary)",
-              fontSize: 14,
-              fontWeight: 500,
-              textDecoration: "none",
             }}
           >
             Ir al dashboard
           </Link>
           {error.digest && (
             <p
+              className="m-0 text-xs"
               style={{
-                margin: 0,
-                fontSize: 11,
                 color: "var(--ps-text-tertiary)",
               }}
             >
