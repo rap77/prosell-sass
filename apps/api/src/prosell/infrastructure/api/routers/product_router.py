@@ -1078,11 +1078,14 @@ async def delete_product(
     ON DELETE CASCADE on vehicles.product_id ensures vehicle record is
     automatically deleted. This is a permanent, irreversible operation.
 
-    Requires: product must belong to user's tenant.
+    Admins with ORG_ADMIN_VIEW_ALL can delete products from any tenant.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+
+    # ponytail: admins can delete products from any org
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    tenant_id = None if is_org_admin else current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     use_case = DeleteProductUseCase(repo)
