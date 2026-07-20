@@ -8,43 +8,14 @@ import { KanbanBoardIsland } from "@/components/pipeline/KanbanBoardIsland";
 
 export default function PipelinePage() {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        height: "100%",
-      }}
-    >
+    <div className="flex flex-col gap-6 h-full">
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
-      >
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-              lineHeight: 1.2,
-            }}
-          >
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary leading-[1.2]">
             Pipeline
           </h1>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="m-0 mt-1 text-sm text-text-secondary">
             Vista kanban del ciclo de ventas. Arrastrá los leads entre columnas
             para actualizar su estado.
           </p>
