@@ -118,6 +118,7 @@ class TestPublicProductRouter:
         )
         shared_session.add(product)
         await shared_session.flush()
+        initial_view_count = product.view_count
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(f"/api/v1/public/products/{product.slug}")
@@ -129,7 +130,8 @@ class TestPublicProductRouter:
         assert data["price_cents"] == 2500000
         assert data["status"] == ProductStatus.PUBLISHED.value
         assert data["published_to_marketplace"] is True
-        assert data["view_count"] == 6  # incremented from 5
+        # ponytail: use relative check, not absolute — avoids flakiness from shared DB
+        assert data["view_count"] == initial_view_count + 1
 
     async def test_get_product_not_found(self) -> None:
         """GET /{slug} returns 404 when product doesn't exist."""
@@ -226,6 +228,7 @@ class TestPublicProductRouter:
         )
         shared_session.add(product)
         await shared_session.flush()
+        initial_view_count = product.view_count
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = None
@@ -234,9 +237,9 @@ class TestPublicProductRouter:
                 assert response.status_code == 200
 
         # The endpoint increments view_count each time
-        # Last response should show view_count = 13 (started at 10, incremented 3x)
+        # ponytail: use relative check — started at initial, incremented 3x
         assert response is not None
-        assert response.json()["view_count"] == 13
+        assert response.json()["view_count"] == initial_view_count + 3
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_returns_signed_urls(
@@ -278,7 +281,8 @@ class TestPublicProductRouter:
         data = response.json()
         assert len(data["images"]) == 2
         assert data["images"][0]["key"] == "car-front.jpg"
-        assert "token=" in data["images"][0]["url"]
+        # ponytail: DO Spaces uses AWS-style signing, not token=
+        assert "X-Amz-Signature=" in data["images"][0]["url"]
         assert data["images"][1]["key"] == "car-side.jpg"
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
