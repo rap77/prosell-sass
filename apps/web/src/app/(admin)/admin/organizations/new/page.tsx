@@ -161,43 +161,23 @@ export default function AdminNewDealerPage() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <h1
-        style={{
-          margin: 0,
-          fontSize: 22,
-          fontWeight: 700,
-          color: "var(--ps-text-primary)",
-        }}
-      >
+    <div className="flex flex-col gap-4">
+      <h1 className="m-0 text-2xl font-bold text-ps-text-primary">
         Nueva organización
       </h1>
 
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          maxWidth: 480,
-        }}
+        className="flex flex-col gap-4 max-w-md"
       >
         {/* Verticals — fundamental info first */}
-        <fieldset
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            border: "none",
-            padding: 0,
-          }}
-        >
-          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>
+        <fieldset className="flex flex-col gap-2 border-none p-0">
+          <legend className="text-xs mb-1.5">
             Verticals *
           </legend>
           {categoriesLoading && <p>Cargando verticals…</p>}
           {!categoriesLoading && verticals.length === 0 && (
-            <p style={{ color: "var(--ps-text-secondary)" }}>
+            <p className="text-ps-text-secondary">
               No hay verticals activos disponibles. No se puede crear una
               organización hasta que exista al menos uno.
             </p>
@@ -205,19 +185,14 @@ export default function AdminNewDealerPage() {
           {verticals.map((vertical) => (
             <label
               key={vertical.id}
+              className="flex items-center gap-2 px-3 py-2 rounded cursor-pointer"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 6,
                 background: verticalIds.includes(vertical.id)
                   ? "var(--ps-cyan-10)"
                   : "var(--ps-bg-elevated)",
                 border: verticalIds.includes(vertical.id)
                   ? "1px solid var(--ps-cyan)"
                   : "1px solid var(--ps-border-default)",
-                cursor: "pointer",
               }}
             >
               <input
@@ -268,63 +243,33 @@ export default function AdminNewDealerPage() {
         />
 
         {/* Brokers section */}
-        <fieldset
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            border: "none",
-            padding: 0,
-          }}
-        >
-          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>
+        <fieldset className="flex flex-col gap-2 border-none p-0">
+          <legend className="text-xs mb-1.5">
             Brokers{" "}
-            <span style={{ color: "var(--ps-text-tertiary)", fontWeight: 400 }}>
+            <span className="text-ps-text-tertiary font-normal">
               (opcional)
             </span>
           </legend>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 12,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="m-0 text-xs text-ps-text-secondary">
             Los brokers son personas que pueden ser propietarias de productos.
           </p>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-2">
             <input
               type="text"
               value={brokerName}
               onChange={(e) => setBrokerName(e.target.value)}
               placeholder="Nombre"
-              style={{
-                flex: 1,
-                height: 38,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
-              }}
+              className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary"
             />
             <input
               type="email"
               value={brokerEmail}
               onChange={(e) => setBrokerEmail(e.target.value)}
               placeholder="Email"
-              style={{
-                flex: 1,
-                height: 38,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
-              }}
+              className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary"
             />
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-2">
             <input
               type="tel"
               value={brokerPhone}
@@ -336,16 +281,11 @@ export default function AdminNewDealerPage() {
                 }
               }}
               placeholder="+54 9 11 1234-5678 (opcional)"
+              className="flex-1 h-9 px-3 rounded-lg bg-ps-bg-elevated text-ps-text-primary"
               style={{
-                flex: 1,
-                height: 38,
-                padding: "0 12px",
-                borderRadius: 8,
                 border: !isValidPhone(brokerPhone)
                   ? "1px solid var(--ps-error)"
                   : "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
               }}
             />
             <button
@@ -356,57 +296,26 @@ export default function AdminNewDealerPage() {
                 !brokerEmail.trim() ||
                 !isValidPhone(brokerPhone)
               }
-              style={{
-                height: 38,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              }}
+              className="h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary cursor-pointer flex items-center gap-1"
             >
               <Plus size={14} /> Agregar
             </button>
           </div>
           {!isValidPhone(brokerPhone) && brokerPhone.trim() && (
-            <p
-              style={{
-                margin: 0,
-                fontSize: 11,
-                color: "var(--ps-error)",
-              }}
-            >
+            <p className="m-0 text-xs text-ps-error">
               Formato E.164: +código país + número
             </p>
           )}
           {brokers.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {brokers.map((broker) => (
                 <div
                   key={broker.email}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    background: "var(--ps-cyan-10)",
-                    border: "1px solid var(--ps-cyan)",
-                    fontSize: 13,
-                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-ps-cyan-10 border border-ps-cyan text-xs"
                 >
                   <div>
-                    <div style={{ fontWeight: 600 }}>{broker.name}</div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--ps-text-secondary)",
-                      }}
-                    >
+                    <div className="font-semibold">{broker.name}</div>
+                    <div className="text-xs text-ps-text-secondary">
                       {broker.email}
                       {broker.phone && ` · ${broker.phone}`}
                     </div>
@@ -414,18 +323,7 @@ export default function AdminNewDealerPage() {
                   <button
                     type="button"
                     onClick={() => removeBroker(broker.email)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 24,
-                      height: 24,
-                      borderRadius: 4,
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--ps-text-secondary)",
-                      cursor: "pointer",
-                    }}
+                    className="flex items-center justify-center w-6 h-6 rounded border-none bg-transparent text-ps-text-secondary cursor-pointer"
                   >
                     <X size={12} />
                   </button>
@@ -436,7 +334,7 @@ export default function AdminNewDealerPage() {
         </fieldset>
 
         {(createOrganization.error || updateOrganization.error) && (
-          <p style={{ color: "var(--ps-error)" }}>
+          <p className="text-ps-error">
             {createOrganization.error?.message ||
               updateOrganization.error?.message}
           </p>
@@ -451,15 +349,7 @@ export default function AdminNewDealerPage() {
             !isValidPhone(phone) ||
             !isValidPhone(whatsapp)
           }
-          style={{
-            height: 40,
-            borderRadius: 8,
-            background: "var(--ps-cyan)",
-            border: "none",
-            color: "var(--ps-bg-base)",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
+          className="h-10 rounded-lg bg-ps-cyan border-none text-ps-bg-base font-bold cursor-pointer"
         >
           {createOrganization.isPending || updateOrganization.isPending
             ? "Creando..."
