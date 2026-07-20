@@ -29,6 +29,7 @@ import {
   LeadStatus,
   type VendedorMetricsBreakdown,
 } from "@/lib/api/leads";
+import { cn } from "@/lib/utils";
 
 // ─── Pipeline stages config ───────────────────────────────────────────────────
 
@@ -100,66 +101,25 @@ function KpiCard({
   accent: string;
 }) {
   return (
-    <div
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 12,
-        padding: "20px 24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
+    <div className="bg-ps-surface border border-ps-border-default rounded-xl py-5 px-6 flex flex-col gap-3">
       {/* Icon badge */}
       <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          background: `${accent}22`,
-          border: `1px solid ${accent}33`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
+        className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+        style={{ background: `${accent}22`, border: `1px solid ${accent}33` }}
       >
         <Icon size={18} strokeWidth={2} style={{ color: accent }} />
       </div>
 
       {/* Value */}
       <div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 700,
-            color: "var(--ps-text-primary)",
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-          }}
-        >
+        <p className="m-0 text-[28px] font-bold text-ps-text-primary tracking-[-0.03em] leading-none">
           {value}
         </p>
-        <p
-          style={{
-            margin: "4px 0 0",
-            fontSize: 12,
-            color: "var(--ps-text-secondary)",
-            fontWeight: 500,
-          }}
-        >
+        <p className="mt-1 text-xs text-ps-text-secondary font-medium">
           {label}
         </p>
         {sub && (
-          <p
-            style={{
-              margin: "3px 0 0",
-              fontSize: 11,
-              color: "var(--ps-text-tertiary)",
-            }}
-          >
+          <p className="mt-[3px] text-[11px] text-ps-text-tertiary">
             {sub}
           </p>
         )}
@@ -176,32 +136,13 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 12,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: "16px 20px",
-          borderBottom: "1px solid var(--ps-border-subtle)",
-        }}
-      >
-        <h3
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+    <div className="bg-ps-surface border border-ps-border-default rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-ps-border-subtle">
+        <h3 className="m-0 text-sm font-semibold text-ps-text-primary">
           {title}
         </h3>
       </div>
-      <div style={{ padding: "16px 20px" }}>{children}</div>
+      <div className="px-5 py-4">{children}</div>
     </div>
   );
 }
@@ -223,51 +164,26 @@ function FunnelRow({
 }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-medium text-ps-text-primary">
           {label}
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color }}>{count}</span>
-          <span
-            style={{
-              fontSize: 11,
-              color: "var(--ps-text-tertiary)",
-              width: 34,
-              textAlign: "right",
-            }}
-          >
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-bold" style={{ color }}>
+            {count}
+          </span>
+          <span className="text-[11px] text-ps-text-tertiary w-[34px] text-right">
             {pct}%
           </span>
         </div>
       </div>
       {/* Bar track */}
-      <div
-        style={{
-          height: 6,
-          borderRadius: 99,
-          background: "var(--ps-bg-elevated)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="h-1.5 rounded-full bg-ps-elevated overflow-hidden">
         <div
+          className="h-full rounded-full"
           style={{
-            height: "100%",
             width: `${pct}%`,
-            borderRadius: 99,
             background: `linear-gradient(90deg, ${color}, ${bg.replace("0.15", "0.6")})`,
             transition: "width 600ms cubic-bezier(0.4,0,0.2,1)",
           }}
@@ -298,78 +214,48 @@ function VendedorRow({
   const isTop = rank === 1;
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "28px 32px 1fr auto",
-        alignItems: "center",
-        gap: 10,
-        padding: "8px 0",
-        borderBottom: "1px solid var(--ps-border-subtle)",
-      }}
-    >
+    <div className="grid grid-cols-[28px_32px_1fr_auto] items-center gap-2.5 py-2 border-b border-ps-border-subtle">
       {/* Rank */}
       <span
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: isTop ? "var(--ps-cyan)" : "var(--ps-text-tertiary)",
-          textAlign: "center",
-        }}
+        className={cn(
+          "text-[11px] font-bold text-center",
+          isTop ? "text-ps-cyan" : "text-ps-text-tertiary",
+        )}
       >
         #{rank}
       </span>
 
       {/* Avatar */}
       <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: "50%",
-          background: isTop
-            ? "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))"
-            : "var(--ps-bg-elevated)",
-          border: isTop ? "none" : "1px solid var(--ps-border-default)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 11,
-          fontWeight: 700,
-          color: isTop ? "var(--ps-bg-base)" : "var(--ps-text-secondary)",
-          flexShrink: 0,
-        }}
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0",
+          isTop
+            ? "text-ps-base"
+            : "bg-ps-elevated border border-ps-border-default text-ps-text-secondary",
+        )}
+        style={
+          isTop
+            ? {
+                background:
+                  "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
+                border: "none",
+              }
+            : undefined
+        }
       >
         {getInitials(vendedor.vendedor_name)}
       </div>
 
       {/* Name + bar */}
-      <div style={{ minWidth: 0 }}>
-        <p
-          style={{
-            margin: "0 0 4px",
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+      <div className="min-w-0">
+        <p className="mb-1 text-[13px] font-semibold text-ps-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
           {vendedor.vendedor_name}
         </p>
-        <div
-          style={{
-            height: 4,
-            borderRadius: 99,
-            background: "var(--ps-bg-elevated)",
-            overflow: "hidden",
-          }}
-        >
+        <div className="h-1 rounded-full bg-ps-elevated overflow-hidden">
           <div
+            className="h-full rounded-full"
             style={{
-              height: "100%",
               width: `${barPct}%`,
-              borderRadius: 99,
               background: isTop
                 ? "linear-gradient(90deg, var(--ps-cyan), var(--ps-blue))"
                 : "var(--ps-border-medium)",
@@ -380,20 +266,11 @@ function VendedorRow({
       </div>
 
       {/* Stats */}
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 700,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+      <div className="text-right shrink-0">
+        <p className="m-0 text-sm font-bold text-ps-text-primary">
           {vendedor.total_leads}
         </p>
-        <p
-          style={{ margin: 0, fontSize: 10, color: "var(--ps-text-tertiary)" }}
-        >
+        <p className="m-0 text-[10px] text-ps-text-tertiary">
           {Math.round(vendedor.conversion_rate * 100)}% conv.
         </p>
       </div>
@@ -406,11 +283,10 @@ function VendedorRow({
 function PulseBox({ w = "100%", h = 16 }: { w?: string | number; h?: number }) {
   return (
     <div
+      className="rounded-lg bg-ps-elevated"
       style={{
         width: w,
         height: h,
-        borderRadius: 8,
-        background: "var(--ps-bg-elevated)",
         animation: "psPulse 1.6s ease-in-out infinite",
       }}
     />
@@ -419,31 +295,17 @@ function PulseBox({ w = "100%", h = 16 }: { w?: string | number; h?: number }) {
 
 function AnalyticsSkeleton() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="flex flex-col gap-6">
       <style>{`@keyframes psPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }`}</style>
       {/* KPI cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 16,
-        }}
-      >
+      <div className="grid grid-cols-4 gap-4">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            style={{
-              background: "var(--ps-bg-surface)",
-              border: "1px solid var(--ps-border-default)",
-              borderRadius: 12,
-              padding: "20px 24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
+            className="bg-ps-surface border border-ps-border-default rounded-xl p-5 flex flex-col gap-3"
           >
             <PulseBox w={36} h={36} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               <PulseBox w="50%" h={28} />
               <PulseBox w="70%" h={12} />
             </div>
@@ -451,27 +313,11 @@ function AnalyticsSkeleton() {
         ))}
       </div>
       {/* Charts */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div
-          style={{
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 12,
-            padding: 20,
-            height: 280,
-          }}
-        >
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-ps-surface border border-ps-border-default rounded-xl p-5 h-72">
           <PulseBox h={16} w="40%" />
         </div>
-        <div
-          style={{
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 12,
-            padding: 20,
-            height: 280,
-          }}
-        >
+        <div className="bg-ps-surface border border-ps-border-default rounded-xl p-5 h-72">
           <PulseBox h={16} w="50%" />
         </div>
       </div>
@@ -536,28 +382,13 @@ export default function AnalyticsPage() {
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="flex flex-col gap-6">
         {/* Header */}
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-              lineHeight: 1.2,
-            }}
-          >
+          <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-tight">
             Analytics
           </h1>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1 text-[13px] text-ps-text-secondary">
             Métricas de ventas y performance del equipo.
           </p>
         </div>
@@ -569,52 +400,19 @@ export default function AnalyticsPage() {
   // ── Error ────────────────────────────────────────────────────────────────────
   if (metricsError) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 80,
-          gap: 16,
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            background: "var(--ps-error-bg)",
-            border: "1px solid var(--ps-error)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <div className="flex flex-col items-center justify-center p-20 gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-ps-error-bg border border-destructive flex items-center justify-center">
           <AlertCircle
             size={24}
             strokeWidth={2}
             style={{ color: "var(--ps-error)" }}
           />
         </div>
-        <div style={{ textAlign: "center" }}>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 16,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+        <div className="text-center">
+          <p className="m-0 text-base font-semibold text-ps-text-primary">
             No se pudieron cargar las métricas
           </p>
-          <p
-            style={{
-              margin: "6px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1.5 text-[13px] text-ps-text-secondary">
             {metricsError.message}
           </p>
         </div>
@@ -624,68 +422,26 @@ export default function AnalyticsPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="flex flex-col gap-6">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
-      >
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-              lineHeight: 1.2,
-            }}
-          >
+          <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-tight">
             Analytics
           </h1>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1 text-[13px] text-ps-text-secondary">
             Métricas de ventas y performance del equipo.
           </p>
         </div>
 
         {/* Period chip */}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "6px 14px",
-            borderRadius: 99,
-            background: "var(--ps-bg-elevated)",
-            border: "1px solid var(--ps-border-default)",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "var(--ps-text-secondary)",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
+        <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-ps-elevated border border-ps-border-default text-xs font-medium text-ps-text-secondary whitespace-nowrap shrink-0">
           Últimos 30 días
         </div>
       </div>
 
       {/* ── KPI row ────────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 16,
-        }}
-      >
+      <div className="grid grid-cols-4 gap-4">
         <KpiCard
           icon={Users}
           label="Total de leads"
@@ -719,10 +475,10 @@ export default function AnalyticsPage() {
       </div>
 
       {/* ── Main grid: Funnel + Leaderboard ───────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="grid grid-cols-2 gap-4">
         {/* Pipeline funnel */}
         <SectionCard title="Funnel de pipeline">
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="flex flex-col gap-4">
             {FUNNEL_STAGES.map((stage) => (
               <FunnelRow
                 key={stage.status}
@@ -735,56 +491,25 @@ export default function AnalyticsPage() {
             ))}
 
             {/* Lost separator */}
-            <div
-              style={{
-                height: 1,
-                background: "var(--ps-border-subtle)",
-                margin: "4px 0",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+            <div className="h-px bg-ps-border-subtle my-1" />
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-ps-text-secondary">
                 Perdidos
               </span>
               <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "var(--ps-error)",
-                }}
+                className="text-[13px] font-bold"
+                style={{ color: "var(--ps-error)" }}
               >
                 {lostCount}
               </span>
             </div>
 
             {/* Summary */}
-            <div
-              style={{
-                marginTop: 4,
-                padding: "12px 14px",
-                borderRadius: 10,
-                background: "var(--ps-bg-elevated)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span style={{ fontSize: 12, color: "var(--ps-text-secondary)" }}>
+            <div className="mt-1 px-3.5 py-3 rounded-[10px] bg-ps-elevated flex items-center justify-between">
+              <span className="text-xs text-ps-text-secondary">
                 Total activos en pipeline
               </span>
-              <span
-                style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "var(--ps-cyan)",
-                }}
-              >
+              <span className="text-base font-bold text-ps-cyan">
                 {activeFunnelTotal}
               </span>
             </div>
@@ -794,15 +519,7 @@ export default function AnalyticsPage() {
         {/* Vendedor leaderboard */}
         <SectionCard title="Ranking de vendedores">
           {leaderboard.length === 0 ? (
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                color: "var(--ps-text-tertiary)",
-                textAlign: "center",
-                padding: "32px 0",
-              }}
-            >
+            <p className="m-0 text-[13px] text-ps-text-tertiary text-center py-8">
               Sin datos de vendedores aún.
             </p>
           ) : (
@@ -817,13 +534,7 @@ export default function AnalyticsPage() {
               ))}
 
               {/* Legend */}
-              <p
-                style={{
-                  margin: "12px 0 0",
-                  fontSize: 11,
-                  color: "var(--ps-text-tertiary)",
-                }}
-              >
+              <p className="mt-3 text-[11px] text-ps-text-tertiary">
                 Ordenado por total de leads asignados.
               </p>
             </div>
@@ -834,7 +545,7 @@ export default function AnalyticsPage() {
       {/* ── Source breakdown ───────────────────────────────────────────────── */}
       {sourceCounts.length > 0 && (
         <SectionCard title="Leads por canal">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <div className="flex flex-wrap gap-2.5">
             {sourceCounts.map(([source, count]) => {
               const color = SOURCE_COLORS[source] ?? "var(--ps-text-secondary)";
               const label = SOURCE_LABELS[source] ?? source;
@@ -843,56 +554,25 @@ export default function AnalyticsPage() {
               return (
                 <div
                   key={source}
-                  style={{
-                    display: "inline-flex",
-                    flexDirection: "column",
-                    gap: 6,
-                    padding: "12px 16px",
-                    borderRadius: 10,
-                    background: "var(--ps-bg-elevated)",
-                    border: "1px solid var(--ps-border-subtle)",
-                    minWidth: 110,
-                  }}
+                  className="inline-flex flex-col gap-1.5 px-4 py-3 rounded-[10px] bg-ps-elevated border border-ps-border-subtle min-w-[110px]"
                 >
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 7 }}
-                  >
+                  <div className="flex items-center gap-1.5">
                     <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: color,
-                        flexShrink: 0,
-                        boxShadow: `0 0 6px ${color}`,
-                      }}
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: color, boxShadow: `0 0 6px ${color}` }}
                     />
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: "var(--ps-text-primary)",
-                      }}
-                    >
+                    <span className="text-xs font-semibold text-ps-text-primary">
                       {label}
                     </span>
                   </div>
-                  <div
-                    style={{ display: "flex", alignItems: "baseline", gap: 6 }}
-                  >
+                  <div className="flex items-baseline gap-1.5">
                     <span
-                      style={{
-                        fontSize: 22,
-                        fontWeight: 700,
-                        color,
-                        letterSpacing: "-0.03em",
-                      }}
+                      className="text-[22px] font-bold tracking-[-0.03em]"
+                      style={{ color }}
                     >
                       {count}
                     </span>
-                    <span
-                      style={{ fontSize: 11, color: "var(--ps-text-tertiary)" }}
-                    >
+                    <span className="text-[11px] text-ps-text-tertiary">
                       {pct}%
                     </span>
                   </div>
