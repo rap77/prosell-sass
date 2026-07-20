@@ -235,60 +235,39 @@ export function KanbanBoard() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          padding: 64,
-          color: "var(--ps-text-secondary)",
-        }}
-      >
+      <div className="flex items-center justify-center gap-2.5 p-16 text-ps-text-secondary">
         <Loader2
           size={18}
           strokeWidth={2}
           style={{ animation: "spin 0.8s linear infinite" }}
         />
-        <span style={{ fontSize: 14 }}>Cargando pipeline...</span>
+        <span className="text-sm">Cargando pipeline...</span>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="flex flex-col gap-5">
       {/* Vendedor filter */}
       {vendedores.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="flex items-center gap-2.5">
           <label
             htmlFor="vendedor-select"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--ps-text-secondary)",
-              whiteSpace: "nowrap",
-            }}
+            className="text-xs font-medium text-ps-text-secondary whitespace-nowrap"
           >
             Filtrar por vendedor:
           </label>
-          <div style={{ position: "relative" }}>
+          <div className="relative">
             <select
               id="vendedor-select"
               value={vendedorFilter}
               onChange={(e) => setVendedorFilter(e.target.value)}
+              className="h-8.5 pl-3 pr-8 appearance-none bg-ps-input-bg border border-ps-input-border rounded-lg text-ps-text-primary text-xs outline-none cursor-pointer"
               style={{
-                height: 34,
-                paddingLeft: 12,
-                paddingRight: 32,
-                appearance: "none",
                 background: "var(--ps-input-bg)",
-                border: "1px solid var(--ps-input-border)",
-                borderRadius: 8,
+                borderColor: "var(--ps-input-border)",
                 color: "var(--ps-text-primary)",
-                fontSize: 13,
-                outline: "none",
-                cursor: "pointer",
               }}
             >
               <option value="">Todos los vendedores</option>
@@ -303,13 +282,9 @@ export function KanbanBoard() {
             <ChevronDown
               size={14}
               strokeWidth={2}
+              className="absolute right-2.5 top-1/2 text-ps-text-secondary pointer-events-none"
               style={{
-                position: "absolute",
-                right: 10,
-                top: "50%",
                 transform: "translateY(-50%)",
-                color: "var(--ps-text-secondary)",
-                pointerEvents: "none",
               }}
             />
           </div>
@@ -322,15 +297,7 @@ export function KanbanBoard() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 12,
-            overflowX: "auto",
-            paddingBottom: 8,
-          }}
-        >
+        <div className="grid grid-cols-4 gap-3 overflow-x-auto pb-2">
           {KANBAN_COLUMNS.map((status) => (
             <KanbanColumn
               key={status}
