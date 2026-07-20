@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 // ponytail: E.164 format — + followed by 1-15 digits, optional spaces/dashes for readability
 const E164_REGEX = /^\+[1-9]\d{0,14}$/;
@@ -108,18 +109,7 @@ function SectionHeader({
     <button
       type="button"
       onClick={onToggle}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: "none",
-        border: "none",
-        color: "var(--ps-text-primary)",
-        cursor: "pointer",
-        fontSize: 14,
-        fontWeight: 600,
-        padding: "8px 0",
-      }}
+      className="flex items-center gap-2 bg-none border-0 text-ps-text-primary cursor-pointer text-sm font-semibold py-2 px-0"
     >
       {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       {title}
@@ -182,17 +172,10 @@ export function OrganizationFormFields({
   const whatsappError = whatsappTouched && !isValidPhone(whatsapp);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Identity row: Name + Siglas + Color */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto auto",
-          gap: 12,
-          alignItems: "end",
-        }}
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div className="grid gap-3 items-end" style={{ gridTemplateColumns: "1fr auto auto" }}>
+        <label className="flex flex-col gap-1.5">
           Nombre *
           <input
             type="text"
@@ -202,7 +185,7 @@ export function OrganizationFormFields({
             style={inputStyle}
           />
         </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label className="flex flex-col gap-1.5">
           Siglas
           <input
             type="text"
@@ -215,7 +198,7 @@ export function OrganizationFormFields({
             style={{ ...inputStyle, width: 80, textTransform: "uppercase" }}
           />
         </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label className="flex flex-col gap-1.5">
           Color
           <input
             type="color"
@@ -232,7 +215,7 @@ export function OrganizationFormFields({
       </div>
 
       {/* Description */}
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label className="flex flex-col gap-1.5">
         Descripción
         <textarea
           value={description}
@@ -243,7 +226,7 @@ export function OrganizationFormFields({
       </label>
 
       {/* Website */}
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label className="flex flex-col gap-1.5">
         Sitio web
         <input
           type="url"
@@ -263,16 +246,8 @@ export function OrganizationFormFields({
         />
         {showContact && (
           <div style={sectionBodyStyle}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 12,
-              }}
-            >
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+            <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <label className="flex flex-col gap-1.5">
                 Teléfono
                 <input
                   type="tel"
@@ -288,9 +263,7 @@ export function OrganizationFormFields({
                   </span>
                 )}
               </label>
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+              <label className="flex flex-col gap-1.5">
                 Email de contacto
                 <input
                   type="email"
@@ -300,7 +273,7 @@ export function OrganizationFormFields({
                 />
               </label>
             </div>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="flex flex-col gap-1.5">
               WhatsApp
               <input
                 type="tel"
@@ -329,7 +302,7 @@ export function OrganizationFormFields({
         />
         {showAddress && (
           <div style={sectionBodyStyle}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="flex flex-col gap-1.5">
               Calle y número
               <input
                 type="text"
@@ -338,16 +311,8 @@ export function OrganizationFormFields({
                 style={inputStyle}
               />
             </label>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 12,
-              }}
-            >
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+            <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <label className="flex flex-col gap-1.5">
                 Ciudad
                 <input
                   type="text"
@@ -356,9 +321,7 @@ export function OrganizationFormFields({
                   style={inputStyle}
                 />
               </label>
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+              <label className="flex flex-col gap-1.5">
                 Provincia/Estado
                 <input
                   type="text"
@@ -368,16 +331,8 @@ export function OrganizationFormFields({
                 />
               </label>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 12,
-              }}
-            >
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+            <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <label className="flex flex-col gap-1.5">
                 Código postal
                 <input
                   type="text"
@@ -386,9 +341,7 @@ export function OrganizationFormFields({
                   style={inputStyle}
                 />
               </label>
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+              <label className="flex flex-col gap-1.5">
                 País
                 <input
                   type="text"
@@ -410,8 +363,8 @@ export function OrganizationFormFields({
           onToggle={() => setShowFiscal(!showFiscal)}
         />
         {showFiscal && (
-          <div style={{ marginTop: 8 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="mt-2">
+            <label className="flex flex-col gap-1.5">
               CUIT / RUC / NIT
               <input
                 type="text"
@@ -432,15 +385,8 @@ export function OrganizationFormFields({
           onToggle={() => setShowSocial(!showSocial)}
         />
         {showSocial && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
-              marginTop: 8,
-            }}
-          >
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="grid gap-3 mt-2" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <label className="flex flex-col gap-1.5">
               Instagram
               <input
                 type="text"
@@ -450,7 +396,7 @@ export function OrganizationFormFields({
                 style={inputStyle}
               />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="flex flex-col gap-1.5">
               Facebook
               <input
                 type="url"
