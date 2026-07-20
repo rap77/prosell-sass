@@ -75,19 +75,11 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <span
       data-testid="vehicle-status"
+      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.75 text-xs font-medium whitespace-nowrap shadow-sm"
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "3px 10px",
-        borderRadius: 20,
         // ponytail: solid dark backdrop for readability over images
         background: "rgba(30,30,30,0.85)",
         color,
-        fontSize: 12,
-        fontWeight: 500,
-        whiteSpace: "nowrap",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
       }}
     >
       <Icon size={12} strokeWidth={2.5} aria-hidden="true" />
