@@ -30,33 +30,21 @@ export default function AcceptOrgInvitationPage() {
 
   if (token === null) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--ps-bg-base)",
-          padding: "32px 24px",
-        }}
-      >
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--ps-bg-base)", padding: "32px 24px" }}>
         <div
+          className="w-full max-w-sm text-center rounded-lg"
           style={{
             background: "var(--ps-bg-surface)",
             border: "1px solid var(--ps-border-default)",
-            borderRadius: 14,
             padding: "28px 28px 32px",
-            maxWidth: 400,
-            width: "100%",
-            textAlign: "center",
           }}
         >
           <XCircle size={48} style={{ color: "var(--ps-error)" }} />
           <h1
+            className="font-bold"
             style={{
               margin: "16px 0 8px",
               fontSize: 20,
-              fontWeight: 700,
               color: "var(--ps-text-primary)",
             }}
           >
@@ -124,30 +112,20 @@ export default function AcceptOrgInvitationPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--ps-bg-base)",
-        padding: "32px 24px",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 400 }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--ps-bg-base)", padding: "32px 24px" }}>
+      <div className="w-full max-w-sm">
         <div
+          className="rounded-lg"
           style={{
             background: "var(--ps-bg-surface)",
             border: "1px solid var(--ps-border-default)",
-            borderRadius: 14,
             padding: "28px 28px 32px",
           }}
         >
           <h1
+            className="font-bold mb-4"
             style={{
-              margin: "0 0 16px",
               fontSize: 20,
-              fontWeight: 700,
               color: "var(--ps-text-primary)",
             }}
           >
@@ -155,42 +133,18 @@ export default function AcceptOrgInvitationPage() {
           </h1>
 
           {state === "success" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
+            <div className="flex flex-col items-center text-center" style={{ gap: 12 }}>
               <CheckCircle2 size={48} style={{ color: "var(--ps-success)" }} />
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p style={{ color: "var(--ps-text-secondary)" }}>
                 {message}
               </p>
             </div>
           )}
 
           {state === "expired" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
+            <div className="flex flex-col items-center text-center" style={{ gap: 12 }}>
               <XCircle size={48} style={{ color: "var(--ps-error)" }} />
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p style={{ color: "var(--ps-text-secondary)" }}>
                 {message}
               </p>
             </div>
@@ -199,60 +153,56 @@ export default function AcceptOrgInvitationPage() {
           {(state === "form" || state === "loading" || state === "error") && (
             <form
               onSubmit={handleSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: 14 }}
+              className="flex flex-col"
+              style={{ gap: 14 }}
             >
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+              <label className="flex flex-col" style={{ gap: 6 }}>
                 Nombre
                 <input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
+                  className="rounded-md border-none"
                   style={{
                     height: 38,
                     padding: "0 12px",
-                    borderRadius: 8,
                     border: "1px solid var(--ps-border-default)",
                   }}
                 />
               </label>
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+              <label className="flex flex-col" style={{ gap: 6 }}>
                 Apellido
                 <input
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
+                  className="rounded-md border-none"
                   style={{
                     height: 38,
                     padding: "0 12px",
-                    borderRadius: 8,
                     border: "1px solid var(--ps-border-default)",
                   }}
                 />
               </label>
-              <label
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
+              <label className="flex flex-col" style={{ gap: 6 }}>
                 Contraseña
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="rounded-md border-none"
                   style={{
                     height: 38,
                     padding: "0 12px",
-                    borderRadius: 8,
                     border: "1px solid var(--ps-border-default)",
                   }}
                 />
               </label>
               {fieldError && (
                 <p
-                  style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}
+                  className="m-0 text-sm"
+                  style={{ color: "var(--ps-error)" }}
                   role="alert"
                 >
                   {fieldError}
@@ -260,7 +210,8 @@ export default function AcceptOrgInvitationPage() {
               )}
               {state === "error" && !fieldError && (
                 <p
-                  style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}
+                  className="m-0 text-sm"
+                  style={{ color: "var(--ps-error)" }}
                   role="alert"
                 >
                   {message}
@@ -269,14 +220,11 @@ export default function AcceptOrgInvitationPage() {
               <button
                 type="submit"
                 disabled={state === "loading"}
+                className="rounded-md font-bold cursor-pointer border-none"
                 style={{
                   height: 40,
-                  borderRadius: 8,
                   background: "var(--ps-cyan)",
-                  border: "none",
                   color: "var(--ps-bg-base)",
-                  fontWeight: 700,
-                  cursor: "pointer",
                 }}
               >
                 Aceptar invitación
