@@ -40,22 +40,14 @@ export function HeroShotSelector({
 
   if (images.length === 0) {
     return (
-      <p
-        style={{
-          fontSize: 13,
-          color: "var(--ps-text-secondary)",
-          fontStyle: "italic",
-        }}
-      >
+      <p className="text-xs italic text-secondary">
         No hay fotos disponibles.
       </p>
     );
   }
 
   return (
-    <div
-      style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}
-    >
+    <div className="grid grid-cols-4 gap-2">
       {images.map((url, index) => {
         const isSelected = index === heroIndex;
         const isHovered = hoveredIndex === index;
@@ -72,11 +64,8 @@ export function HeroShotSelector({
                 ? `Foto ${index + 1} — portada seleccionada`
                 : `Seleccionar foto ${index + 1} como portada`
             }
+            className="relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-elevated p-0 transition-colors duration-150"
             style={{
-              position: "relative",
-              aspectRatio: "1 / 1",
-              borderRadius: 8,
-              overflow: "hidden",
               border: isSelected
                 ? "2px solid var(--ps-cyan)"
                 : isHovered
@@ -84,10 +73,6 @@ export function HeroShotSelector({
                   : "2px solid transparent",
               outline: isSelected ? "2px solid var(--ps-cyan)" : "none",
               outlineOffset: isSelected ? 2 : 0,
-              background: "var(--ps-bg-elevated)",
-              cursor: "pointer",
-              padding: 0,
-              transition: "border-color 0.15s",
             }}
           >
             <Image
@@ -104,20 +89,7 @@ export function HeroShotSelector({
               unoptimized
             />
             {isSelected && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: 4,
-                  left: 4,
-                  background: "var(--ps-cyan)",
-                  color: "var(--ps-bg-base)",
-                  fontSize: 9,
-                  fontWeight: 800,
-                  letterSpacing: "0.08em",
-                  padding: "2px 6px",
-                  borderRadius: 4,
-                }}
-              >
+              <span className="absolute top-1 left-1 bg-cyan text-base rounded px-1.5 py-0.5 text-xs font-black tracking-wider">
                 PORTADA
               </span>
             )}
