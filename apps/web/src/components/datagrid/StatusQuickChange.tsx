@@ -97,27 +97,13 @@ export function StatusQuickChange({
   return (
     <div
       ref={containerRef}
-      style={{ position: "relative", display: "inline-block" }}
+      className="relative inline-block"
     >
       {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          height: 32,
-          padding: "0 10px",
-          borderRadius: 6,
-          background: "transparent",
-          border: "none",
-          color: "var(--ps-text-secondary)",
-          fontSize: 12,
-          fontWeight: 500,
-          cursor: "pointer",
-          transition: "background 0.15s",
-        }}
+        className="inline-flex items-center gap-1 h-8 px-2.5 rounded text-xs font-medium text-ps-text-secondary cursor-pointer transition-colors bg-transparent hover:bg-ps-bg-elevated"
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "var(--ps-bg-elevated)";
         }}
@@ -132,19 +118,9 @@ export function StatusQuickChange({
       {/* Dropdown */}
       {open && (
         <div
+          className="absolute top-full right-0 mt-1 w-48 bg-ps-bg-surface border border-ps-border-default rounded-[10px] shadow-lg z-100 overflow-hidden py-1"
           style={{
-            position: "absolute",
-            top: "100%",
-            right: 0,
-            marginTop: 4,
-            width: 192,
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 10,
             boxShadow: "0 8px 24px rgba(6,13,36,0.3)",
-            zIndex: 100,
-            overflow: "hidden",
-            padding: "4px 0",
           }}
         >
           {Object.entries(statusConfig).map(
@@ -159,21 +135,12 @@ export function StatusQuickChange({
                       handleStatusChange(status);
                   }}
                   disabled={isCurrent}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 bg-transparent border-none text-left text-sm transition-colors"
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: "transparent",
-                    border: "none",
-                    textAlign: "left",
-                    fontSize: 13,
                     color: isCurrent
                       ? "var(--ps-text-tertiary)"
                       : "var(--ps-text-primary)",
                     cursor: isCurrent ? "default" : "pointer",
-                    transition: "background 0.1s",
                   }}
                   onMouseEnter={(e) => {
                     if (!isCurrent)
@@ -189,10 +156,10 @@ export function StatusQuickChange({
                     strokeWidth={2}
                     style={{ color, flexShrink: 0 }}
                   />
-                  <span style={{ flex: 1 }}>{label}</span>
+                  <span className="flex-1">{label}</span>
                   {isCurrent && (
                     <span
-                      style={{ fontSize: 10, color: "var(--ps-text-tertiary)" }}
+                      className="text-[10px] text-ps-text-tertiary"
                     >
                       Actual
                     </span>
