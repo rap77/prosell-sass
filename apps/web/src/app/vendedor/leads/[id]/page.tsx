@@ -8,7 +8,7 @@
  * Sidebar: audit trail (status history), duplicate warning
  *
  * Data: useLead, useLeadDuplicates, useLeadAuditTrail
- * All colors via var(--ps-*) tokens.
+ * All colors via ps-* tokens.
  */
 
 import { useState, use } from "react";
@@ -44,34 +44,13 @@ function DetailCard({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 12,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: "14px 20px",
-          borderBottom: "1px solid var(--ps-border-subtle)",
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 13,
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            color: "var(--ps-text-tertiary)",
-          }}
-        >
+    <div className="bg-ps-surface border border-ps-border-default rounded-xl overflow-hidden">
+      <div className="py-3.5 px-5 border-b border-ps-border-subtle">
+        <h2 className="m-0 text-[13px] font-semibold tracking-wider uppercase text-ps-tertiary">
           {title}
         </h2>
       </div>
-      <div style={{ padding: 20 }}>{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   );
 }
@@ -89,37 +68,17 @@ function InfoRow({
 }) {
   if (!value) return null;
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+    <div className="flex items-start gap-2.5">
       <Icon
         size={14}
         strokeWidth={2}
-        style={{
-          color: "var(--ps-text-tertiary)",
-          marginTop: 2,
-          flexShrink: 0,
-        }}
+        className="text-ps-tertiary mt-0.5 shrink-0"
       />
       <div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 11,
-            color: "var(--ps-text-tertiary)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            fontWeight: 600,
-          }}
-        >
+        <p className="m-0 text-[11px] text-ps-tertiary uppercase tracking-wider font-semibold">
           {label}
         </p>
-        <p
-          style={{
-            margin: "2px 0 0",
-            fontSize: 14,
-            color: "var(--ps-text-primary)",
-            fontWeight: 500,
-          }}
-        >
+        <p className="mt-0.5 text-sm text-ps-text-primary font-medium">
           {value}
         </p>
       </div>
@@ -151,22 +110,13 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          padding: 80,
-          color: "var(--ps-text-secondary)",
-        }}
-      >
+      <div className="flex items-center justify-center gap-2.5 p-20 text-ps-text-secondary">
         <Loader2
           size={20}
           strokeWidth={2}
-          style={{ animation: "spin 0.8s linear infinite" }}
+          className="animate-spin"
         />
-        <span style={{ fontSize: 14 }}>Cargando lead...</span>
+        <span className="text-sm">Cargando lead...</span>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -175,53 +125,21 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 16,
-          padding: 80,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: "var(--ps-error-bg)",
-            border: "1px solid rgba(240,68,56,0.25)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <div className="flex flex-col items-center gap-4 p-20 text-center">
+        <div className="w-14 h-14 rounded-full bg-ps-error-bg border border-destructive/25 flex items-center justify-center">
           <AlertCircle
             size={24}
-            style={{ color: "var(--ps-error)" }}
+            className="text-destructive"
             strokeWidth={1.8}
           />
         </div>
-        <p style={{ margin: 0, fontSize: 14, color: "var(--ps-error)" }}>
+        <p className="m-0 text-sm text-destructive">
           Error al cargar el lead: {error.message}
         </p>
         <button
           type="button"
           onClick={() => router.back()}
-          style={{
-            height: 36,
-            padding: "0 16px",
-            background: "transparent",
-            border: "1px solid var(--ps-input-border)",
-            borderRadius: 8,
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-          }}
+          className="h-9 px-4 bg-transparent border border-ps-border-default rounded-lg text-[13px] text-ps-text-secondary cursor-pointer inline-flex items-center gap-1.5"
         >
           <ArrowLeft size={14} strokeWidth={2} />
           Volver
@@ -233,37 +151,14 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
   // ── Not found ──────────────────────────────────────────────────────────────
   if (!lead) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 12,
-          padding: 80,
-          textAlign: "center",
-        }}
-      >
-        <p
-          style={{ margin: 0, fontSize: 14, color: "var(--ps-text-secondary)" }}
-        >
+      <div className="flex flex-col items-center gap-3 p-20 text-center">
+        <p className="m-0 text-sm text-ps-text-secondary">
           Lead no encontrado.
         </p>
         <button
           type="button"
           onClick={() => router.back()}
-          style={{
-            height: 36,
-            padding: "0 16px",
-            background: "transparent",
-            border: "1px solid var(--ps-input-border)",
-            borderRadius: 8,
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-          }}
+          className="h-9 px-4 bg-transparent border border-ps-border-default rounded-lg text-[13px] text-ps-text-secondary cursor-pointer inline-flex items-center gap-1.5"
         >
           <ArrowLeft size={14} strokeWidth={2} />
           Volver a Leads
@@ -274,73 +169,22 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
 
   // ── Detail ─────────────────────────────────────────────────────────────────
   return (
-    <div
-      style={{
-        maxWidth: 1100,
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-      }}
-    >
+    <div className="max-w-[1100px] mx-auto flex flex-col gap-6">
       {/* Page header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            style={{
-              width: 34,
-              height: 34,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "transparent",
-              border: "1px solid var(--ps-input-border)",
-              borderRadius: 8,
-              color: "var(--ps-text-secondary)",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--ps-border-strong)";
-              e.currentTarget.style.color = "var(--ps-text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--ps-input-border)";
-              e.currentTarget.style.color = "var(--ps-text-secondary)";
-            }}
+            className="w-[34px] h-[34px] inline-flex items-center justify-center bg-transparent border border-ps-border-default rounded-lg text-ps-text-secondary cursor-pointer shrink-0 hover:border-ps-border-strong hover:text-ps-text-primary"
           >
             <ArrowLeft size={16} strokeWidth={2} />
           </button>
           <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "var(--ps-text-primary)",
-                lineHeight: 1.2,
-              }}
-            >
+            <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-[1.2]">
               {lead.buyer_name}
             </h1>
-            <p
-              style={{
-                margin: "3px 0 0",
-                fontSize: 13,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <p className="mt-[3px] text-[13px] text-ps-text-secondary">
               via {lead.source} ·{" "}
               {new Date(lead.created_at).toLocaleDateString("es-AR", {
                 day: "2-digit",
@@ -351,7 +195,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="flex items-center gap-2.5">
           {/* Status dropdown */}
           <LeadStatusDropdown leadId={lead.id} currentStatus={lead.status} />
 
@@ -359,20 +203,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           <button
             type="button"
             onClick={() => setIsAppointmentModalOpen(true)}
-            style={{
-              height: 36,
-              padding: "0 14px",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: "var(--ps-cyan)",
-              color: "var(--ps-bg-base)",
-              border: 0,
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="h-9 px-[14px] inline-flex items-center gap-1.5 bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
           >
             <Calendar size={14} strokeWidth={2} />
             Agendar cita
@@ -390,68 +221,25 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
       )}
 
       {/* Two-column layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 320px",
-          gap: 20,
-          alignItems: "start",
-        }}
-      >
+      <div className="grid grid-cols-[1fr_320px] gap-5 items-start">
         {/* Left — main info */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="flex flex-col gap-4">
           {/* Buyer */}
           <DetailCard title="Datos del comprador">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                marginBottom: 20,
-              }}
-            >
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: "50%",
-                  flexShrink: 0,
-                  background:
-                    "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "var(--ps-bg-base)",
-                }}
-              >
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-[52px] h-[52px] rounded-full shrink-0 bg-gradient-to-br from-ps-cyan to-ps-blue flex items-center justify-center text-[18px] font-bold text-ps-base">
                 {getInitials(lead.buyer_name)}
               </div>
               <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "var(--ps-text-primary)",
-                  }}
-                >
+                <p className="m-0 text-base font-bold text-ps-text-primary">
                   {lead.buyer_name}
                 </p>
-                <p
-                  style={{
-                    margin: "3px 0 0",
-                    fontSize: 12,
-                    color: "var(--ps-text-secondary)",
-                    textTransform: "capitalize",
-                  }}
-                >
+                <p className="mt-[3px] text-xs text-ps-text-secondary capitalize">
                   Fuente: {lead.source}
                 </p>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="flex flex-col gap-3">
               <InfoRow icon={User} label="Nombre" value={lead.buyer_name} />
               <InfoRow icon={Mail} label="Email" value={lead.buyer_email} />
               <InfoRow icon={Phone} label="Teléfono" value={lead.buyer_phone} />
@@ -461,40 +249,17 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           {/* Vehicle */}
           {lead.product && (
             <DetailCard title="Interés en vehículo">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "12px 16px",
-                  background: "var(--ps-bg-elevated)",
-                  borderRadius: 8,
-                  border: "1px solid var(--ps-border-subtle)",
-                }}
-              >
+              <div className="flex items-center gap-3.5 p-3 bg-ps-elevated rounded-lg border border-ps-border-subtle">
                 <Car
                   size={24}
-                  style={{ color: "var(--ps-cyan)", flexShrink: 0 }}
+                  className="text-ps-cyan shrink-0"
                   strokeWidth={1.8}
                 />
                 <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 15,
-                      fontWeight: 600,
-                      color: "var(--ps-text-primary)",
-                    }}
-                  >
+                  <p className="m-0 text-[15px] font-semibold text-ps-text-primary">
                     {lead.product.title}
                   </p>
-                  <p
-                    style={{
-                      margin: "3px 0 0",
-                      fontSize: 12,
-                      color: "var(--ps-text-secondary)",
-                    }}
-                  >
+                  <p className="mt-[3px] text-xs text-ps-text-secondary">
                     {[
                       lead.product.attributes.year,
                       lead.product.attributes.make,
@@ -511,24 +276,13 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           {/* Message */}
           {lead.message && (
             <DetailCard title="Mensaje">
-              <div style={{ display: "flex", gap: 10 }}>
+              <div className="flex gap-2.5">
                 <MessageSquare
                   size={16}
-                  style={{
-                    color: "var(--ps-text-tertiary)",
-                    flexShrink: 0,
-                    marginTop: 1,
-                  }}
+                  className="text-ps-tertiary shrink-0 mt-px"
                   strokeWidth={1.8}
                 />
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 14,
-                    color: "var(--ps-text-primary)",
-                    lineHeight: 1.6,
-                  }}
-                >
+                <p className="m-0 text-sm text-ps-text-primary leading-relaxed">
                   {lead.message}
                 </p>
               </div>
@@ -537,56 +291,20 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
 
           {/* Timeline */}
           <DetailCard title="Fechas">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 20,
-              }}
-            >
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    color: "var(--ps-text-tertiary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    fontWeight: 600,
-                  }}
-                >
+                <p className="m-0 text-[11px] text-ps-tertiary uppercase tracking-wider font-semibold">
                   Creado
                 </p>
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    fontSize: 14,
-                    color: "var(--ps-text-primary)",
-                  }}
-                >
+                <p className="mt-1 text-sm text-ps-text-primary">
                   {new Date(lead.created_at).toLocaleString("es-AR")}
                 </p>
               </div>
               <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    color: "var(--ps-text-tertiary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    fontWeight: 600,
-                  }}
-                >
+                <p className="m-0 text-[11px] text-ps-tertiary uppercase tracking-wider font-semibold">
                   Última actualización
                 </p>
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    fontSize: 14,
-                    color: "var(--ps-text-primary)",
-                  }}
-                >
+                <p className="mt-1 text-sm text-ps-text-primary">
                   {new Date(lead.updated_at).toLocaleString("es-AR")}
                 </p>
               </div>
