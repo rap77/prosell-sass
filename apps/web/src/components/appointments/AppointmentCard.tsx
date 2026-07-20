@@ -91,124 +91,66 @@ export function AppointmentCard({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      className="rounded-[10px] border border-[var(--ps-border-default)] bg-[var(--ps-bg-surface)] p-4 transition-shadow duration-150"
       style={{
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 10,
-        padding: 16,
         cursor: onClick ? "pointer" : "default",
         boxShadow:
           isHovered && onClick
             ? "0 4px 16px rgba(6,13,36,0.25)"
             : "0 1px 4px rgba(6,13,36,0.1)",
-        transition: "box-shadow 0.15s",
       }}
     >
       {/* Header: fecha + badge de estado */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div className="mb-3 flex items-start justify-between">
+        <div className="flex items-center gap-1.5">
           <Calendar size={14} strokeWidth={2} style={iconStyle} />
-          <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+          <span className="text-xs text-[var(--ps-text-secondary)]">
             {format(scheduledDate, "d MMM yyyy")}
           </span>
         </div>
         <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "2px 10px",
-            borderRadius: 99,
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.04em",
-            ...statusConfig.style,
-          }}
+          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide"
+          style={statusConfig.style}
         >
           {statusConfig.label}
         </span>
       </div>
 
       {/* Comprador */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
+      <div className="mb-2 flex items-center gap-2">
         <User size={14} strokeWidth={2} style={iconStyle} />
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+        <span className="text-xs font-semibold text-[var(--ps-text-primary)]">
           {lead.buyer_name}
         </span>
       </div>
 
       {/* Vehículo */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
+      <div className="mb-2 flex items-center gap-2">
         <Car size={14} strokeWidth={2} style={iconStyle} />
         {lead.product ? (
-          <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+          <span className="text-xs text-[var(--ps-text-secondary)]">
             {lead.product.attributes.year} {lead.product.attributes.make}{" "}
             {lead.product.attributes.model}
           </span>
         ) : (
-          <span
-            style={{
-              fontSize: 13,
-              color: "var(--ps-text-tertiary)",
-              fontStyle: "italic",
-            }}
-          >
+          <span className="text-xs italic text-[var(--ps-text-tertiary)]">
             Vehículo no disponible
           </span>
         )}
       </div>
 
       {/* Hora */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="flex items-center gap-2">
         <Clock size={14} strokeWidth={2} style={iconStyle} />
-        <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+        <span className="text-xs text-[var(--ps-text-secondary)]">
           {format(scheduledDate, "HH:mm")}
         </span>
       </div>
 
       {/* Notas */}
       {appointment.notes && (
-        <div
-          style={{
-            marginTop: 12,
-            paddingTop: 12,
-            borderTop: "1px solid var(--ps-border-subtle)",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: 12,
-              color: "var(--ps-text-secondary)",
-              fontStyle: "italic",
-            }}
-          >
+        <div className="mt-3 border-t border-[var(--ps-border-subtle)] pt-3">
+          <p className="m-0 text-xs italic text-[var(--ps-text-secondary)]">
             {appointment.notes}
           </p>
         </div>
@@ -217,15 +159,7 @@ export function AppointmentCard({
       {/* Acciones (solo turnos agendados) */}
       {appointment.status === AppointmentStatus.SCHEDULED &&
         (onConfirm || onCancel) && (
-          <div
-            style={{
-              marginTop: 12,
-              paddingTop: 12,
-              borderTop: "1px solid var(--ps-border-subtle)",
-              display: "flex",
-              gap: 8,
-            }}
-          >
+          <div className="mt-3 flex gap-2 border-t border-[var(--ps-border-subtle)] pt-3">
             {onConfirm && (
               <button
                 type="button"
@@ -233,17 +167,7 @@ export function AppointmentCard({
                   e.stopPropagation();
                   onConfirm();
                 }}
-                style={{
-                  height: 32,
-                  padding: "0 14px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#fff",
-                  background: "var(--ps-success)",
-                  border: "none",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                }}
+                className="h-8 rounded-md border-none bg-[var(--ps-success)] px-3.5 text-xs font-semibold text-white"
               >
                 Confirmar
               </button>
@@ -255,17 +179,7 @@ export function AppointmentCard({
                   e.stopPropagation();
                   onCancel();
                 }}
-                style={{
-                  height: 32,
-                  padding: "0 14px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--ps-error)",
-                  background: "transparent",
-                  border: "1px solid var(--ps-error)",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                }}
+                className="h-8 rounded-md border border-[var(--ps-error)] bg-transparent px-3.5 text-xs font-semibold text-[var(--ps-error)]"
               >
                 Cancelar
               </button>
