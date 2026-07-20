@@ -234,29 +234,16 @@ export function TeamLeadList({
     <>
       <style>{FILTER_STYLES}</style>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="flex flex-col gap-4">
         {/* ── Filtros ── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Búsqueda */}
-          <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
+          <div className="relative flex-1 max-w-sm">
             <Search
               size={14}
               strokeWidth={2}
-              style={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--ps-text-tertiary)",
-                pointerEvents: "none",
-              }}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: "var(--ps-text-tertiary)" }}
             />
             <input
               type="text"
@@ -266,8 +253,7 @@ export function TeamLeadList({
                 setSearchQuery(e.target.value);
                 setPage(0);
               }}
-              className="ps-tll-input"
-              style={{ paddingLeft: 32, width: "100%" }}
+              className="ps-tll-input pl-8 w-full"
               data-testid="search-input"
             />
           </div>
@@ -276,8 +262,7 @@ export function TeamLeadList({
           <select
             value={vendedorFilter}
             onChange={(e) => setVendedorFilter(e.target.value)}
-            className="ps-tll-select"
-            style={{ width: 192 }}
+            className="ps-tll-select w-48"
             data-testid="vendedor-filter"
           >
             <option value="all">Todos los vendedores</option>
@@ -296,8 +281,7 @@ export function TeamLeadList({
               if (value === "all" || isLeadStatus(value))
                 setStatusFilter(value);
             }}
-            className="ps-tll-select"
-            style={{ width: 192 }}
+            className="ps-tll-select w-48"
             data-testid="status-filter"
           >
             <option value="all">Todos los estados</option>
@@ -314,22 +298,8 @@ export function TeamLeadList({
             onClick={handleExportToCSV}
             disabled={leads.length === 0}
             data-testid="export-csv-button"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              height: 36,
-              padding: "0 14px",
-              borderRadius: 8,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              color: "var(--ps-text-secondary)",
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: "pointer",
-              opacity: leads.length === 0 ? 0.5 : 1,
-              transition: "opacity 0.15s",
-            }}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-xs font-medium text-[var(--ps-text-secondary)] cursor-pointer transition-opacity duration-150"
+            style={{ opacity: leads.length === 0 ? 0.5 : 1 }}
           >
             <Download size={13} strokeWidth={2} />
             Exportar CSV
@@ -341,18 +311,7 @@ export function TeamLeadList({
             onClick={() => void handleRefresh()}
             data-testid="refresh-button"
             aria-label="Actualizar lista"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              color: "var(--ps-text-secondary)",
-              cursor: "pointer",
-            }}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-[var(--ps-text-secondary)] cursor-pointer"
           >
             <RefreshCw
               size={14}
@@ -369,60 +328,28 @@ export function TeamLeadList({
         {/* ── Tabla de leads ── */}
         <div
           data-testid="team-lead-list"
-          style={{
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 10,
-            overflow: "hidden",
-          }}
+          className="border border-[var(--ps-border-default)] rounded-xl overflow-hidden"
         >
           {/* Header de columnas */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              padding: "12px 16px",
-              background: "var(--ps-bg-elevated)",
-              borderBottom: "1px solid var(--ps-border-default)",
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--ps-text-tertiary)",
-            }}
-          >
-            <div style={{ width: 192 }}>Comprador</div>
-            <div style={{ width: 192 }}>Vehículo</div>
-            <div style={{ flex: 1 }}>Mensaje</div>
-            <div style={{ flexShrink: 0 }}>Estado</div>
-            <div style={{ width: 96, textAlign: "right" }}>Hora</div>
-            {onReassignLead && <div style={{ width: 96 }}>Acciones</div>}
+          <div className="flex items-center gap-4 px-4 py-3 bg-[var(--ps-bg-elevated)] border-b border-[var(--ps-border-default)] text-xs font-semibold uppercase tracking-widest text-[var(--ps-text-tertiary)]">
+            <div className="w-48">Comprador</div>
+            <div className="w-48">Vehículo</div>
+            <div className="flex-1">Mensaje</div>
+            <div className="flex-shrink-0">Estado</div>
+            <div className="w-24 text-right">Hora</div>
+            {onReassignLead && <div className="w-24">Acciones</div>}
           </div>
 
           {/* Estado de carga */}
           {isLoading && leads.length === 0 && (
-            <div
-              style={{
-                padding: 32,
-                textAlign: "center",
-                fontSize: 13,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <div className="px-8 py-8 text-center text-sm text-[var(--ps-text-secondary)]">
               Cargando leads...
             </div>
           )}
 
           {/* Estado vacío */}
           {!isLoading && leads.length === 0 && (
-            <div
-              style={{
-                padding: 32,
-                textAlign: "center",
-                fontSize: 13,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <div className="px-8 py-8 text-center text-sm text-[var(--ps-text-secondary)]">
               Sin resultados. Ajustá los filtros.
             </div>
           )}
@@ -450,18 +377,7 @@ export function TeamLeadList({
                           onReassignLead(lead.id);
                         }}
                         data-testid={`reassign-${lead.id}`}
-                        style={{
-                          height: 28,
-                          padding: "0 10px",
-                          borderRadius: 6,
-                          background: "transparent",
-                          border: "1px solid var(--ps-border-default)",
-                          color: "var(--ps-text-secondary)",
-                          fontSize: 12,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          transition: "background 0.15s",
-                        }}
+                        className="h-7 px-2.5 rounded text-xs font-medium text-[var(--ps-text-secondary)] cursor-pointer border border-[var(--ps-border-default)] bg-transparent transition-colors duration-150"
                       >
                         Reasignar
                       </button>
@@ -474,25 +390,14 @@ export function TeamLeadList({
         </div>
 
         {/* ── Paginación ── */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <div className="flex justify-center gap-2">
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0 || isLoading}
             data-testid="previous-page"
-            style={{
-              height: 36,
-              padding: "0 16px",
-              borderRadius: 8,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-              opacity: page === 0 || isLoading ? 0.5 : 1,
-              transition: "opacity 0.15s",
-            }}
+            className="h-9 px-4 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-sm font-medium text-[var(--ps-text-secondary)] cursor-pointer transition-opacity duration-150"
+            style={{ opacity: page === 0 || isLoading ? 0.5 : 1 }}
           >
             Anterior
           </button>
@@ -501,19 +406,8 @@ export function TeamLeadList({
             onClick={() => setPage((p) => p + 1)}
             disabled={leads.length < limit || isLoading}
             data-testid="next-page"
-            style={{
-              height: 36,
-              padding: "0 16px",
-              borderRadius: 8,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-              opacity: leads.length < limit || isLoading ? 0.5 : 1,
-              transition: "opacity 0.15s",
-            }}
+            className="h-9 px-4 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-sm font-medium text-[var(--ps-text-secondary)] cursor-pointer transition-opacity duration-150"
+            style={{ opacity: leads.length < limit || isLoading ? 0.5 : 1 }}
           >
             Siguiente
           </button>
