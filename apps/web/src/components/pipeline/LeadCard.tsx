@@ -16,6 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Car, Clock, User, XCircle } from "lucide-react";
 import { LeadStatus, useUpdateLeadStatus, type Lead } from "@/lib/api/leads";
+import { cn } from "@/lib/utils";
 
 interface LeadCardProps {
   lead: Lead;
@@ -61,19 +62,12 @@ export function LeadCard({ lead }: LeadCardProps) {
   return (
     <div
       ref={setNodeRef}
-      style={{
-        background: "var(--ps-bg-elevated)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 10,
-        padding: "10px 12px",
-        cursor: "grab",
-        userSelect: "none",
-        opacity: isDragging ? 0 : 1,
-        boxShadow: isDragging ? "none" : "0 1px 4px rgba(6,13,36,0.25)",
-        transition: isDragging
-          ? "none"
-          : "opacity 150ms, box-shadow 150ms, border-color 150ms",
-      }}
+      className={cn(
+        "bg-ps-elevated border border-ps-border-default rounded-[10px] py-2.5 px-3 cursor-grab select-none",
+        isDragging
+          ? "opacity-0 shadow-none transition-none"
+          : "opacity-100 shadow-[0_1px_4px_rgba(6,13,36,0.25)] transition-[opacity,box-shadow,border-color] duration-150",
+      )}
       onMouseEnter={(e) => {
         if (!isDragging)
           e.currentTarget.style.borderColor = "var(--ps-border-medium)";
@@ -85,72 +79,24 @@ export function LeadCard({ lead }: LeadCardProps) {
       {...attributes}
     >
       {/* Buyer row: avatar + name */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: "50%",
-            flexShrink: 0,
-            background:
-              "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ps-bg-base)",
-          }}
-        >
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-[26px] h-[26px] rounded-full shrink-0 bg-gradient-to-br from-ps-cyan to-ps-blue flex items-center justify-center text-[10px] font-bold text-ps-base">
           {getInitials(lead.buyer_name)}
         </div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            flex: 1,
-          }}
-        >
+        <p className="m-0 text-[13px] font-semibold text-ps-text-primary overflow-hidden text-ellipsis whitespace-nowrap flex-1">
           {lead.buyer_name}
         </p>
       </div>
 
       {/* Vehicle */}
       {vehicleLabel && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            marginBottom: 3,
-          }}
-        >
+        <div className="flex items-center gap-[5px] mb-[3px]">
           <Car
             size={11}
             strokeWidth={2}
-            style={{ color: "var(--ps-text-tertiary)", flexShrink: 0 }}
+            className="text-ps-tertiary shrink-0"
           />
-          <span
-            style={{
-              fontSize: 11,
-              color: "var(--ps-text-secondary)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <span className="text-[11px] text-ps-text-secondary overflow-hidden text-ellipsis whitespace-nowrap">
             {vehicleLabel}
           </span>
         </div>
@@ -158,59 +104,32 @@ export function LeadCard({ lead }: LeadCardProps) {
 
       {/* Price */}
       {priceLabel && (
-        <p
-          style={{
-            margin: "2px 0 0",
-            fontSize: 13,
-            fontWeight: 700,
-            color: "var(--ps-cyan)",
-            letterSpacing: "-0.01em",
-          }}
-        >
+        <p className="m-0 mt-[2px] text-[13px] font-bold text-ps-cyan tracking-[-0.01em]">
           {priceLabel}
         </p>
       )}
 
       {/* Footer: time in stage + vendedor avatar + mark-lost button */}
-      <div
-        style={{
-          marginTop: 10,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 6,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div className="mt-2.5 flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1">
           <Clock
             size={10}
             strokeWidth={2}
-            style={{ color: "var(--ps-text-tertiary)" }}
+            className="text-ps-tertiary"
           />
-          <span style={{ fontSize: 10, color: "var(--ps-text-tertiary)" }}>
+          <span className="text-[10px] text-ps-tertiary">
             {timeInStage}
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div className="flex items-center gap-1">
           {/* Vendedor avatar pill */}
           {lead.vendedor_id && (
-            <div
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: "50%",
-                background: "var(--ps-bg-surface)",
-                border: "1px solid var(--ps-border-default)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div className="size-[18px] rounded-full bg-ps-surface border border-ps-border-default flex items-center justify-center">
               <User
                 size={10}
                 strokeWidth={2}
-                style={{ color: "var(--ps-text-secondary)" }}
+                className="text-ps-text-secondary"
               />
             </div>
           )}
@@ -225,20 +144,10 @@ export function LeadCard({ lead }: LeadCardProps) {
               e.stopPropagation();
               markLost.mutate({ new_status: LeadStatus.LOST });
             }}
-            style={{
-              width: 22,
-              height: 22,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "transparent",
-              border: 0,
-              borderRadius: 6,
-              color: "var(--ps-text-tertiary)",
-              cursor: "pointer",
-              transition: "color 150ms, background 150ms",
-              opacity: markLost.isPending ? 0.5 : 1,
-            }}
+            className={cn(
+              "size-[22px] inline-flex items-center justify-center bg-transparent border-0 rounded-md text-ps-tertiary cursor-pointer transition-colors duration-150",
+              markLost.isPending ? "opacity-50" : "opacity-100",
+            )}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "var(--ps-error)";
               e.currentTarget.style.background = "var(--ps-danger-hover-bg)";
