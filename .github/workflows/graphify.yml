@@ -127,7 +127,7 @@ jobs:
         run: graphify update .
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       # Only publish GRAPH_REPORT.md to public Pages — graph.json (22MB,
       # contains internal paths) is intentionally NOT published.
