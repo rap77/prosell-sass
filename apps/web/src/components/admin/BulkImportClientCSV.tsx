@@ -30,6 +30,7 @@ import type {
   BulkUploadPreview,
   PreviewRow,
 } from "@/lib/api/schemas/bulkImportClient";
+import { cn } from "@/lib/utils";
 
 type Step = "upload" | "preview" | "confirm";
 
@@ -139,7 +140,7 @@ export function BulkImportClientCSV({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="flex flex-col gap-6">
       <StepIndicator step={step} />
 
       {step === "upload" && (
@@ -192,22 +193,18 @@ function StepIndicator({ step }: { step: Step }) {
   ];
 
   return (
-    <div style={{ display: "flex", gap: 8 }}>
+    <div className="flex gap-2">
       {steps.map((s) => {
         const active = s.id === step;
         return (
           <div
             key={s.id}
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              borderRadius: 8,
-              background: active ? "var(--ps-cyan)" : "var(--ps-bg-surface)",
-              color: active ? "var(--ps-bg-base)" : "var(--ps-text-secondary)",
-              fontWeight: active ? 700 : 500,
-              fontSize: 13,
-              textAlign: "center",
-            }}
+            className={cn(
+              "flex-1 rounded-lg py-3 px-4 text-center text-sm",
+              active
+                ? "bg-ps-cyan text-ps-bg-base font-bold"
+                : "bg-ps-bg-surface text-ps-text-secondary font-medium",
+            )}
           >
             {s.label}
           </div>
@@ -241,7 +238,7 @@ function UploadStep({
   canPreview,
 }: UploadStepProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="flex flex-col gap-4">
       <Dropzone
         label="CSV del cliente (requerido)"
         sublabel="Separado por ; — 24 columnas"
@@ -262,7 +259,7 @@ function UploadStep({
         type="button"
         onClick={onPreview}
         disabled={!canPreview}
-        style={primaryBtn}
+        className={primaryBtnClass}
       >
         {isPending ? "Analizando..." : "Vista previa"}
         {!isPending && <ChevronRight size={16} />}
@@ -282,46 +279,22 @@ interface DropzoneProps {
 function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
   const { getRootProps, getInputProps, isDragActive } = dropzone;
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
         <div>
-          <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>{label}</p>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 12,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
-            {sublabel}
-          </p>
+          <p className="m-0 text-sm font-semibold">{label}</p>
+          <p className="m-0 text-xs text-ps-text-secondary">{sublabel}</p>
         </div>
       </div>
 
       {file ? (
-        <div style={fileCard}>
+        <div className={fileCardClass}>
           <FileText size={20} style={{ color: "var(--ps-cyan)" }} />
-          <span style={{ flex: 1, fontSize: 13 }}>{file.name}</span>
+          <span className="flex-1 text-xs">{file.name}</span>
           <button
             type="button"
             onClick={onClear}
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
+            className="bg-transparent border-none cursor-pointer"
             aria-label="Quitar archivo"
           >
             <X size={16} />
@@ -330,8 +303,8 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
       ) : (
         <div
           {...getRootProps()}
+          className={dropzoneCardClass}
           style={{
-            ...dropzoneCard,
             borderColor: isDragActive
               ? "var(--ps-cyan)"
               : "var(--ps-border-default)",
@@ -339,7 +312,7 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
         >
           <input {...getInputProps()} />
           <Upload size={28} style={{ color: "var(--ps-text-secondary)" }} />
-          <p style={{ margin: 0, fontSize: 13 }}>
+          <p className="m-0 text-xs">
             {isDragActive
               ? "Soltá el archivo acá"
               : "Arrastrá un archivo o hacé click para seleccionar"}
@@ -359,14 +332,8 @@ interface PreviewStepProps {
 function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
   const { summary, rows } = preview;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 12,
-        }}
-      >
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <SummaryCard
           label="Importables"
           value={summary.importable_count}
@@ -384,33 +351,16 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
         />
       </div>
 
-      <div
-        style={{
-          border: "1px solid var(--ps-border-default)",
-          borderRadius: 8,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            maxHeight: 400,
-            overflowY: "auto",
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: 13,
-            }}
-          >
+      <div className="border border-ps-border-default rounded-lg overflow-hidden">
+        <div className="max-h-96 overflow-y-auto">
+          <table className="w-full border-collapse text-xs">
             <thead>
-              <tr style={tableHeadRow}>
-                <th style={th}>#</th>
-                <th style={th}>VIN</th>
-                <th style={th}>Estado</th>
-                <th style={th}>Mapeados</th>
-                <th style={th}>Imágenes</th>
+              <tr className={tableHeadRowClass}>
+                <th className={thClass}>#</th>
+                <th className={thClass}>VIN</th>
+                <th className={thClass}>Estado</th>
+                <th className={thClass}>Mapeados</th>
+                <th className={thClass}>Imágenes</th>
               </tr>
             </thead>
             <tbody>
@@ -422,17 +372,15 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
         </div>
       </div>
 
-      <div
-        style={{ display: "flex", gap: 12, justifyContent: "space-between" }}
-      >
-        <button type="button" onClick={onBack} style={secondaryBtn}>
+      <div className="flex justify-between gap-3">
+        <button type="button" onClick={onBack} className={secondaryBtnClass}>
           <ChevronLeft size={16} />
           Volver
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          style={primaryBtn}
+          className={primaryBtnClass}
           disabled={summary.importable_count === 0}
         >
           Continuar
@@ -451,14 +399,14 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
       : { label: "⚠ Atención", color: "var(--ps-warning, #f59e0b)" };
 
   return (
-    <tr style={tableBodyRow}>
-      <td style={td}>{row.row_number}</td>
-      <td style={td}>{row.vin || "—"}</td>
-      <td style={{ ...td, color: status.color, fontWeight: 600 }}>
+    <tr className={tableBodyRowClass}>
+      <td className={tdClass}>{row.row_number}</td>
+      <td className={tdClass}>{row.vin || "—"}</td>
+      <td className={tdClass} style={{ color: status.color, fontWeight: 600 }}>
         {status.label}
       </td>
-      <td style={td}>{Object.keys(row.mapped_fields).length}</td>
-      <td style={td}>{row.images_found.length}</td>
+      <td className={tdClass}>{Object.keys(row.mapped_fields).length}</td>
+      <td className={tdClass}>{row.images_found.length}</td>
     </tr>
   );
 }
@@ -489,8 +437,8 @@ function ConfirmStep({
   isPending,
 }: ConfirmStepProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <SelectField
           label="Organización"
           value={organizationId}
@@ -505,31 +453,20 @@ function ConfirmStep({
         />
       </div>
 
-      <div
-        style={{
-          padding: 14,
-          borderRadius: 8,
-          background: "var(--ps-bg-surface)",
-          border: "1px solid var(--ps-border-default)",
-          fontSize: 13,
-          color: "var(--ps-text-secondary)",
-        }}
-      >
+      <div className="rounded-lg bg-ps-bg-surface border border-ps-border-default p-3.5 text-xs text-ps-text-secondary">
         La importación es <strong>idempotente por VIN</strong>: productos
         existentes se actualizan, los nuevos se crean. Las imágenes del ZIP se
         suben a DO Spaces y se asocian al producto.
       </div>
 
-      <div
-        style={{ display: "flex", gap: 12, justifyContent: "space-between" }}
-      >
-        <div style={{ display: "flex", gap: 12 }}>
-          <button type="button" onClick={onBack} style={secondaryBtn}>
+      <div className="flex justify-between gap-3">
+        <div className="flex gap-3">
+          <button type="button" onClick={onBack} className={secondaryBtnClass}>
             <ChevronLeft size={16} />
             Volver
           </button>
           {onCancel && (
-            <button type="button" onClick={onCancel} style={secondaryBtn}>
+            <button type="button" onClick={onCancel} className={secondaryBtnClass}>
               Cancelar
             </button>
           )}
@@ -538,7 +475,7 @@ function ConfirmStep({
           type="button"
           onClick={onConfirm}
           disabled={isPending || !organizationId || !categoryId}
-          style={primaryBtn}
+          className={primaryBtnClass}
         >
           {isPending ? "Importando..." : "Importar"}
         </button>
@@ -556,19 +493,12 @@ interface SelectFieldProps {
 
 function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 8,
-          border: "1px solid var(--ps-border-default)",
-          background: "var(--ps-bg-base)",
-          color: "var(--ps-text-primary)",
-          fontSize: 14,
-        }}
+        className="rounded-lg border border-ps-border-default bg-ps-bg-base px-3 py-2.5 text-sm text-ps-text-primary"
       >
         {options.map((o) => (
           <option key={o.id} value={o.id}>
@@ -590,30 +520,13 @@ function SummaryCard({
   color: string;
 }) {
   return (
-    <div
-      style={{
-        padding: 16,
-        borderRadius: 8,
-        border: "1px solid var(--ps-border-default)",
-        background: "var(--ps-bg-surface)",
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: 12,
-          color: "var(--ps-text-secondary)",
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-        }}
-      >
+    <div className="rounded-lg border border-ps-border-default bg-ps-bg-surface p-4">
+      <p className="m-0 text-xs uppercase text-ps-text-secondary tracking-wide">
         {label}
       </p>
       <p
+        className="mt-2 text-2xl font-bold"
         style={{
-          margin: "8px 0 0",
-          fontSize: 24,
-          fontWeight: 700,
           color,
         }}
       >
@@ -625,75 +538,23 @@ function SummaryCard({
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const primaryBtn: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "10px 18px",
-  borderRadius: 8,
-  background: "var(--ps-cyan)",
-  color: "var(--ps-bg-base)",
-  border: "none",
-  fontSize: 14,
-  fontWeight: 700,
-  cursor: "pointer",
-};
+const primaryBtnClass =
+  "inline-flex items-center gap-1.5 rounded-lg bg-ps-cyan px-4.5 py-2.5 text-sm font-bold text-ps-bg-base cursor-pointer border-none";
 
-const secondaryBtn: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "10px 18px",
-  borderRadius: 8,
-  background: "transparent",
-  color: "var(--ps-text-primary)",
-  border: "1px solid var(--ps-border-default)",
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-};
+const secondaryBtnClass =
+  "inline-flex items-center gap-1.5 rounded-lg bg-transparent px-4.5 py-2.5 text-sm font-semibold text-ps-text-primary cursor-pointer border border-ps-border-default";
 
-const dropzoneCard: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 10,
-  padding: 24,
-  borderRadius: 10,
-  border: "2px dashed var(--ps-border-default)",
-  background: "var(--ps-bg-surface)",
-  cursor: "pointer",
-};
+const dropzoneCardClass =
+  "flex flex-col items-center gap-2.5 rounded-xl border-2 border-dashed bg-ps-bg-surface p-6 cursor-pointer";
 
-const fileCard: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  padding: 14,
-  borderRadius: 8,
-  background: "var(--ps-bg-surface)",
-  border: "1px solid var(--ps-border-default)",
-};
+const fileCardClass =
+  "flex items-center gap-3 rounded-lg border border-ps-border-default bg-ps-bg-surface p-3.5";
 
-const tableHeadRow: CSSProperties = {
-  background: "var(--ps-bg-surface)",
-};
+const tableHeadRowClass = "bg-ps-bg-surface";
 
-const tableBodyRow: CSSProperties = {
-  borderTop: "1px solid var(--ps-border-default)",
-};
+const tableBodyRowClass = "border-t border-ps-border-default";
 
-const th: CSSProperties = {
-  padding: "10px 12px",
-  textAlign: "left",
-  fontSize: 12,
-  fontWeight: 600,
-  color: "var(--ps-text-secondary)",
-  textTransform: "uppercase",
-  letterSpacing: 0.5,
-};
+const thClass =
+  "px-3 py-2.5 text-left text-xs font-semibold uppercase text-ps-text-secondary tracking-wider";
 
-const td: CSSProperties = {
-  padding: "10px 12px",
-  fontSize: 13,
-};
+const tdClass = "px-3 py-2.5 text-xs";

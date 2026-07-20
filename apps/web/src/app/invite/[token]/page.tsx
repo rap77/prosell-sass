@@ -18,7 +18,7 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { teamApi, ApiError } from "@/lib/api/teamApi";
 import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
@@ -42,13 +42,13 @@ type InvitationState =
 export default function AcceptInvitationPage() {
   const params = useParams();
   const router = useRouter();
-  const token = params.token as string;
+  const token = Array.isArray(params.token) ? params.token[0] : params.token;
 
   const [state, setState] = useState<InvitationState>("loading");
   const [message, setMessage] = useState<string>("");
   const [, setTeamName] = useState<string>("");
 
-  const acceptInvitation = useCallback(async () => {
+  const acceptInvitation = async () => {
     try {
       const member = await teamApi.acceptInvitation({ token });
 
@@ -94,7 +94,7 @@ export default function AcceptInvitationPage() {
         setMessage("Ocurrió un error inesperado. Intentá de nuevo.");
       }
     }
-  }, [token, router]);
+  };
 
   useEffect(() => {
     if (!token) {
@@ -104,37 +104,20 @@ export default function AcceptInvitationPage() {
       return;
     }
     void acceptInvitation();
-  }, [token, acceptInvitation]);
+  }, [token]);
 
   // ── Contenido por estado ──
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     switch (state) {
       case "loading":
         return (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          <div className="flex flex-col items-center gap-4">
             <Loader2
+              className="animate-spin text-ps-cyan [animation-duration:0.8s]"
               size={48}
               strokeWidth={1.5}
-              style={{
-                color: "var(--ps-cyan)",
-                animation: "spin 0.8s linear infinite",
-              }}
             />
-            <p
-              style={{
-                margin: 0,
-                fontSize: 14,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <p className="m-0 text-sm text-ps-text-secondary">
               Procesando tu invitación...
             </p>
           </div>
@@ -142,47 +125,21 @@ export default function AcceptInvitationPage() {
 
       case "success":
         return (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div className="flex flex-col items-center gap-4">
             <CheckCircle2
+              className="text-ps-success"
               size={48}
               strokeWidth={1.5}
-              style={{ color: "var(--ps-success)" }}
             />
-            <div style={{ textAlign: "center" }}>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "var(--ps-success)",
-                }}
-              >
+            <div className="text-center">
+              <h3 className="m-0 text-base font-bold text-ps-success">
                 ¡Bienvenido al equipo!
               </h3>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  fontSize: 13,
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p className="mt-1.5 mb-0 text-[13px] text-ps-text-secondary">
                 {message}
               </p>
             </div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 12,
-                color: "var(--ps-text-disabled)",
-              }}
-            >
+            <p className="m-0 text-xs text-ps-text-tertiary">
               Redirigiendo al dashboard...
             </p>
           </div>
@@ -190,55 +147,23 @@ export default function AcceptInvitationPage() {
 
       case "expired":
         return (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div className="flex flex-col items-center gap-4">
             <XCircle
+              className="text-ps-error"
               size={48}
               strokeWidth={1.5}
-              style={{ color: "var(--ps-error)" }}
             />
-            <div style={{ textAlign: "center" }}>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "var(--ps-error)",
-                }}
-              >
+            <div className="text-center">
+              <h3 className="m-0 text-base font-bold text-ps-error">
                 Invitación vencida
               </h3>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  fontSize: 13,
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p className="mt-1.5 mb-0 text-[13px] text-ps-text-secondary">
                 {message}
               </p>
             </div>
             <Link
               href="/"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                height: 38,
-                padding: "0 20px",
-                borderRadius: 8,
-                background: "var(--ps-bg-elevated)",
-                border: "1px solid var(--ps-border-default)",
-                color: "var(--ps-text-secondary)",
-                fontSize: 13,
-                fontWeight: 500,
-                textDecoration: "none",
-              }}
+              className="inline-flex h-[38px] items-center rounded-lg border border-ps-border-default bg-ps-elevated px-5 text-[13px] font-medium text-ps-text-secondary no-underline"
             >
               Ir al inicio
             </Link>
@@ -247,47 +172,21 @@ export default function AcceptInvitationPage() {
 
       case "already_member":
         return (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div className="flex flex-col items-center gap-4">
             <CheckCircle2
+              className="text-ps-cyan"
               size={48}
               strokeWidth={1.5}
-              style={{ color: "var(--ps-cyan)" }}
             />
-            <div style={{ textAlign: "center" }}>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "var(--ps-cyan)",
-                }}
-              >
+            <div className="text-center">
+              <h3 className="m-0 text-base font-bold text-ps-cyan">
                 Ya sos miembro
               </h3>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  fontSize: 13,
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p className="mt-1.5 mb-0 text-[13px] text-ps-text-secondary">
                 {message}
               </p>
             </div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 12,
-                color: "var(--ps-text-disabled)",
-              }}
-            >
+            <p className="m-0 text-xs text-ps-text-tertiary">
               Redirigiendo al dashboard...
             </p>
           </div>
@@ -295,75 +194,31 @@ export default function AcceptInvitationPage() {
 
       case "error":
         return (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div className="flex flex-col items-center gap-4">
             <AlertCircle
+              className="text-ps-warning"
               size={48}
               strokeWidth={1.5}
-              style={{ color: "var(--ps-warning)" }}
             />
-            <div style={{ textAlign: "center" }}>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "var(--ps-warning)",
-                }}
-              >
+            <div className="text-center">
+              <h3 className="m-0 text-base font-bold text-ps-warning">
                 No pudimos procesar la invitación
               </h3>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  fontSize: 13,
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p className="mt-1.5 mb-0 text-[13px] text-ps-text-secondary">
                 {message}
               </p>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
+            <div className="flex gap-2.5">
               <Link
                 href="/"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  height: 38,
-                  padding: "0 16px",
-                  borderRadius: 8,
-                  background: "var(--ps-bg-elevated)",
-                  border: "1px solid var(--ps-border-default)",
-                  color: "var(--ps-text-secondary)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  textDecoration: "none",
-                }}
+                className="inline-flex h-[38px] items-center rounded-lg border border-ps-border-default bg-ps-elevated px-4 text-[13px] font-medium text-ps-text-secondary no-underline"
               >
                 Ir al inicio
               </Link>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  height: 38,
-                  padding: "0 16px",
-                  borderRadius: 8,
-                  background: "var(--ps-cyan)",
-                  border: "none",
-                  color: "var(--ps-bg-base)",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
+                className="inline-flex h-[38px] cursor-pointer items-center rounded-lg border-0 bg-ps-cyan px-4 text-[13px] font-bold text-ps-base"
               >
                 Intentar de nuevo
               </button>
@@ -373,7 +228,7 @@ export default function AcceptInvitationPage() {
     }
   };
 
-  const subtitle = () => {
+  const subtitle = (): string | null => {
     if (state === "loading")
       return "Aguardá mientras procesamos tu invitación...";
     if (state === "success") return "Invitación aceptada con éxito";
@@ -383,77 +238,34 @@ export default function AcceptInvitationPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--ps-bg-base)",
-        padding: "32px 24px",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 400 }}>
+    <div className="flex min-h-screen items-center justify-center bg-ps-bg-base px-6 py-8">
+      <div className="w-full max-w-[400px]">
         {/* Brand */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div className="mb-7 text-center">
           <Link
             href="/"
-            style={{
-              fontSize: 20,
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-              textDecoration: "none",
-            }}
+            className="text-xl font-black tracking-tight text-ps-text-primary no-underline"
           >
             ProSell
           </Link>
         </div>
 
         {/* Card */}
-        <div
-          style={{
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 14,
-            boxShadow: "0 4px 24px rgba(6,13,36,0.3)",
-            overflow: "hidden",
-          }}
-        >
+        <div className="overflow-hidden rounded-[14px] border border-ps-border-default bg-ps-bg-surface shadow-[0_4px_24px_rgba(6,13,36,0.3)]">
           {/* Header */}
-          <div
-            style={{
-              padding: "24px 28px 20px",
-              borderBottom: "1px solid var(--ps-border-default)",
-              textAlign: "center",
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "var(--ps-text-primary)",
-              }}
-            >
+          <div className="border-b border-ps-border-default px-7 pb-5 pt-6 text-center">
+            <h1 className="m-0 text-xl font-bold tracking-tight text-ps-text-primary">
               Invitación al equipo
             </h1>
             {subtitle() && (
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  fontSize: 13,
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p className="m-0 mt-1.5 text-[13px] text-ps-text-secondary">
                 {subtitle()}
               </p>
             )}
           </div>
 
           {/* Content */}
-          <div style={{ padding: "28px 28px 32px" }}>{renderContent()}</div>
+          <div className="px-7 pb-8 pt-7">{renderContent()}</div>
         </div>
       </div>
     </div>
