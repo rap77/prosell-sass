@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,10 +24,9 @@ interface DeleteConfirmDialogProps {
 }
 
 /**
- * Reusable delete confirmation dialog.
+ * Delete confirmation dialog with warning icon and clear messaging.
  *
- * ponytail: Uses existing AlertDialog primitives.
- * Add fancy animations if users complain, not before.
+ * Design: Open Design prosell-delete-confirm-modal-3d91
  */
 export function DeleteConfirmDialog({
   open,
@@ -37,16 +37,25 @@ export function DeleteConfirmDialog({
 }: DeleteConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Vas a eliminar{" "}
-            <span className="font-medium text-foreground">{itemTitle}</span>.
-            Esta acción no se puede deshacer.
+      <AlertDialogContent className="max-w-[420px]">
+        {/* Warning icon */}
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/15">
+          <AlertTriangle className="h-6 w-6 text-destructive" />
+        </div>
+
+        <AlertDialogHeader className="text-center sm:text-center">
+          <AlertDialogTitle className="text-lg">
+            ¿Estás seguro?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm leading-relaxed">
+            Estás a punto de eliminar{" "}
+            <span className="font-medium text-foreground">"{itemTitle}"</span>.
+            Esta acción no se puede deshacer y el producto será removido
+            permanentemente del catálogo.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+
+        <AlertDialogFooter className="mt-4 sm:justify-center">
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
