@@ -42,48 +42,30 @@ export default function GlobalRootErrorPage({
         <style>{PS_VARS}</style>
 
         <div
+          className="flex min-h-screen items-center justify-center text-center p-6"
           style={{
-            display: "flex",
-            minHeight: "100vh",
-            alignItems: "center",
-            justifyContent: "center",
             background: "var(--ps-bg-base)",
-            padding: "32px 24px",
-            textAlign: "center",
             fontFamily: "system-ui, -apple-system, sans-serif",
           }}
         >
           <main
-            style={{
-              width: "100%",
-              maxWidth: 400,
-              display: "flex",
-              flexDirection: "column",
-              gap: 28,
-            }}
+            className="w-full max-w-[400px] flex flex-col gap-7"
           >
             {/* Brand */}
             <Link
               href="/"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                textDecoration: "none",
-                justifyContent: "center",
-              }}
+              className="inline-flex items-center justify-center gap-2.5 no-underline"
             >
               <Image
                 src="/logo-mark.png"
                 alt="ProSell"
                 width={271}
                 height={294}
-                style={{ height: 28, width: "auto", flexShrink: 0 }}
+                className="h-7 w-auto flex-shrink-0"
               />
               <span
+                className="text-lg font-bold"
                 style={{
-                  fontSize: 18,
-                  fontWeight: 700,
                   letterSpacing: "-0.02em",
                   color: "var(--ps-text-primary)",
                 }}
@@ -95,11 +77,8 @@ export default function GlobalRootErrorPage({
             {/* Copy */}
             <div>
               <p
+                className="m-0 text-xs font-bold uppercase"
                 style={{
-                  margin: 0,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
                   letterSpacing: "0.14em",
                   color: "var(--ps-warning)",
                 }}
@@ -107,10 +86,8 @@ export default function GlobalRootErrorPage({
                 Error global
               </p>
               <h1
+                className="mt-2 text-2xl font-bold"
                 style={{
-                  margin: "8px 0 0",
-                  fontSize: 24,
-                  fontWeight: 700,
                   letterSpacing: "-0.02em",
                   color: "var(--ps-text-primary)",
                 }}
@@ -118,11 +95,9 @@ export default function GlobalRootErrorPage({
                 No pudimos iniciar la aplicación
               </h1>
               <p
+                className="mt-2 text-sm leading-relaxed"
                 style={{
-                  margin: "8px 0 0",
-                  fontSize: 13,
                   color: "var(--ps-text-secondary)",
-                  lineHeight: 1.6,
                 }}
               >
                 Ocurrió un problema inesperado al cargar ProSell. Intentá de
@@ -132,61 +107,39 @@ export default function GlobalRootErrorPage({
 
             {/* Actions */}
             <div
+              className="rounded-[14px] p-6 flex flex-col gap-2.5"
               style={{
                 background: "var(--ps-bg-surface)",
                 border: "1px solid var(--ps-border-default)",
-                borderRadius: 14,
-                padding: "24px 24px 20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
                 boxShadow: "0 4px 24px rgba(6,13,36,0.3)",
               }}
             >
               <button
                 type="button"
                 onClick={reset}
+                className="inline-flex w-full items-center justify-center h-[42px] rounded-lg border-none font-bold text-sm cursor-pointer"
                 style={{
-                  display: "inline-flex",
-                  width: "100%",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: 42,
-                  borderRadius: 8,
-                  border: "none",
                   background: "var(--ps-cyan)",
                   color: "var(--ps-bg-base)",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
                 }}
               >
                 Intentar de nuevo
               </button>
               <Link
                 href="/dashboard"
+                className="inline-flex w-full items-center justify-center h-[42px] rounded-lg font-medium text-sm no-underline"
                 style={{
-                  display: "inline-flex",
-                  width: "100%",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: 42,
-                  borderRadius: 8,
                   background: "var(--ps-bg-elevated)",
                   border: "1px solid var(--ps-border-default)",
                   color: "var(--ps-text-secondary)",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  textDecoration: "none",
                 }}
               >
                 Ir al dashboard
               </Link>
               {error.digest && (
                 <p
+                  className="m-0 text-xs"
                   style={{
-                    margin: 0,
-                    fontSize: 11,
                     color: "var(--ps-text-tertiary)",
                   }}
                 >
