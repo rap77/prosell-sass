@@ -25,11 +25,11 @@ function PulseBox({
 }) {
   return (
     <div
+      className="bg-elevated animate-pulse-branch"
       style={{
         width: width ?? "100%",
         height,
         borderRadius,
-        background: "var(--ps-bg-elevated)",
         animation: "psBranchPulse 1.6s ease-in-out infinite",
       }}
     />
@@ -69,42 +69,25 @@ export function BranchStatsCard({
 }: BranchStatsCardProps) {
   const { data: stats, isLoading, error } = useBranchStats(branchId);
 
-  const cardStyle: React.CSSProperties = {
-    background: "var(--ps-bg-surface)",
-    border: "1px solid var(--ps-border-default)",
-    borderRadius: 12,
-    overflow: "hidden",
-  };
-
-  const headerStyle: React.CSSProperties = {
-    padding: "16px 20px",
-    borderBottom: "1px solid var(--ps-border-default)",
-  };
-
-  const contentStyle: React.CSSProperties = {
-    padding: "16px 20px",
-  };
+  const cardClass =
+    "bg-surface border border-default rounded-lg overflow-hidden";
+  const headerClass = "px-5 py-4 border-b border-default";
+  const contentClass = "px-5 py-4";
 
   if (isLoading) {
     return (
-      <div style={cardStyle}>
+      <div className={cardClass}>
         <style>{`@keyframes psBranchPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }`}</style>
-        <div style={headerStyle}>
+        <div className={headerClass}>
           <PulseBox height={18} width={192} />
         </div>
-        <div style={contentStyle}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
-              gap: 12,
-            }}
-          >
+        <div className={contentClass}>
+          <div className="grid grid-cols-3 gap-3">
             <PulseBox height={64} />
             <PulseBox height={64} />
             <PulseBox height={64} />
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div className="mt-3">
             <PulseBox height={12} />
           </div>
         </div>
@@ -114,163 +97,75 @@ export function BranchStatsCard({
 
   if (error) {
     return (
-      <div style={cardStyle}>
-        <div style={headerStyle}>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+      <div className={cardClass}>
+        <div className={headerClass}>
+          <h3 className="m-0 text-sm font-semibold text-primary">
             {branchName}
           </h3>
         </div>
-        <div style={contentStyle}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
-            Error al cargar estadísticas
-          </p>
+        <div className={contentClass}>
+          <p className="m-0 text-xs text-error">Error al cargar estadísticas</p>
         </div>
       </div>
     );
   }
 
-  const statCell: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "14px 10px",
-    borderRadius: 8,
-    background: "var(--ps-bg-elevated)",
-  };
+  const statCellClass =
+    "flex flex-col items-center px-2.5 py-3.5 rounded bg-elevated";
 
   return (
-    <div style={cardStyle}>
-      <div style={headerStyle}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+    <div className={cardClass}>
+      <div className={headerClass}>
+        <div className="flex items-center justify-between">
+          <h3 className="m-0 text-sm font-semibold text-primary">
             {branchName}
           </h3>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              color: "var(--ps-text-tertiary)",
-            }}
-          >
-            <Activity
-              size={13}
-              strokeWidth={2}
-              style={{ color: "var(--ps-text-tertiary)" }}
-            />
+          <div className="flex items-center gap-1.5 text-xs text-tertiary">
+            <Activity size={13} strokeWidth={2} />
             <span>{formatDate(stats?.last_activity ?? null)}</span>
           </div>
         </div>
       </div>
 
-      <div style={contentStyle}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3,1fr)",
-            gap: 12,
-          }}
-        >
+      <div className={contentClass}>
+        <div className="grid grid-cols-3 gap-3">
           {/* Total */}
-          <div style={statCell}>
+          <div className={statCellClass}>
             <Car
               size={18}
               strokeWidth={2}
               style={{ color: "var(--ps-cyan)", marginBottom: 8 }}
             />
-            <span
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <span className="text-2xl font-bold text-primary">
               {stats?.total_vehicles ?? 0}
             </span>
-            <span
-              style={{
-                fontSize: 11,
-                color: "var(--ps-text-tertiary)",
-                marginTop: 2,
-              }}
-            >
-              Total
-            </span>
+            <span className="text-xs text-tertiary mt-0.5">Total</span>
           </div>
 
           {/* Publicados */}
-          <div style={statCell}>
+          <div className={statCellClass}>
             <Eye
               size={18}
               strokeWidth={2}
               style={{ color: "var(--ps-success)", marginBottom: 8 }}
             />
-            <span
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <span className="text-2xl font-bold text-primary">
               {stats?.published_vehicles ?? 0}
             </span>
-            <span
-              style={{
-                fontSize: 11,
-                color: "var(--ps-text-tertiary)",
-                marginTop: 2,
-              }}
-            >
-              Publicados
-            </span>
+            <span className="text-xs text-tertiary mt-0.5">Publicados</span>
           </div>
 
           {/* Borrador */}
-          <div style={statCell}>
+          <div className={statCellClass}>
             <FileText
               size={18}
               strokeWidth={2}
               style={{ color: "var(--ps-warning)", marginBottom: 8 }}
             />
-            <span
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <span className="text-2xl font-bold text-primary">
               {stats?.draft_vehicles ?? 0}
             </span>
-            <span
-              style={{
-                fontSize: 11,
-                color: "var(--ps-text-tertiary)",
-                marginTop: 2,
-              }}
-            >
-              Borrador
-            </span>
+            <span className="text-xs text-tertiary mt-0.5">Borrador</span>
           </div>
         </div>
       </div>
