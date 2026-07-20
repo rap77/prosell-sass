@@ -58,9 +58,11 @@ jobs:
 
       - name: Install graphify
         # PyPI package is 'graphifyy' (double-y); binary is 'graphify' (single-y).
-        # Pin to exact version to prevent supply-chain drift. Hash-pinning
-        # is tracked in #37 (needs PyPI network access to fetch sha256).
-        run: pip install graphifyy==0.8.41
+        # Hash-pinned for supply-chain security (wheel + sdist).
+        run: |
+          pip install graphifyy==0.8.41 \
+            --hash=sha256:ac2134b89a801e1a8bdf8f9b2bf2ac273c60e8cb8745f5818e6b22098002ebe3 \
+            --hash=sha256:6f9fcf249962c6839c038b1bb4da718ee9cc940ea87fd2c65d4339bb33a8efca
 
       - name: Build knowledge graph
         # `graphify update .` is code-only (no LLM needed) and re-runs
@@ -121,7 +123,10 @@ jobs:
           python-version: "3.13"
 
       - name: Install graphify
-        run: pip install graphifyy==0.8.41
+        run: |
+          pip install graphifyy==0.8.41 \
+            --hash=sha256:ac2134b89a801e1a8bdf8f9b2bf2ac273c60e8cb8745f5818e6b22098002ebe3 \
+            --hash=sha256:6f9fcf249962c6839c038b1bb4da718ee9cc940ea87fd2c65d4339bb33a8efca
 
       - name: Build knowledge graph
         run: graphify update .
