@@ -64,7 +64,8 @@ async def get_public_product(
             detail="Product not found",
         )
 
-    # Track view (fire-and-forget, <1ms)
+    # ponytail: capture BEFORE increment — identity map may sync the UPDATE
+    view_count_to_return = model.view_count + 1
     await _increment_view_count(model.id, db)
 
     return ProductResponse(
@@ -87,7 +88,7 @@ async def get_public_product(
         location_zip=model.location_zip,
         is_featured=model.is_featured,
         published_to_marketplace=model.published_to_marketplace,
-        view_count=model.view_count + 1,  # Return incremented value
+        view_count=view_count_to_return,
         favorite_count=model.favorite_count,
         submitted_for_approval_at=model.submitted_for_approval_at,
         submitted_by=model.submitted_by,
