@@ -15,6 +15,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { cn } from "@/lib/utils";
 
 interface ProductData {
   id: string;
@@ -111,26 +112,16 @@ ${shareUrl}`.trim();
   );
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px 100px" }}>
+    <div className="mx-auto max-w-3xl px-4 pb-28">
       {/* Image Gallery */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "16/10",
-          borderRadius: 16,
-          overflow: "hidden",
-          background: "var(--ps-bg-muted)",
-          marginTop: 24,
-        }}
-      >
+      <div className="relative mt-6 w-full overflow-hidden rounded-2xl bg-ps-bg-muted" style={{ aspectRatio: "16/10" }}>
         {images.length > 0 ? (
           <>
             <Image
               src={images[currentImageIndex]}
               alt={vehicleName}
               fill
-              style={{ objectFit: "cover" }}
+              className="object-cover"
               priority
               sizes="(max-width: 800px) 100vw, 800px"
               unoptimized // ponytail: signed URLs are host-bound to localhost:9000
@@ -142,23 +133,10 @@ ${shareUrl}`.trim();
                   onClick={goToPrevious}
                   disabled={!hasPrevious}
                   aria-label="Imagen anterior"
-                  style={{
-                    position: "absolute",
-                    left: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "rgba(0,0,0,0.5)",
-                    color: "#fff",
-                    cursor: hasPrevious ? "pointer" : "default",
-                    opacity: hasPrevious ? 1 : 0.3,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className={cn(
+                    "absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-none bg-black/50 text-white",
+                    hasPrevious ? "cursor-pointer opacity-100" : "cursor-default opacity-30"
+                  )}
                 >
                   <ChevronLeft size={24} />
                 </button>
@@ -166,23 +144,10 @@ ${shareUrl}`.trim();
                   onClick={goToNext}
                   disabled={!hasNext}
                   aria-label="Siguiente imagen"
-                  style={{
-                    position: "absolute",
-                    right: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "rgba(0,0,0,0.5)",
-                    color: "#fff",
-                    cursor: hasNext ? "pointer" : "default",
-                    opacity: hasNext ? 1 : 0.3,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className={cn(
+                    "absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-none bg-black/50 text-white",
+                    hasNext ? "cursor-pointer opacity-100" : "cursor-default opacity-30"
+                  )}
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -190,33 +155,13 @@ ${shareUrl}`.trim();
             )}
             {/* Image counter */}
             {images.length > 1 && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 12,
-                  right: 12,
-                  padding: "6px 12px",
-                  borderRadius: 20,
-                  background: "rgba(0,0,0,0.6)",
-                  color: "#fff",
-                  fontSize: 14,
-                  fontWeight: 500,
-                }}
-              >
+              <div className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
                 {currentImageIndex + 1} / {images.length}
               </div>
             )}
           </>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              color: "var(--ps-text-muted)",
-            }}
-          >
+          <div className="flex h-full items-center justify-center text-ps-text-muted">
             Sin imágenes
           </div>
         )}
@@ -224,40 +169,25 @@ ${shareUrl}`.trim();
 
       {/* Thumbnail strip */}
       {images.length > 1 && (
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 12,
-            overflowX: "auto",
-            paddingBottom: 8,
-          }}
-        >
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
           {images.map((url, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentImageIndex(idx)}
-              style={{
-                flexShrink: 0,
-                width: 64,
-                height: 48,
-                borderRadius: 8,
-                overflow: "hidden",
-                border:
-                  idx === currentImageIndex
-                    ? "2px solid var(--ps-accent)"
-                    : "2px solid transparent",
-                cursor: "pointer",
-                padding: 0,
-                background: "var(--ps-bg-muted)",
-              }}
+              className={cn(
+                "shrink-0 overflow-hidden rounded border-2 bg-ps-bg-muted p-0 cursor-pointer",
+                idx === currentImageIndex
+                  ? "border-ps-accent"
+                  : "border-transparent"
+              )}
+              style={{ width: 64, height: 48 }}
             >
               <Image
                 src={url}
                 alt={`Miniatura ${idx + 1}`}
                 width={64}
                 height={48}
-                style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                className="h-full w-full object-cover"
                 unoptimized
               />
             </button>
@@ -266,42 +196,18 @@ ${shareUrl}`.trim();
       )}
 
       {/* Title + Price */}
-      <div style={{ marginTop: 24 }}>
-        <h1
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: "var(--ps-text-primary)",
-            margin: 0,
-            lineHeight: 1.2,
-          }}
-        >
+      <div className="mt-6">
+        <h1 className="m-0 text-2xl font-bold leading-tight text-ps-text-primary">
           {vehicleName}
         </h1>
-        <p
-          style={{
-            fontSize: 32,
-            fontWeight: 700,
-            color: "var(--ps-accent)",
-            margin: "8px 0 0",
-          }}
-        >
+        <p className="mt-2 text-3xl font-bold text-ps-accent">
           {price}
         </p>
       </div>
 
       {/* Location */}
       {location && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginTop: 16,
-            color: "var(--ps-text-muted)",
-            fontSize: 16,
-          }}
-        >
+        <div className="mt-4 flex items-center gap-2 text-base text-ps-text-muted">
           <MapPin size={18} />
           <span>{location}</span>
         </div>
@@ -309,26 +215,11 @@ ${shareUrl}`.trim();
 
       {/* Attributes Grid */}
       {displayAttrs.length > 0 && (
-        <div style={{ marginTop: 32 }}>
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-              marginBottom: 16,
-              borderBottom: "1px solid var(--ps-border-subtle)",
-              paddingBottom: 8,
-            }}
-          >
+        <div className="mt-8">
+          <h2 className="border-b border-ps-border-subtle pb-2 text-lg font-semibold text-ps-text-primary">
             Detalles
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "12px 24px",
-            }}
-          >
+          <div className="mt-4 grid grid-cols-2 gap-3 gap-x-6">
             {displayAttrs.map((attr) => {
               const value = product.attributes?.[attr.key];
               // ponytail: `format` is optional on the union; narrow with `'in'`
@@ -338,22 +229,10 @@ ${shareUrl}`.trim();
                   : String(value);
               return (
                 <div key={attr.key}>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--ps-text-muted)",
-                      marginBottom: 2,
-                    }}
-                  >
+                  <div className="mb-0.5 text-xs text-ps-text-muted">
                     {attr.label}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 500,
-                      color: "var(--ps-text-primary)",
-                    }}
-                  >
+                  <div className="text-base font-medium text-ps-text-primary">
                     {displayValue}
                   </div>
                 </div>
@@ -365,66 +244,23 @@ ${shareUrl}`.trim();
 
       {/* Description */}
       {product.description && (
-        <div style={{ marginTop: 32 }}>
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-              marginBottom: 16,
-              borderBottom: "1px solid var(--ps-border-subtle)",
-              paddingBottom: 8,
-            }}
-          >
+        <div className="mt-8">
+          <h2 className="border-b border-ps-border-subtle pb-2 text-lg font-semibold text-ps-text-primary">
             Descripción
           </h2>
-          <p
-            style={{
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: "var(--ps-text-secondary)",
-              whiteSpace: "pre-wrap",
-            }}
-          >
+          <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-ps-text-secondary">
             {product.description}
           </p>
         </div>
       )}
 
       {/* Sticky WhatsApp Button */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: "16px",
-          background: "var(--ps-bg-base)",
-          borderTop: "1px solid var(--ps-border-subtle)",
-          zIndex: 100,
-        }}
-      >
+      <div className="fixed bottom-0 left-0 right-0 border-t border-ps-border-subtle bg-ps-bg-base p-4 z-50">
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            width: "100%",
-            maxWidth: 400,
-            margin: "0 auto",
-            padding: "14px 24px",
-            borderRadius: 12,
-            background: "var(--ps-whatsapp)",
-            color: "#fff",
-            fontSize: 17,
-            fontWeight: 600,
-            textDecoration: "none",
-            cursor: "pointer",
-          }}
+          className="mx-auto flex w-full max-w-sm items-center justify-center gap-2.5 rounded-lg bg-ps-whatsapp px-6 py-3.5 text-center text-base font-semibold text-white no-underline"
         >
           <WhatsAppIcon className="h-5 w-5" />
           Compartir por WhatsApp
