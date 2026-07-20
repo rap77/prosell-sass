@@ -21,7 +21,9 @@ class PublishProductRequest(DomainModel):
     }  # Ignore extra fields from frontend
 
     product_id: UUID
-    tenant_id: UUID
+    # tenant_id is derived from current_user on the server side.
+    # Frontend should NOT send it. Field is optional for backward compat during migration.
+    tenant_id: UUID | None = None
     facebook_page_id: UUID
     title: str = Field(..., min_length=1, max_length=500)
     description: str | None = None

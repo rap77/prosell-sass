@@ -119,7 +119,8 @@ export interface VehicleData {
   price_cents: number;
   zip_code: string;
   image_urls: string[];
-  tenant_id: string;
+  // tenant_id is derived from current_user server-side. Optional, kept for legacy callers.
+  tenant_id?: string;
   // Vehicle specifics
   year?: number;
   make?: string;
@@ -292,11 +293,10 @@ export function PublishForm({
   const handleFormSubmit = (values: PublishFormValues) => {
     if (!vehicleData) return;
 
-    const productId = vehicleData.id || vehicleData.tenant_id;
+    const productId = vehicleData.id;
 
     const payload: PublishVehicleRequest = {
       product_id: productId,
-      tenant_id: vehicleData.tenant_id,
       facebook_page_id: values.facebook_page_id,
       title: values.title,
       description: values.description,

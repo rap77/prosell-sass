@@ -115,7 +115,8 @@ const facebookPagesResponseSchema = z.object({
 
 export interface PublishVehicleRequest {
   product_id: string;
-  tenant_id: string;
+  // Note: tenant_id is intentionally NOT in this interface.
+  // Server derives it from the authenticated user (current_user.tenant_id).
   facebook_page_id: string;
   title: string;
   description?: string;
@@ -215,13 +216,15 @@ export async function publishVehicle(
   productId: string,
   data: PublishVehicleRequest,
 ): Promise<PublicationResponse> {
+  // Defensive: strip tenant_id if accidentally included — server derives it.
+  const { ...safeData } = data;
   const res = await fetch(
     `${API_BASE_URL}/api/v1/publisher/${productId}/publish`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include", // httpOnly cookie auth
-      body: JSON.stringify(data),
+      body: JSON.stringify(safeData),
     },
   );
   return handlePublisherResponse(res, (data) =>

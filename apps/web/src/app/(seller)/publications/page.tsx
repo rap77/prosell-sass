@@ -71,7 +71,8 @@ interface PublishableVehicleData {
   price_cents: number;
   zip_code: string;
   image_urls: string[];
-  tenant_id: string;
+  // tenant_id is derived from current_user server-side. Optional, kept for legacy callers.
+  tenant_id?: string;
   year?: number;
   make?: string;
   model?: string;

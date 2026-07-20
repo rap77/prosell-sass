@@ -33,10 +33,12 @@ class PublishVehicleUseCase:
         self,
         publication_repo: IPublicationRepository,
         seller_user_id: UUID,
+        seller_tenant_id: UUID,
         task_dispatcher: ITaskDispatcher,
     ) -> None:
         self._repo = publication_repo
         self._seller_user_id = seller_user_id
+        self._seller_tenant_id = seller_tenant_id
         self._task_dispatcher = task_dispatcher
 
     async def execute(self, request: PublishProductRequest) -> PublicationResponse:
@@ -56,9 +58,10 @@ class PublishVehicleUseCase:
 
         # Create Publication record in PENDING state.
         # Stores SOURCE URLs — task handles downloading/processing.
+        # tenant_id is derived from authenticated user, NEVER trusted from client payload.
         publication = Publication(
             product_id=request.product_id,
-            tenant_id=request.tenant_id,
+            tenant_id=self._seller_tenant_id,
             seller_user_id=self._seller_user_id,
             facebook_page_id=request.facebook_page_id,
             title=request.title,

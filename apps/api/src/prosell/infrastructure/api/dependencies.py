@@ -57,7 +57,7 @@ if TYPE_CHECKING:
 # module's global namespace. The domain interface types are imported at module
 # level to ensure they are available for resolution.
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -875,9 +875,16 @@ async def get_publish_vehicle_use_case(
     """
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
 
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Platform admin cannot publish — no tenant context",
+        )
+
     return PublishVehicleUseCase(
         publication_repo=publication_repo,
         seller_user_id=current_user.id,
+        seller_tenant_id=current_user.tenant_id,
         task_dispatcher=task_dispatcher,
     )
 
