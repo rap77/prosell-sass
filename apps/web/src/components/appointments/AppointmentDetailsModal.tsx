@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/appointments";
 import { useLead } from "@/lib/api/leads";
 import { Calendar, Clock, User, Car, Mail, Phone, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ============================================
 // STATUS CONFIG
@@ -109,17 +110,6 @@ export function AppointmentDetailsModal({
     flexShrink: 0,
   };
 
-  const rowStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  };
-
-  const textStyle: React.CSSProperties = {
-    fontSize: 13,
-    color: "var(--ps-text-secondary)",
-  };
-
   const isPending = updateStatusMutation.isPending;
 
   return (
@@ -127,13 +117,7 @@ export function AppointmentDetailsModal({
       {/* Backdrop */}
       <div
         onClick={handleClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.55)",
-          backdropFilter: "blur(4px)",
-          zIndex: 40,
-        }}
+        className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm"
       />
 
       {/* Dialog */}
@@ -142,54 +126,16 @@ export function AppointmentDetailsModal({
         aria-modal="true"
         aria-label="Detalle del turno"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "100%",
-          maxWidth: 420,
-          background: "var(--ps-bg-surface)",
-          border: "1px solid var(--ps-border-default)",
-          borderRadius: 14,
-          boxShadow: "0 24px 48px rgba(6,13,36,0.4)",
-          zIndex: 50,
-          maxHeight: "85vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[420px] z-50 max-h-[85vh] flex flex-col overflow-hidden rounded-[14px] border border-ps-border-default bg-ps-bg-surface shadow-[0_24px_48px_rgba(6,13,36,0.4)]"
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "16px 20px",
-            borderBottom: "1px solid var(--ps-border-default)",
-            flexShrink: 0,
-          }}
-        >
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-ps-border-default px-5 py-4">
+
           <div>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 16,
-                fontWeight: 700,
-                color: "var(--ps-text-primary)",
-                letterSpacing: "-0.01em",
-              }}
-            >
+            <h2 className="text-base font-bold text-ps-text-primary" style={{ letterSpacing: "-0.01em" }}>
               Detalle del turno
             </h2>
-            <p
-              style={{
-                margin: "2px 0 0",
-                fontSize: 12,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <p className="mt-0.5 text-xs text-ps-text-secondary">
               Información y gestión del turno
             </p>
           </div>
@@ -197,63 +143,33 @@ export function AppointmentDetailsModal({
             type="button"
             onClick={handleClose}
             aria-label="Cerrar"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: "none",
-              background: "transparent",
-              color: "var(--ps-text-secondary)",
-              cursor: "pointer",
-            }}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border-0 bg-transparent text-ps-text-secondary cursor-pointer"
           >
             <X size={18} strokeWidth={2} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ overflowY: "auto", padding: "20px", flex: 1 }}>
+        <div className="flex-1 overflow-y-auto p-5">
           {isLoadingLead ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 32,
-              }}
-            >
-              <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+            <div className="flex items-center justify-center p-8">
+              <span className="text-sm text-ps-text-secondary">
                 Cargando datos del lead...
               </span>
             </div>
           ) : !lead ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 32,
-              }}
-            >
-              <span style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+            <div className="flex items-center justify-center p-8">
+              <span className="text-sm text-ps-text-secondary">
                 No se encontró información del lead
               </span>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="flex flex-col gap-4">
               {/* Badge de estado */}
               <div>
                 <span
+                  className="inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold"
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "3px 12px",
-                    borderRadius: 99,
-                    fontSize: 11,
-                    fontWeight: 600,
                     letterSpacing: "0.04em",
                     ...statusInfo.style,
                   }}
@@ -263,69 +179,57 @@ export function AppointmentDetailsModal({
               </div>
 
               {/* Fecha y hora */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={rowStyle}>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2.5">
                   <Calendar size={14} strokeWidth={2} style={iconStyle} />
-                  <span style={textStyle}>
+                  <span className="text-sm text-ps-text-secondary">
                     {format(scheduledDate, "d 'de' MMMM yyyy")}
                   </span>
                 </div>
-                <div style={rowStyle}>
+                <div className="flex items-center gap-2.5">
                   <Clock size={14} strokeWidth={2} style={iconStyle} />
-                  <span style={textStyle}>
+                  <span className="text-sm text-ps-text-secondary">
                     {format(scheduledDate, "HH:mm")}
                   </span>
                 </div>
               </div>
 
               {/* Comprador */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={rowStyle}>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2.5">
                   <User size={14} strokeWidth={2} style={iconStyle} />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--ps-text-primary)",
-                    }}
-                  >
+                  <span className="text-sm font-semibold text-ps-text-primary">
                     {lead.buyer_name ?? "Comprador no disponible"}
                   </span>
                 </div>
                 {lead.buyer_email && (
-                  <div style={{ ...rowStyle, paddingLeft: 24 }}>
+                  <div className="flex items-center gap-2.5 pl-6">
                     <Mail size={13} strokeWidth={2} style={iconStyle} />
-                    <span style={textStyle}>{lead.buyer_email}</span>
+                    <span className="text-sm text-ps-text-secondary">{lead.buyer_email}</span>
                   </div>
                 )}
                 {lead.buyer_phone && (
-                  <div style={{ ...rowStyle, paddingLeft: 24 }}>
+                  <div className="flex items-center gap-2.5 pl-6">
                     <Phone size={13} strokeWidth={2} style={iconStyle} />
-                    <span style={textStyle}>{lead.buyer_phone}</span>
+                    <span className="text-sm text-ps-text-secondary">{lead.buyer_phone}</span>
                   </div>
                 )}
               </div>
 
               {/* Vehículo */}
               {lead.product ? (
-                <div style={rowStyle}>
+                <div className="flex items-center gap-2.5">
                   <Car size={14} strokeWidth={2} style={iconStyle} />
-                  <span style={textStyle}>
+                  <span className="text-sm text-ps-text-secondary">
                     {lead.product.attributes.year}{" "}
                     {lead.product.attributes.make}{" "}
                     {lead.product.attributes.model}
                   </span>
                 </div>
               ) : (
-                <div style={rowStyle}>
+                <div className="flex items-center gap-2.5">
                   <Car size={14} strokeWidth={2} style={iconStyle} />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: "var(--ps-text-tertiary)",
-                      fontStyle: "italic",
-                    }}
-                  >
+                  <span className="text-sm italic text-ps-text-tertiary">
                     Vehículo no disponible
                   </span>
                 </div>
@@ -333,20 +237,8 @@ export function AppointmentDetailsModal({
 
               {/* Notas */}
               {appointment.notes && (
-                <div
-                  style={{
-                    paddingTop: 12,
-                    borderTop: "1px solid var(--ps-border-subtle)",
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 12,
-                      color: "var(--ps-text-secondary)",
-                      fontStyle: "italic",
-                    }}
-                  >
+                <div className="border-t border-ps-border-subtle pt-3">
+                  <p className="m-0 text-xs italic text-ps-text-secondary">
                     {appointment.notes}
                   </p>
                 </div>
@@ -354,14 +246,7 @@ export function AppointmentDetailsModal({
 
               {/* Acciones — solo turnos agendados */}
               {appointment.status === AppointmentStatus.SCHEDULED && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    paddingTop: 12,
-                    borderTop: "1px solid var(--ps-border-default)",
-                  }}
-                >
+                <div className="flex gap-2.5 border-t border-ps-border-default pt-3">
                   <button
                     type="button"
                     onClick={() =>
@@ -369,16 +254,8 @@ export function AppointmentDetailsModal({
                     }
                     disabled={isPending}
                     data-testid="confirm-button"
+                    className="flex-1 h-9 rounded-lg border-0 bg-ps-success text-white text-sm font-bold cursor-pointer"
                     style={{
-                      flex: 1,
-                      height: 38,
-                      borderRadius: 8,
-                      background: "var(--ps-success)",
-                      border: "none",
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
                       opacity: isPending ? 0.6 : 1,
                     }}
                   >
@@ -391,16 +268,8 @@ export function AppointmentDetailsModal({
                     }
                     disabled={isPending}
                     data-testid="cancel-button"
+                    className="flex-1 h-9 rounded-lg border border-ps-error bg-transparent text-ps-error text-sm font-semibold cursor-pointer"
                     style={{
-                      flex: 1,
-                      height: 38,
-                      borderRadius: 8,
-                      background: "transparent",
-                      border: "1px solid var(--ps-error)",
-                      color: "var(--ps-error)",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
                       opacity: isPending ? 0.6 : 1,
                     }}
                   >
