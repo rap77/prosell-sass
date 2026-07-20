@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extractErrorMessage } from "./extractErrorMessage";
 
 // Relative URL — Next.js rewrites proxy /api/:path* to the backend container.
 // See apps/web/next.config.ts and PR #3 for context.
@@ -30,53 +31,10 @@ const TOTP_CODE_SCHEMA = z
   .trim()
   .regex(/^\d{6}$/);
 
-interface ApiErrorPayload {
-  detail?: unknown;
-  message?: unknown;
-}
-
 export interface EnableTwoFactorResponse {
   qrCode: string;
   backupCodes: string[];
   message: string;
-}
-
-function getErrorMessage(payload: ApiErrorPayload): string {
-  if (Array.isArray(payload.detail)) {
-    const detailMessages = payload.detail
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-
-        if (
-          item &&
-          typeof item === "object" &&
-          "msg" in item &&
-          typeof item.msg === "string"
-        ) {
-          return item.msg;
-        }
-
-        return null;
-      })
-      .filter((item): item is string => item !== null)
-      .join(" ");
-
-    if (detailMessages.length > 0) {
-      return detailMessages;
-    }
-  }
-
-  if (typeof payload.detail === "string") {
-    return payload.detail;
-  }
-
-  if (typeof payload.message === "string") {
-    return payload.message;
-  }
-
-  return "Error en la petición";
 }
 
 async function parseJson<T>(
@@ -102,11 +60,11 @@ async function postJson<T>(
   });
 
   if (!response.ok) {
-    const payload: ApiErrorPayload = await response
+    const payload: unknown = await response
       .json()
       .catch(() => ({ message: "No se pudo completar la operación" }));
 
-    throw new Error(getErrorMessage(payload));
+    throw new Error(extractErrorMessage(payload, "Error en la petición"));
   }
 
   return parseJson(response, schema);

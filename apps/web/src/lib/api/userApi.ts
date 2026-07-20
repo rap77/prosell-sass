@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { extractErrorMessage } from "./extractErrorMessage";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -77,11 +78,6 @@ export interface UpdateProfileInput {
   organizationId?: string;
 }
 
-interface ApiErrorPayload {
-  detail?: unknown;
-  message?: unknown;
-}
-
 export interface ChangePasswordInput {
   currentPassword: string;
   newPassword: string;
@@ -89,39 +85,6 @@ export interface ChangePasswordInput {
 
 export interface DisableTwoFactorInput {
   totpCode: string;
-}
-
-function getErrorMessage(payload: ApiErrorPayload): string {
-  if (Array.isArray(payload.detail)) {
-    const detailMessages = payload.detail
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-        if (
-          item &&
-          typeof item === "object" &&
-          "msg" in item &&
-          typeof item.msg === "string"
-        ) {
-          return item.msg;
-        }
-        return null;
-      })
-      .filter((item): item is string => item !== null)
-      .join(" ");
-
-    if (detailMessages.length > 0) {
-      return detailMessages;
-    }
-  }
-  if (typeof payload.detail === "string") {
-    return payload.detail;
-  }
-  if (typeof payload.message === "string") {
-    return payload.message;
-  }
-  return "Error en la petición";
 }
 
 export function mapSecurityErrorMessage(message: string): string {
@@ -174,10 +137,10 @@ async function getCurrentOrganization(): Promise<OrganizationProfile | null> {
   }
 
   if (!response.ok) {
-    const payload: ApiErrorPayload = await response
+    const payload: unknown = await response
       .json()
       .catch(() => ({ message: "No se pudo cargar la organización" }));
-    throw new Error(getErrorMessage(payload));
+    throw new Error(extractErrorMessage(payload, "Error en la petición"));
   }
 
   return parseJson(response, ORGANIZATION_SCHEMA);
@@ -197,10 +160,10 @@ async function updateOrganizationFields(
   });
 
   if (!response.ok) {
-    const payload: ApiErrorPayload = await response
+    const payload: unknown = await response
       .json()
       .catch(() => ({ message: "No se pudo guardar la organización" }));
-    throw new Error(getErrorMessage(payload));
+    throw new Error(extractErrorMessage(payload, "Error en la petición"));
   }
 }
 
@@ -234,10 +197,10 @@ export function useUpdateProfile() {
       });
 
       if (!response.ok) {
-        const payload: ApiErrorPayload = await response
+        const payload: unknown = await response
           .json()
           .catch(() => ({ message: "No se pudo guardar el perfil" }));
-        throw new Error(getErrorMessage(payload));
+        throw new Error(extractErrorMessage(payload, "Error en la petición"));
       }
 
       const updatedUser = await parseJson(response, CURRENT_USER_SCHEMA);
@@ -276,11 +239,11 @@ export function useChangePassword() {
       });
 
       if (!response.ok) {
-        const payload: ApiErrorPayload = await response
+        const payload: unknown = await response
           .json()
           .catch(() => ({ message: "No se pudo actualizar la contraseña" }));
 
-        throw new Error(mapSecurityErrorMessage(getErrorMessage(payload)));
+        throw new Error(mapSecurityErrorMessage(extractErrorMessage(payload, "Error en la petición")));
       }
     },
   });
@@ -303,11 +266,11 @@ export function useDisableTwoFactor() {
       });
 
       if (!response.ok) {
-        const payload: ApiErrorPayload = await response
+        const payload: unknown = await response
           .json()
           .catch(() => ({ message: "No se pudo deshabilitar 2FA" }));
 
-        throw new Error(mapSecurityErrorMessage(getErrorMessage(payload)));
+        throw new Error(mapSecurityErrorMessage(extractErrorMessage(payload, "Error en la petición")));
       }
     },
   });
