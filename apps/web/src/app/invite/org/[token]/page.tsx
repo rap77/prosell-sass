@@ -10,8 +10,8 @@ import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 type PageState = "form" | "loading" | "success" | "expired" | "error";
 
 const schema = z.object({
-  firstName: z.string().min(1, "El nombre es obligatorio"),
-  lastName: z.string().min(1, "El apellido es obligatorio"),
+  firstName: z.string().min(1, { message: "El nombre es obligatorio" }),
+  lastName: z.string().min(1, { message: "El apellido es obligatorio" }),
   password: passwordFieldSchema,
 });
 

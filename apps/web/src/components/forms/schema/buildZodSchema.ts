@@ -29,7 +29,7 @@ function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
     if (entry.vin_decode_key) {
       // VIN-decoded field: accept any string, UI shows select but backend normalizes
       return entry.required
-        ? z.string().min(1, "Required")
+        ? z.string().min(1, { message: "Required" })
         : z.string().optional();
     }
     const [first, ...rest] = options;
@@ -70,7 +70,7 @@ function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
   // String (default)
   let schema: ZodTypeAny = z.string();
   if (entry.required) {
-    schema = (schema as z.ZodString).min(1, "Required");
+    schema = (schema as z.ZodString).min(1, { message: "Required" });
   } else {
     schema = schema.optional();
   }

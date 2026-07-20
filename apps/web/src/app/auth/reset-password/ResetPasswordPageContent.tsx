@@ -32,12 +32,12 @@ const resetSchema = z
   .object({
     password: z
       .string()
-      .min(8, "Mínimo 8 caracteres")
+      .min(8, { message: "Mínimo 8 caracteres" })
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
         "Debe tener mayúscula, minúscula, número y símbolo (@$!%*?&)",
       ),
-    confirmPassword: z.string().min(1, "Confirmá tu contraseña"),
+    confirmPassword: z.string().min(1, { message: "Confirmá tu contraseña" }),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Las contraseñas no coinciden",

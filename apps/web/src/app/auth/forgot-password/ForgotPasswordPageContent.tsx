@@ -32,8 +32,8 @@ import { Button } from "@/components/ui/button";
 const forgotSchema = z.object({
   email: z
     .string()
-    .min(1, "El email es requerido")
-    .email("El email no es válido"),
+    .min(1, { message: "El email es requerido" })
+    .email({ message: "El email no es válido" }),
 });
 type ForgotValues = z.infer<typeof forgotSchema>;
 

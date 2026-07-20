@@ -30,7 +30,7 @@ import { toast } from "sonner";
 // ============================================
 
 const memberSchema = z.object({
-  user_id: z.string().min(1, "User ID is required"),
+  user_id: z.string().min(1, { message: "User ID is required" }),
   role: z.enum(["manager", "vendor"] as const, {
     message: "Role is required",
   }),
@@ -38,8 +38,8 @@ const memberSchema = z.object({
     (val) => (Number.isNaN(val) ? undefined : val),
     z
       .number()
-      .min(0, "Commission must be 0 or greater")
-      .max(100, "Commission cannot exceed 100%")
+      .min(0, { message: "Commission must be 0 or greater" })
+      .max(100, { message: "Commission cannot exceed 100%" })
       .optional(),
   ),
 });

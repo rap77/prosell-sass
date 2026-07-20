@@ -78,24 +78,24 @@ const FORM_STYLES = `
 
 const publishSchema = z.object({
   // Core publish fields (locked per CONTEXT.md)
-  title: z.string().min(5, "Título mínimo 5 caracteres").max(500),
+  title: z.string().min(5, { message: "Título mínimo 5 caracteres" }).max(500),
   description: z
     .string()
-    .min(10, "Descripción mínima 10 caracteres")
+    .min(10, { message: "Descripción mínima 10 caracteres" })
     .max(5000)
     .optional(),
   price_usd: z.number().positive("Precio debe ser mayor a 0"),
-  facebook_page_id: z.string().min(1, "Seleccioná una página de Facebook"),
+  facebook_page_id: z.string().min(1, { message: "Seleccioná una página de Facebook" }),
   hero_shot_index: z.number().int().min(0),
-  zip_code: z.string().min(5, "ZIP code mínimo 5 caracteres").max(10),
-  image_urls: z.array(z.string().url()).min(1, "Necesitás al menos una foto"),
+  zip_code: z.string().min(5, { message: "ZIP code mínimo 5 caracteres" }).max(10),
+  image_urls: z.array(z.string().url()).min(1, { message: "Necesitás al menos una foto" }),
 
   // Vehicle fields (required by Facebook Marketplace)
-  vehicle_type: z.string().min(1, "Seleccioná el tipo de vehículo"),
-  year: z.number().int().min(1900, "Año inválido").max(2026, "Año inválido"),
-  make: z.string().min(1, "Seleccioná la marca"),
-  model: z.string().min(1, "Ingresá el modelo"),
-  mileage: z.number().int().min(0, "Millaje inválido"),
+  vehicle_type: z.string().min(1, { message: "Seleccioná el tipo de vehículo" }),
+  year: z.number().int().min(1900, { message: "Año inválido" }).max(2026, { message: "Año inválido" }),
+  make: z.string().min(1, { message: "Seleccioná la marca" }),
+  model: z.string().min(1, { message: "Ingresá el modelo" }),
+  mileage: z.number().int().min(0, { message: "Millaje inválido" }),
   body_style: z.string().optional(),
   exterior_color: z.string().optional(),
   interior_color: z.string().optional(),

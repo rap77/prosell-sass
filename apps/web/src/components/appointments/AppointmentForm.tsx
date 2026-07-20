@@ -89,9 +89,9 @@ function isWeekend(dateString: string): boolean {
  */
 const appointmentFormSchema = z
   .object({
-    user_id: z.string().min(1, "La sucursal es requerida"),
-    date: z.string().min(1, "La fecha es requerida"),
-    time: z.string().min(1, "El horario es requerido"),
+    user_id: z.string().min(1, { message: "La sucursal es requerida" }),
+    date: z.string().min(1, { message: "La fecha es requerida" }),
+    time: z.string().min(1, { message: "El horario es requerido" }),
     notes: z.string().optional(),
   })
   .refine((data) => !isWeekend(data.date), {

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const step1Schema = z.object({
-  name: z.string().trim().min(1, "El nombre de la organización es requerido"),
+  name: z.string().trim().min(1, { message: "El nombre de la organización es requerido" }),
   description: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   website: z.string().trim().url("URL inválida").optional().or(z.literal("")),

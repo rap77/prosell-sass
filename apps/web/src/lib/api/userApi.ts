@@ -22,8 +22,8 @@ const ORGANIZATION_SCHEMA = z.object({
 });
 
 const UPDATE_PROFILE_INPUT_SCHEMA = z.object({
-  firstName: z.string().trim().min(1, "El nombre es requerido"),
-  lastName: z.string().trim().min(1, "El apellido es requerido"),
+  firstName: z.string().trim().min(1, { message: "El nombre es requerido" }),
+  lastName: z.string().trim().min(1, { message: "El apellido es requerido" }),
   email: z
     .string()
     .trim()
@@ -34,10 +34,10 @@ const UPDATE_PROFILE_INPUT_SCHEMA = z.object({
 
 const CHANGE_PASSWORD_INPUT_SCHEMA = z
   .object({
-    currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+    currentPassword: z.string().min(1, { message: "La contraseña actual es requerida" }),
     newPassword: z
       .string()
-      .min(8, "La nueva contraseña debe tener al menos 8 caracteres"),
+      .min(8, { message: "La nueva contraseña debe tener al menos 8 caracteres" }),
   })
   .superRefine((value, context) => {
     if (value.currentPassword === value.newPassword) {
@@ -53,7 +53,7 @@ const DISABLE_TWO_FACTOR_INPUT_SCHEMA = z.object({
   totpCode: z
     .string()
     .trim()
-    .regex(/^\d{6}$/, "Ingresa un código de 6 dígitos"),
+    .regex(/^\d{6}$/, { message: "Ingresa un código de 6 dígitos" }),
 });
 
 export interface CurrentUserProfile {

@@ -28,11 +28,11 @@ import { cn } from "@/lib/utils";
 
 const securitySchema = z
   .object({
-    currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+    currentPassword: z.string().min(1, { message: "La contraseña actual es requerida" }),
     newPassword: z
       .string()
-      .min(8, "La nueva contraseña debe tener al menos 8 caracteres"),
-    confirmPassword: z.string().min(1, "Confirmá tu nueva contraseña"),
+      .min(8, { message: "La nueva contraseña debe tener al menos 8 caracteres" }),
+    confirmPassword: z.string().min(1, { message: "Confirmá tu nueva contraseña" }),
   })
   .superRefine((value, ctx) => {
     if (value.newPassword !== value.confirmPassword) {

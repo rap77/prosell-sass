@@ -23,9 +23,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 const profileSchema = z.object({
-  firstName: z.string().trim().min(1, "El nombre es requerido"),
-  lastName: z.string().trim().min(1, "El apellido es requerido"),
-  email: z.string().email("Correo inválido"),
+  firstName: z.string().trim().min(1, { message: "El nombre es requerido" }),
+  lastName: z.string().trim().min(1, { message: "El apellido es requerido" }),
+  email: z.string().email({ message: "Correo inválido" }),
   phone: z.string().trim().optional(),
 });
 

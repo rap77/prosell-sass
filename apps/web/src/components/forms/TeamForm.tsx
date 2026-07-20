@@ -39,9 +39,9 @@ export type TeamFormMode = "create" | "edit";
 const teamSchema = z.object({
   name: z
     .string()
-    .min(1, "Team name is required")
-    .min(2, "Name must be at least 2 characters")
-    .max(255, "Name must be less than 255 characters")
+    .min(1, { message: "Team name is required" })
+    .min(2, { message: "Name must be at least 2 characters" })
+    .max(255, { message: "Name must be less than 255 characters" })
     .trim(),
 });
 

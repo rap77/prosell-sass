@@ -32,12 +32,12 @@ import Link from "next/link";
 const loginSchema = z.object({
   email: z
     .string()
-    .min(1, "El email es requerido")
-    .email("El email no es válido"),
+    .min(1, { message: "El email es requerido" })
+    .email({ message: "El email no es válido" }),
   password: z
     .string()
-    .min(1, "La contraseña es requerida")
-    .min(8, "Mínimo 8 caracteres"),
+    .min(1, { message: "La contraseña es requerida" })
+    .min(8, { message: "Mínimo 8 caracteres" }),
 });
 type LoginValues = z.infer<typeof loginSchema>;
 
