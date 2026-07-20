@@ -2,7 +2,10 @@ import type { Config } from "tailwindcss";
 
 /**
  * Tailwind CSS Configuration for ProSell SaaS
- * Includes chadcn/ui design tokens
+ *
+ * Color system:
+ * - shadcn/ui tokens (primary, secondary, etc.) for component library
+ * - ProSell tokens (ps-*) for custom design system elements
  *
  * @see https://tailwindcss.com/docs/configuration
  * @see https://ui.shadcn.com
@@ -24,6 +27,7 @@ const config: Config = {
     },
     extend: {
       colors: {
+        // shadcn/ui tokens
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -57,11 +61,48 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+
+        // ProSell design tokens (--ps-* from globals.css)
+        // ponytail: only tokens without shadcn equivalents
+        ps: {
+          // Backgrounds
+          elevated: "var(--ps-bg-elevated)",
+          sidebar: "var(--ps-bg-sidebar)",
+          // Text
+          tertiary: "var(--ps-text-tertiary)",
+          disabled: "var(--ps-text-disabled)",
+          // Status (shadcn lacks success/warning)
+          success: "var(--ps-success)",
+          warning: "var(--ps-warning)",
+          "success-bg": "var(--ps-success-bg)",
+          "warning-bg": "var(--ps-warning-bg)",
+          "error-bg": "var(--ps-error-bg)",
+          "info-bg": "var(--ps-info-bg)",
+          // Brand
+          cyan: "var(--ps-cyan)",
+          "cyan-hover": "var(--ps-cyan-hover)",
+          navy: "var(--ps-navy)",
+          blue: "var(--ps-blue)",
+          "blue-hover": "var(--ps-blue-hover)",
+          // Borders
+          "border-subtle": "var(--ps-border-subtle)",
+          "border-medium": "var(--ps-border-medium)",
+          "border-strong": "var(--ps-border-strong)",
+          "border-active": "var(--ps-border-active)",
+          // Misc
+          violet: "var(--ps-violet)",
+          "violet-bg": "var(--ps-violet-bg)",
+          whatsapp: "var(--ps-whatsapp)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        "input-focus": "0 0 0 3px var(--ps-input-focus-shadow)",
+        "input-error": "0 0 0 3px var(--ps-input-error-shadow)",
       },
       keyframes: {
         "accordion-down": {

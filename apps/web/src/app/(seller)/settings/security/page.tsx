@@ -6,8 +6,6 @@
  * Sections:
  *   1. Change password (react-hook-form + zod + useChangePassword)
  *   2. Two-factor authentication (useDisableTwoFactor + TOTP confirm dialog)
- *
- * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
 import { useState } from "react";
@@ -17,15 +15,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Shield, ShieldCheck, Loader2, Eye, EyeOff, X } from "lucide-react";
 import { toast } from "sonner";
-import type { UseFormRegisterReturn } from "react-hook-form";
 import {
   useChangePassword,
   useDisableTwoFactor,
   mapSecurityErrorMessage,
 } from "@/lib/api/userApi";
 import { useAuth } from "@/hooks/useAuth";
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const securitySchema = z
   .object({
@@ -54,108 +53,33 @@ const securitySchema = z
 
 type SecurityFormValues = z.infer<typeof securitySchema>;
 
-// ─── Shared input styles ──────────────────────────────────────────────────────
-
-const inputBase: React.CSSProperties = {
-  width: "100%",
-  height: 40,
-  padding: "0 40px 0 12px", // right padding for show/hide icon
-  background: "var(--ps-input-bg)",
-  border: "1px solid var(--ps-input-border)",
-  borderRadius: 8,
-  color: "var(--ps-text-primary)",
-  fontSize: 14,
-  outline: "none",
-  fontFamily: "inherit",
-  transition: "border-color 150ms, box-shadow 150ms",
-};
-
-function focusInput(e: React.FocusEvent<HTMLInputElement>) {
-  e.currentTarget.style.borderColor = "var(--ps-cyan)";
-  e.currentTarget.style.boxShadow = "var(--ps-input-focus-shadow)";
-}
-function blurInput(e: React.FocusEvent<HTMLInputElement>) {
-  e.currentTarget.style.borderColor = "var(--ps-input-border)";
-  e.currentTarget.style.boxShadow = "none";
-}
-
-// ─── Field wrapper ────────────────────────────────────────────────────────────
-
-function Field({
+// Password field with show/hide toggle
+function PasswordField({
   id,
   label,
   hint,
   error,
-  children,
+  autoComplete,
+  ...inputProps
 }: {
   id: string;
   label: string;
   hint?: string;
   error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label
-        htmlFor={id}
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color: "var(--ps-text-primary)",
-        }}
-      >
-        {label}
-      </label>
-      {children}
-      {hint && !error && (
-        <p
-          style={{ margin: 0, fontSize: 12, color: "var(--ps-text-secondary)" }}
-        >
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p style={{ margin: 0, fontSize: 12, color: "var(--ps-error)" }}>
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ─── Password field with show/hide toggle ─────────────────────────────────────
-
-function PwField({
-  id,
-  label,
-  hint,
-  error,
-  registration,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  error?: string;
-  registration: UseFormRegisterReturn;
-}) {
+  autoComplete: string;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
   const [show, setShow] = useState(false);
-  const { onBlur: rhfOnBlur, ...restReg } = registration;
+
   return (
-    <Field id={id} label={label} hint={hint} error={error}>
-      <div style={{ position: "relative" }}>
-        <input
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
           id={id}
           type={show ? "text" : "password"}
-          autoComplete={
-            id === "currentPassword" ? "current-password" : "new-password"
-          }
-          style={inputBase}
-          {...restReg}
-          onFocus={focusInput}
-          onBlur={(e) => {
-            blurInput(e);
-            void rhfOnBlur(e);
-          }}
+          autoComplete={autoComplete}
+          className="pr-10"
+          {...inputProps}
         />
         <button
           type="button"
@@ -164,46 +88,20 @@ function PwField({
             e.preventDefault();
             setShow((v) => !v);
           }}
-          style={{
-            position: "absolute",
-            right: 10,
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 4,
-            color: "var(--ps-text-tertiary)",
-            display: "flex",
-          }}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-ps-tertiary hover:text-foreground"
         >
-          {show ? (
-            <EyeOff size={14} strokeWidth={2} />
-          ) : (
-            <Eye size={14} strokeWidth={2} />
-          )}
+          {show ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
       </div>
-    </Field>
+      {hint && !error && (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
   );
 }
 
-// ─── Divider ─────────────────────────────────────────────────────────────────
-
-function Divider() {
-  return (
-    <div
-      style={{
-        height: 1,
-        background: "var(--ps-border-subtle)",
-        margin: "8px 0",
-      }}
-    />
-  );
-}
-
-// ─── Disable 2FA modal ────────────────────────────────────────────────────────
-
+// Disable 2FA modal
 function Disable2FAModal({
   open,
   onClose,
@@ -221,62 +119,19 @@ function Disable2FAModal({
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(6,13,36,0.7)",
-        backdropFilter: "blur(4px)",
-      }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-background/70 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          background: "var(--ps-bg-surface)",
-          border: "1px solid var(--ps-border-default)",
-          borderRadius: 14,
-          padding: "28px 28px 24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
-          boxShadow: "0 24px 64px rgba(6,13,36,0.5)",
-        }}
-      >
+      <div className="w-full max-w-[420px] bg-card border border-border rounded-xl p-7 flex flex-col gap-5 shadow-2xl">
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 16,
-                fontWeight: 700,
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <p className="text-base font-bold text-foreground">
               Deshabilitar 2FA
             </p>
-            <p
-              style={{
-                margin: "6px 0 0",
-                fontSize: 13,
-                color: "var(--ps-text-secondary)",
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="mt-1.5 text-[13px] text-muted-foreground leading-relaxed">
               Confirmá el código de tu aplicación autenticadora para desactivar
               la protección de dos factores.
             </p>
@@ -284,27 +139,16 @@ function Disable2FAModal({
           <button
             type="button"
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--ps-text-tertiary)",
-              padding: 4,
-              display: "flex",
-              flexShrink: 0,
-            }}
+            className="p-1 text-ps-tertiary hover:text-foreground shrink-0"
           >
-            <X size={16} strokeWidth={2} />
+            <X size={16} />
           </button>
         </div>
 
         {/* TOTP input */}
-        <Field
-          id="totp-code"
-          label="Código TOTP"
-          hint="Ingresá el código actual de 6 dígitos generado por tu app."
-        >
-          <input
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="totp-code">Código TOTP</Label>
+          <Input
             id="totp-code"
             inputMode="numeric"
             maxLength={6}
@@ -313,77 +157,32 @@ function Disable2FAModal({
             onChange={(e) =>
               setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
             }
-            style={{
-              ...inputBase,
-              padding: "0 12px",
-              letterSpacing: "0.2em",
-              fontSize: 18,
-              fontWeight: 600,
-              textAlign: "center",
-            }}
-            onFocus={focusInput}
-            onBlur={blurInput}
+            className="text-center text-lg font-semibold tracking-widest"
           />
-        </Field>
+          <p className="text-xs text-muted-foreground">
+            Ingresá el código actual de 6 dígitos generado por tu app.
+          </p>
+        </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              height: 38,
-              padding: "0 16px",
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              borderRadius: 8,
-              color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
+        <div className="flex gap-2.5 justify-end">
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="destructive"
             disabled={isPending || code.trim().length !== 6}
             onClick={() => onConfirm(code)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              height: 38,
-              padding: "0 16px",
-              background: "var(--ps-error)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor:
-                isPending || code.trim().length !== 6
-                  ? "not-allowed"
-                  : "pointer",
-              opacity: isPending || code.trim().length !== 6 ? 0.65 : 1,
-            }}
           >
-            {isPending && (
-              <Loader2
-                size={13}
-                strokeWidth={2}
-                style={{ animation: "spin 0.8s linear infinite" }}
-              />
-            )}
+            {isPending && <Loader2 className="animate-spin" />}
             {isPending ? "Deshabilitando…" : "Confirmar"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SettingsSecurityPage() {
   const router = useRouter();
@@ -439,217 +238,104 @@ export default function SettingsSecurityPage() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+  const { errors } = form.formState;
 
-      {/* ── Change password ─────────────────────────────────────────────── */}
-      <section style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Change password section */}
+      <section className="flex flex-col gap-5">
         <div>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 18,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
-            Seguridad
-          </h2>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <h2 className="text-lg font-semibold text-foreground">Seguridad</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Protegé tu acceso con una contraseña robusta y autenticación de dos
             factores.
           </p>
         </div>
 
-        <Divider />
+        <div className="h-px bg-ps-border-subtle" />
 
         <div>
-          <h3
-            style={{
-              margin: "0 0 4px",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h3 className="text-sm font-semibold text-foreground">
             Cambiar contraseña
           </h3>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1 text-sm text-muted-foreground">
             Usá una contraseña nueva con al menos 8 caracteres.
           </p>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          noValidate
-          style={{ display: "flex", flexDirection: "column", gap: 16 }}
-        >
-          <PwField
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+          <PasswordField
             id="currentPassword"
             label="Contraseña actual"
-            error={form.formState.errors.currentPassword?.message}
-            registration={form.register("currentPassword")}
+            autoComplete="current-password"
+            error={errors.currentPassword?.message}
+            {...form.register("currentPassword")}
           />
 
-          <PwField
+          <PasswordField
             id="newPassword"
             label="Nueva contraseña"
+            autoComplete="new-password"
             hint="Debe incluir mayúsculas, minúsculas, números y un carácter especial."
-            error={form.formState.errors.newPassword?.message}
-            registration={form.register("newPassword")}
+            error={errors.newPassword?.message}
+            {...form.register("newPassword")}
           />
 
-          <PwField
+          <PasswordField
             id="confirmPassword"
             label="Confirmar nueva contraseña"
-            error={form.formState.errors.confirmPassword?.message}
-            registration={form.register("confirmPassword")}
+            autoComplete="new-password"
+            error={errors.confirmPassword?.message}
+            {...form.register("confirmPassword")}
           />
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              paddingTop: 4,
-            }}
-          >
-            <button
-              type="submit"
-              disabled={changePassword.isPending}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                height: 38,
-                padding: "0 20px",
-                background: changePassword.isPending
-                  ? "rgba(77,184,255,0.6)"
-                  : "var(--ps-cyan)",
-                color: "var(--ps-bg-base)",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: changePassword.isPending ? "not-allowed" : "pointer",
-                transition: "background 150ms",
-              }}
-            >
-              {changePassword.isPending && (
-                <Loader2
-                  size={14}
-                  strokeWidth={2}
-                  style={{ animation: "spin 0.8s linear infinite" }}
-                />
-              )}
+          <div className="flex justify-end pt-1">
+            <Button type="submit" disabled={changePassword.isPending}>
+              {changePassword.isPending && <Loader2 className="animate-spin" />}
               {changePassword.isPending
                 ? "Actualizando…"
                 : "Actualizar contraseña"}
-            </button>
+            </Button>
           </div>
         </form>
       </section>
 
-      <Divider />
+      <div className="h-px bg-ps-border-subtle" />
 
-      {/* ── Two-factor authentication ───────────────────────────────────── */}
-      <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Two-factor authentication section */}
+      <section className="flex flex-col gap-4">
         <div>
-          <h3
-            style={{
-              margin: "0 0 4px",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h3 className="text-sm font-semibold text-foreground">
             Autenticación de dos factores
           </h3>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1 text-sm text-muted-foreground">
             Agregá una capa adicional de seguridad a tu cuenta.
           </p>
         </div>
 
         {/* Status card */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 20,
-            padding: "16px 18px",
-            borderRadius: 10,
-            background: "var(--ps-bg-elevated)",
-            border: "1px solid var(--ps-border-subtle)",
-          }}
-        >
+        <div className="flex items-center justify-between gap-5 p-4 rounded-[10px] bg-ps-elevated border border-ps-border-subtle">
           {/* Left: icon + status text */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="flex items-center gap-3">
             <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: is2FAEnabled
-                  ? "rgba(52,211,153,0.12)"
-                  : "var(--ps-bg-surface)",
-                border: `1px solid ${is2FAEnabled ? "rgba(52,211,153,0.25)" : "var(--ps-border-default)"}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
+              className={cn(
+                "w-[38px] h-[38px] rounded-[10px] flex items-center justify-center shrink-0 border",
+                is2FAEnabled
+                  ? "bg-ps-success-bg border-ps-success/25"
+                  : "bg-card border-border"
+              )}
             >
               {is2FAEnabled ? (
-                <ShieldCheck
-                  size={18}
-                  strokeWidth={2}
-                  style={{ color: "var(--ps-success)" }}
-                />
+                <ShieldCheck size={18} className="text-ps-success" />
               ) : (
-                <Shield
-                  size={18}
-                  strokeWidth={2}
-                  style={{ color: "var(--ps-text-tertiary)" }}
-                />
+                <Shield size={18} className="text-ps-tertiary" />
               )}
             </div>
             <div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "var(--ps-text-primary)",
-                }}
-              >
+              <p className="text-[13px] font-semibold text-foreground">
                 {is2FAEnabled ? "2FA habilitado" : "2FA deshabilitado"}
               </p>
-              <p
-                style={{
-                  margin: "3px 0 0",
-                  fontSize: 12,
-                  color: "var(--ps-text-secondary)",
-                }}
-              >
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {is2FAEnabled
                   ? "Tu cuenta requiere un código adicional al iniciar sesión."
                   : "Activalo para proteger mejor el acceso a tu cuenta."}
@@ -659,52 +345,22 @@ export default function SettingsSecurityPage() {
 
           {/* Right: action button */}
           {is2FAEnabled ? (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setDialogOpen(true)}
-              style={{
-                height: 34,
-                padding: "0 14px",
-                background: "var(--ps-bg-surface)",
-                border: "1px solid var(--ps-border-default)",
-                borderRadius: 8,
-                color: "var(--ps-text-secondary)",
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: "pointer",
-                flexShrink: 0,
-                transition: "border-color 150ms, color 150ms",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--ps-error)";
-                e.currentTarget.style.color = "var(--ps-error)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--ps-border-default)";
-                e.currentTarget.style.color = "var(--ps-text-secondary)";
-              }}
+              className="shrink-0 hover:border-destructive hover:text-destructive"
             >
               Deshabilitar 2FA
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={() => router.push("/auth/setup-2fa")}
-              style={{
-                height: 34,
-                padding: "0 14px",
-                background: "var(--ps-cyan)",
-                border: "none",
-                borderRadius: 8,
-                color: "var(--ps-bg-base)",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
+              className="shrink-0"
             >
               Habilitar 2FA
-            </button>
+            </Button>
           )}
         </div>
       </section>
