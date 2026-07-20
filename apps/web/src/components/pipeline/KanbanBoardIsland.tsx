@@ -8,13 +8,9 @@ const KanbanBoard = dynamic(
     ssr: false,
     loading: () => (
       <div
+        className="flex items-center justify-center h-[200px] text-sm"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: 200,
           color: "var(--ps-text-secondary)",
-          fontSize: 14,
         }}
       >
         Cargando pipeline...
