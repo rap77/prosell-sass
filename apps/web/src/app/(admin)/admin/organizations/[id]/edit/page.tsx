@@ -175,63 +175,36 @@ function EditOrganizationForm({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Back button */}
       <Link
         href={`/admin/organizations/${organization.id}`}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          color: "var(--ps-text-secondary)",
-          textDecoration: "none",
-          fontSize: 13,
-        }}
+        className="inline-flex items-center gap-1.5 text-text-secondary no-underline text-xs"
       >
         <ArrowLeft size={14} />
         Volver al detalle
       </Link>
 
-      <h1
-        style={{
-          margin: 0,
-          fontSize: 22,
-          fontWeight: 700,
-          color: "var(--ps-text-primary)",
-        }}
-      >
+      <h1 className="m-0 text-2xl font-bold text-text-primary">
         Editar: {organization.name}
       </h1>
 
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          maxWidth: 600,
-        }}
+        className="flex flex-col gap-4 max-w-[600px]"
       >
         {/* Verticals — fundamental info first */}
-        <fieldset
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            border: "none",
-            padding: 0,
-          }}
-        >
-          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals</legend>
+        <fieldset className="flex flex-col gap-2 border-none p-0">
+          <legend className="text-sm mb-1.5">Verticals</legend>
           {(verticalsLoading || categoriesLoading) && (
-            <p style={{ color: "var(--ps-text-secondary)" }}>
+            <p className="text-text-secondary">
               Cargando verticals…
             </p>
           )}
           {!verticalsLoading &&
             !categoriesLoading &&
             verticals.length === 0 && (
-              <p style={{ color: "var(--ps-text-secondary)" }}>
+              <p className="text-text-secondary">
                 No hay verticals disponibles.
               </p>
             )}
@@ -246,12 +219,8 @@ function EditOrganizationForm({
               return (
                 <label
                   key={vertical.id}
+                  className="flex items-center gap-2 p-2.5 rounded"
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "8px 12px",
-                    borderRadius: 6,
                     background: isSelected
                       ? "var(--ps-cyan-10)"
                       : "var(--ps-bg-elevated)",
@@ -271,13 +240,7 @@ function EditOrganizationForm({
                   />
                   <span>{vertical.name}</span>
                   {productCount > 0 && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--ps-text-tertiary)",
-                        marginLeft: "auto",
-                      }}
-                    >
+                    <span className="text-xs text-text-tertiary ml-auto">
                       ({productCount} producto{productCount !== 1 ? "s" : ""})
                     </span>
                   )}
@@ -324,26 +287,20 @@ function EditOrganizationForm({
         />
 
         {/* Brokers section */}
-        <div
-          style={{
-            borderTop: "1px solid var(--ps-border-default)",
-            paddingTop: 16,
-            marginTop: 8,
-          }}
-        >
+        <div className="border-t border-border-default pt-4 mt-2">
           <BrokerManager organizationId={organization.id} />
         </div>
 
         {/* Error */}
         {(updateOrganization.error || updateVerticals.error) && (
-          <p style={{ color: "var(--ps-error)" }}>
+          <p className="text-error">
             {updateOrganization.error?.message ||
               updateVerticals.error?.message}
           </p>
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+        <div className="flex gap-3 mt-2">
           <button
             type="submit"
             disabled={
@@ -353,16 +310,7 @@ function EditOrganizationForm({
               !isValidPhone(phone) ||
               !isValidPhone(whatsapp)
             }
-            style={{
-              flex: 1,
-              height: 40,
-              borderRadius: 8,
-              background: "var(--ps-cyan)",
-              border: "none",
-              color: "var(--ps-bg-base)",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            className="flex-1 h-10 rounded-lg bg-cyan border-none text-bg-base font-bold cursor-pointer"
           >
             {updateOrganization.isPending || updateVerticals.isPending
               ? "Guardando..."
@@ -370,19 +318,7 @@ function EditOrganizationForm({
           </button>
           <Link
             href={`/admin/organizations/${organization.id}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 40,
-              padding: "0 20px",
-              borderRadius: 8,
-              border: "1px solid var(--ps-border-default)",
-              background: "var(--ps-bg-elevated)",
-              color: "var(--ps-text-primary)",
-              textDecoration: "none",
-              fontWeight: 600,
-            }}
+            className="flex items-center justify-center h-10 px-5 rounded-lg border border-border-default bg-bg-elevated text-text-primary no-underline font-semibold"
           >
             Cancelar
           </Link>
