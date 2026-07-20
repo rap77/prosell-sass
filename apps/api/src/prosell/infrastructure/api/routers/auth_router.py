@@ -254,7 +254,9 @@ async def login(
         remember_me=login_data.remember_me,
     )
     result = await use_case.execute(uc_request)
-    set_auth_cookies(response, result)
+    # ponytail: only set auth cookies after FULL authentication (2FA not pending)
+    if not result.requires_2fa:
+        set_auth_cookies(response, result)
     return result
 
 
@@ -295,16 +297,24 @@ async def accept_org_invitation(
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def refresh_token(
     request: Request,
-    refresh_request: RefreshTokenRequest,
     use_case: Annotated[RefreshTokenUseCase, Depends(get_refresh_token_use_case)],
+    refresh_request: RefreshTokenRequest | None = None,
 ) -> RefreshTokenResponse:
     """
-    Refresh access token using refresh token.
+    Refresh access token using refresh token from httpOnly cookie.
 
-    - **refresh_token**: Valid refresh token
+    Falls back to body for backward compatibility, but cookie is preferred.
     """
-    _ = request
-    uc_request = RefreshTokenUCRequest(refresh_token=refresh_request.refresh_token)
+    # ponytail: prefer httpOnly cookie (secure), fall back to body (legacy)
+    token = request.cookies.get("refresh_token")
+    if not token and refresh_request:
+        token = refresh_request.refresh_token
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found",
+        )
+    uc_request = RefreshTokenUCRequest(refresh_token=token)
     return await use_case.execute(uc_request)
 
 
@@ -543,6 +553,12 @@ async def oauth_callback(
     except (OAuthConfigurationError, OAuthCallbackError) as e:
         logger.error(f"OAuth error for provider={provider}: {e.message}")
         error_url = f"{settings.oauth_frontend_failure_url}oauth_failed"
+        return RedirectResponse(url=error_url, status_code=302)
+
+    except Exception as e:
+        # ponytail: catch-all for unexpected errors — redirect to login, don't crash
+        logger.error(f"Unexpected OAuth error for provider={provider}: {e}")
+        error_url = f"{settings.oauth_frontend_failure_url}server_error"
         return RedirectResponse(url=error_url, status_code=302)
 
 

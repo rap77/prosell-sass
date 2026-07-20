@@ -49,8 +49,10 @@ export function DeleteConfirmDialog({
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm leading-relaxed">
             Estás a punto de eliminar{" "}
-            <span className="font-medium text-foreground">"{itemTitle}"</span>.
-            Esta acción no se puede deshacer y el producto será removido
+            <span className="font-medium text-foreground">
+              &quot;{itemTitle}&quot;
+            </span>
+            . Esta acción no se puede deshacer y el producto será removido
             permanentemente del catálogo.
           </AlertDialogDescription>
         </AlertDialogHeader>
