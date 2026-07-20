@@ -238,7 +238,7 @@ export function Sidebar({ groups }: SidebarProps) {
                 alt="ProSell"
                 width={271}
                 height={294}
-                style={{ height: 26, width: "auto", flexShrink: 0 }}
+                className="h-[26px] w-auto flex-shrink-0"
               />
               ProSell
             </span>
@@ -297,8 +297,7 @@ function SidebarNav({
 
   return (
     <nav
-      className="flex-1 overflow-y-auto py-4"
-      style={{ padding: "16px 8px" }}
+      className="flex-1 overflow-y-auto px-2 py-4"
       aria-label="Main navigation"
     >
       {NAV_GROUP_ORDER.filter((group) => groupedItems[group].length > 0).map(
@@ -307,11 +306,9 @@ function SidebarNav({
             {/* Group divider between sections (not before first) */}
             {groupIdx > 0 && (
               <div
-                className="my-3"
+                className="my-1.5 mx-2 h-px"
                 style={{
-                  height: 1,
                   background: "var(--ps-border-subtle)",
-                  margin: "12px 8px",
                 }}
               />
             )}
@@ -326,7 +323,7 @@ function SidebarNav({
               </span>
             )}
 
-            <ul style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <ul className="flex flex-col gap-2">
               {groupedItems[group].map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -414,8 +411,8 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div
-      className="p-3"
-      style={{ borderTop: "1px solid var(--ps-border-subtle)" }}
+      className="border-t p-3"
+      style={{ borderTopColor: "var(--ps-border-subtle)" }}
     >
       <div
         className={cn(
@@ -435,12 +432,11 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
       >
         {/* Avatar */}
         <div
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold tracking-widest"
           style={{
             background:
               "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
             color: "var(--ps-bg-base)",
-            letterSpacing: "0.02em",
           }}
         >
           {initials}
@@ -474,7 +470,8 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ color: "var(--ps-text-secondary)", flexShrink: 0 }}
+              className="flex-shrink-0"
+              style={{ color: "var(--ps-text-secondary)" }}
             >
               <path d="m9 18 6-6-6-6" />
             </svg>
