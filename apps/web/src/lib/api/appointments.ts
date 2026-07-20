@@ -10,6 +10,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { extractErrorMessage } from "./extractErrorMessage";
 import {
   AppointmentStatus,
   BackendAppointmentResponseSchema,
@@ -110,10 +111,8 @@ export function useAppointments(
       );
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch appointments" }));
-        throw new Error(error.message || "Failed to fetch appointments");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch appointments"));
       }
 
       const data = BackendAppointmentListResponseSchema.parse(await res.json());
@@ -142,11 +141,9 @@ export function useCreateAppointment() {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to create appointment" }));
+        const body = await res.json().catch(() => ({}));
         const err: ApiError = new Error(
-          error.message || "Failed to create appointment",
+          extractErrorMessage(body, "Failed to create appointment"),
         );
         err.status = res.status; // A4.33: Preserve status code for error handling
         throw err;
@@ -197,10 +194,8 @@ export function useUpdateAppointmentStatus() {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to update appointment status" }));
-        throw new Error(error.message || "Failed to update appointment status");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to update appointment status"));
       }
 
       const data = BackendAppointmentResponseSchema.parse(await res.json());

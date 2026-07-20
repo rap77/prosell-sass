@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
+import { extractErrorMessage } from "./extractErrorMessage";
 import {
   LeadStatus,
   BackendLeadResponseSchema,
@@ -199,10 +200,8 @@ export function useLeads(
       );
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch leads" }));
-        throw new Error(error.message || "Failed to fetch leads");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch leads"));
       }
 
       const data = BackendLeadListResponseSchema.parse(await res.json());
@@ -228,10 +227,8 @@ export async function getLeadAuditTrail(
   const res = await fetchWithAuth(`/api/v1/leads/${leadId}`);
 
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Failed to fetch lead audit trail" }));
-    throw new Error(error.message || "Failed to fetch lead audit trail");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to fetch lead audit trail"));
   }
 
   const data = BackendLeadDetailResponseSchema.parse(await res.json());
@@ -243,10 +240,8 @@ async function fetchLeadDetail(
 ): Promise<BackendLeadDetailResponse> {
   const res = await fetchWithAuth(`/api/v1/leads/${leadId}`);
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Failed to fetch lead" }));
-    throw new Error(error.message || "Failed to fetch lead");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to fetch lead"));
   }
   return BackendLeadDetailResponseSchema.parse(await res.json());
 }
@@ -296,10 +291,8 @@ export function useUpdateLeadStatus(leadId: string) {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to update lead status" }));
-        throw new Error(error.message || "Failed to update lead status");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to update lead status"));
       }
 
       const data = BackendLeadResponseSchema.parse(await res.json());
@@ -328,10 +321,8 @@ export function useReassignLead(leadId: string) {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to reassign lead" }));
-        throw new Error(error.message || "Failed to reassign lead");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to reassign lead"));
       }
 
       const data = BackendLeadResponseSchema.parse(await res.json());
@@ -355,10 +346,8 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
       const res = await fetchWithAuth("/api/v1/leads/metrics");
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch team metrics" }));
-        throw new Error(error.message || "Failed to fetch team metrics");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch team metrics"));
       }
 
       return TeamMetricsResponseSchema.parse(await res.json());
@@ -385,10 +374,8 @@ export function useLeadDuplicates(
       const res = await fetchWithAuth(`/api/v1/leads/${leadId}/duplicates`);
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch duplicates" }));
-        throw new Error(error.message || "Failed to fetch duplicates");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch duplicates"));
       }
 
       return LeadDuplicatesResponseSchema.parse(await res.json());
