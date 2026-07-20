@@ -56,32 +56,12 @@ export default function ImportClientCSVPage() {
   }));
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        maxWidth: 960,
-      }}
-    >
+    <div className="flex flex-col gap-6 max-w-4xl">
       <div>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 24,
-            fontWeight: 700,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+        <h1 className="m-0 text-2xl font-bold text-ps-text-primary">
           Importar CSV del cliente
         </h1>
-        <p
-          style={{
-            margin: "6px 0 0",
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-          }}
-        >
+        <p className="mt-1.5 text-xs text-ps-text-secondary">
           Migración inicial desde el sistema legacy. Acepta CSV separado por
           punto y coma con 24 columnas + ZIP opcional con imágenes. Idempotente
           por VIN.
@@ -89,7 +69,7 @@ export default function ImportClientCSVPage() {
       </div>
 
       {orgsLoading || catsLoading ? (
-        <p style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+        <p className="text-xs text-ps-text-secondary">
           Cargando…
         </p>
       ) : (
