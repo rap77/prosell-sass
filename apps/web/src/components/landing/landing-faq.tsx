@@ -3,61 +3,21 @@ import { FAQ_ITEMS } from "./_data";
 
 export function LandingFaq() {
   return (
-    <section
-      style={{
-        padding: "100px 32px",
-        borderTop: "1px solid rgba(77,184,255,0.08)",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "1fr 1.6fr",
-          gap: 80,
-          alignItems: "start",
-        }}
-      >
+    <section className="py-[100px] px-8 border-t border-ps-border-subtle">
+      <div className="max-w-[1280px] mx-auto grid grid-cols-[1fr_1.6fr] gap-20 items-start">
         <div>
-          <span
-            style={{
-              display: "inline-block",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--ps-cyan)",
-              marginBottom: 18,
-            }}
-          >
+          <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-ps-cyan mb-[18px]">
             FAQ
           </span>
-          <h2
-            style={{
-              fontSize: 40,
-              fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "-0.025em",
-              margin: "0 0 18px",
-            }}
-          >
+          <h2 className="text-[40px] font-extrabold leading-[1.1] tracking-[-0.025em] mb-[18px]">
             Preguntas frecuentes
           </h2>
-          <p
-            style={{
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: "var(--ps-text-secondary)",
-              margin: "0 0 32px",
-            }}
-          >
+          <p className="text-base leading-relaxed text-ps-text-secondary mb-8">
             Todo lo que necesitás saber antes de empezar.
           </p>
           <Link
             href="/auth/register"
-            className="ps-btn-primary"
-            style={{ padding: "12px 22px", fontSize: 14 }}
+            className="ps-btn-primary py-3 px-[22px] text-sm"
           >
             Empezar gratis
           </Link>

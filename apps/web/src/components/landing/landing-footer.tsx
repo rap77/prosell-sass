@@ -31,7 +31,7 @@ const FOOTER_COLS = [
 function LinkedInIcon() {
   return (
     <svg
-      style={{ width: 14, height: 14 }}
+      className="w-3.5 h-3.5"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
@@ -47,7 +47,7 @@ function LinkedInIcon() {
 function XIcon() {
   return (
     <svg
-      style={{ width: 14, height: 14 }}
+      className="w-3.5 h-3.5"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
@@ -61,7 +61,7 @@ function XIcon() {
 function InstagramIcon() {
   return (
     <svg
-      style={{ width: 14, height: 14 }}
+      className="w-3.5 h-3.5"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
@@ -76,68 +76,29 @@ function InstagramIcon() {
 
 export function LandingFooter() {
   return (
-    <footer
-      style={{
-        position: "relative",
-        background: "var(--ps-bg-sidebar)",
-        borderTop: "1px solid var(--ps-border-subtle)",
-        padding: "64px 32px 0",
-        zIndex: 1,
-      }}
-    >
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        {/* 4-column grid */}
-        <div
-          className="ps-footer-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.4fr 1fr 1fr 1fr",
-            gap: 48,
-            paddingBottom: 48,
-          }}
-        >
-          {/* Brand column */}
+    <footer className="relative bg-ps-sidebar border-t border-ps-border-subtle pt-16 px-8 z-[1]">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="ps-footer-grid grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 pb-12">
           <div>
             <Link
               href="/"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                textDecoration: "none",
-                marginBottom: 16,
-              }}
+              className="inline-flex items-center gap-2.5 no-underline mb-4"
             >
               <Image
                 src="/logo-mark.png"
                 alt="ProSell"
                 width={271}
                 height={294}
-                style={{ height: 30, width: "auto", flexShrink: 0 }}
+                className="h-[30px] w-auto shrink-0"
               />
-              <span
-                style={{
-                  fontSize: 17,
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  color: "var(--ps-text-primary)",
-                }}
-              >
+              <span className="text-[17px] font-bold tracking-[-0.02em] text-ps-text-primary">
                 ProSell
               </span>
             </Link>
-            <p
-              style={{
-                fontSize: 13,
-                lineHeight: 1.6,
-                color: "var(--ps-text-secondary)",
-                maxWidth: 220,
-                margin: "0 0 22px",
-              }}
-            >
+            <p className="text-[13px] leading-relaxed text-ps-text-secondary max-w-[220px] mb-[22px]">
               La infraestructura de ventas para equipos que escalan.
             </p>
-            <div style={{ display: "flex", gap: 10 }}>
+            <div className="flex gap-2.5">
               {[
                 { label: "LinkedIn", Icon: LinkedInIcon },
                 { label: "X", Icon: XIcon },
@@ -155,31 +116,12 @@ export function LandingFooter() {
             </div>
           </div>
 
-          {/* Link columns */}
           {FOOTER_COLS.map((col) => (
             <div key={col.label}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "var(--ps-text-tertiary)",
-                  marginBottom: 16,
-                }}
-              >
+              <div className="text-xs font-bold uppercase tracking-[0.08em] text-ps-tertiary mb-4">
                 {col.label}
               </div>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                }}
-              >
+              <ul className="list-none p-0 m-0 flex flex-col gap-3">
                 {col.links.map((link) => (
                   <li key={link}>
                     <a href="#" className="ps-footer-link">
@@ -192,34 +134,15 @@ export function LandingFooter() {
           ))}
         </div>
 
-        {/* Footer bar */}
-        <div
-          style={{
-            borderTop: "1px solid var(--ps-border-subtle)",
-            padding: "24px 0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 12, color: "var(--ps-text-tertiary)" }}>
+        <div className="border-t border-ps-border-subtle py-6 flex items-center justify-between flex-wrap gap-3">
+          <span className="text-xs text-ps-tertiary">
             © {new Date().getFullYear()} ProSell. Todos los derechos reservados.
           </span>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 12,
-              color: "var(--ps-text-tertiary)",
-            }}
-          >
+          <div className="flex items-center gap-2 text-xs text-ps-tertiary">
             <Link href="/terms" className="ps-footer-legal-link">
               Términos
             </Link>
-            <span style={{ opacity: 0.5 }}>·</span>
+            <span className="opacity-50">·</span>
             <Link href="/privacy" className="ps-footer-legal-link">
               Privacidad
             </Link>

@@ -1,128 +1,48 @@
 import Link from "next/link";
+import { PulseDot } from "./landing-shared";
 
 export function LandingFinalCta() {
   return (
-    <section
-      style={{
-        position: "relative",
-        padding: "120px 32px",
-        borderTop: "1px solid rgba(77,184,255,0.08)",
-        overflow: "hidden",
-        textAlign: "center",
-      }}
-    >
+    <section className="relative py-[120px] px-8 border-t border-ps-border-subtle overflow-hidden text-center">
       <div
         aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
         style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
           background:
             "linear-gradient(135deg, rgba(6,13,36,0.8), rgba(13,27,110,0.6), rgba(30,95,212,0.4))",
         }}
       />
       <div
         aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
         style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
           background:
             "radial-gradient(60% 50% at 50% 50%, rgba(77,184,255,0.12), transparent 70%)",
         }}
       />
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 760,
-          margin: "0 auto",
-        }}
-      >
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "var(--ps-cyan)",
-            marginBottom: 24,
-          }}
-        >
-          <span
-            style={{
-              position: "relative",
-              width: 8,
-              height: 8,
-              display: "inline-block",
-            }}
-          >
-            <span
-              style={{
-                position: "absolute",
-                inset: 0,
-                borderRadius: "50%",
-                background: "var(--ps-cyan)",
-              }}
-            />
-            <span
-              style={{
-                position: "absolute",
-                inset: -3,
-                borderRadius: "50%",
-                background: "var(--ps-cyan)",
-                opacity: 0.4,
-                animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite",
-              }}
-            />
-          </span>
+      <div className="relative z-[1] max-w-[760px] mx-auto">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase text-ps-cyan mb-6">
+          <PulseDot />
           Empezá hoy
         </span>
 
-        <h2
-          style={{
-            fontSize: 52,
-            fontWeight: 800,
-            lineHeight: 1.08,
-            letterSpacing: "-0.03em",
-            margin: "0 0 22px",
-          }}
-        >
+        <h2 className="text-[52px] font-extrabold leading-[1.08] tracking-[-0.03em] mb-[22px]">
           Tu próximo cierre empieza acá.
         </h2>
-        <p
-          style={{
-            fontSize: 18,
-            lineHeight: 1.6,
-            color: "var(--ps-text-secondary)",
-            margin: "0 0 44px",
-          }}
-        >
+        <p className="text-lg leading-relaxed text-ps-text-secondary mb-11">
           Más de 2.400 equipos ya usan ProSell para vender más sin gastar más.
           Empezá gratis, sin tarjeta, en 10 minutos.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            justifyContent: "center",
-            flexWrap: "wrap",
-            marginBottom: 28,
-          }}
-        >
+        <div className="flex gap-3 justify-center flex-wrap mb-7">
           <Link
             href="/auth/register"
-            className="ps-btn-primary"
-            style={{ padding: "14px 28px", fontSize: 15, gap: 10 }}
+            className="ps-btn-primary py-[14px] px-7 text-[15px] gap-2.5"
           >
             Empezar gratis ahora
             <svg
-              style={{ width: 16, height: 16 }}
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -134,11 +54,10 @@ export function LandingFinalCta() {
           </Link>
           <Link
             href="/auth/login"
-            className="ps-btn-ghost"
-            style={{ padding: "14px 28px", fontSize: 15, gap: 10 }}
+            className="ps-btn-ghost py-[14px] px-7 text-[15px] gap-2.5"
           >
             <svg
-              style={{ width: 14, height: 14 }}
+              className="w-3.5 h-3.5"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
@@ -148,21 +67,11 @@ export function LandingFinalCta() {
           </Link>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            flexWrap: "wrap",
-            fontSize: 13,
-            color: "var(--ps-text-tertiary)",
-          }}
-        >
+        <div className="flex items-center justify-center gap-2 flex-wrap text-[13px] text-ps-tertiary">
           <span>🔒 Sin tarjeta</span>
-          <span style={{ opacity: 0.4 }}>·</span>
+          <span className="opacity-40">·</span>
           <span>↩️ Cancelá cuando quieras</span>
-          <span style={{ opacity: 0.4 }}>·</span>
+          <span className="opacity-40">·</span>
           <span>⚡ Setup en 10 min</span>
         </div>
       </div>

@@ -1,46 +1,15 @@
 export function LandingProofStrip() {
   return (
-    <div
-      style={{
-        borderTop: "1px solid rgba(77,184,255,0.08)",
-        padding: "36px 32px 60px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 22,
-        alignItems: "center",
-      }}
-    >
-      <p
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: "var(--ps-text-secondary)",
-          margin: 0,
-        }}
-      >
+    <div className="border-t border-ps-border-subtle pt-9 px-8 pb-[60px] flex flex-col gap-[22px] items-center">
+      <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-ps-text-secondary m-0">
         Más de 2.400 equipos comerciales ya usan ProSell
       </p>
-      <div
-        style={{
-          display: "flex",
-          gap: 52,
-          alignItems: "center",
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
+      <div className="flex gap-[52px] items-center flex-wrap justify-center">
         {["MERIDIAN", "STACKFLOW", "NOVA GROUP", "AXION", "VELTRIX"].map(
           (n) => (
             <span
               key={n}
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                color: "var(--ps-text-secondary)",
-              }}
+              className="text-[15px] font-bold tracking-[0.18em] text-ps-text-secondary"
             >
               {n}
             </span>

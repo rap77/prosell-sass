@@ -10,68 +10,25 @@ export function LandingNav() {
   const t = useTranslations("landing.nav");
 
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        height: 72,
-        display: "flex",
-        alignItems: "center",
-        background: "var(--ps-nav-bg)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--ps-border-subtle)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 40,
-          width: "100%",
-          maxWidth: 1280,
-          margin: "0 auto",
-          padding: "0 32px",
-        }}
-      >
+    <header className="sticky top-0 z-50 h-[72px] flex items-center bg-ps-nav-bg backdrop-blur-[20px] border-b border-ps-border-subtle">
+      <div className="flex items-center gap-10 w-full max-w-[1280px] mx-auto px-8">
         <Link
           href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            textDecoration: "none",
-          }}
+          className="flex items-center gap-2.5 no-underline"
         >
           <Image
             src="/logo-mark.png"
             alt="ProSell"
             width={271}
             height={294}
-            style={{ height: 34, width: "auto", flexShrink: 0 }}
+            className="h-[34px] w-auto shrink-0"
           />
-          <span
-            style={{
-              fontSize: 17,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <span className="text-[17px] font-bold tracking-[-0.02em] text-ps-text-primary">
             ProSell
           </span>
         </Link>
 
-        <nav
-          className="ps-nav-links"
-          style={{
-            display: "flex",
-            gap: 32,
-            flex: 1,
-            justifyContent: "center",
-          }}
-        >
+        <nav className="ps-nav-links flex gap-8 flex-1 justify-center">
           <a href="#producto" className="ps-nav-link">
             {t("features")}
           </a>
@@ -86,27 +43,18 @@ export function LandingNav() {
           </a>
         </nav>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            marginLeft: "auto",
-          }}
-        >
+        <div className="flex gap-2.5 items-center ml-auto">
           <LocaleSwitcher />
           <ThemeToggle />
           <Link
             href="/auth/login"
-            className="ps-btn-ghost"
-            style={{ padding: "9px 16px", fontSize: 13 }}
+            className="ps-btn-ghost py-[9px] px-4 text-[13px]"
           >
             {t("login")}
           </Link>
           <Link
             href="/auth/register"
-            className="ps-btn-primary"
-            style={{ padding: "9px 16px", fontSize: 13 }}
+            className="ps-btn-primary py-[9px] px-4 text-[13px]"
           >
             {t("getStarted")}
           </Link>

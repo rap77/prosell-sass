@@ -12,61 +12,25 @@ type Testimonial = {
 function TestimonialCard({ t }: { t: Testimonial }) {
   return (
     <article className="ps-tm-card">
-      <div
-        style={{
-          color: "var(--ps-warning)",
-          fontSize: 13,
-          letterSpacing: 1,
-          marginBottom: 16,
-        }}
-      >
+      <div className="text-ps-warning text-[13px] tracking-[1px] mb-4">
         ★★★★★
       </div>
-      <p
-        style={{
-          fontSize: 14.5,
-          lineHeight: 1.6,
-          color: "var(--ps-text-primary)",
-          margin: "0 0 20px",
-          flex: 1,
-        }}
-      >
+      <p className="text-[14.5px] leading-[1.6] text-ps-text-primary mb-5 flex-1">
         {t.quote}
       </p>
-      <div
-        style={{
-          height: 1,
-          background: "rgba(77,184,255,0.08)",
-          margin: "0 0 20px",
-        }}
-      />
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="h-px bg-ps-border-subtle mb-5" />
+      <div className="flex items-center gap-3">
         <div
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 12,
-            fontWeight: 700,
-            color: "var(--ps-bg-base)",
-            background: t.avBg,
-          }}
+          className="w-[38px] h-[38px] rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-ps-base"
+          style={{ background: t.avBg }}
         >
           {t.av}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.name}</div>
-          <div style={{ fontSize: 12, color: "var(--ps-text-secondary)" }}>
-            {t.role}
-          </div>
+        <div className="flex-1">
+          <div className="text-[13.5px] font-semibold">{t.name}</div>
+          <div className="text-xs text-ps-text-secondary">{t.role}</div>
         </div>
-        <span style={{ fontSize: 12, color: "var(--ps-text-tertiary)" }}>
-          {t.niche}
-        </span>
+        <span className="text-xs text-ps-tertiary">{t.niche}</span>
       </div>
     </article>
   );
@@ -74,78 +38,33 @@ function TestimonialCard({ t }: { t: Testimonial }) {
 
 export function LandingTestimonials() {
   return (
-    <section
-      style={{
-        position: "relative",
-        padding: "100px 32px",
-        borderTop: "1px solid var(--ps-border-subtle)",
-        overflow: "hidden",
-      }}
-    >
+    <section className="relative py-[100px] px-8 border-t border-ps-border-subtle overflow-hidden">
       <div
         aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
         style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
           background:
             "radial-gradient(50% 35% at 20% 50%, rgba(30,95,212,0.08), transparent 60%)",
         }}
       />
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 1280,
-          margin: "0 auto",
-        }}
-      >
-        <div
-          style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 56px" }}
-        >
-          <span
-            style={{
-              display: "inline-block",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--ps-cyan)",
-              marginBottom: 18,
-            }}
-          >
+      <div className="relative z-[1] max-w-[1280px] mx-auto">
+        <div className="text-center max-w-[760px] mx-auto mb-14">
+          <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-ps-cyan mb-[18px]">
             Testimonios
           </span>
-          <h2
-            style={{
-              fontSize: 40,
-              fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "-0.025em",
-              margin: 0,
-            }}
-          >
+          <h2 className="text-[40px] font-extrabold leading-[1.1] tracking-[-0.025em] m-0">
             Lo que dicen los equipos que ya venden con ProSell
           </h2>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3,1fr)",
-            gap: 20,
-            marginBottom: 20,
-          }}
-        >
+        <div className="grid grid-cols-3 gap-5 mb-5">
           {TESTIMONIALS_3.map((t) => (
             <TestimonialCard key={t.name} t={t} />
           ))}
         </div>
 
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
-        >
+        <div className="grid grid-cols-2 gap-5">
           {TESTIMONIALS_2.map((t) => (
             <TestimonialCard key={t.name} t={t} />
           ))}
