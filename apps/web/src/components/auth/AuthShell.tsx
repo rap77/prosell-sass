@@ -3,7 +3,7 @@
 /**
  * AuthShell — Shared split-layout wrapper for all auth screens.
  *
- * Left:  ProSell brand panel (gradient + testimonial) — always the same
+ * Left:  ProSell brand panel (gradient + testimonial)
  * Right: Form area — receives `children`
  *
  * Responsive: left panel hides on mobile (via .ps-auth-split CSS rule in globals.css).
@@ -11,8 +11,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 // ─── Brand panel (left side) ──────────────────────────────────────────────────
+// ponytail: decorative gradients/glows kept inline — they're view-specific, not reusable
 
 function AuthBrandPanel() {
   return (
@@ -57,76 +63,31 @@ function AuthBrandPanel() {
         }}
       />
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        }}
-      >
-        {/* Logo — tabIndex -1 because the aside is aria-hidden, making this link unreachable by keyboard */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Logo */}
         <Link
           href="/"
           tabIndex={-1}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 12,
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            color: "#fff",
-            textDecoration: "none",
-          }}
+          className="inline-flex items-center gap-3 text-[22px] font-bold tracking-tight text-white no-underline"
         >
           <Image
             src="/logo-mark.png"
             alt="ProSell"
             width={271}
             height={294}
-            style={{ height: 34, width: "auto", flexShrink: 0 }}
+            className="h-[34px] w-auto shrink-0"
           />
           ProSell
         </Link>
 
         {/* Hero + testimonial */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: 18,
-            maxWidth: 480,
-            margin: "auto 0",
-            padding: "32px 0",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: 36,
-              fontWeight: 800,
-              letterSpacing: "-0.025em",
-              lineHeight: 1.1,
-              margin: 0,
-              color: "#fff",
-            }}
-          >
+        <div className="flex-1 flex flex-col justify-center gap-[18px] max-w-[480px] my-auto py-8">
+          <h2 className="text-4xl font-extrabold tracking-tight leading-tight text-white m-0">
             Tu pipeline,
             <br />
             centralizado.
           </h2>
-          <p
-            style={{
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: "rgba(255,255,255,0.7)",
-              maxWidth: 380,
-              margin: 0,
-            }}
-          >
+          <p className="text-base leading-relaxed text-white/70 max-w-[380px] m-0">
             Miles de equipos comerciales ya cierran más rápido con ProSell.
           </p>
 
@@ -143,85 +104,31 @@ function AuthBrandPanel() {
                 "0 16px 48px rgba(6,13,36,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
             }}
           >
-            <div
-              style={{
-                color: "#F5A623",
-                fontSize: 13,
-                letterSpacing: 1,
-                marginBottom: 12,
-              }}
-            >
+            <div className="text-ps-warning text-[13px] tracking-wider mb-3">
               ★★★★★
             </div>
-            <blockquote
-              style={{
-                fontSize: 15,
-                lineHeight: 1.55,
-                fontStyle: "italic",
-                color: "#fff",
-                margin: "0 0 14px",
-                letterSpacing: "-0.005em",
-              }}
-            >
+            <blockquote className="text-[15px] leading-relaxed italic text-white m-0 mb-3.5 tracking-tight">
               &ldquo;Pasamos de perder el 40% de leads a cerrar el doble en el
               mismo tiempo.&rdquo;
             </blockquote>
-            <figcaption
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontSize: 13,
-                color: "rgba(255,255,255,0.75)",
-              }}
-            >
-              <span
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #4DB8FF, #1E5FD4)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#060D24",
-                  flexShrink: 0,
-                }}
-              >
+            <figcaption className="flex items-center gap-2.5 text-[13px] text-white/75">
+              <span className="w-8 h-8 rounded-full bg-gradient-to-br from-ps-cyan to-ps-blue inline-flex items-center justify-center text-[11px] font-bold text-background shrink-0">
                 MR
               </span>
               <span>
-                <b style={{ color: "#fff", fontWeight: 600 }}>Martín R.</b>{" "}
-                <span style={{ color: "rgba(255,255,255,0.55)" }}>
-                  · Gerente Comercial
-                </span>
+                <b className="text-white font-semibold">Martín R.</b>{" "}
+                <span className="text-white/55">· Gerente Comercial</span>
               </span>
             </figcaption>
           </figure>
         </div>
 
         {/* Status footer */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 12,
-            color: "rgba(255,255,255,0.5)",
-          }}
-        >
+        <div className="flex items-center gap-2 text-xs text-white/50">
+          {/* ponytail: glow effect kept inline — decorative, unique to this indicator */}
           <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "#22D3A0",
-              boxShadow: "0 0 6px #22D3A0",
-              display: "inline-block",
-              flexShrink: 0,
-            }}
+            className="w-1.5 h-1.5 rounded-full bg-ps-success inline-block shrink-0"
+            style={{ boxShadow: "0 0 6px var(--ps-success)" }}
           />
           Todos los sistemas operativos · v2.4.1
         </div>
@@ -232,48 +139,13 @@ function AuthBrandPanel() {
 
 // ─── Shared shell ─────────────────────────────────────────────────────────────
 
-/**
- * AuthShell wraps the split layout.
- * Usage:
- * ```tsx
- * <AuthShell>
- *   <AuthFormHead title="Bienvenido" subtitle="Ingresá tu cuenta" />
- *   <form>...</form>
- *   <p>¿No tenés cuenta? ...</p>
- * </AuthShell>
- * ```
- */
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="ps-auth-split"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1.05fr 1fr",
-        minHeight: "100vh",
-      }}
-    >
+    <div className="ps-auth-split grid grid-cols-[1.05fr_1fr] min-h-screen">
       <AuthBrandPanel />
 
-      <main
-        style={{
-          background: "var(--ps-bg-base)",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 48,
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 400,
-            display: "flex",
-            flexDirection: "column",
-            gap: 20,
-          }}
-        >
+      <main className="bg-background flex flex-col justify-center items-center p-12">
+        <div className="w-full max-w-[400px] flex flex-col gap-5">
           {children}
         </div>
       </main>
@@ -292,27 +164,11 @@ export function AuthFormHead({
 }) {
   return (
     <div>
-      <h1
-        style={{
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: "-0.02em",
-          lineHeight: 1.2,
-          margin: "0 0 6px",
-          color: "var(--ps-text-primary)",
-        }}
-      >
+      <h1 className="text-[28px] font-bold tracking-tight leading-tight mb-1.5 text-foreground">
         {title}
       </h1>
       {subtitle && (
-        <p
-          style={{
-            fontSize: 14,
-            color: "var(--ps-text-secondary)",
-            margin: 0,
-            lineHeight: 1.5,
-          }}
-        >
+        <p className="text-sm text-muted-foreground leading-relaxed">
           {subtitle}
         </p>
       )}
@@ -320,54 +176,36 @@ export function AuthFormHead({
   );
 }
 
-// ─── Shared input styling ─────────────────────────────────────────────────────
+// ─── Auth Input (styled wrapper around shadcn Input) ──────────────────────────
 
-export const authInputStyle = (hasError: boolean): React.CSSProperties => ({
-  width: "100%",
-  height: 44,
-  padding: "0 14px",
-  background: "var(--ps-input-bg)",
-  border: `1px solid ${hasError ? "var(--ps-error)" : "var(--ps-input-border)"}`,
-  borderRadius: 8,
-  color: "var(--ps-text-primary)",
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  transition: "border-color 180ms, box-shadow 180ms, background 180ms",
-});
-
-export function focusAuthInput(el: HTMLInputElement, hasError: boolean) {
-  el.style.borderColor = hasError ? "var(--ps-error)" : "var(--ps-cyan)";
-  el.style.boxShadow = hasError
-    ? "0 0 0 3px var(--ps-input-error-shadow)"
-    : "0 0 0 3px var(--ps-input-focus-shadow)";
-  el.style.background = "var(--ps-input-bg-focus)";
+export interface AuthInputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
+  hasError?: boolean;
 }
 
-export function blurAuthInput(el: HTMLInputElement, hasError: boolean) {
-  el.style.borderColor = hasError
-    ? "var(--ps-error)"
-    : "var(--ps-input-border)";
-  el.style.boxShadow = "none";
-  el.style.background = "var(--ps-input-bg)";
-}
+export const AuthInput = ({
+  hasError,
+  className,
+  ...props
+}: AuthInputProps) => (
+  <Input
+    className={cn(
+      "h-11 text-[15px]",
+      "focus:border-primary focus:ring-2 focus:ring-primary/20",
+      hasError && "border-destructive focus:border-destructive focus:ring-destructive/20",
+      className
+    )}
+    {...props}
+  />
+);
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
-
-import { AlertCircle } from "lucide-react";
 
 export function AuthFieldError({ message }: { message: string }) {
   return (
     <span
       role="alert"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        fontSize: 12,
-        color: "var(--ps-error)",
-        marginTop: 6,
-      }}
+      className="inline-flex items-center gap-1.5 text-xs text-destructive mt-1.5"
     >
       <AlertCircle size={12} strokeWidth={2.5} />
       {message}
@@ -377,26 +215,9 @@ export function AuthFieldError({ message }: { message: string }) {
 
 export function AuthErrorBanner({ message }: { message: string }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "10px 14px",
-        borderRadius: 8,
-        background: "var(--ps-error-bg)",
-        border: "1px solid rgba(240,68,56,0.25)",
-      }}
-    >
-      <AlertCircle
-        size={14}
-        style={{ color: "var(--ps-error)", flexShrink: 0 }}
-        strokeWidth={2.5}
-      />
-      <p
-        role="alert"
-        style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}
-      >
+    <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-ps-error-bg border border-destructive/25">
+      <AlertCircle size={14} className="text-destructive shrink-0" strokeWidth={2.5} />
+      <p role="alert" className="m-0 text-[13px] text-destructive">
         {message}
       </p>
     </div>
@@ -405,32 +226,10 @@ export function AuthErrorBanner({ message }: { message: string }) {
 
 export function AuthDivider({ label }: { label: string }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        color: "var(--ps-text-tertiary)",
-        fontSize: 12,
-      }}
-    >
-      <span
-        style={{
-          flex: 1,
-          height: 1,
-          background:
-            "linear-gradient(90deg, transparent, var(--ps-input-border), transparent)",
-        }}
-      />
+    <div className="flex items-center gap-3.5 text-ps-tertiary text-xs">
+      <span className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       {label}
-      <span
-        style={{
-          flex: 1,
-          height: 1,
-          background:
-            "linear-gradient(90deg, transparent, var(--ps-input-border), transparent)",
-        }}
-      />
+      <span className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
     </div>
   );
 }
@@ -447,43 +246,53 @@ export function AuthSubmitButton({
   disabled: boolean;
 }) {
   return (
-    <button
+    <Button
       type="submit"
       disabled={disabled}
-      style={{
-        marginTop: 8,
-        width: "100%",
-        height: 44,
-        background: disabled ? "rgba(77,184,255,0.4)" : "var(--ps-cyan)",
-        color: "var(--ps-bg-base)",
-        border: 0,
-        borderRadius: 8,
-        fontSize: 15,
-        fontWeight: 600,
-        letterSpacing: "-0.005em",
-        cursor: disabled ? "not-allowed" : "pointer",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        transition: "background 180ms, box-shadow 180ms, transform 180ms",
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.background = "var(--ps-cyan-hover)";
-          e.currentTarget.style.boxShadow = "0 8px 28px rgba(77,184,255,0.30)";
-          e.currentTarget.style.transform = "translateY(-1px)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = disabled
-          ? "rgba(77,184,255,0.4)"
-          : "var(--ps-cyan)";
-        e.currentTarget.style.boxShadow = "";
-        e.currentTarget.style.transform = "";
-      }}
+      className="mt-2 w-full h-11 text-[15px] font-semibold"
     >
+      {isLoading && <Loader2 className="animate-spin" />}
       {isLoading ? loadingLabel : label}
-    </button>
+    </Button>
   );
+}
+
+// ─── Re-export Label for convenience ──────────────────────────────────────────
+
+export { Label as AuthLabel };
+
+// ─── Legacy exports (deprecated — remove after full migration) ────────────────
+// ponytail: keep for backwards compat until all auth pages are migrated
+
+/** @deprecated Use AuthInput component instead */
+export const authInputStyle = (hasError: boolean): React.CSSProperties => ({
+  width: "100%",
+  height: 44,
+  padding: "0 14px",
+  background: "var(--ps-input-bg)",
+  border: `1px solid ${hasError ? "var(--ps-error)" : "var(--ps-input-border)"}`,
+  borderRadius: 8,
+  color: "var(--ps-text-primary)",
+  fontSize: 15,
+  outline: "none",
+  boxSizing: "border-box",
+  transition: "border-color 180ms, box-shadow 180ms, background 180ms",
+});
+
+/** @deprecated Use AuthInput component instead */
+export function focusAuthInput(el: HTMLInputElement, hasError: boolean) {
+  el.style.borderColor = hasError ? "var(--ps-error)" : "var(--ps-cyan)";
+  el.style.boxShadow = hasError
+    ? "0 0 0 3px var(--ps-input-error-shadow)"
+    : "0 0 0 3px var(--ps-input-focus-shadow)";
+  el.style.background = "var(--ps-input-bg-focus)";
+}
+
+/** @deprecated Use AuthInput component instead */
+export function blurAuthInput(el: HTMLInputElement, hasError: boolean) {
+  el.style.borderColor = hasError
+    ? "var(--ps-error)"
+    : "var(--ps-input-border)";
+  el.style.boxShadow = "none";
+  el.style.background = "var(--ps-input-bg)";
 }
