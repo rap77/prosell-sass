@@ -126,6 +126,17 @@
 
     /* Shadow overlay (modals) */
     --ps-shadow-overlay: rgba(6, 13, 36, 0.4);
+
+    /* Landing decorative surfaces (glass / metric cards) */
+    --ps-glass-bg: rgba(13, 27, 62, 0.7);
+    --ps-glass-bg-strong: rgba(13, 27, 62, 0.75);
+    --ps-metric-bg: rgba(6, 13, 36, 0.5);
+    --ps-float-badge-bg: rgba(13, 27, 62, 0.92);
+    --ps-accent-glow: rgba(77, 184, 255, 0.18);
+    --ps-accent-glow-soft: rgba(77, 184, 255, 0.08);
+    --ps-accent-glow-medium: rgba(77, 184, 255, 0.12);
+    --ps-accent-glow-intense: rgba(77, 184, 255, 0.25);
+    --ps-cyan-faint: rgba(77, 184, 255, 0.2);
   }
 
   /* .dark mirrors :root — ensures Tailwind dark: utilities see the dark palette
@@ -262,6 +273,17 @@
 
     /* Shadow overlay (modals) */
     --ps-shadow-overlay: rgba(14, 23, 48, 0.12);
+
+    /* Landing decorative surfaces (glass / metric cards) */
+    --ps-glass-bg: rgba(255, 255, 255, 0.6);
+    --ps-glass-bg-strong: rgba(255, 255, 255, 0.75);
+    --ps-metric-bg: rgba(255, 255, 255, 0.45);
+    --ps-float-badge-bg: rgba(255, 255, 255, 0.92);
+    --ps-accent-glow: rgba(30, 95, 212, 0.12);
+    --ps-accent-glow-soft: rgba(30, 95, 212, 0.05);
+    --ps-accent-glow-medium: rgba(30, 95, 212, 0.08);
+    --ps-accent-glow-intense: rgba(30, 95, 212, 0.18);
+    --ps-cyan-faint: rgba(30, 95, 212, 0.18);
   }
 }
 

@@ -63,12 +63,16 @@ const config: Config = {
         },
 
         // ProSell design tokens (--ps-* from globals.css)
-        // ponytail: only tokens without shadcn equivalents
+// ponytail: only tokens without shadcn equivalents
         ps: {
           // Backgrounds
+          base: "var(--ps-bg-base)",
+          surface: "var(--ps-bg-surface)",
           elevated: "var(--ps-bg-elevated)",
           sidebar: "var(--ps-bg-sidebar)",
           // Text
+          "text-primary": "var(--ps-text-primary)",
+          "text-secondary": "var(--ps-text-secondary)",
           tertiary: "var(--ps-text-tertiary)",
           disabled: "var(--ps-text-disabled)",
           // Status (shadcn lacks success/warning)
@@ -81,14 +85,34 @@ const config: Config = {
           // Brand
           cyan: "var(--ps-cyan)",
           "cyan-hover": "var(--ps-cyan-hover)",
+          "cyan-faint": "var(--ps-cyan-faint)",
           navy: "var(--ps-navy)",
           blue: "var(--ps-blue)",
           "blue-hover": "var(--ps-blue-hover)",
           // Borders
           "border-subtle": "var(--ps-border-subtle)",
+          "border-default": "var(--ps-border-default)",
           "border-medium": "var(--ps-border-medium)",
           "border-strong": "var(--ps-border-strong)",
           "border-active": "var(--ps-border-active)",
+          // Component-specific
+          badge: "var(--ps-badge-bg)",
+          "field-tag-bg": "var(--ps-field-tag-bg)",
+          "nav-bg": "var(--ps-nav-bg)",
+          "danger-hover-bg": "var(--ps-danger-hover-bg)",
+          "danger-hover-border": "var(--ps-danger-hover-border)",
+          // Landing decorative
+          "landing-glow-1": "var(--ps-landing-glow-1)",
+          "landing-glow-2": "var(--ps-landing-glow-2)",
+          "landing-grid": "var(--ps-landing-grid)",
+          "glass-bg": "var(--ps-glass-bg)",
+          "glass-bg-strong": "var(--ps-glass-bg-strong)",
+          "metric-bg": "var(--ps-metric-bg)",
+          "float-badge-bg": "var(--ps-float-badge-bg)",
+          "accent-glow": "var(--ps-accent-glow)",
+          "accent-glow-soft": "var(--ps-accent-glow-soft)",
+          "accent-glow-medium": "var(--ps-accent-glow-medium)",
+          "accent-glow-intense": "var(--ps-accent-glow-intense)",
           // Misc
           violet: "var(--ps-violet)",
           "violet-bg": "var(--ps-violet-bg)",
