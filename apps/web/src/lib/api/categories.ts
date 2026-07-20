@@ -14,6 +14,7 @@ import {
   BackendCategorySchema,
   BackendListResponseSchema,
 } from "@/lib/api/schemas/category";
+import { extractErrorMessage } from "./extractErrorMessage";
 
 /**
  * Fetch all categories with 5-minute cache
@@ -41,10 +42,8 @@ export function useCategories(): UseQueryResult<Category[], Error> {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch categories" }));
-        throw new Error(error.message || "Failed to fetch categories");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch categories"));
       }
 
       // Validate the wire shape before projecting to the strict Category contract.
@@ -107,10 +106,8 @@ export async function createCategory(data: {
   });
 
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Failed to create category" }));
-    throw new Error(error.message || "Failed to create category");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to create category"));
   }
 
   const raw: BackendCategory = BackendCategorySchema.parse(await res.json());
@@ -164,10 +161,8 @@ export function useUpdateCategory() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to update category" }));
-        throw new Error(error.message || "Failed to update category");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to update category"));
       }
       const raw: BackendCategory = BackendCategorySchema.parse(
         await res.json(),
@@ -197,10 +192,8 @@ export function useDeleteCategory() {
         credentials: "include",
       });
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to delete category" }));
-        throw new Error(error.message || "Failed to delete category");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to delete category"));
       }
     },
     onSuccess: () => {

@@ -9,6 +9,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { extractErrorMessage } from "./extractErrorMessage";
 
 // Types
 export interface Branch {
@@ -51,10 +52,8 @@ async function fetchBranches(): Promise<BranchListResponse> {
   const response = await fetch(BRANCHES_BASE_URL);
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: "Failed to fetch branches" }));
-    throw new Error(error.message || "Failed to fetch branches");
+    const body = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to fetch branches"));
   }
 
   return response.json();
@@ -64,10 +63,8 @@ async function fetchBranchStats(branchId: string): Promise<BranchStats> {
   const response = await fetch(`${BRANCHES_BASE_URL}/${branchId}/stats`);
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: "Failed to fetch branch stats" }));
-    throw new Error(error.message || "Failed to fetch branch stats");
+    const body = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to fetch branch stats"));
   }
 
   return response.json();
@@ -86,10 +83,8 @@ async function assignProductToBranch(
   });
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: "Failed to assign product to branch" }));
-    throw new Error(error.message || "Failed to assign product to branch");
+    const body = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to assign product to branch"));
   }
 }
 
@@ -106,10 +101,8 @@ async function bulkAssignProductsToBranch(
   });
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: "Failed to bulk assign products" }));
-    throw new Error(error.message || "Failed to bulk assign products");
+    const body = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to bulk assign products"));
   }
 }
 

@@ -8,6 +8,7 @@ import {
   BackendVendedorListResponseSchema,
   type BackendVendedorResponse,
 } from "@/lib/api/schemas/vendedores";
+import { extractErrorMessage } from "./extractErrorMessage";
 
 /**
  * Vendedor entity
@@ -51,10 +52,8 @@ export function useVendedores(
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch vendedores" }));
-        throw new Error(error.message || "Failed to fetch vendedores");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch vendedores"));
       }
 
       const data = BackendVendedorListResponseSchema.parse(await res.json());
