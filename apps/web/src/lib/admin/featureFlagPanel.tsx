@@ -20,64 +20,22 @@ export function FeatureFlagPanel() {
   const reset = useFeatureFlagStore((s) => s.reset);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 16,
-        right: 16,
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 10,
-        padding: 16,
-        boxShadow: "0 8px 24px rgba(6,13,36,0.4)",
-        zIndex: 50,
-        maxWidth: 280,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <h3
-          style={{
-            margin: 0,
-            fontSize: 12,
-            fontWeight: 700,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+    <div className="fixed bottom-4 right-4 bg-ps-bg-surface border border-ps-border-default rounded-[10px] p-4 shadow-xl z-50 max-w-xs">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="m-0 text-xs font-bold text-ps-text-primary">
           Feature Flags
         </h3>
-        <span style={{ fontSize: 10, color: "var(--ps-text-tertiary)" }}>
+        <span className="text-[10px] text-ps-text-tertiary">
           (Dev Only)
         </span>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-          marginBottom: 12,
-        }}
-      >
+      <div className="flex flex-col gap-1 mb-3">
         {Object.entries(flags).map(([key, value]) => (
           <label
             key={key}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-              padding: "4px 6px",
-              borderRadius: 6,
-              background: "transparent",
-              transition: "background 0.1s",
-            }}
+            className="flex items-center gap-2 cursor-pointer px-1.5 py-1 rounded transition-colors"
+            style={{ background: "transparent" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "var(--ps-bg-elevated)";
             }}
@@ -91,22 +49,13 @@ export function FeatureFlagPanel() {
               onChange={(e) => setFlag(key, e.target.checked)}
               style={{ width: 14, height: 14, accentColor: "var(--ps-cyan)" }}
             />
-            <span
-              style={{
-                flex: 1,
-                fontSize: 11,
-                fontFamily: "monospace",
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <span className="flex-1 text-[11px] font-mono text-ps-text-secondary">
               {key}
             </span>
             <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: value ? "var(--ps-success)" : "var(--ps-error)",
-              }}
+              className={`text-[10px] font-bold ${
+                value ? "text-ps-success" : "text-ps-error"
+              }`}
             >
               {value ? "ON" : "OFF"}
             </span>
@@ -116,17 +65,8 @@ export function FeatureFlagPanel() {
 
       <button
         onClick={reset}
-        style={{
-          width: "100%",
-          padding: "6px 12px",
-          borderRadius: 6,
-          background: "var(--ps-bg-elevated)",
-          border: "1px solid var(--ps-border-default)",
-          color: "var(--ps-text-secondary)",
-          fontSize: 11,
-          cursor: "pointer",
-          transition: "background 0.1s",
-        }}
+        className="w-full px-3 py-1.5 rounded text-xs cursor-pointer text-ps-text-secondary border border-ps-border-default transition-colors"
+        style={{ background: "var(--ps-bg-elevated)" }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "var(--ps-bg-base)";
         }}
@@ -137,15 +77,7 @@ export function FeatureFlagPanel() {
         Restablecer valores por defecto
       </button>
 
-      <div
-        style={{
-          marginTop: 8,
-          paddingTop: 8,
-          borderTop: "1px solid var(--ps-border-subtle)",
-          fontSize: 10,
-          color: "var(--ps-text-tertiary)",
-        }}
-      >
+      <div className="mt-2 pt-2 border-t border-ps-border-subtle text-[10px] text-ps-text-tertiary">
         Cambios persisten en localStorage
       </div>
     </div>
