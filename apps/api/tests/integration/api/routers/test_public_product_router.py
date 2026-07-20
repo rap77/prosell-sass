@@ -6,7 +6,7 @@ Uses a shared connection pattern so the endpoint can see test data without commi
 
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
@@ -18,6 +18,7 @@ from tests.integration._constants import TEST_DB_URL
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 
@@ -70,6 +71,21 @@ async def _create_test_org(session: AsyncSession) -> OrganizationModel:
     return org
 
 
+async def _create_test_category(session: AsyncSession, tenant_id: UUID) -> CategoryModel:
+    """Create a test category for FK constraints."""
+    cat = CategoryModel(
+        id=uuid4(),
+        tenant_id=tenant_id,
+        name=f"Test Category {uuid4().hex[:6]}",
+        slug=f"test-cat-{uuid4().hex[:8]}",
+        level=0,
+        field_config=[],
+    )
+    session.add(cat)
+    await session.flush()
+    return cat
+
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("setup_override")
 class TestPublicProductRouter:
@@ -78,12 +94,13 @@ class TestPublicProductRouter:
     async def test_get_published_product_returns_product(self, shared_session: AsyncSession):
         """GET /{slug} returns published product with marketplace=true."""
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Toyota Corolla 2022",
             slug=f"toyota-corolla-2022-{uuid4().hex[:6]}",
             description="Clean car, low mileage",
@@ -130,14 +147,16 @@ class TestPublicProductRouter:
         Any product with a slug is accessible - slug acts as secret link.
         """
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Unpublished Car",
             slug=f"unpublished-car-{uuid4().hex[:6]}",
+            price_cents=1500000,
             status=ProductStatus.DRAFT.value,
             published_to_marketplace=True,
             condition="good",
@@ -161,14 +180,16 @@ class TestPublicProductRouter:
         Any product with a slug is accessible - slug acts as secret link.
         """
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Internal Only Car",
             slug=f"internal-only-{uuid4().hex[:6]}",
+            price_cents=1800000,
             status=ProductStatus.PUBLISHED.value,
             published_to_marketplace=False,
             condition="good",
@@ -187,14 +208,16 @@ class TestPublicProductRouter:
     async def test_get_product_increments_view_count(self, shared_session: AsyncSession):
         """GET /{slug} increments view_count."""
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Test Car",
             slug=f"view-count-{uuid4().hex[:6]}",
+            price_cents=2000000,
             status=ProductStatus.PUBLISHED.value,
             published_to_marketplace=True,
             view_count=10,
@@ -228,14 +251,16 @@ class TestPublicProductRouter:
         mock_spaces_dep.return_value = mock_spaces
 
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Image Test Car",
             slug=f"image-test-{uuid4().hex[:6]}",
+            price_cents=2200000,
             status=ProductStatus.PUBLISHED.value,
             published_to_marketplace=True,
             image_urls=["car-front.jpg", "car-side.jpg"],
@@ -270,14 +295,16 @@ class TestPublicProductRouter:
         mock_spaces_dep.return_value = mock_spaces
 
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Cover Test Car",
             slug=f"cover-test-{uuid4().hex[:6]}",
+            price_cents=2300000,
             status=ProductStatus.PUBLISHED.value,
             published_to_marketplace=True,
             image_urls=["other-image-1.jpg", "other-image-2.jpg"],
@@ -310,14 +337,16 @@ class TestPublicProductRouter:
         mock_spaces_dep.return_value = mock_spaces
 
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Reorder Cover Car",
             slug=f"reorder-cover-{uuid4().hex[:6]}",
+            price_cents=2400000,
             status=ProductStatus.PUBLISHED.value,
             published_to_marketplace=True,
             image_urls=["car-front.jpg", "car-side.jpg", "car-back.jpg"],
@@ -356,14 +385,16 @@ class TestPublicProductRouter:
         mock_spaces_dep.return_value = mock_spaces
 
         org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
 
         product = ProductModel(
             id=uuid4(),
             tenant_id=org.tenant_id,
             organization_id=org.id,
-            category_id=uuid4(),
+            category_id=cat.id,
             title="Draft Car",
             slug=f"draft-image-{uuid4().hex[:6]}",
+            price_cents=1200000,
             status=ProductStatus.DRAFT.value,
             published_to_marketplace=True,
             image_urls=["img.jpg"],
