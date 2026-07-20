@@ -7,52 +7,19 @@ import Image from "next/image";
  */
 export default function NotFound() {
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--ps-bg-base)",
-        padding: "32px 24px",
-        textAlign: "center",
-      }}
-    >
-      <main
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          display: "flex",
-          flexDirection: "column",
-          gap: 28,
-        }}
-      >
+    <div className="flex min-h-screen items-center justify-center bg-[var(--ps-bg-base)] px-6 py-8 text-center">
+      <main className="w-full max-w-sm flex flex-col gap-7">
         {/* Brand */}
         <div>
-          <Link
-            href="/"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              textDecoration: "none",
-            }}
-          >
+          <Link href="/" className="inline-flex items-center gap-2.5 no-underline">
             <Image
               src="/logo-mark.png"
               alt="ProSell"
               width={271}
               height={294}
-              style={{ height: 28, width: "auto", flexShrink: 0 }}
+              className="h-7 w-auto shrink-0"
             />
-            <span
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <span className="text-lg font-bold tracking-tight text-[var(--ps-text-primary)]">
               ProSell
             </span>
           </Link>

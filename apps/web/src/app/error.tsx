@@ -17,47 +17,29 @@ interface ErrorPageProps {
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   return (
     <div
+      className="flex min-h-screen items-center justify-center text-center p-6"
       style={{
-        display: "flex",
-        minHeight: "100vh",
-        alignItems: "center",
-        justifyContent: "center",
         background: "var(--ps-bg-base)",
-        padding: "32px 24px",
-        textAlign: "center",
       }}
     >
       <main
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          display: "flex",
-          flexDirection: "column",
-          gap: 28,
-        }}
+        className="w-full max-w-[400px] flex flex-col gap-7"
       >
         {/* Brand */}
         <Link
           href="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            textDecoration: "none",
-            justifyContent: "center",
-          }}
+          className="inline-flex items-center justify-center gap-2.5 no-underline"
         >
           <Image
             src="/logo-mark.png"
             alt="ProSell"
             width={271}
             height={294}
-            style={{ height: 28, width: "auto", flexShrink: 0 }}
+            className="h-7 w-auto flex-shrink-0"
           />
           <span
+            className="text-lg font-bold"
             style={{
-              fontSize: 18,
-              fontWeight: 700,
               letterSpacing: "-0.02em",
               color: "var(--ps-text-primary)",
             }}

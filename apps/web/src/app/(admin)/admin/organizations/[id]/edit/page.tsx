@@ -43,14 +43,7 @@ export default function AdminEditOrganizationPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          color: "var(--ps-text-secondary)",
-        }}
-      >
+      <div className="flex items-center gap-2 text-text-secondary">
         <Loader2 size={16} className="animate-spin" />
         Cargando organización…
       </div>
@@ -59,7 +52,7 @@ export default function AdminEditOrganizationPage() {
 
   if (error || !organization) {
     return (
-      <p style={{ color: "var(--ps-error)" }}>
+      <p className="text-error">
         Error al cargar la organización: {error?.message ?? "No encontrada"}
       </p>
     );

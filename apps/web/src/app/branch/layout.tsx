@@ -15,7 +15,7 @@ export default function BranchLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <Sidebar groups={["inventario", "configuración"]} />
@@ -25,11 +25,8 @@ export default function BranchLayout({
       <MainContentWrapper>
         <Header />
         <main
+          className="relative z-50 flex-1 overflow-y-auto"
           style={{
-            position: "relative",
-            zIndex: 50,
-            flex: 1,
-            overflowY: "auto",
             background: "var(--ps-bg-base)",
             padding: 24,
           }}
