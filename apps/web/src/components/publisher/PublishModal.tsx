@@ -98,42 +98,19 @@ function CategoryBErrorBanner({
   });
 
   return (
-    <div
-      style={{
-        background: "var(--ps-error-bg)",
-        border: "1px solid var(--ps-error)",
-        borderRadius: 10,
-        padding: 16,
-        marginBottom: 16,
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: 13,
-          fontWeight: 500,
-          color: "var(--ps-error)",
-        }}
-      >
+    <div className="bg-error-bg border border-error rounded-[10px] p-4 mb-4">
+      <p className="m-0 text-xs font-medium text-error">
         Facebook solicita validación de seguridad. Abrí tu cuenta en un
         navegador para resolver el desafío antes de reintentar.
       </p>
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginTop: 12,
-          cursor: "pointer",
-        }}
-      >
+      <label className="flex items-center gap-2 mt-3 cursor-pointer">
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
           style={{ width: 16, height: 16, accentColor: "var(--ps-cyan)" }}
         />
-        <span style={{ fontSize: 13, color: "var(--ps-error)" }}>
+        <span className="text-xs text-error">
           Ya validé mi cuenta de Facebook
         </span>
       </label>
@@ -141,17 +118,8 @@ function CategoryBErrorBanner({
         type="button"
         disabled={!checked || unlockMutation.isPending}
         onClick={() => unlockMutation.mutate()}
+        className="mt-3 h-[34px] px-3.5 bg-error text-white text-xs font-semibold border-none rounded-lg cursor-pointer"
         style={{
-          marginTop: 12,
-          height: 34,
-          padding: "0 14px",
-          background: "var(--ps-error)",
-          color: "#fff",
-          fontSize: 13,
-          fontWeight: 600,
-          border: "none",
-          borderRadius: 8,
-          cursor: "pointer",
           opacity: !checked || unlockMutation.isPending ? 0.5 : 1,
           transition: "opacity 0.15s",
         }}
@@ -161,9 +129,7 @@ function CategoryBErrorBanner({
           : "Desbloquear y Reintentar"}
       </button>
       {unlockMutation.isError && (
-        <p
-          style={{ margin: "8px 0 0", fontSize: 11, color: "var(--ps-error)" }}
-        >
+        <p className="m-0 mt-2 text-[11px] text-error">
           Error al desbloquear. Intentá de nuevo.
         </p>
       )}
@@ -258,13 +224,7 @@ export function PublishModal({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.55)",
-          backdropFilter: "blur(4px)",
-          zIndex: 40,
-        }}
+        className="fixed inset-0 bg-black/55 backdrop-blur-sm z-40"
       />
 
       {/* Dialog */}
@@ -275,44 +235,11 @@ export function PublishModal({
           mode === "publish" ? "Preparar publicación" : "Actualizar publicación"
         }
         onClick={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "100%",
-          maxWidth: 672,
-          background: "var(--ps-bg-surface)",
-          border: "1px solid var(--ps-border-default)",
-          borderRadius: 14,
-          boxShadow: "0 24px 48px var(--ps-shadow-overlay)",
-          zIndex: 50,
-          maxHeight: "85vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[672px] bg-surface border border-border-default rounded-xl shadow-[0_24px_48px_var(--ps-shadow-overlay)] z-50 max-h-[85vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "16px 24px",
-            borderBottom: "1px solid var(--ps-border-default)",
-            flexShrink: 0,
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: "-0.01em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-default shrink-0">
+          <h2 className="m-0 text-base font-bold tracking-tight text-text-primary">
             {mode === "publish"
               ? "Preparar Publicación"
               : "Actualizar Publicación"}
@@ -321,19 +248,7 @@ export function PublishModal({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: "none",
-              background: "transparent",
-              color: "var(--ps-text-secondary)",
-              cursor: "pointer",
-              transition: "background 0.15s, color 0.15s",
-            }}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg border-0 bg-transparent text-text-secondary cursor-pointer transition-[background_color_0.15s,color_0.15s]"
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "var(--ps-bg-elevated)";
               e.currentTarget.style.color = "var(--ps-text-primary)";
@@ -348,34 +263,13 @@ export function PublishModal({
         </div>
 
         {/* Content */}
-        <div
-          style={{
-            overflowY: "auto",
-            padding: "16px 24px",
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
+        <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
           {/* Vehicle selector (when no fixed vehicleData) */}
           {!vehicleData && vehicleOptions.length > 0 && (
-            <div
-              style={{
-                marginBottom: 16,
-                borderRadius: 10,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                padding: 16,
-              }}
-            >
+            <div className="mb-4 rounded-[10px] border border-border-default bg-bg-elevated p-4">
               <label
                 htmlFor="publication-vehicle-select"
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "var(--ps-text-primary)",
-                }}
+                className="block mb-2 text-xs font-medium text-text-primary"
               >
                 Vehículo a publicar
               </label>
@@ -383,16 +277,7 @@ export function PublishModal({
                 id="publication-vehicle-select"
                 value={effectiveVehicleId}
                 onChange={(event) => setSelectedVehicleId(event.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: 8,
-                  border: "1px solid var(--ps-input-border)",
-                  background: "var(--ps-input-bg)",
-                  color: "var(--ps-text-primary)",
-                  fontSize: 13,
-                  padding: "8px 12px",
-                  outline: "none",
-                }}
+                className="w-full rounded-lg border border-input-border bg-input-bg text-text-primary text-xs px-3 py-2 outline-none"
               >
                 {vehicleOptions.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -415,16 +300,8 @@ export function PublishModal({
 
           {/* Submit error */}
           {submitError && (
-            <div
-              style={{
-                marginBottom: 16,
-                background: "var(--ps-error-bg)",
-                border: "1px solid var(--ps-error)",
-                borderRadius: 10,
-                padding: 12,
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
+            <div className="mb-4 bg-error-bg border border-error rounded-[10px] p-3">
+              <p className="m-0 text-xs text-error">
                 {submitError}
               </p>
             </div>
@@ -432,17 +309,7 @@ export function PublishModal({
 
           {/* No vehicle selected warning */}
           {!selectedVehicleData && (
-            <div
-              style={{
-                borderRadius: 10,
-                border: "1px solid var(--ps-warning)",
-                background: "var(--ps-warning-bg)",
-                padding: 16,
-                fontSize: 13,
-                color: "var(--ps-warning)",
-                marginBottom: 16,
-              }}
-            >
+            <div className="rounded-[10px] border border-warning bg-warning-bg p-4 text-xs text-warning mb-4">
               Seleccioná un vehículo del catálogo para preparar la publicación.
             </div>
           )}
@@ -461,7 +328,7 @@ export function PublishModal({
         </div>
 
         {/* Footer spacer */}
-        <div style={{ flexShrink: 0, height: 24 }} />
+        <div className="shrink-0 h-6" />
       </div>
     </>
   );
