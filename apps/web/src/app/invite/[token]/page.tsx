@@ -28,12 +28,15 @@ import Link from "next/link";
 // TYPES
 // ============================================
 
-type InvitationState =
-  | "loading"
-  | "success"
-  | "error"
-  | "expired"
-  | "already_member";
+const INVITATION_STATES = {
+  loading: "loading",
+  success: "success",
+  error: "error",
+  expired: "expired",
+  already_member: "already_member",
+} as const;
+
+type InvitationState = (typeof INVITATION_STATES)[keyof typeof INVITATION_STATES];
 
 // ============================================
 // COMPONENT
@@ -48,54 +51,6 @@ export default function AcceptInvitationPage() {
   const [message, setMessage] = useState<string>("");
   const [, setTeamName] = useState<string>("");
 
-  const acceptInvitation = async () => {
-    try {
-      const member = await teamApi.acceptInvitation({ token });
-
-      setState("success");
-      setTeamName(member.team_id || "el equipo");
-      setMessage("Te uniste exitosamente al equipo.");
-
-      // Redirigir al dashboard después de 2 segundos
-      setTimeout(() => {
-        router.push("/dashboard?welcome=team");
-      }, 2000);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        const errorMessage = error.message.toLowerCase();
-
-        if (errorMessage.includes("expired")) {
-          setState("expired");
-          setMessage(
-            "Esta invitación venció. Pedile al administrador que te envíe una nueva.",
-          );
-        } else if (
-          errorMessage.includes("already") ||
-          errorMessage.includes("member")
-        ) {
-          setState("already_member");
-          setMessage("Ya sos parte de este equipo.");
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 2000);
-        } else if (error.status === 401) {
-          // No autenticado — redirigir al login con return URL
-          const returnUrl = encodeURIComponent(`/invite/${token}`);
-          router.push(`/auth/login?returnTo=${returnUrl}`);
-        } else {
-          setState("error");
-          setMessage(
-            error.message ||
-              "No se pudo aceptar la invitación. Intentá de nuevo o contactá al soporte.",
-          );
-        }
-      } else {
-        setState("error");
-        setMessage("Ocurrió un error inesperado. Intentá de nuevo.");
-      }
-    }
-  };
-
   useEffect(() => {
     if (!token) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard pattern, not a cascade
@@ -103,8 +58,57 @@ export default function AcceptInvitationPage() {
       setMessage("No se proporcionó el token de invitación");
       return;
     }
+
+    const acceptInvitation = async () => {
+      try {
+        const member = await teamApi.acceptInvitation({ token });
+
+        setState("success");
+        setTeamName(member.team_id || "el equipo");
+        setMessage("Te uniste exitosamente al equipo.");
+
+        // Redirigir al dashboard después de 2 segundos
+        setTimeout(() => {
+          router.push("/dashboard?welcome=team");
+        }, 2000);
+      } catch (error) {
+        if (error instanceof ApiError) {
+          const errorMessage = error.message.toLowerCase();
+
+          if (errorMessage.includes("expired")) {
+            setState("expired");
+            setMessage(
+              "Esta invitación venció. Pedile al administrador que te envíe una nueva.",
+            );
+          } else if (
+            errorMessage.includes("already") ||
+            errorMessage.includes("member")
+          ) {
+            setState("already_member");
+            setMessage("Ya sos parte de este equipo.");
+            setTimeout(() => {
+              router.push("/dashboard");
+            }, 2000);
+          } else if (error.status === 401) {
+            // No autenticado — redirigir al login con return URL
+            const returnUrl = encodeURIComponent(`/invite/${token}`);
+            router.push(`/auth/login?returnTo=${returnUrl}`);
+          } else {
+            setState("error");
+            setMessage(
+              error.message ||
+                "No se pudo aceptar la invitación. Intentá de nuevo o contactá al soporte.",
+            );
+          }
+        } else {
+          setState("error");
+          setMessage("Ocurrió un error inesperado. Intentá de nuevo.");
+        }
+      }
+    };
+
     void acceptInvitation();
-  }, [token]);
+  }, [token, router]);
 
   // ── Contenido por estado ──
   const renderContent = (): React.ReactNode => {
@@ -251,7 +255,10 @@ export default function AcceptInvitationPage() {
         </div>
 
         {/* Card */}
-        <div className="overflow-hidden rounded-[14px] border border-ps-border-default bg-ps-bg-surface shadow-[0_4px_24px_rgba(6,13,36,0.3)]">
+        <div
+          className="overflow-hidden rounded-[14px] border border-ps-border-default bg-ps-bg-surface"
+          style={{ boxShadow: "0 4px 24px rgba(6,13,36,0.3)" }}
+        >
           {/* Header */}
           <div className="border-b border-ps-border-default px-7 pb-5 pt-6 text-center">
             <h1 className="m-0 text-xl font-bold tracking-tight text-ps-text-primary">
