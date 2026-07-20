@@ -41,7 +41,7 @@ async def shared_session() -> AsyncGenerator[AsyncSession]:
 
 
 @pytest.fixture
-def __setup_db_override(shared_session: AsyncSession):
+def _setup_override(shared_session: AsyncSession):
     """Override get_async_session to return the shared test session.
 
     This lets the endpoint see flushed data from the test without commits.
@@ -71,7 +71,7 @@ async def _create_test_org(session: AsyncSession) -> OrganizationModel:
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("_setup_db_override")
+@pytest.mark.usefixtures("setup_override")
 class TestPublicProductRouter:
     """Test GET /api/v1/public/products/{slug} and /image-urls endpoints."""
 
