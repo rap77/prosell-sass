@@ -18,11 +18,10 @@ export const GoogleIcon = dynamic(
     ssr: false,
     loading: () => (
       <svg
-        className="w-5 h-5"
+        className="w-5 h-5 opacity-50"
         viewBox="0 0 18 18"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ opacity: 0.5 }}
       >
         <rect x="2" y="2" width="14" height="14" rx="2" fill="#e0e0e0" />
       </svg>
@@ -37,11 +36,10 @@ export const FacebookIcon = dynamic(
     ssr: false,
     loading: () => (
       <svg
-        className="w-5 h-5"
+        className="w-5 h-5 opacity-50"
         viewBox="0 0 18 18"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ opacity: 0.5 }}
       >
         <rect x="2" y="2" width="14" height="14" rx="2" fill="#e0e0e0" />
       </svg>
@@ -55,12 +53,11 @@ export const EmailIcon = dynamic(
   {
     loading: () => (
       <svg
-        className="w-6 h-6"
+        className="w-6 h-6 opacity-50"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth={2}
-        style={{ opacity: 0.5 }}
       >
         <rect
           x="3"
@@ -82,12 +79,11 @@ export const CheckIcon = dynamic(
   {
     loading: () => (
       <svg
-        className="w-6 h-6"
+        className="w-6 h-6 opacity-50"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth={2}
-        style={{ opacity: 0.5 }}
       >
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
       </svg>
@@ -101,12 +97,11 @@ export const AlertIcon = dynamic(
   {
     loading: () => (
       <svg
-        className="w-6 h-6"
+        className="w-6 h-6 opacity-50"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth={2}
-        style={{ opacity: 0.5 }}
       >
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
       </svg>
@@ -118,12 +113,11 @@ export const AlertIcon = dynamic(
 export const XIcon = dynamic(() => import("./index").then((mod) => mod.XIcon), {
   loading: () => (
     <svg
-      className="w-6 h-6"
+      className="w-6 h-6 opacity-50"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
-      style={{ opacity: 0.5 }}
     >
       <rect
         x="3"
@@ -144,12 +138,11 @@ export const ShieldIcon = dynamic(
   {
     loading: () => (
       <svg
-        className="w-6 h-6"
+        className="w-6 h-6 opacity-50"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth={2}
-        style={{ opacity: 0.5 }}
       >
         <path
           strokeLinecap="round"
