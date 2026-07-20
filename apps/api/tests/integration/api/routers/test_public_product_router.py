@@ -1,7 +1,8 @@
 """Tests for public product router (no authentication required).
 
-These tests use a real database. Data is inserted via test_db_session (from conftest)
-and the endpoint uses its own session via dependency override pointing to the same DB.
+These tests use the integration test database (prosell_test on port 5433).
+Data is inserted via db_session and the endpoint uses its own session
+via dependency override pointing to the same DB.
 """
 
 from collections.abc import AsyncGenerator
@@ -12,22 +13,24 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
+from tests.integration._constants import TEST_DB_URL
 
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 
 
 @pytest.fixture
-def _setup_db_override(test_database_url: str):
+def _setup_db_override():
     """Override get_async_session to use a fresh session from the test database.
 
     The endpoint needs its own session (not the test's session) because
     SQLAlchemy async sessions cannot be shared across greenlets/contexts.
     But it connects to the SAME database so it sees committed data.
     """
-    engine = create_async_engine(test_database_url, poolclass=NullPool)
+    engine = create_async_engine(TEST_DB_URL, poolclass=NullPool)
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async def _override() -> AsyncGenerator[AsyncSession]:
@@ -39,18 +42,35 @@ def _setup_db_override(test_database_url: str):
     app.dependency_overrides.pop(get_async_session, None)
 
 
+async def _create_test_org(session: AsyncSession) -> OrganizationModel:
+    """Create a test organization for FK constraints."""
+    org_id = uuid4()
+    org = OrganizationModel(
+        id=org_id,
+        tenant_id=org_id,
+        name=f"Test Org {uuid4().hex[:8]}",
+        status="active",
+        settings={},
+    )
+    session.add(org)
+    await session.flush()
+    return org
+
+
 @pytest.mark.asyncio
 class TestPublicProductRouter:
     """Test GET /api/v1/public/products/{slug} and /image-urls endpoints."""
 
     async def test_get_published_product_returns_product(
-        self, test_db_session: AsyncSession, _setup_db_override
+        self, db_session: AsyncSession, _setup_db_override
     ):
         """GET /{slug} returns published product with marketplace=true."""
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Toyota Corolla 2022",
             slug="toyota-corolla-2022-pub",
@@ -67,8 +87,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/toyota-corolla-2022-pub")
@@ -90,14 +110,19 @@ class TestPublicProductRouter:
         assert response.status_code == 404
         assert "Product not found" in response.json()["detail"]
 
-    async def test_get_unpublished_product_returns_404(
-        self, test_db_session: AsyncSession, _setup_db_override
+    async def test_get_unpublished_product_still_accessible_via_slug(
+        self, db_session: AsyncSession, _setup_db_override
     ):
-        """GET /{slug} returns 404 when product status != published."""
+        """GET /{slug} returns product even when status != published.
+
+        Any product with a slug is accessible - slug acts as secret link.
+        """
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Unpublished Car",
             slug="unpublished-car-test",
@@ -106,23 +131,29 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/unpublished-car-test")
 
-        assert response.status_code == 404
-        assert "Product not found" in response.json()["detail"]
+        # ponytail: slug = secret link, any product with slug is accessible
+        assert response.status_code == 200
+        assert response.json()["title"] == "Unpublished Car"
 
-    async def test_get_not_marketplace_product_returns_404(
-        self, test_db_session: AsyncSession, _setup_db_override
+    async def test_get_not_marketplace_product_still_accessible_via_slug(
+        self, db_session: AsyncSession, _setup_db_override
     ):
-        """GET /{slug} returns 404 when published_to_marketplace=false."""
+        """GET /{slug} returns product even when published_to_marketplace=false.
+
+        Any product with a slug is accessible - slug acts as secret link.
+        """
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Internal Only Car",
             slug="internal-only-car-test",
@@ -131,22 +162,26 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/internal-only-car-test")
 
-        assert response.status_code == 404
+        # ponytail: slug = secret link, any product with slug is accessible
+        assert response.status_code == 200
+        assert response.json()["title"] == "Internal Only Car"
 
     async def test_get_product_increments_view_count(
-        self, test_db_session: AsyncSession, _setup_db_override
+        self, db_session: AsyncSession, _setup_db_override
     ):
         """GET /{slug} increments view_count."""
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Test Car",
             slug="test-car-view-count",
@@ -156,8 +191,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = None
@@ -172,7 +207,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_returns_signed_urls(
-        self, mock_spaces_dep, test_db_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, db_session: AsyncSession, _setup_db_override
     ):
         """GET /{slug}/image-urls returns signed URLs for all images."""
         mock_spaces = AsyncMock()
@@ -182,10 +217,12 @@ class TestPublicProductRouter:
         ]
         mock_spaces_dep.return_value = mock_spaces
 
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Image Test Car",
             slug="image-test-car-signed",
@@ -196,8 +233,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/image-test-car-signed/image-urls")
@@ -211,7 +248,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_cover_image_first_when_separate(
-        self, mock_spaces_dep, test_db_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, db_session: AsyncSession, _setup_db_override
     ):
         """GET /{slug}/image-urls puts cover_image first if not in image_urls."""
         mock_spaces = AsyncMock()
@@ -222,10 +259,12 @@ class TestPublicProductRouter:
         ]
         mock_spaces_dep.return_value = mock_spaces
 
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Cover Test Car",
             slug="cover-test-car-separate",
@@ -236,8 +275,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -251,7 +290,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_reorders_cover_to_first(
-        self, mock_spaces_dep, test_db_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, db_session: AsyncSession, _setup_db_override
     ):
         """GET /{slug}/image-urls moves cover to first position when it's in the list."""
         mock_spaces = AsyncMock()
@@ -262,10 +301,12 @@ class TestPublicProductRouter:
         ]
         mock_spaces_dep.return_value = mock_spaces
 
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Reorder Cover Car",
             slug="reorder-cover-car-test",
@@ -276,8 +317,8 @@ class TestPublicProductRouter:
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/reorder-cover-car-test/image-urls")
@@ -297,26 +338,35 @@ class TestPublicProductRouter:
 
         assert response.status_code == 404
 
-    async def test_get_product_image_urls_not_published(
-        self, test_db_session: AsyncSession, _setup_db_override
+    @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
+    async def test_get_product_image_urls_works_for_draft(
+        self, mock_spaces_dep, db_session: AsyncSession, _setup_db_override
     ):
-        """GET /{slug}/image-urls returns 404 if product not published."""
+        """GET /{slug}/image-urls works for draft products (slug = secret link)."""
+        mock_spaces = AsyncMock()
+        mock_spaces.generate_download_url.return_value = "https://do.spaces.com/signed"
+        mock_spaces_dep.return_value = mock_spaces
+
+        org = await _create_test_org(db_session)
+
         product = ProductModel(
             id=uuid4(),
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
             category_id=uuid4(),
             title="Draft Car",
             slug="draft-car-image-test",
             status=ProductStatus.DRAFT.value,
             published_to_marketplace=True,
+            image_urls=["img.jpg"],
             condition="good",
             attributes={},
         )
-        test_db_session.add(product)
-        await test_db_session.commit()
+        db_session.add(product)
+        await db_session.commit()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/draft-car-image-test/image-urls")
 
-        assert response.status_code == 404
+        # ponytail: slug = secret link, any product with slug is accessible
+        assert response.status_code == 200
