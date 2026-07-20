@@ -17,7 +17,7 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Upload, FileText, X, Download } from "lucide-react";
@@ -101,73 +101,30 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
     setFile(null);
   };
 
-  const outlineBtn: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    height: 38,
-    padding: "0 16px",
-    borderRadius: 8,
-    background: "var(--ps-bg-elevated)",
-    border: "1px solid var(--ps-border-default)",
-    color: "var(--ps-text-secondary)",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "opacity 0.15s",
-  };
+  const outlineBtnClass = "inline-flex items-center gap-1.5 h-9.5 px-4 rounded-lg bg-ps-bg-elevated border border-ps-border-default text-ps-text-secondary text-sm font-medium cursor-pointer transition-opacity duration-150";
 
-  const primaryBtn: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    height: 38,
-    padding: "0 18px",
-    borderRadius: 8,
-    background: "var(--ps-cyan)",
-    border: "none",
-    color: "var(--ps-bg-base)",
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-    transition: "opacity 0.15s",
-  };
+  const primaryBtnClass = "inline-flex items-center gap-1.5 h-9.5 px-4.5 rounded-lg bg-ps-cyan border-0 text-ps-bg-base text-sm font-bold cursor-pointer transition-opacity duration-150";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="flex flex-col gap-6">
       {/* ── Header ── */}
       <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
+        className="flex items-start justify-between gap-4"
       >
         <div>
           <h2
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-            }}
+            className="m-0 text-xl font-bold tracking-tight text-ps-text-primary"
           >
             Carga masiva de productos
           </h2>
           <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
+            className="mt-1 text-sm text-ps-text-secondary"
           >
             Cargá múltiples productos desde un archivo CSV
           </p>
         </div>
         {onCancel && (
-          <button type="button" onClick={onCancel} style={outlineBtn}>
+          <button type="button" onClick={onCancel} className={outlineBtnClass}>
             Cancelar
           </button>
         )}
@@ -175,46 +132,28 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
 
       {/* ── Template download ── */}
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "16px 20px",
-          background: "var(--ps-bg-surface)",
-          border: "1px solid var(--ps-border-default)",
-          borderRadius: 10,
-          gap: 12,
-        }}
+        className="flex items-center justify-between px-5 py-4 bg-ps-bg-surface border border-ps-border-default rounded-xl gap-3"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="flex items-center gap-3">
           <FileText
             size={18}
             strokeWidth={2}
-            style={{ color: "var(--ps-text-secondary)", flexShrink: 0 }}
+            className="text-ps-text-secondary flex-shrink-0"
           />
           <div>
             <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--ps-text-primary)",
-              }}
+              className="m-0 text-sm font-semibold text-ps-text-primary"
             >
               Plantilla CSV
             </p>
             <p
-              style={{
-                margin: "2px 0 0",
-                fontSize: 12,
-                color: "var(--ps-text-secondary)",
-              }}
+              className="mt-0.5 text-xs text-ps-text-secondary"
             >
               Descargá la plantilla con el formato correcto
             </p>
           </div>
         </div>
-        <button type="button" onClick={downloadTemplate} style={primaryBtn}>
+        <button type="button" onClick={downloadTemplate} className={primaryBtnClass}>
           <Download size={14} strokeWidth={2} />
           Descargar plantilla
         </button>
@@ -224,84 +163,53 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
       {!file ? (
         <div
           {...getRootProps()}
+          className="flex flex-col items-center justify-center rounded-xl cursor-pointer transition-colors duration-150"
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
             borderRadius: 10,
             border: isDragActive
               ? "2px dashed var(--ps-cyan)"
               : "2px dashed var(--ps-border-default)",
             background: isDragActive ? "rgba(77,184,255,0.04)" : "transparent",
             padding: "48px 24px",
-            cursor: "pointer",
-            transition: "border-color 0.15s, background 0.15s",
           }}
         >
           <input {...getInputProps()} aria-label="Upload CSV file" />
           <Upload
             size={40}
             strokeWidth={1.5}
-            style={{ color: "var(--ps-text-tertiary)", marginBottom: 16 }}
+            className="text-ps-text-tertiary mb-4"
           />
           <p
-            style={{
-              margin: 0,
-              fontSize: 15,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
+            className="m-0 text-base font-semibold text-ps-text-primary"
           >
             {isDragActive
               ? "Soltá el archivo CSV acá"
               : "Arrastrá y soltá el archivo CSV acá"}
           </p>
           <p
-            style={{
-              margin: "6px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
+            className="mt-1.5 text-sm text-ps-text-secondary"
           >
             o hacé click para buscar
           </p>
         </div>
       ) : (
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 16px",
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 10,
-          }}
+          className="flex items-center justify-between p-3.5 bg-ps-bg-surface border border-ps-border-default rounded-xl"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="flex items-center gap-3">
             <FileText
               size={28}
               strokeWidth={2}
-              style={{ color: "var(--ps-cyan)", flexShrink: 0 }}
+              className="text-ps-cyan flex-shrink-0"
             />
             <div>
               <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "var(--ps-text-primary)",
-                }}
+                className="m-0 text-sm font-semibold text-ps-text-primary"
               >
                 {file.name}
               </p>
               <p
-                style={{
-                  margin: "2px 0 0",
-                  fontSize: 12,
-                  color: "var(--ps-text-secondary)",
-                }}
+                className="mt-0.5 text-xs text-ps-text-secondary"
               >
                 {(file.size / 1024).toFixed(1)} KB
               </p>
@@ -310,7 +218,7 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
           <button
             type="button"
             onClick={clearFile}
-            style={outlineBtn}
+            className={outlineBtnClass}
             aria-label="Eliminar archivo"
           >
             <X size={14} strokeWidth={2} />
@@ -320,13 +228,13 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
 
       {/* ── Upload button ── */}
       {file && (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={handleUpload}
             disabled={isUploading}
+            className={primaryBtnClass}
             style={{
-              ...primaryBtn,
               opacity: isUploading ? 0.6 : 1,
               cursor: isUploading ? "not-allowed" : "pointer",
             }}
