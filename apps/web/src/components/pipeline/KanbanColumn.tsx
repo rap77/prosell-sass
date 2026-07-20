@@ -88,65 +88,35 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
 
   return (
     <div
+      className="flex flex-col flex-1 min-w-[260px] rounded-[12px] overflow-hidden border border-[var(--ps-border-default)] bg-[var(--ps-bg-surface)]"
       style={{
-        display: "flex",
-        flexDirection: "column",
-        minWidth: 260,
-        flex: 1,
-        borderRadius: 12,
-        overflow: "hidden",
-        border: `1px solid var(--ps-border-default)`,
-        background: "var(--ps-bg-surface)",
         // Top accent line simulated via boxShadow so it doesn't affect layout
         boxShadow: `inset 0 3px 0 0 ${theme.accent}`,
       }}
     >
       {/* Column header */}
       <div
-        style={{
-          padding: "14px 14px 10px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-        }}
+        className="flex flex-col px-[14px] pt-[14px] pb-[10px] gap-1"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="flex items-center gap-2">
           {/* Status dot */}
           <span
+            className="w-2 h-2 rounded-full flex-shrink-0"
             style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
               background: theme.dot,
-              flexShrink: 0,
               boxShadow: `0 0 6px ${theme.dot}`,
             }}
           />
           {/* Label */}
           <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-              flex: 1,
-            }}
+            className="flex-1 text-xs font-semibold text-[var(--ps-text-primary)]"
           >
             {COLUMN_LABELS[status] ?? status}
           </span>
           {/* Count badge */}
           <span
+            className="inline-flex items-center justify-center min-w-[22px] h-5 px-[7px] rounded-[20px] bg-[var(--ps-bg-elevated)] border border-[var(--ps-border-subtle)] text-xs font-bold"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 22,
-              height: 20,
-              padding: "0 7px",
-              borderRadius: 20,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-subtle)",
-              fontSize: 11,
-              fontWeight: 700,
               color: leads.length > 0 ? theme.dot : "var(--ps-text-tertiary)",
             }}
           >
@@ -157,21 +127,12 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
         {/* Price totals */}
         {hasPrices && (
           <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "0 8px",
-              paddingLeft: 16,
-            }}
+            className="flex flex-wrap gap-x-2 pl-4"
           >
             {Object.entries(totalsByCurrency).map(([currency, cents]) => (
               <span
                 key={currency}
-                style={{
-                  fontSize: 11,
-                  color: "var(--ps-text-secondary)",
-                  fontWeight: 500,
-                }}
+                className="text-xs font-medium text-[var(--ps-text-secondary)]"
               >
                 {new Intl.NumberFormat("es-AR", {
                   style: "currency",
@@ -187,18 +148,10 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
       {/* Drop zone */}
       <div
         ref={setNodeRef}
+        className="flex-1 flex flex-col gap-2 px-[10px] py-[4px] pb-3 min-h-60 overflow-y-auto rounded-b-[12px] transition-[background,box-shadow] duration-150"
         style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          padding: "4px 10px 12px",
-          minHeight: 240,
-          overflowY: "auto",
           background: isOver ? theme.overBg : "transparent",
           boxShadow: isOver ? `inset 0 0 0 2px ${theme.overRing}` : "none",
-          transition: "background 150ms, box-shadow 150ms",
-          borderRadius: "0 0 12px 12px",
         }}
       >
         {leads.map((lead) => (
@@ -207,18 +160,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
 
         {leads.length === 0 && (
           <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              color: "var(--ps-text-tertiary)",
-              border: `1px dashed var(--ps-border-subtle)`,
-              borderRadius: 8,
-              minHeight: 80,
-              margin: "4px 0",
-            }}
+            className="flex-1 flex items-center justify-center text-xs text-[var(--ps-text-tertiary)] border border-dashed border-[var(--ps-border-subtle)] rounded-lg min-h-20 my-1"
           >
             Arrastrá un lead aquí
           </div>
