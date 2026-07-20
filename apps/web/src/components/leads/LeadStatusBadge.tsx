@@ -62,27 +62,16 @@ export function LeadStatusBadge({
   return (
     <span
       data-testid="status-badge"
-      className={className}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.75 text-xs font-medium whitespace-nowrap ${className}`}
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "3px 10px",
-        borderRadius: 20,
         background: bg,
         color,
-        fontSize: 12,
-        fontWeight: 500,
-        whiteSpace: "nowrap",
       }}
     >
       <span
+        className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
           background: dot,
-          flexShrink: 0,
         }}
       />
       {label}
