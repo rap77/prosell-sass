@@ -157,22 +157,8 @@ interface PublishFormProps {
 // HELPERS
 // ============================================
 
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: 13,
-  fontWeight: 500,
-  color: "var(--ps-text-primary)",
-  marginBottom: 4,
-};
-
-const errorStyle: React.CSSProperties = {
-  marginTop: 4,
-  fontSize: 11,
-  color: "var(--ps-error)",
-};
-
 const requiredMark = (
-  <span style={{ color: "var(--ps-error)", marginLeft: 3 }}>*</span>
+  <span className="text-[var(--ps-error)] ml-0.5">*</span>
 );
 
 function SelectField({
@@ -191,7 +177,7 @@ function SelectField({
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div>
-      <label htmlFor={id} style={labelStyle}>
+      <label htmlFor={id} className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
         {label}
         {required && requiredMark}
       </label>
@@ -203,7 +189,7 @@ function SelectField({
           </option>
         ))}
       </select>
-      {error && <p style={errorStyle}>{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>}
     </div>
   );
 }
@@ -222,12 +208,12 @@ function InputField({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label htmlFor={id} style={labelStyle}>
+      <label htmlFor={id} className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
         {label}
         {required && requiredMark}
       </label>
       <input id={id} {...props} className="ps-pub-input" />
-      {error && <p style={errorStyle}>{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>}
     </div>
   );
 }
@@ -322,28 +308,6 @@ export function PublishForm({
     onSubmit(payload);
   };
 
-  const sectionDivider: React.CSSProperties = {
-    borderTop: "1px solid var(--ps-border-subtle)",
-    paddingTop: 16,
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-  };
-
-  const sectionLabel: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.12em",
-    color: "var(--ps-text-tertiary)",
-    marginBottom: 0,
-  };
-
-  const grid2: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 16,
-  };
 
   return (
     <>
@@ -351,19 +315,13 @@ export function PublishForm({
 
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        className="flex flex-col gap-5"
       >
         {/* ── FOTOS ── */}
         <div>
-          <p style={{ ...labelStyle, marginBottom: 8 }}>
+          <p className="block text-xs font-medium text-[var(--ps-text-primary)] mb-2">
             Fotos{requiredMark}
-            <span
-              style={{
-                fontWeight: 400,
-                color: "var(--ps-text-tertiary)",
-                marginLeft: 6,
-              }}
-            >
+            <span className="font-normal text-[var(--ps-text-tertiary)] ml-1.5">
               — click para elegir portada
             </span>
           </p>
@@ -373,13 +331,13 @@ export function PublishForm({
             onHeroChange={handleHeroChange}
           />
           {errors.image_urls && (
-            <p style={errorStyle}>{errors.image_urls.message}</p>
+            <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.image_urls.message}</p>
           )}
         </div>
 
         {/* ── TÍTULO Y DESCRIPCIÓN ── */}
-        <div style={sectionDivider}>
-          <p style={sectionLabel}>Publicación</p>
+        <div className="border-t border-[var(--ps-border-subtle)] pt-4 flex flex-col gap-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">Publicación</p>
 
           <InputField
             id="title"
@@ -391,11 +349,9 @@ export function PublishForm({
           />
 
           <div>
-            <label htmlFor="description" style={labelStyle}>
+            <label htmlFor="description" className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
               Descripción{" "}
-              <span
-                style={{ fontWeight: 400, color: "var(--ps-text-tertiary)" }}
-              >
+              <span className="font-normal text-[var(--ps-text-tertiary)]">
                 (opcional)
               </span>
             </label>
@@ -407,11 +363,11 @@ export function PublishForm({
               style={{ resize: "none" }}
             />
             {errors.description && (
-              <p style={errorStyle}>{errors.description.message}</p>
+              <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.description.message}</p>
             )}
           </div>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <InputField
               id="price_usd"
               label="Precio (USD)"
@@ -434,10 +390,10 @@ export function PublishForm({
         </div>
 
         {/* ── DATOS DEL VEHÍCULO ── */}
-        <div style={sectionDivider}>
-          <p style={sectionLabel}>Datos del vehículo</p>
+        <div className="border-t border-[var(--ps-border-subtle)] pt-4 flex flex-col gap-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">Datos del vehículo</p>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <SelectField
               id="vehicle_type"
               label="Tipo de vehículo"
@@ -448,7 +404,7 @@ export function PublishForm({
             />
 
             <div>
-              <label htmlFor="year" style={labelStyle}>
+              <label htmlFor="year" className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
                 Año{requiredMark}
               </label>
               <select
@@ -463,11 +419,11 @@ export function PublishForm({
                   </option>
                 ))}
               </select>
-              {errors.year && <p style={errorStyle}>{errors.year.message}</p>}
+              {errors.year && <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.year.message}</p>}
             </div>
           </div>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <SelectField
               id="make"
               label="Marca"
@@ -487,7 +443,7 @@ export function PublishForm({
             />
           </div>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <InputField
               id="mileage"
               label="Millaje"
@@ -507,7 +463,7 @@ export function PublishForm({
             />
           </div>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <SelectField
               id="exterior_color"
               label="Color exterior"
@@ -524,7 +480,7 @@ export function PublishForm({
             />
           </div>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <SelectField
               id="vehicle_condition"
               label="Estado del vehículo"
@@ -541,7 +497,7 @@ export function PublishForm({
             />
           </div>
 
-          <div style={grid2}>
+          <div className="grid grid-cols-2 gap-4">
             <SelectField
               id="transmission"
               label="Transmisión"
@@ -560,36 +516,24 @@ export function PublishForm({
             />
           </div>
 
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-            }}
-          >
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               {...register("clean_title")}
               className="ps-pub-checkbox"
             />
-            <span style={{ fontSize: 13, color: "var(--ps-text-primary)" }}>
+            <span className="text-xs text-[var(--ps-text-primary)]">
               Título limpio (Clean Title)
             </span>
           </label>
         </div>
 
         {/* ── FACEBOOK ── */}
-        <div
-          style={{
-            borderTop: "1px solid var(--ps-border-subtle)",
-            paddingTop: 16,
-          }}
-        >
-          <p style={{ ...sectionLabel, marginBottom: 16 }}>Facebook</p>
+        <div className="border-t border-[var(--ps-border-subtle)] pt-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-4">Facebook</p>
 
           <div>
-            <label htmlFor="facebook_page_id" style={labelStyle}>
+            <label htmlFor="facebook_page_id" className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
               Página de Facebook{requiredMark}
             </label>
             <select
@@ -605,39 +549,20 @@ export function PublishForm({
               ))}
             </select>
             {errors.facebook_page_id && (
-              <p style={errorStyle}>{errors.facebook_page_id.message}</p>
+              <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.facebook_page_id.message}</p>
             )}
           </div>
         </div>
 
         {/* ── BOTONES ── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingTop: 8,
-            borderTop: "1px solid var(--ps-border-subtle)",
-          }}
-        >
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--ps-border-subtle)]">
           {mode === "update" && onDelete && (
             <button
               type="button"
               onClick={onDelete}
               disabled={isDeleting || isSubmitting}
-              style={{
-                height: 38,
-                padding: "0 16px",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--ps-error)",
-                background: "transparent",
-                border: "1px solid var(--ps-error)",
-                borderRadius: 8,
-                cursor: "pointer",
-                opacity: isDeleting || isSubmitting ? 0.5 : 1,
-                transition: "opacity 0.15s",
-              }}
+              className="h-9.5 px-4 text-xs font-medium text-[var(--ps-error)] bg-transparent border border-[var(--ps-error)] rounded-lg cursor-pointer transition-opacity duration-150"
+              style={{ opacity: isDeleting || isSubmitting ? 0.5 : 1 }}
             >
               {isDeleting ? "Eliminando..." : "Eliminar / Finalizar"}
             </button>
@@ -646,20 +571,8 @@ export function PublishForm({
           <button
             type="submit"
             disabled={isSubmitting || isDeleting}
-            style={{
-              marginLeft: "auto",
-              height: 38,
-              padding: "0 20px",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "var(--ps-bg-base)",
-              background: "var(--ps-cyan)",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
-              opacity: isSubmitting || isDeleting ? 0.5 : 1,
-              transition: "opacity 0.15s",
-            }}
+            className="ml-auto h-9.5 px-5 text-xs font-bold text-[var(--ps-bg-base)] bg-[var(--ps-cyan)] border-0 rounded-lg cursor-pointer transition-opacity duration-150"
+            style={{ opacity: isSubmitting || isDeleting ? 0.5 : 1 }}
           >
             {isSubmitting
               ? "Publicando..."
