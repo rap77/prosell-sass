@@ -51,6 +51,7 @@ import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { getApiStatus } from "@/lib/utils/getApiStatus";
 import { getAttributeMap } from "@/types/product";
@@ -298,6 +299,10 @@ export default function CatalogPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   // Vertical contracts: presentation + attribute_schema per category.
   // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
@@ -411,7 +416,18 @@ export default function CatalogPage() {
 
   const handleEdit = (id: string) => router.push(`/catalog/${id}/edit`);
   const handleView = (id: string) => router.push(`/catalog/${id}`);
-  const handleDelete = (id: string) => deleteProduct.mutate(id);
+  const handleDeleteClick = (id: string, title: string) =>
+    setDeleteTarget({ id, title });
+  const handleDeleteById = (id: string) => {
+    const product = products.find((p) => p.id === id);
+    setDeleteTarget({ id, title: product?.title ?? "este producto" });
+  };
+  const handleDeleteConfirm = () => {
+    if (deleteTarget) {
+      deleteProduct.mutate(deleteTarget.id);
+      setDeleteTarget(null);
+    }
+  };
   const handlePublish = (_id: string) =>
     toast.info("Publicación múltiple disponible en la Fase 4.");
 
@@ -717,7 +733,9 @@ export default function CatalogPage() {
                             orgColor={vm.product.org_color}
                             onView={() => handleView(vm.product.id)}
                             onEdit={() => handleEdit(vm.product.id)}
-                            onDelete={() => handleDelete(vm.product.id)}
+                            onDelete={() =>
+                              handleDeleteClick(vm.product.id, vm.product.title)
+                            }
                           />
                         ))}
                       </div>
@@ -730,7 +748,7 @@ export default function CatalogPage() {
                           data={rows}
                           onPublish={handlePublish}
                           onEdit={handleEdit}
-                          onDelete={handleDelete}
+                          onDelete={handleDeleteById}
                           onBulkAssignBranch={handleBulkAssignBranch}
                           onRowClick={handleView}
                         />
@@ -802,7 +820,12 @@ export default function CatalogPage() {
                                   orgColor={vm.product.org_color}
                                   onView={() => handleView(vm.product.id)}
                                   onEdit={() => handleEdit(vm.product.id)}
-                                  onDelete={() => handleDelete(vm.product.id)}
+                                  onDelete={() =>
+                                    handleDeleteClick(
+                                      vm.product.id,
+                                      vm.product.title,
+                                    )
+                                  }
                                 />
                               ))}
                             </div>
@@ -881,6 +904,15 @@ export default function CatalogPage() {
           onOpenChange={setShowBulkBranchAssign}
           productIds={selectedVehicleIds}
           productCount={selectedVehicleIds.length}
+        />
+
+        {/* Delete confirmation dialog */}
+        <DeleteConfirmDialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          itemTitle={deleteTarget?.title ?? ""}
+          onConfirm={handleDeleteConfirm}
+          isDeleting={deleteProduct.isPending}
         />
       </div>
     </CatalogErrorBoundary>
