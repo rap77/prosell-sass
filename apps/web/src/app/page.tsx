@@ -26,22 +26,12 @@ export default function HomePage() {
     <>
       <LandingStyles />
 
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "var(--ps-bg-base)",
-          color: "var(--ps-text-primary)",
-          overflowX: "hidden",
-        }}
-      >
+      <div className="min-h-screen bg-[var(--ps-bg-base)] text-[var(--ps-text-primary)] overflow-x-hidden">
         {/* Fixed background decoration */}
         <div
           aria-hidden="true"
+          className="fixed inset-0 z-0 pointer-events-none"
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 0,
-            pointerEvents: "none",
             backgroundImage:
               "linear-gradient(var(--ps-landing-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ps-landing-grid) 1px, transparent 1px)",
             backgroundSize: "56px 56px",
@@ -53,28 +43,22 @@ export default function HomePage() {
         />
         <div
           aria-hidden="true"
+          className="fixed inset-0 z-0 pointer-events-none"
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 0,
-            pointerEvents: "none",
             background:
               "radial-gradient(ellipse 60% 50% at 80% 20%, var(--ps-landing-glow-1), transparent 60%)",
           }}
         />
         <div
           aria-hidden="true"
+          className="fixed inset-0 z-0 pointer-events-none"
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 0,
-            pointerEvents: "none",
             background:
               "radial-gradient(ellipse 50% 40% at 10% 80%, var(--ps-landing-glow-2), transparent 60%)",
           }}
         />
 
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div className="relative z-10">
           <LandingNav />
 
           <main>
