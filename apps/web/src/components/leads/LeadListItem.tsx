@@ -57,18 +57,12 @@ export function LeadListItem({
   return (
     <div
       data-testid="lead-item"
+      className="flex items-center gap-4 px-5 py-3.5 border-b border-[var(--ps-table-divider)] cursor-pointer transition-colors duration-150"
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        padding: "14px 20px",
-        borderBottom: "1px solid var(--ps-table-divider)",
         background: isUnread ? "rgba(77,184,255,0.03)" : "transparent",
         borderLeft: isUnread
           ? "3px solid var(--ps-cyan)"
           : "3px solid transparent",
-        transition: "background 150ms",
-        cursor: "pointer",
       }}
       onMouseEnter={(e) =>
         (e.currentTarget.style.background = "var(--ps-table-row-hover)")
@@ -81,115 +75,60 @@ export function LeadListItem({
     >
       {/* Avatar */}
       <div
+        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-[var(--ps-bg-base)] tracking-tight"
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          flexShrink: 0,
           background: "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 12,
-          fontWeight: 700,
-          color: "var(--ps-bg-base)",
-          letterSpacing: "0.02em",
         }}
       >
         {getInitials(lead.buyer_name)}
       </div>
 
       {/* Buyer info */}
-      <div style={{ flexShrink: 0, width: 180, minWidth: 0 }}>
+      <div className="flex-shrink-0 w-[180px] min-w-0">
         <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
+          className="m-0 text-sm font-semibold text-[var(--ps-text-primary)] whitespace-nowrap overflow-hidden text-ellipsis"
         >
           {lead.buyer_name}
           {isUnread && (
             <span
+              className="inline-block w-1.5 h-1.5 rounded-full align-middle ml-1.5"
               style={{
-                display: "inline-block",
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
                 background: "var(--ps-cyan)",
-                marginLeft: 6,
-                verticalAlign: "middle",
               }}
             />
           )}
         </p>
         {lead.buyer_email && (
           <p
-            style={{
-              margin: "2px 0 0",
-              fontSize: 11,
-              color: "var(--ps-text-secondary)",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
+            className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap"
           >
-            <Mail size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
+            <Mail size={10} strokeWidth={2} className="flex-shrink-0" />
             {lead.buyer_email}
           </p>
         )}
         {lead.buyer_phone && (
           <p
-            style={{
-              margin: "2px 0 0",
-              fontSize: 11,
-              color: "var(--ps-text-secondary)",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
+            className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1"
           >
-            <Phone size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
+            <Phone size={10} strokeWidth={2} className="flex-shrink-0" />
             {lead.buyer_phone}
           </p>
         )}
       </div>
 
       {/* Vehicle */}
-      <div style={{ flexShrink: 0, width: 170, minWidth: 0 }}>
+      <div className="flex-shrink-0 w-[170px] min-w-0">
         {lead.product ? (
           <>
             <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--ps-text-primary)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
+              className="m-0 text-sm font-medium text-[var(--ps-text-primary)] overflow-hidden text-ellipsis whitespace-nowrap"
             >
               {lead.product.title}
             </p>
             <p
-              style={{
-                margin: "2px 0 0",
-                fontSize: 11,
-                color: "var(--ps-text-secondary)",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              }}
+              className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1"
             >
-              <Car size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
+              <Car size={10} strokeWidth={2} className="flex-shrink-0" />
               {[
                 lead.product.attributes.year,
                 lead.product.attributes.make,
@@ -201,11 +140,7 @@ export function LeadListItem({
           </>
         ) : (
           <span
-            style={{
-              fontSize: 12,
-              color: "var(--ps-text-tertiary)",
-              fontStyle: "italic",
-            }}
+            className="text-xs text-[var(--ps-text-tertiary)] italic"
           >
             Sin vehículo
           </span>
@@ -213,35 +148,22 @@ export function LeadListItem({
       </div>
 
       {/* Message preview */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="flex-1 min-w-0">
         {lead.message ? (
           <p
-            style={{
-              margin: 0,
-              fontSize: 12,
-              color: "var(--ps-text-secondary)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-            }}
+            className="m-0 text-xs text-[var(--ps-text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1.25"
           >
             <MessageSquare
               size={11}
               strokeWidth={2}
-              style={{ flexShrink: 0, color: "var(--ps-text-tertiary)" }}
+              className="flex-shrink-0"
+              style={{ color: "var(--ps-text-tertiary)" }}
             />
             {lead.message}
           </p>
         ) : (
           <span
-            style={{
-              fontSize: 12,
-              color: "var(--ps-text-tertiary)",
-              fontStyle: "italic",
-            }}
+            className="text-xs text-[var(--ps-text-tertiary)] italic"
           >
             Sin mensaje
           </span>
@@ -249,7 +171,7 @@ export function LeadListItem({
       </div>
 
       {/* Status dropdown — stop propagation so row click doesn't fire */}
-      <div style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <LeadStatusDropdown
           leadId={lead.id}
           currentStatus={lead.status}
@@ -258,32 +180,22 @@ export function LeadListItem({
       </div>
 
       {/* Time + source */}
-      <div style={{ flexShrink: 0, textAlign: "right", minWidth: 90 }}>
+      <div className="flex-shrink-0 text-right min-w-[90px]">
         <p
-          style={{ margin: 0, fontSize: 12, color: "var(--ps-text-secondary)" }}
+          className="m-0 text-xs text-[var(--ps-text-secondary)]"
         >
           {timeAgo}
         </p>
         <span
-          style={{
-            display: "inline-block",
-            marginTop: 3,
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            color: "var(--ps-text-tertiary)",
-            background: "rgba(138,155,191,0.08)",
-            padding: "1px 6px",
-            borderRadius: 4,
-          }}
+          className="inline-block mt-0.75 text-[10px] font-semibold tracking-widest uppercase text-[var(--ps-text-tertiary)]"
+          style={{ background: "rgba(138,155,191,0.08)", padding: "1px 6px", borderRadius: 4 }}
         >
           {sourceLabel}
         </span>
       </div>
 
       {/* Extra actions slot */}
-      {actions && <div style={{ flexShrink: 0 }}>{actions}</div>}
+      {actions && <div className="flex-shrink-0">{actions}</div>}
     </div>
   );
 }
