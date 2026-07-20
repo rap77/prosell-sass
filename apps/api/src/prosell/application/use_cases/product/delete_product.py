@@ -34,7 +34,7 @@ class DeleteProductUseCase:
         """
         product = await self.product_repository.get_by_id(product_id, tenant_id)
         if not product:
-            raise ValueError(f"Product {product_id} not found or access denied")
+            raise ValueError("Producto no encontrado o sin permisos para eliminarlo")
 
         logger.info(
             "Hard-deleting product %s (tenant filter: %s) — vehicle CASCADE will auto-run",

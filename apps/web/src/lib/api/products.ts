@@ -440,7 +440,13 @@ export function useDeleteProduct() {
         queryClient.setQueryData(["products"], context.previousProducts);
       }
 
-      toast.error(err.message || "Failed to delete product");
+      toast.error(err.message || "No se pudo eliminar el producto", {
+        description: "Verificá que tengas permisos para esta acción",
+      });
+    },
+
+    onSuccess: () => {
+      toast.success("Producto eliminado");
     },
 
     onSettled: () => {
