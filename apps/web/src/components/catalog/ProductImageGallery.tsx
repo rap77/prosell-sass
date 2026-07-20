@@ -83,15 +83,10 @@ export function ProductImageGallery({
         data-testid="image-gallery"
         role="region"
         aria-label="Product image gallery"
-        className={className}
+        className={`flex items-center justify-center aspect-video rounded-xl border border-dashed ${className}`.trim()}
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          aspectRatio: "16/9",
-          borderRadius: 12,
           background: "var(--ps-bg-elevated)",
-          border: "1px dashed var(--ps-border-subtle)",
+          borderColor: "var(--ps-border-subtle)",
         }}
       >
         <p style={{ fontSize: 13, color: "var(--ps-text-tertiary)" }}>
@@ -111,21 +106,13 @@ export function ProductImageGallery({
       aria-label="Product image gallery"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={className}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        outline: "none",
-      }}
+      className={`flex flex-col gap-3 ${className}`.trim()}
+      style={{ outline: "none" }}
     >
       {/* Main image */}
       <div
+        className="relative aspect-video rounded-xl overflow-hidden"
         style={{
-          position: "relative",
-          aspectRatio: "16/9",
-          borderRadius: 12,
-          overflow: "hidden",
           background: "var(--ps-bg-elevated)",
         }}
       >
@@ -150,24 +137,14 @@ export function ProductImageGallery({
               onClick={goToPrevious}
               disabled={!hasPrevious}
               aria-label="Imagen anterior"
+              className="absolute left-2.5 top-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white transition-opacity transition-colors duration-150"
               style={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
                 transform: "translateY(-50%)",
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 background: "rgba(6,13,36,0.55)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 backdropFilter: "blur(4px)",
-                color: "#fff",
                 cursor: hasPrevious ? "pointer" : "default",
                 opacity: hasPrevious ? 1 : 0.35,
-                transition: "opacity 150ms, background 150ms",
               }}
               onMouseEnter={(e) => {
                 if (hasPrevious)
@@ -185,24 +162,14 @@ export function ProductImageGallery({
               onClick={goToNext}
               disabled={!hasNext}
               aria-label="Imagen siguiente"
+              className="absolute right-2.5 top-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white transition-opacity transition-colors duration-150"
               style={{
-                position: "absolute",
-                right: 10,
-                top: "50%",
                 transform: "translateY(-50%)",
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 background: "rgba(6,13,36,0.55)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 backdropFilter: "blur(4px)",
-                color: "#fff",
                 cursor: hasNext ? "pointer" : "default",
                 opacity: hasNext ? 1 : 0.35,
-                transition: "opacity 150ms, background 150ms",
               }}
               onMouseEnter={(e) => {
                 if (hasNext)
@@ -217,16 +184,10 @@ export function ProductImageGallery({
 
             {/* Counter badge */}
             <div
+              className="absolute bottom-2.5 right-3 px-2.5 py-0.75 rounded-full text-xs font-semibold"
               style={{
-                position: "absolute",
-                bottom: 10,
-                right: 12,
-                padding: "3px 10px",
-                borderRadius: 99,
                 background: "rgba(6,13,36,0.7)",
                 backdropFilter: "blur(4px)",
-                fontSize: 12,
-                fontWeight: 600,
                 color: "rgba(255,255,255,0.9)",
                 border: "1px solid rgba(255,255,255,0.1)",
               }}
@@ -240,12 +201,7 @@ export function ProductImageGallery({
       {/* Thumbnail strip */}
       {renderableImages.length > 1 && (
         <div
-          style={{
-            display: "flex",
-            gap: 8,
-            overflowX: "auto",
-            paddingBottom: 4,
-          }}
+          className="flex gap-2 overflow-x-auto pb-1"
         >
           {renderableImages.map((image, index) => {
             const isActive = index === currentIndex;
@@ -255,23 +211,14 @@ export function ProductImageGallery({
                 onClick={() => selectImage(index)}
                 aria-label={`Ver imagen ${index + 1}${image.alt_text ? `: ${image.alt_text}` : ""}`}
                 aria-current={isActive ? "true" : undefined}
+                className="flex-shrink-0 w-19 h-19 rounded-lg overflow-hidden relative cursor-pointer p-0 border-none transition-outline transition-transform duration-150"
                 style={{
-                  flexShrink: 0,
-                  width: 76,
-                  height: 76,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  position: "relative",
                   background: "var(--ps-bg-elevated)",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
                   outline: isActive
                     ? "2px solid var(--ps-cyan)"
                     : "2px solid transparent",
                   outlineOffset: 2,
                   transform: isActive ? "scale(1.04)" : "scale(1)",
-                  transition: "outline 150ms, transform 150ms",
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive)
