@@ -15,14 +15,9 @@ export function FullPageLoader({
 }: FullPageLoaderProps) {
   return (
     <div
+      className="fixed inset-0 flex items-center justify-center z-[9999]"
       style={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         background: "var(--ps-bg-base)",
-        zIndex: 9999,
       }}
     >
       <style>{`
@@ -30,10 +25,8 @@ export function FullPageLoader({
         @keyframes fpLoaderFadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
       <div
+        className="flex flex-col items-center"
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
           animation: "fpLoaderFadeIn 0.2s ease-out",
         }}
       >
@@ -46,9 +39,8 @@ export function FullPageLoader({
           }}
         />
         <p
+          className="mt-4 text-xs"
           style={{
-            margin: "16px 0 0",
-            fontSize: 13,
             color: "var(--ps-text-secondary)",
           }}
         >
