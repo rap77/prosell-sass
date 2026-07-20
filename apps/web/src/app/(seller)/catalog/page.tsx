@@ -55,6 +55,7 @@ import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { getApiStatus } from "@/lib/utils/getApiStatus";
 import { getAttributeMap } from "@/types/product";
+import { cn } from "@/lib/utils";
 import type {
   CategoryPresentation,
   AttributeSchemaEntry,
@@ -102,96 +103,37 @@ function EmptyState({
   onBulk: () => void;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
-        height: "100%",
-        padding: 48,
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: "50%",
-          background: "var(--ps-bg-elevated)",
-          border: "1px solid var(--ps-border-default)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+    <div className="flex flex-col items-center justify-center gap-4 h-full p-12 text-center">
+      <div className="w-16 h-16 rounded-full bg-ps-elevated border border-ps-border-default flex items-center justify-center">
         <Package
           size={28}
-          style={{ color: "var(--ps-text-tertiary)" }}
+          className="text-ps-tertiary"
           strokeWidth={1.5}
         />
       </div>
-      <div style={{ maxWidth: 320 }}>
-        <p
-          style={{
-            margin: "0 0 6px",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+      <div className="max-w-[320px]">
+        <p className="m-0 mb-[6px] text-base font-semibold text-ps-text-primary">
           {hasFilters ? "Sin resultados" : "Tu catálogo está vacío"}
         </p>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-            lineHeight: 1.6,
-          }}
-        >
+        <p className="m-0 text-[13px] text-ps-text-secondary leading-relaxed">
           {hasFilters
             ? "Ajustá los filtros o el término de búsqueda."
             : "Agregá tu primer producto o cargá un CSV masivo para empezar."}
         </p>
       </div>
       {!hasFilters && (
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="flex gap-2.5">
           <button
             type="button"
             onClick={onAdd}
-            style={{
-              height: 38,
-              padding: "0 18px",
-              background: "var(--ps-cyan)",
-              color: "var(--ps-bg-base)",
-              border: 0,
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="h-[38px] px-[18px] bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
           >
             Agregar producto
           </button>
           <button
             type="button"
             onClick={onBulk}
-            style={{
-              height: 38,
-              padding: "0 18px",
-              background: "transparent",
-              color: "var(--ps-text-secondary)",
-              border: "1px solid var(--ps-input-border)",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            className="h-[38px] px-[18px] bg-transparent text-ps-text-secondary border border-ps-border-default rounded-lg text-[13px] font-medium cursor-pointer inline-flex items-center gap-[6px]"
           >
             <Upload size={14} strokeWidth={2} />
             Carga masiva
@@ -212,73 +154,30 @@ export function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 16,
-        padding: 48,
-        textAlign: "center",
-      }}
-    >
+    <div className="flex flex-col items-center gap-4 p-12 text-center">
       <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: "50%",
-          background: "var(--ps-error-bg)",
-          border: "1px solid rgba(240,68,56,0.25)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className="w-16 h-16 rounded-full bg-ps-error-bg border flex items-center justify-center"
+        style={{ borderColor: "rgba(240,68,56,0.25)" }}
       >
         <AlertCircle
           size={28}
+          className="text-ps-tertiary"
           style={{ color: "var(--ps-error)" }}
           strokeWidth={1.5}
         />
       </div>
-      <div style={{ maxWidth: 320 }}>
-        <p
-          style={{
-            margin: "0 0 6px",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+      <div className="max-w-[320px]">
+        <p className="m-0 mb-[6px] text-[15px] font-semibold text-ps-text-primary">
           Error al cargar productos
         </p>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-            lineHeight: 1.6,
-          }}
-        >
+        <p className="m-0 text-[13px] text-ps-text-secondary leading-relaxed">
           {message}
         </p>
       </div>
       <button
         type="button"
         onClick={onRetry}
-        style={{
-          height: 38,
-          padding: "0 18px",
-          background: "var(--ps-cyan)",
-          color: "var(--ps-bg-base)",
-          border: 0,
-          borderRadius: 8,
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-        }}
+        className="h-[38px] px-[18px] bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer inline-flex items-center gap-[6px]"
       >
         <RefreshCw size={14} strokeWidth={2} />
         Reintentar
@@ -303,6 +202,7 @@ export default function CatalogPage() {
     id: string;
     title: string;
   } | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // Vertical contracts: presentation + attribute_schema per category.
   // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
@@ -480,13 +380,7 @@ export default function CatalogPage() {
 
   return (
     <CatalogErrorBoundary>
-      <div
-        style={{
-          display: "flex",
-          height: "calc(100vh - 4rem)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
         {/* ── Left filter sidebar ──────────────────────────────────────────── */}
         <FilterSidebar
           fields={filterFields}
@@ -495,23 +389,10 @@ export default function CatalogPage() {
         />
 
         {/* ── Main content ─────────────────────────────────────────────────── */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div
-            style={{
-              padding: "20px 24px 0",
-              borderBottom: "1px solid var(--ps-border-subtle)",
-              background: "var(--ps-bg-base)",
-            }}
-          >
-            <div style={{ maxWidth: 280, marginBottom: 16 }}>
+          <div className="pt-5 px-6 pb-0 border-b border-ps-border-subtle bg-ps-base">
+            <div className="max-w-[280px] mb-4">
               <CategorySelector
                 categories={allCategories}
                 value={selectedCategoryId}
@@ -519,36 +400,13 @@ export default function CatalogPage() {
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 16,
-                marginBottom: 16,
-              }}
-            >
+            <div className="flex items-start justify-between gap-4 mb-4">
               {/* Title + count */}
               <div>
-                <h1
-                  style={{
-                    margin: 0,
-                    fontSize: 22,
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
-                    color: "var(--ps-text-primary)",
-                    lineHeight: 1.2,
-                  }}
-                >
+                <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-tight">
                   Catálogo
                 </h1>
-                <p
-                  style={{
-                    margin: "3px 0 0",
-                    fontSize: 13,
-                    color: "var(--ps-text-secondary)",
-                  }}
-                >
+                <p className="mt-[3px] mb-0 text-[13px] text-ps-text-secondary">
                   {isLoading
                     ? "Cargando..."
                     : `${rows.length} producto${rows.length !== 1 ? "s" : ""}`}
@@ -556,19 +414,9 @@ export default function CatalogPage() {
               </div>
 
               {/* Search + CTA */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ position: "relative" }}>
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 11,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: "var(--ps-text-tertiary)",
-                      pointerEvents: "none",
-                      display: "inline-flex",
-                    }}
-                  >
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <span className="absolute left-[11px] top-1/2 -translate-y-1/2 text-ps-tertiary pointer-events-none inline-flex">
                     <Search size={14} strokeWidth={2} />
                   </span>
                   <input
@@ -576,49 +424,21 @@ export default function CatalogPage() {
                     placeholder="Buscar producto..."
                     value={search}
                     onChange={(e) => setFilter("search", e.target.value)}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = "var(--ps-cyan)";
-                      e.currentTarget.style.boxShadow =
-                        "0 0 0 3px var(--ps-input-focus-shadow)";
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor =
-                        "var(--ps-input-border)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                    style={{
-                      height: 36,
-                      width: 220,
-                      paddingLeft: 32,
-                      paddingRight: 12,
-                      background: "var(--ps-input-bg)",
-                      border: "1px solid var(--ps-input-border)",
-                      borderRadius: 8,
-                      color: "var(--ps-text-primary)",
-                      fontSize: 13,
-                      outline: "none",
-                      boxSizing: "border-box",
-                    }}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                    className={cn(
+                      "h-9 w-[220px] pl-8 pr-3 border rounded-lg text-ps-text-primary text-[13px] outline-none box-border",
+                      searchFocused
+                        ? "border-ps-border-active shadow-input-focus"
+                        : "border-ps-border-default",
+                    )}
+                    style={{ background: "var(--ps-input-bg)" }}
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => router.push("/catalog/create")}
-                  style={{
-                    height: 36,
-                    padding: "0 14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background: "var(--ps-cyan)",
-                    color: "var(--ps-bg-base)",
-                    border: 0,
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
+                  className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap"
                 >
                   <Plus size={14} strokeWidth={2.5} />
                   Agregar producto
@@ -627,7 +447,7 @@ export default function CatalogPage() {
             </div>
 
             {/* View mode tabs */}
-            <div style={{ display: "flex", gap: 2 }}>
+            <div className="flex gap-0.5">
               {TABS.map(({ id, label, icon: Icon }) => {
                 const active = viewMode === id;
                 return (
@@ -635,26 +455,12 @@ export default function CatalogPage() {
                     key={id}
                     type="button"
                     onClick={() => setViewMode(id)}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      height: 36,
-                      padding: "0 14px",
-                      background: "transparent",
-                      border: 0,
-                      borderRadius: "8px 8px 0 0",
-                      fontSize: 13,
-                      fontWeight: active ? 600 : 400,
-                      color: active
-                        ? "var(--ps-cyan)"
-                        : "var(--ps-text-secondary)",
-                      cursor: "pointer",
-                      borderBottom: active
-                        ? "2px solid var(--ps-cyan)"
-                        : "2px solid transparent",
-                      transition: "color 150ms",
-                    }}
+                    className={cn(
+                      "inline-flex items-center gap-[6px] h-9 px-[14px] bg-transparent border-0 rounded-t-lg text-[13px] cursor-pointer border-b-2 transition-colors duration-150",
+                      active
+                        ? "font-semibold text-ps-cyan border-b-ps-border-active"
+                        : "font-normal text-ps-text-secondary border-b-transparent",
+                    )}
                   >
                     <Icon size={14} strokeWidth={active ? 2.5 : 2} />
                     {label}
@@ -669,11 +475,10 @@ export default function CatalogPage() {
 
           {/* ── Content area ─────────────────────────────────────────────── */}
           <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: viewMode === "tabla" ? 0 : 24,
-            }}
+            className={cn(
+              "flex-1 overflow-y-auto",
+              viewMode === "tabla" ? "p-0" : "p-6",
+            )}
           >
             {/* CARGA MASIVA */}
             {viewMode === "carga" && (
@@ -713,14 +518,7 @@ export default function CatalogPage() {
                   <>
                     {/* GRILLA */}
                     {viewMode === "grilla" && (
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fill, minmax(240px, 1fr))",
-                          gap: 16,
-                        }}
-                      >
+                      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
                         {viewModels.map((vm) => (
                           <ProductCard
                             key={vm.product.id}
@@ -744,7 +542,7 @@ export default function CatalogPage() {
 
                     {/* TABLA */}
                     {viewMode === "tabla" && (
-                      <div style={{ padding: 24 }}>
+                      <div className="p-6">
                         <DataGrid
                           data={rows}
                           onPublish={handlePublish}
@@ -758,56 +556,24 @@ export default function CatalogPage() {
 
                     {/* ESTADO — grouped by status */}
                     {viewMode === "estado" && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 32,
-                        }}
-                      >
+                      <div className="flex flex-col gap-8">
                         {STATUS_ORDER.filter(
                           (s) => viewModelsByStatus[s].length > 0,
                         ).map((status) => (
                           <section key={status}>
                             {/* Group header */}
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 10,
-                                marginBottom: 14,
-                              }}
-                            >
+                            <div className="flex items-center gap-2.5 mb-[14px]">
                               <StatusBadge status={status} />
-                              <span
-                                style={{
-                                  fontSize: 13,
-                                  color: "var(--ps-text-secondary)",
-                                  fontWeight: 500,
-                                }}
-                              >
+                              <span className="text-[13px] text-ps-text-secondary font-medium">
                                 {viewModelsByStatus[status].length} producto
                                 {viewModelsByStatus[status].length !== 1
                                   ? "s"
                                   : ""}
                               </span>
-                              <span
-                                style={{
-                                  flex: 1,
-                                  height: 1,
-                                  background: "var(--ps-border-subtle)",
-                                }}
-                              />
+                              <span className="flex-1 h-px bg-ps-border-subtle" />
                             </div>
                             {/* Grid of cards */}
-                            <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fill, minmax(220px, 1fr))",
-                                gap: 12,
-                              }}
-                            >
+                            <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]">
                               {viewModelsByStatus[status].map((vm) => (
                                 <ProductCard
                                   key={vm.product.id}
@@ -839,32 +605,18 @@ export default function CatalogPage() {
                     {hasNextPage && viewMode !== "tabla" && (
                       <div
                         ref={sentinelRef}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 20,
-                          gap: 8,
-                        }}
+                        className="flex items-center justify-center p-5 gap-2"
                       >
                         {isFetchingNextPage && (
                           <>
                             <div
+                              className="w-4 h-4 rounded-full border-2 border-transparent"
                               style={{
-                                width: 16,
-                                height: 16,
-                                borderRadius: "50%",
-                                border: "2px solid transparent",
                                 borderTopColor: "var(--ps-cyan)",
                                 animation: "spin 0.8s linear infinite",
                               }}
                             />
-                            <span
-                              style={{
-                                fontSize: 13,
-                                color: "var(--ps-text-secondary)",
-                              }}
-                            >
+                            <span className="text-[13px] text-ps-text-secondary">
                               Cargando más...
                             </span>
                           </>
@@ -875,14 +627,7 @@ export default function CatalogPage() {
                     {!hasNextPage &&
                       rows.length > 0 &&
                       viewMode !== "tabla" && (
-                        <p
-                          style={{
-                            textAlign: "center",
-                            fontSize: 12,
-                            color: "var(--ps-text-tertiary)",
-                            padding: "16px 0",
-                          }}
-                        >
+                        <p className="text-center text-[12px] text-ps-tertiary py-4">
                           {rows.length} producto
                           {rows.length !== 1 ? "s" : ""} en total
                         </p>

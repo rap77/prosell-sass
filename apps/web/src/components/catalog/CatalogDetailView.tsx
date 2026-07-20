@@ -26,6 +26,7 @@ import type { ProductImage } from "@/types/product-image";
 import { isVehicleAttributes, type VehicleAttributes } from "@/types/vehicle";
 import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
 import { ProductImageGallery } from "./ProductImageGallery";
+import { cn } from "@/lib/utils";
 
 // ─── Helpers (preserved verbatim) ─────────────────────────────────────────────
 
@@ -147,11 +148,11 @@ function PulseBox({
 }) {
   return (
     <div
+      className="bg-ps-elevated"
       style={{
         width: w,
         height: h,
         borderRadius: radius,
-        background: "var(--ps-bg-elevated)",
         animation: "psPulse 1.6s ease-in-out infinite",
       }}
     />
@@ -160,44 +161,22 @@ function PulseBox({
 
 function DetailPageSkeleton() {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        padding: "32px 24px",
-      }}
-    >
+    <div className="flex flex-col gap-6 py-8 px-6">
       <style>{`@keyframes psPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }`}</style>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
+      <div className="flex items-center justify-between gap-3">
         <PulseBox w={120} h={36} />
         <PulseBox w={100} h={36} />
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.15fr 0.85fr",
-          gap: 24,
-        }}
-      >
+      <div className="grid grid-cols-[1.15fr_0.85fr] gap-6">
         <PulseBox h={420} radius={12} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2.5">
             <PulseBox w="35%" h={14} />
             <PulseBox w="80%" h={32} />
             <PulseBox w="50%" h={28} />
             <PulseBox w="30%" h={20} />
           </div>
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
-          >
+          <div className="grid grid-cols-2 gap-2.5">
             {Array.from({ length: 6 }).map((_, i) => (
               <PulseBox key={i} h={72} radius={10} />
             ))}
@@ -212,34 +191,11 @@ function DetailPageSkeleton() {
 
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      style={{
-        padding: "12px 14px",
-        borderRadius: 10,
-        background: "var(--ps-bg-elevated)",
-        border: "1px solid var(--ps-border-subtle)",
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: 11,
-          fontWeight: 500,
-          color: "var(--ps-text-tertiary)",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-        }}
-      >
+    <div className="py-3 px-3.5 rounded-[10px] bg-ps-elevated border border-ps-border-subtle">
+      <p className="m-0 text-[11px] font-medium text-ps-text-tertiary uppercase tracking-[0.06em]">
         {label}
       </p>
-      <p
-        style={{
-          margin: "4px 0 0",
-          fontSize: 13,
-          fontWeight: 600,
-          color: "var(--ps-text-primary)",
-        }}
-      >
+      <p className="mt-1 m-0 text-[13px] font-semibold text-ps-text-primary">
         {value}
       </p>
     </div>
@@ -250,20 +206,17 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 
 function SectionCard({
   children,
-  style,
+  className,
 }: {
   children: React.ReactNode;
-  style?: React.CSSProperties;
+  className?: string;
 }) {
   return (
     <section
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 14,
-        padding: 24,
-        ...style,
-      }}
+      className={cn(
+        "bg-ps-surface border border-ps-border-default rounded-[14px] p-6",
+        className,
+      )}
     >
       {children}
     </section>
@@ -310,89 +263,33 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error || !product) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "60vh",
-          gap: 20,
-          padding: "48px 24px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            background: "var(--ps-error-bg)",
-            border: "1px solid var(--ps-error)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 py-12 px-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-ps-error-bg border border-destructive flex items-center justify-center">
           <AlertCircle
             size={24}
             strokeWidth={2}
-            style={{ color: "var(--ps-error)" }}
+            className="text-destructive"
           />
         </div>
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h1 className="m-0 text-xl font-semibold text-ps-text-primary">
             No pudimos cargar este vehículo
           </h1>
-          <p
-            style={{
-              margin: "6px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1.5 m-0 text-[13px] text-ps-text-secondary">
             {error?.message ?? "Intentá nuevamente desde el catálogo."}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="flex gap-2.5">
           <button
             type="button"
             onClick={() => refetch()}
-            style={{
-              height: 36,
-              padding: "0 16px",
-              borderRadius: 8,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
+            className="h-9 px-4 rounded-lg bg-ps-elevated border border-ps-border-default text-ps-text-secondary text-[13px] font-medium cursor-pointer"
           >
             Reintentar
           </button>
           <Link
             href="/catalog"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              height: 36,
-              padding: "0 16px",
-              borderRadius: 8,
-              background: "var(--ps-cyan)",
-              color: "var(--ps-bg-base)",
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
+            className="inline-flex items-center h-9 px-4 rounded-lg bg-ps-cyan text-ps-base text-[13px] font-semibold no-underline"
           >
             Volver al catálogo
           </Link>
@@ -416,7 +313,6 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
         price_cents: product.price_cents,
         zip_code: product.location_zip ?? "",
         image_urls: productImages.flatMap((img) => (img.url ? [img.url] : [])),
-        tenant_id: product.tenant_id,
         year: vehicleAttributes.year,
         make: vehicleAttributes.make,
         model: vehicleAttributes.model,
@@ -470,67 +366,25 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          padding: "8px 0",
-        }}
-      >
+      <div className="flex flex-col gap-6 py-2">
         {/* Action bar */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
+        <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Back */}
           <Link
             href="/catalog"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              height: 36,
-              padding: "0 14px",
-              borderRadius: 8,
-              background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
-              color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-ps-elevated border border-ps-border-default text-ps-text-secondary text-[13px] font-medium no-underline"
           >
             <ArrowLeft size={14} strokeWidth={2} />
             Volver al catálogo
           </Link>
 
           {/* Actions */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={!publishVehicleData}
               onClick={() => setIsPublishModalOpen(true)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                height: 36,
-                padding: "0 16px",
-                borderRadius: 8,
-                background: "var(--ps-bg-elevated)",
-                border: "1px solid var(--ps-border-default)",
-                color: "var(--ps-text-secondary)",
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "pointer",
-                opacity: publishVehicleData ? 1 : 0.5,
-              }}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ps-elevated border border-ps-border-default text-ps-text-secondary text-[13px] font-medium cursor-pointer disabled:opacity-50"
             >
               <Send size={14} strokeWidth={2} />
               Publicar
@@ -542,19 +396,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
             />
             <Link
               href={`/catalog/${product.id}/edit`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                height: 36,
-                padding: "0 16px",
-                borderRadius: 8,
-                background: "var(--ps-cyan)",
-                color: "var(--ps-bg-base)",
-                fontSize: 13,
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ps-cyan text-ps-base text-[13px] font-semibold no-underline"
             >
               <PencilLine size={14} strokeWidth={2} />
               Editar
@@ -563,112 +405,44 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
         </div>
 
         {/* Main grid: gallery | info */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1.15fr) minmax(320px,0.85fr)",
-            gap: 24,
-            alignItems: "start",
-          }}
-        >
+        <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] gap-6 items-start">
           {/* Gallery */}
-          <SectionCard style={{ padding: 16 }}>
+          <SectionCard className="p-4">
             <ProductImageGallery images={productImages} />
           </SectionCard>
 
           {/* Right column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="flex flex-col gap-4">
             {/* Title + price + status */}
             <SectionCard>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  marginBottom: 12,
-                }}
-              >
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "var(--ps-text-tertiary)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                    }}
-                  >
+                  <p className="m-0 text-[11px] font-semibold text-ps-text-tertiary uppercase tracking-[0.1em]">
                     Detalle del vehículo
                   </p>
-                  <h1
-                    style={{
-                      margin: "6px 0 0",
-                      fontSize: 24,
-                      fontWeight: 700,
-                      letterSpacing: "-0.02em",
-                      color: "var(--ps-text-primary)",
-                      lineHeight: 1.2,
-                    }}
-                  >
+                  <h1 className="mt-1.5 m-0 text-2xl font-bold tracking-[-0.02em] text-ps-text-primary leading-[1.2]">
                     {product.title}
                   </h1>
                 </div>
                 {isGridStatus(product.status) ? (
                   <StatusBadge status={product.status} />
                 ) : (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      padding: "3px 12px",
-                      borderRadius: 99,
-                      background: "var(--ps-bg-elevated)",
-                      border: "1px solid var(--ps-border-default)",
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: "var(--ps-text-secondary)",
-                    }}
-                  >
+                  <span className="inline-flex py-[3px] px-3 rounded-full bg-ps-elevated border border-ps-border-default text-xs font-medium text-ps-text-secondary">
                     {product.status}
                   </span>
                 )}
               </div>
 
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: "var(--ps-cyan)",
-                  letterSpacing: "-0.03em",
-                }}
-              >
+              <p className="m-0 text-[28px] font-bold text-ps-cyan tracking-[-0.03em]">
                 {formatCurrency(product.price_cents, product.currency)}
               </p>
 
               {product.description ? (
-                <p
-                  style={{
-                    margin: "12px 0 0",
-                    fontSize: 13,
-                    color: "var(--ps-text-secondary)",
-                    lineHeight: 1.6,
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
+                <p className="mt-3 m-0 text-[13px] text-ps-text-secondary leading-[1.6] whitespace-pre-wrap">
                   {product.description}
                 </p>
               ) : (
-                <p
-                  style={{
-                    margin: "12px 0 0",
-                    fontSize: 13,
-                    color: "var(--ps-text-tertiary)",
-                    fontStyle: "italic",
-                  }}
-                >
+                <p className="mt-3 m-0 text-[13px] text-ps-text-tertiary italic">
                   Este vehículo todavía no tiene descripción cargada.
                 </p>
               )}
@@ -676,36 +450,17 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
 
             {/* Attributes */}
             <SectionCard>
-              <div style={{ marginBottom: 14 }}>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "var(--ps-text-primary)",
-                  }}
-                >
+              <div className="mb-3.5">
+                <h2 className="m-0 text-sm font-semibold text-ps-text-primary">
                   Atributos del vehículo
                 </h2>
-                <p
-                  style={{
-                    margin: "3px 0 0",
-                    fontSize: 12,
-                    color: "var(--ps-text-secondary)",
-                  }}
-                >
+                <p className="mt-[3px] m-0 text-xs text-ps-text-secondary">
                   Información clave para revisión interna y publicación.
                 </p>
               </div>
 
               {attributeItems.length > 0 ? (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 8,
-                  }}
-                >
+                <div className="grid grid-cols-2 gap-2">
                   {attributeItems.map((item) => (
                     <DetailItem
                       key={`${item.label}-${item.value}`}
@@ -715,13 +470,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                   ))}
                 </div>
               ) : (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    color: "var(--ps-text-tertiary)",
-                  }}
-                >
+                <p className="m-0 text-[13px] text-ps-text-tertiary">
                   Este producto no tiene atributos de vehículo disponibles.
                 </p>
               )}
