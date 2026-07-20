@@ -82,7 +82,7 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
 
   if (verticals.length === 0) {
     return (
-      <p style={{ fontSize: 13, color: "var(--ps-text-tertiary)" }}>
+      <p className="text-xs text-tertiary">
         Cargando categorías...
       </p>
     );
@@ -117,53 +117,28 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
   return (
     <section aria-label={`Categorías de ${getName(current)}`}>
       {/* Breadcrumb trail */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 16,
-          fontSize: 13,
-          color: "var(--ps-text-secondary)",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="flex items-center gap-2 mb-4 text-xs text-secondary flex-wrap">
         <button
           type="button"
           onClick={() => setBreadcrumb([])}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--ps-text-tertiary)",
-            padding: 0,
-            fontSize: 13,
-          }}
+          className="bg-none border-none cursor-pointer text-tertiary p-0 text-xs"
         >
           Inicio
         </button>
         {breadcrumbPath.map((name, idx) => (
           <span
             key={idx}
-            style={{ display: "flex", alignItems: "center", gap: 8 }}
+            className="flex items-center gap-2"
           >
-            <span style={{ color: "var(--ps-text-tertiary)" }}>/</span>
+            <span className="text-tertiary">/</span>
             <button
               type="button"
               onClick={() => setBreadcrumb(breadcrumb.slice(0, idx + 1))}
-              style={{
-                background: "none",
-                border: "none",
-                cursor:
-                  idx === breadcrumbPath.length - 1 ? "default" : "pointer",
-                color:
-                  idx === breadcrumbPath.length - 1
-                    ? "var(--ps-text-primary)"
-                    : "var(--ps-text-tertiary)",
-                fontWeight: idx === breadcrumbPath.length - 1 ? 600 : 400,
-                padding: 0,
-                fontSize: 13,
-              }}
+              className={`bg-none border-none p-0 text-xs ${
+                idx === breadcrumbPath.length - 1
+                  ? "cursor-default text-primary font-semibold"
+                  : "cursor-pointer text-tertiary font-normal"
+              }`}
             >
               {name}
             </button>
@@ -174,18 +149,7 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
       <button
         type="button"
         onClick={() => setBreadcrumb(breadcrumb.slice(0, -1))}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--ps-text-secondary)",
-          fontSize: 13,
-          padding: 0,
-          marginBottom: 20,
-        }}
+        className="inline-flex items-center gap-1.5 bg-none border-none cursor-pointer text-secondary text-xs p-0 mb-5"
       >
         <ChevronLeft size={14} strokeWidth={2} />
         Volver
@@ -221,13 +185,7 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
 
 function Grid({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-        gap: 12,
-      }}
-    >
+    <div className="grid auto-fill gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
       {children}
     </div>
   );
@@ -250,20 +208,9 @@ function CategoryCard({
     <button
       type="button"
       onClick={onClick}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 10,
-        padding: size === "lg" ? "32px 20px" : "24px 16px",
-        background: "var(--ps-bg-elevated)",
-        border: "1px solid var(--ps-border-default)",
-        borderRadius: 12,
-        cursor: "pointer",
-        textAlign: "center",
-        transition: "border-color 150ms, background 150ms",
-        width: "100%",
-      }}
+      className={`flex flex-col items-center cursor-pointer text-center transition-[border-color,background] duration-150 w-full rounded-lg bg-elevated border border-default ${
+        size === "lg" ? "gap-2.5 px-5 py-8" : "gap-2.5 px-4 py-6"
+      }`}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "var(--ps-cyan)";
         e.currentTarget.style.background = "var(--ps-hover-bg-xs)";
@@ -276,20 +223,17 @@ function CategoryCard({
       <Icon
         size={size === "lg" ? 36 : 28}
         strokeWidth={1.5}
-        style={{ color: "var(--ps-cyan)" }}
+        className="text-cyan"
       />
       <span
-        style={{
-          fontSize: size === "lg" ? 15 : 13,
-          fontWeight: 600,
-          color: "var(--ps-text-primary)",
-          lineHeight: 1.3,
-        }}
+        className={`font-semibold text-primary leading-tight ${
+          size === "lg" ? "text-sm" : "text-xs"
+        }`}
       >
         {label}
       </span>
       {sublabel && (
-        <span style={{ fontSize: 11, color: "var(--ps-text-tertiary)" }}>
+        <span className="text-xs text-tertiary">
           {sublabel}
         </span>
       )}
