@@ -24,15 +24,10 @@ export function LocaleSwitcher() {
     <select
       value={locale}
       onChange={(e) => handleChange(e.target.value as Locale)}
-      className="ps-locale-select"
+      className="ps-locale-select bg-transparent rounded px-2.5 py-1.5 text-sm cursor-pointer"
       style={{
-        background: "transparent",
         border: "1px solid var(--ps-border-subtle)",
-        borderRadius: 6,
-        padding: "6px 10px",
-        fontSize: 13,
         color: "var(--ps-text-secondary)",
-        cursor: "pointer",
       }}
       aria-label="Select language"
     >
