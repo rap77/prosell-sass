@@ -132,6 +132,14 @@ jobs:
           docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d
           docker system prune -f
 
+      - name: Seed staging admin
+        working-directory: ${{ secrets.STAGING_REPO_PATH }}
+        run: |
+          # Ensure admin@prosell.saas always has known password (Admin123!)
+          docker exec prosell-staging-db psql -U postgres -d prosell_staging -f /dev/stdin < scripts/seed-staging-admin.sql \
+            && echo "✓ staging admin seeded" \
+            || echo "⚠️ admin seed failed (non-fatal if user doesn't exist yet)"
+
       - name: Print container logs on failure
         if: failure()
         working-directory: ${{ secrets.STAGING_REPO_PATH }}
