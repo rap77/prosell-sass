@@ -306,8 +306,6 @@ export default function SettingsProfilePage() {
           </button>
         </div>
       </form>
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

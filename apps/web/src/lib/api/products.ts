@@ -678,8 +678,9 @@ export function useInfiniteProducts(
     queryKey: ["products", "infinite", filters, limit],
     queryFn: async ({ pageParam }: { pageParam: string | null }) => {
       const params = new URLSearchParams(queryParams);
+      // ponytail: pageParam is the offset (encoded as string), backend expects "skip"
       if (pageParam) {
-        params.append("cursor", pageParam);
+        params.append("skip", pageParam);
       }
 
       const res = await fetch(`/api/v1/products?${params.toString()}`, {
@@ -692,11 +693,13 @@ export function useInfiniteProducts(
       }
 
       const data = parseProductListResponse(await res.json());
+      const nextOffset = data.skip + data.products.length;
 
       return {
         items: data.products,
-        next_cursor: null, // TODO: Add cursor pagination support
-        has_more: data.products.length === limit,
+        // ponytail: backend uses offset pagination, not cursor — encode offset as string
+        next_cursor: nextOffset < data.total ? String(nextOffset) : null,
+        has_more: nextOffset < data.total,
       } as const;
     },
     initialPageParam,

@@ -351,8 +351,10 @@ export default function CatalogPage() {
   // per-product (the legacy VehicleCard did the latter). ProductCard is
   // a pure presentational function of its props; the container is the
   // source of truth for the signed cover URL.
+  // ponytail: flatten all pages for infinite scroll support
+  const allProducts = data?.pages.flatMap((page) => page.items) ?? [];
   const { urls: productImageUrls } = useProductImageUrlsBatch(
-    (data?.pages[0]?.items ?? []).map((p) => p.id),
+    allProducts.map((p) => p.id),
   );
 
   // category_id → { presentation, schema, verticalSlug }.
@@ -384,8 +386,7 @@ export default function CatalogPage() {
   // check). `rows` is kept as the legacy transform for the tabla view
   // (DataGrid expects the transformed shape with `price: number` and
   // `status: VehicleStatus`).
-  const productItems = data?.pages[0]?.items;
-  const products = productItems ?? [];
+  const products = allProducts;
   // Transform to the generic catalog-row shape the table view needs
   const rows = products.map(transformProductToVehicle);
 
