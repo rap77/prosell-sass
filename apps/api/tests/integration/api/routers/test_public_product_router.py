@@ -41,7 +41,7 @@ async def shared_session() -> AsyncGenerator[AsyncSession]:
 
 
 @pytest.fixture
-def _setup_override(shared_session: AsyncSession):
+def setup_override(shared_session: AsyncSession):
     """Override get_async_session to return the shared test session.
 
     This lets the endpoint see flushed data from the test without commits.
