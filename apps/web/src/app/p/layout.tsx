@@ -16,16 +16,14 @@ export default function PublicProductLayout({
     <>
       <LandingStyles />
       <div
+        className="flex min-h-screen flex-col"
         style={{
-          minHeight: "100vh",
           background: "var(--ps-bg-base)",
           color: "var(--ps-text-primary)",
-          display: "flex",
-          flexDirection: "column",
         }}
       >
         <LandingNav />
-        <main style={{ flex: 1 }}>{children}</main>
+        <main className="flex-1">{children}</main>
         <LandingFooter />
       </div>
     </>
