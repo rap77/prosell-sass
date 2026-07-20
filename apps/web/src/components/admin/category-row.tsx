@@ -98,7 +98,7 @@ export function CategoryRow({
       <div
         ref={setNodeRef}
         style={style}
-        className={`flex items-center gap-2 border-b px-4 py-3 ${isDragging ? "opacity-50" : ""}`}
+        className={`flex items-center gap-2 border-b px-4 py-3 ${isDragging ? "opacity-50" : "opacity-100"}`}
       >
         {/* Drag handle */}
         {!isReadOnly && (
