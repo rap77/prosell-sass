@@ -6,14 +6,12 @@
  */
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import {
   AuthShell,
   AuthFormHead,
@@ -21,10 +19,13 @@ import {
   AuthErrorBanner,
   AuthDivider,
   AuthSubmitButton,
-  authInputStyle,
-  focusAuthInput,
-  blurAuthInput,
+  AuthInput,
+  AuthPasswordInput,
+  AuthLabel,
+  AuthOAuthButton,
+  AuthFooterLink,
 } from "@/components/auth/AuthShell";
+import Link from "next/link";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -64,69 +65,18 @@ function MicrosoftSvg() {
   );
 }
 
-function OAuthBtn({
-  label,
-  icon,
-  loading,
-  onClick,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  loading: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      style={{
-        height: 40,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        background: "transparent",
-        border: "1px solid var(--ps-input-border)",
-        borderRadius: 8,
-        color: "var(--ps-text-secondary)",
-        fontSize: 13,
-        fontWeight: 500,
-        cursor: loading ? "not-allowed" : "pointer",
-        transition: "border-color 180ms, color 180ms, background 180ms",
-        opacity: loading ? 0.6 : 1,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "var(--ps-border-strong)";
-        e.currentTarget.style.color = "var(--ps-text-primary)";
-        e.currentTarget.style.background = "var(--ps-hover-bg-xs)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "var(--ps-input-border)";
-        e.currentTarget.style.color = "var(--ps-text-secondary)";
-        e.currentTarget.style.background = "transparent";
-      }}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function LoginPageContent() {
   const { login, isLoading, error, clearError } = useAuth();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [showPw, setShowPw] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
   // ponytail: use global store flag instead of local state to survive navigation
   const setNavigating = useAuthStore((s) => s.setNavigating);
 
   const {
     register,
-    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
@@ -162,31 +112,20 @@ export function LoginPageContent() {
         onSubmit={handleSubmit(onSubmit)}
         autoComplete="on"
         noValidate
-        style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        className="flex flex-col gap-5"
       >
         {/* Email */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label
-            htmlFor="email"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
-            Email
-          </label>
-          <input
+        <div className="flex flex-col gap-1.5">
+          <AuthLabel htmlFor="email">Email</AuthLabel>
+          <AuthInput
             {...register("email", { onChange: () => error && clearError() })}
             id="email"
             type="email"
             placeholder="vos@empresa.com"
             autoComplete="email"
             disabled={isDisabled}
+            hasError={!!errors.email}
             aria-invalid={!!errors.email}
-            style={authInputStyle(!!errors.email)}
-            onFocus={(e) => focusAuthInput(e.currentTarget, !!errors.email)}
-            onBlur={(e) => blurAuthInput(e.currentTarget, !!errors.email)}
           />
           {errors.email && (
             <AuthFieldError message={errors.email.message ?? ""} />
@@ -194,108 +133,28 @@ export function LoginPageContent() {
         </div>
 
         {/* Password */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <label
-              htmlFor="login-password"
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
-              Contraseña
-            </label>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <AuthLabel htmlFor="login-password">Contraseña</AuthLabel>
             <Link
               href="/auth/forgot-password"
-              style={{
-                fontSize: 12,
-                color: "var(--ps-cyan)",
-                textDecoration: "none",
-                fontWeight: 500,
-              }}
+              className="text-xs text-primary no-underline font-medium"
             >
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
-          <Controller
-            name="password"
-            control={control}
-            render={({ field, fieldState }) => (
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ position: "relative" }}>
-                  <input
-                    id="login-password"
-                    type={showPw ? "text" : "password"}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    disabled={isDisabled}
-                    value={field.value}
-                    style={{
-                      ...authInputStyle(!!fieldState.error),
-                      paddingRight: 44,
-                    }}
-                    onFocus={(e) =>
-                      focusAuthInput(e.currentTarget, !!fieldState.error)
-                    }
-                    onBlur={(e) => {
-                      blurAuthInput(e.currentTarget, !!fieldState.error);
-                      field.onBlur();
-                    }}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                      if (error) clearError();
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw((v) => !v)}
-                    aria-label={
-                      showPw ? "Ocultar contraseña" : "Mostrar contraseña"
-                    }
-                    style={{
-                      position: "absolute",
-                      right: 8,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: 32,
-                      height: 32,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "transparent",
-                      border: 0,
-                      borderRadius: 6,
-                      color: "var(--ps-text-secondary)",
-                      cursor: "pointer",
-                      transition: "color 180ms",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "var(--ps-text-primary)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "var(--ps-text-secondary)")
-                    }
-                  >
-                    {showPw ? (
-                      <EyeOff size={16} strokeWidth={2} />
-                    ) : (
-                      <Eye size={16} strokeWidth={2} />
-                    )}
-                  </button>
-                </div>
-                {fieldState.error && (
-                  <AuthFieldError message={fieldState.error.message ?? ""} />
-                )}
-              </div>
-            )}
+          <AuthPasswordInput
+            {...register("password", { onChange: () => error && clearError() })}
+            id="login-password"
+            placeholder="••••••••"
+            autoComplete="current-password"
+            disabled={isDisabled}
+            hasError={!!errors.password}
+            aria-invalid={!!errors.password}
           />
+          {errors.password && (
+            <AuthFieldError message={errors.password.message ?? ""} />
+          )}
         </div>
 
         {error && <AuthErrorBanner message={error.message} />}
@@ -306,16 +165,13 @@ export function LoginPageContent() {
           isLoading={isLoading || isPending}
           disabled={isDisabled}
         />
-
-        {/* Arrow icon on button — overlaid via absolute would be complex;
-            we pass an extra element after the button for the arrow treatment */}
       </form>
 
       <AuthDivider label="o continuá con" />
 
       {/* OAuth */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <OAuthBtn
+      <div className="grid grid-cols-2 gap-2.5">
+        <AuthOAuthButton
           label="Google"
           icon={<GoogleSvg />}
           loading={loadingOAuth === "google"}
@@ -326,7 +182,7 @@ export function LoginPageContent() {
             window.location.href = `${b}/api/auth/oauth/google/authorize`;
           }}
         />
-        <OAuthBtn
+        <AuthOAuthButton
           label="Microsoft"
           icon={<MicrosoftSvg />}
           loading={loadingOAuth === "microsoft"}
@@ -339,27 +195,11 @@ export function LoginPageContent() {
         />
       </div>
 
-      <p
-        style={{
-          textAlign: "center",
-          fontSize: 13,
-          color: "var(--ps-text-secondary)",
-          margin: 0,
-        }}
-      >
-        ¿No tenés cuenta?
-        <Link
-          href="/auth/register"
-          style={{
-            color: "var(--ps-cyan)",
-            textDecoration: "none",
-            fontWeight: 600,
-            marginLeft: 4,
-          }}
-        >
-          Registrate gratis →
-        </Link>
-      </p>
+      <AuthFooterLink
+        text="¿No tenés cuenta?"
+        href="/auth/register"
+        linkText="Registrate gratis →"
+      />
     </AuthShell>
   );
 }

@@ -4,11 +4,9 @@
  * ForgotPasswordPageContent — ProSell forgot-password screen.
  * Uses AuthShell for the split brand+form layout.
  * Two render states: form (idle/loading/error) and success.
- * Logic: react-hook-form + zod + authApi.forgotPassword
  */
 
 import { useState } from "react";
-import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,10 +19,13 @@ import {
   AuthFieldError,
   AuthErrorBanner,
   AuthSubmitButton,
-  authInputStyle,
-  focusAuthInput,
-  blurAuthInput,
+  AuthInput,
+  AuthLabel,
+  AuthStatusBadge,
+  AuthCtaLink,
+  AuthBackLink,
 } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -47,112 +48,29 @@ function SuccessPanel({
 }) {
   return (
     <AuthShell>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 20,
-          textAlign: "center",
-        }}
-      >
-        {/* Icon */}
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            background: "var(--ps-success-bg)",
-            border: "1px solid rgba(34,211,160,0.25)",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <CheckCircle2
-            size={28}
-            style={{ color: "var(--ps-success)" }}
-            strokeWidth={1.8}
-          />
-        </div>
+      <div className="flex flex-col items-center gap-5 text-center">
+        <AuthStatusBadge variant="success">
+          <CheckCircle2 size={28} strokeWidth={1.8} />
+        </AuthStatusBadge>
 
-        {/* Heading */}
         <div>
-          <h1
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.2,
-              margin: "0 0 8px",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h1 className="text-[26px] font-bold tracking-tight leading-tight mb-2 text-foreground">
             Revisá tu email
           </h1>
-          <p
-            style={{
-              fontSize: 14,
-              color: "var(--ps-text-secondary)",
-              margin: 0,
-              lineHeight: 1.6,
-              maxWidth: 320,
-            }}
-          >
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] m-0">
             Te enviamos un enlace de recuperación a{" "}
-            <span style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}>
-              {email}
-            </span>
-            . El link expira en 24 horas.
+            <span className="text-foreground font-semibold">{email}</span>. El
+            link expira en 24 horas.
           </p>
         </div>
 
-        {/* CTA */}
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-          }}
-        >
-          <Link
-            href="/auth/login"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 44,
-              width: "100%",
-              background: "var(--ps-cyan)",
-              color: "var(--ps-bg-base)",
-              border: 0,
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 600,
-              letterSpacing: "-0.005em",
-              textDecoration: "none",
-            }}
-          >
+        <div className="w-full flex flex-col gap-2.5">
+          <AuthCtaLink href="/auth/login">
             Volver al inicio de sesión
-          </Link>
-
-          <button
-            type="button"
-            onClick={onResend}
-            style={{
-              height: 44,
-              background: "transparent",
-              border: "1px solid var(--ps-input-border)",
-              borderRadius: 8,
-              color: "var(--ps-text-secondary)",
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
+          </AuthCtaLink>
+          <Button type="button" variant="outline" onClick={onResend}>
             Reenviar email
-          </button>
+          </Button>
         </div>
       </div>
     </AuthShell>
@@ -211,36 +129,16 @@ export function ForgotPasswordPageContent() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        style={{ display: "flex", flexDirection: "column", gap: 16 }}
+        className="flex flex-col gap-4"
       >
         {/* Email field */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label
-            htmlFor="forgot-email"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
-            Email
-          </label>
-          <div style={{ position: "relative" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--ps-text-tertiary)",
-                pointerEvents: "none",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
+        <div className="flex flex-col gap-1.5">
+          <AuthLabel htmlFor="forgot-email">Email</AuthLabel>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-tertiary pointer-events-none inline-flex items-center">
               <Mail size={16} strokeWidth={2} />
             </span>
-            <input
+            <AuthInput
               {...register("email", {
                 onChange: () => apiError && setApiError(null),
               })}
@@ -249,10 +147,9 @@ export function ForgotPasswordPageContent() {
               placeholder="vos@empresa.com"
               autoComplete="email"
               disabled={isSubmitting}
+              hasError={!!errors.email}
               aria-invalid={!!errors.email}
-              style={{ ...authInputStyle(!!errors.email), paddingLeft: 38 }}
-              onFocus={(e) => focusAuthInput(e.currentTarget, !!errors.email)}
-              onBlur={(e) => blurAuthInput(e.currentTarget, !!errors.email)}
+              className="pl-10"
             />
           </div>
           {errors.email && (
@@ -270,23 +167,10 @@ export function ForgotPasswordPageContent() {
         />
       </form>
 
-      <p style={{ textAlign: "center", margin: 0 }}>
-        <Link
-          href="/auth/login"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-            textDecoration: "none",
-            fontWeight: 500,
-          }}
-        >
-          <ArrowLeft size={14} strokeWidth={2} />
-          Volver al inicio de sesión
-        </Link>
-      </p>
+      <AuthBackLink href="/auth/login">
+        <ArrowLeft size={14} strokeWidth={2} />
+        Volver al inicio de sesión
+      </AuthBackLink>
     </AuthShell>
   );
 }

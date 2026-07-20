@@ -9,9 +9,10 @@
  * Responsive: left panel hides on mobile (via .ps-auth-split CSS rule in globals.css).
  */
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -260,6 +261,166 @@ export function AuthSubmitButton({
 // ─── Re-export Label for convenience ──────────────────────────────────────────
 
 export { Label as AuthLabel };
+
+// ─── Password Input with toggle ─────────────────────────────────────────────
+
+export interface AuthPasswordInputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+  hasError?: boolean;
+}
+
+export function AuthPasswordInput({
+  hasError,
+  className,
+  ...props
+}: AuthPasswordInputProps) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <AuthInput
+        type={show ? "text" : "password"}
+        hasError={hasError}
+        className={cn("pr-10", className)}
+        {...props}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setShow((v) => !v);
+        }}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-ps-tertiary hover:text-foreground"
+        aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
+      >
+        {show ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </div>
+  );
+}
+
+// ─── OAuth Button ───────────────────────────────────────────────────────────
+
+export function AuthOAuthButton({
+  label,
+  icon,
+  loading,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={onClick}
+      disabled={loading}
+      className={cn(
+        "h-10 text-[13px] font-medium",
+        loading && "opacity-60 cursor-not-allowed"
+      )}
+    >
+      {icon}
+      {label}
+    </Button>
+  );
+}
+
+// ─── Status Icon Badge ──────────────────────────────────────────────────────
+
+export function AuthStatusBadge({
+  variant,
+  children,
+}: {
+  variant: "loading" | "success" | "error";
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "w-16 h-16 rounded-full inline-flex items-center justify-center border",
+        variant === "loading" && "bg-ps-info-bg border-primary/25 text-primary",
+        variant === "success" && "bg-ps-success-bg border-ps-success/25 text-ps-success",
+        variant === "error" && "bg-ps-error-bg border-destructive/25 text-destructive"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── CTA Link Button ────────────────────────────────────────────────────────
+
+export function AuthCtaLink({
+  href,
+  children,
+  variant = "primary",
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "primary" | "secondary";
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "inline-flex items-center justify-center h-11 w-full rounded-lg text-[15px] font-semibold no-underline tracking-tight",
+        variant === "primary" && "bg-primary text-primary-foreground",
+        variant === "secondary" && "bg-transparent border border-border text-muted-foreground text-sm font-medium"
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
+// ─── Back Link ──────────────────────────────────────────────────────────────
+
+export function AuthBackLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <p className="text-center m-0">
+      <Link
+        href={href}
+        className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline font-medium hover:text-foreground"
+      >
+        {children}
+      </Link>
+    </p>
+  );
+}
+
+// ─── Footer Link ────────────────────────────────────────────────────────────
+
+export function AuthFooterLink({
+  text,
+  href,
+  linkText,
+}: {
+  text: string;
+  href: string;
+  linkText: string;
+}) {
+  return (
+    <p className="text-center text-[13px] text-muted-foreground m-0">
+      {text}
+      <Link
+        href={href}
+        className="text-primary no-underline font-semibold ml-1"
+      >
+        {linkText}
+      </Link>
+    </p>
+  );
+}
 
 // ─── Legacy exports (deprecated — remove after full migration) ────────────────
 // ponytail: keep for backwards compat until all auth pages are migrated

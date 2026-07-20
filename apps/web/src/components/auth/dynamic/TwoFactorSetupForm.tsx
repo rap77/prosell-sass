@@ -2,15 +2,7 @@
  * Dynamic TwoFactorSetupForm Component
  *
  * Optimized version that loads only when needed for 2FA setup.
- * This is a large component (576 lines) that should not block initial page load.
- *
- * @example
- * ```tsx
- * const TwoFactorSetupForm = dynamic(() => import('./dynamic/TwoFactorSetupForm'), {
- *   ssr: false,
- *   loading: () => <TwoFactorSetupSkeleton />
- * });
- * ```
+ * This is a large component that should not block initial page load.
  */
 "use client";
 
@@ -33,13 +25,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ShieldIcon } from "@/components/icons/dynamic";
+import { Loader2 } from "lucide-react";
 
 // Pre-compiled regex for 6-digit TOTP codes
 const TOTP_REGEX = /^\d{6}$/;
-
-// ============================================
-// TYPES
-// ============================================
 
 // ============================================
 // STATES
@@ -72,48 +61,11 @@ type FormState = {
 
 export function TwoFactorSetupSkeleton() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--ps-bg-base)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-    >
-      <style>{`@keyframes twoFaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-      <div style={{ width: "100%", maxWidth: 448 }}>
-        <div
-          style={{
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 14,
-            padding: "32px 28px",
-            textAlign: "center",
-          }}
-        >
-          <div
-            role="status"
-            aria-label="Cargando"
-            style={{
-              display: "inline-block",
-              width: 40,
-              height: 40,
-              border: "3px solid var(--ps-border-default)",
-              borderTopColor: "var(--ps-cyan)",
-              borderRadius: "50%",
-              animation: "twoFaSpin 0.8s linear infinite",
-            }}
-          />
-          <h2
-            style={{
-              margin: "16px 0 0",
-              fontSize: 18,
-              fontWeight: 600,
-              color: "var(--ps-text-primary)",
-            }}
-          >
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-[448px]">
+        <div className="bg-card border border-border rounded-xl p-7 text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+          <h2 className="mt-4 text-lg font-semibold text-foreground">
             Cargando funciones de seguridad...
           </h2>
         </div>
@@ -348,15 +300,7 @@ export function TwoFactorSetupForm({
           {formState.state === "loading" && (
             <CardContent className="pt-8">
               <div className="text-center py-12">
-                <div
-                  className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                  role="status"
-                  aria-label="Loading"
-                >
-                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                    Loading...
-                  </span>
-                </div>
+                <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
                   Configurando autenticación de dos factores
                 </h2>
@@ -372,10 +316,7 @@ export function TwoFactorSetupForm({
             <>
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center gap-2">
-                  <ShieldIcon
-                    className="w-6 h-6"
-                    style={{ color: "var(--ps-cyan)" }}
-                  />
+                  <ShieldIcon className="w-6 h-6 text-primary" />
                   Configurar autenticación de dos factores
                 </CardTitle>
                 <CardDescription>
@@ -398,34 +339,11 @@ export function TwoFactorSetupForm({
                 </div>
 
                 {/* Instructions */}
-                <div
-                  style={{
-                    background: "var(--ps-info-bg)",
-                    borderRadius: 8,
-                    padding: 16,
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: "0 0 8px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--ps-cyan)",
-                    }}
-                  >
+                <div className="bg-ps-info-bg rounded-lg p-4">
+                  <h3 className="mb-2 text-[13px] font-semibold text-primary">
                     Instrucciones:
                   </h3>
-                  <ol
-                    style={{
-                      margin: 0,
-                      paddingLeft: 18,
-                      fontSize: 13,
-                      color: "var(--ps-cyan)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                    }}
-                  >
+                  <ol className="m-0 pl-4 text-[13px] text-primary flex flex-col gap-1 list-decimal">
                     <li>
                       Abrí tu app de autenticación (Google Authenticator, Authy,
                       etc.)
@@ -524,15 +442,7 @@ export function TwoFactorSetupForm({
           {formState.state === "verifying" && (
             <CardContent className="pt-8">
               <div className="text-center py-12">
-                <div
-                  className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                  role="status"
-                  aria-label="Loading"
-                >
-                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                    Loading...
-                  </span>
-                </div>
+                <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
                   Verificando...
                 </h2>
@@ -547,23 +457,9 @@ export function TwoFactorSetupForm({
           {formState.state === "enabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div
-                  style={{
-                    display: "inline-flex",
-                    width: 80,
-                    height: 80,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "50%",
-                    background: "var(--ps-success-bg)",
-                  }}
-                >
+                <div className="inline-flex w-20 h-20 items-center justify-center rounded-full bg-ps-success-bg">
                   <svg
-                    style={{
-                      width: 40,
-                      height: 40,
-                      color: "var(--ps-success)",
-                    }}
+                    className="w-10 h-10 text-ps-success"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -577,11 +473,8 @@ export function TwoFactorSetupForm({
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                    <ShieldIcon
-                      className="w-6 h-6"
-                      style={{ color: "var(--ps-success)" }}
-                    />
+                  <h2 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
+                    <ShieldIcon className="w-6 h-6 text-ps-success" />
                     Autenticación de dos factores activada
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -601,10 +494,7 @@ export function TwoFactorSetupForm({
             <>
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center gap-2">
-                  <ShieldIcon
-                    className="w-6 h-6"
-                    style={{ color: "var(--ps-success)" }}
-                  />
+                  <ShieldIcon className="w-6 h-6 text-ps-success" />
                   Autenticación de dos factores activada
                 </CardTitle>
                 <CardDescription>
@@ -615,51 +505,17 @@ export function TwoFactorSetupForm({
 
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      width: 64,
-                      height: 64,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "50%",
-                      background: "var(--ps-success-bg)",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <ShieldIcon
-                      className="h-8 w-8"
-                      style={{ color: "var(--ps-success)" }}
-                    />
+                  <div className="inline-flex w-16 h-16 items-center justify-center rounded-full bg-ps-success-bg mb-4">
+                    <ShieldIcon className="h-8 w-8 text-ps-success" />
                   </div>
                 </div>
 
                 {/* Advertencia */}
-                <div
-                  style={{
-                    background: "var(--ps-warning-bg)",
-                    border: "1px solid var(--ps-warning)",
-                    borderRadius: 8,
-                    padding: 16,
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: "0 0 8px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--ps-warning)",
-                    }}
-                  >
+                <div className="bg-ps-warning-bg border border-ps-warning rounded-lg p-4">
+                  <h3 className="mb-2 text-[13px] font-semibold text-ps-warning">
                     Advertencia:
                   </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 13,
-                      color: "var(--ps-warning)",
-                    }}
-                  >
+                  <p className="m-0 text-[13px] text-ps-warning">
                     Desactivar la autenticación de dos factores hace tu cuenta
                     menos segura. Recomendamos mantenerla activada.
                   </p>
@@ -709,15 +565,7 @@ export function TwoFactorSetupForm({
           {formState.state === "disabling" && (
             <CardContent className="pt-8">
               <div className="text-center py-12">
-                <div
-                  className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                  role="status"
-                  aria-label="Loading"
-                >
-                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                    Loading...
-                  </span>
-                </div>
+                <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
                   Desactivando...
                 </h2>
@@ -732,23 +580,9 @@ export function TwoFactorSetupForm({
           {formState.state === "disabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div
-                  style={{
-                    display: "inline-flex",
-                    width: 80,
-                    height: 80,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "50%",
-                    background: "var(--ps-warning-bg)",
-                  }}
-                >
+                <div className="inline-flex w-20 h-20 items-center justify-center rounded-full bg-ps-warning-bg">
                   <svg
-                    style={{
-                      width: 40,
-                      height: 40,
-                      color: "var(--ps-warning)",
-                    }}
+                    className="w-10 h-10 text-ps-warning"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -781,19 +615,9 @@ export function TwoFactorSetupForm({
           {formState.state === "error" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div
-                  style={{
-                    display: "inline-flex",
-                    width: 80,
-                    height: 80,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "50%",
-                    background: "var(--ps-error-bg)",
-                  }}
-                >
+                <div className="inline-flex w-20 h-20 items-center justify-center rounded-full bg-ps-error-bg">
                   <svg
-                    style={{ width: 40, height: 40, color: "var(--ps-error)" }}
+                    className="w-10 h-10 text-destructive"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

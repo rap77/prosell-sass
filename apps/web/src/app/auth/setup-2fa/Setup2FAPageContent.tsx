@@ -1,10 +1,10 @@
+"use client";
+
 /**
  * Setup2FAPageContent — componente cliente de la página de configuración 2FA.
  *
  * La página server async (page.tsx) maneja la redirección de auth y renderiza esto.
- * All colors via var(--ps-*) tokens — dark/light automatic.
  */
-"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -32,38 +32,20 @@ export function Setup2FAPageContent({
   is2FAEnabled = false,
 }: Setup2FAPageContentProps) {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--ps-bg-base)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 448 }}>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-[448px]">
         {/* Brand */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div className="text-center mb-8">
           <Link
             href="/"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              fontSize: 22,
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-              textDecoration: "none",
-            }}
+            className="inline-flex items-center gap-2.5 text-[22px] font-extrabold tracking-tight text-foreground no-underline"
           >
             <Image
               src="/logo-mark.png"
               alt="ProSell"
               width={271}
               height={294}
-              style={{ height: 32, width: "auto", flexShrink: 0 }}
+              className="h-8 w-auto shrink-0"
             />
             ProSell
           </Link>

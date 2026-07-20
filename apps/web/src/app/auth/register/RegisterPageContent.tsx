@@ -3,10 +3,9 @@
 /**
  * RegisterPageContent — ProSell register screen.
  * Uses AuthShell for the split brand+form layout.
- * Logic: react-hook-form + zod + useAuth().register
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +13,6 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
-import { Eye, EyeOff } from "lucide-react";
 import {
   AuthShell,
   AuthFormHead,
@@ -22,12 +20,15 @@ import {
   AuthErrorBanner,
   AuthDivider,
   AuthSubmitButton,
-  authInputStyle,
-  focusAuthInput,
-  blurAuthInput,
+  AuthInput,
+  AuthPasswordInput,
+  AuthLabel,
+  AuthOAuthButton,
+  AuthFooterLink,
 } from "@/components/auth/AuthShell";
+import { Checkbox } from "@/components/ui/checkbox";
 
-// ─── Schema (same as RegisterForm) ────────────────────────────────────────────
+// ─── Schema ────────────────────────────────────────────────────────────────────
 
 const registerSchema = z
   .object({
@@ -62,95 +63,6 @@ function splitName(fullName: string) {
   return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
 }
 
-// ─── Password field ───────────────────────────────────────────────────────────
-
-function PwField({
-  id,
-  label,
-  value,
-  onChange,
-  onBlur,
-  hasError,
-  errorMsg,
-  disabled,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  onBlur: () => void;
-  hasError: boolean;
-  errorMsg?: string;
-  disabled: boolean;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label
-        htmlFor={id}
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color: "var(--ps-text-secondary)",
-        }}
-      >
-        {label}
-      </label>
-      <div style={{ position: "relative" }}>
-        <input
-          id={id}
-          type={show ? "text" : "password"}
-          value={value}
-          disabled={disabled}
-          aria-invalid={hasError}
-          style={{ ...authInputStyle(hasError), paddingRight: 44 }}
-          onFocus={(e) => focusAuthInput(e.currentTarget, hasError)}
-          onBlur={(e) => {
-            blurAuthInput(e.currentTarget, hasError);
-            onBlur();
-          }}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((v) => !v)}
-          aria-label={show ? "Ocultar" : "Mostrar"}
-          style={{
-            position: "absolute",
-            right: 8,
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: 32,
-            height: 32,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "transparent",
-            border: 0,
-            borderRadius: 6,
-            color: "var(--ps-text-secondary)",
-            cursor: "pointer",
-            transition: "color 180ms",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--ps-text-primary)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--ps-text-secondary)")
-          }
-        >
-          {show ? (
-            <EyeOff size={16} strokeWidth={2} />
-          ) : (
-            <Eye size={16} strokeWidth={2} />
-          )}
-        </button>
-      </div>
-      {errorMsg && <AuthFieldError message={errorMsg} />}
-    </div>
-  );
-}
-
 // ─── OAuth SVGs ───────────────────────────────────────────────────────────────
 
 function GoogleSvg() {
@@ -163,6 +75,7 @@ function GoogleSvg() {
     </svg>
   );
 }
+
 function MicrosoftSvg() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -171,54 +84,6 @@ function MicrosoftSvg() {
       <rect x="2" y="13" width="9" height="9" fill="#00A4EF" />
       <rect x="13" y="13" width="9" height="9" fill="#FFB900" />
     </svg>
-  );
-}
-function OAuthBtn({
-  label,
-  icon,
-  loading,
-  onClick,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  loading: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      style={{
-        height: 40,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        background: "transparent",
-        border: "1px solid var(--ps-input-border)",
-        borderRadius: 8,
-        color: "var(--ps-text-secondary)",
-        fontSize: 13,
-        fontWeight: 500,
-        cursor: loading ? "not-allowed" : "pointer",
-        transition: "border-color 180ms, color 180ms, background 180ms",
-        opacity: loading ? 0.6 : 1,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "var(--ps-border-strong)";
-        e.currentTarget.style.color = "var(--ps-text-primary)";
-        e.currentTarget.style.background = "var(--ps-hover-bg-xs)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "var(--ps-input-border)";
-        e.currentTarget.style.color = "var(--ps-text-secondary)";
-        e.currentTarget.style.background = "transparent";
-      }}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
@@ -248,9 +113,6 @@ export function RegisterPageContent() {
 
   const isDisabled = isLoading || isSubmitting;
 
-  // Clear validation cache on unmount
-  useEffect(() => () => {}, []);
-
   const onSubmit = async (data: RegisterValues) => {
     if (isDisabled) return;
     const { firstName, lastName } = splitName(data.fullName);
@@ -268,8 +130,8 @@ export function RegisterPageContent() {
       />
 
       {/* OAuth first (matches design order) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <OAuthBtn
+      <div className="grid grid-cols-2 gap-2.5">
+        <AuthOAuthButton
           label="Google"
           icon={<GoogleSvg />}
           loading={loadingOAuth === "google"}
@@ -280,7 +142,7 @@ export function RegisterPageContent() {
             window.location.href = `${b}/api/auth/oauth/google/authorize`;
           }}
         />
-        <OAuthBtn
+        <AuthOAuthButton
           label="Microsoft"
           icon={<MicrosoftSvg />}
           loading={loadingOAuth === "microsoft"}
@@ -299,31 +161,20 @@ export function RegisterPageContent() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        style={{ display: "flex", flexDirection: "column", gap: 16 }}
+        className="flex flex-col gap-4"
       >
         {/* Full name */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label
-            htmlFor="fullName"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
-            Nombre completo
-          </label>
-          <input
+        <div className="flex flex-col gap-1.5">
+          <AuthLabel htmlFor="fullName">Nombre completo</AuthLabel>
+          <AuthInput
             {...register("fullName", { onChange: () => error && clearError() })}
             id="fullName"
             type="text"
             placeholder="Juan Pérez"
             autoComplete="name"
             disabled={isDisabled}
+            hasError={!!errors.fullName}
             aria-invalid={!!errors.fullName}
-            style={authInputStyle(!!errors.fullName)}
-            onFocus={(e) => focusAuthInput(e.currentTarget, !!errors.fullName)}
-            onBlur={(e) => blurAuthInput(e.currentTarget, !!errors.fullName)}
           />
           {errors.fullName && (
             <AuthFieldError message={errors.fullName.message ?? ""} />
@@ -331,28 +182,17 @@ export function RegisterPageContent() {
         </div>
 
         {/* Email */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label
-            htmlFor="reg-email"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
-            Email
-          </label>
-          <input
+        <div className="flex flex-col gap-1.5">
+          <AuthLabel htmlFor="reg-email">Email</AuthLabel>
+          <AuthInput
             {...register("email", { onChange: () => error && clearError() })}
             id="reg-email"
             type="email"
             placeholder="vos@empresa.com"
             autoComplete="email"
             disabled={isDisabled}
+            hasError={!!errors.email}
             aria-invalid={!!errors.email}
-            style={authInputStyle(!!errors.email)}
-            onFocus={(e) => focusAuthInput(e.currentTarget, !!errors.email)}
-            onBlur={(e) => blurAuthInput(e.currentTarget, !!errors.email)}
           />
           {errors.email && (
             <AuthFieldError message={errors.email.message ?? ""} />
@@ -360,94 +200,78 @@ export function RegisterPageContent() {
         </div>
 
         {/* Password */}
-        <Controller
-          name="password"
-          control={control}
-          render={({ field, fieldState }) => (
-            <PwField
-              id="reg-password"
-              label="Contraseña"
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              hasError={!!fieldState.error}
-              errorMsg={fieldState.error?.message}
-              disabled={isDisabled}
-            />
+        <div className="flex flex-col gap-1.5">
+          <AuthLabel htmlFor="reg-password">Contraseña</AuthLabel>
+          <Controller
+            name="password"
+            control={control}
+            render={({ field, fieldState }) => (
+              <AuthPasswordInput
+                id="reg-password"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                disabled={isDisabled}
+                hasError={!!fieldState.error}
+                aria-invalid={!!fieldState.error}
+              />
+            )}
+          />
+          {errors.password && (
+            <AuthFieldError message={errors.password.message ?? ""} />
           )}
-        />
+        </div>
 
         {/* Confirm password */}
-        <Controller
-          name="confirmPassword"
-          control={control}
-          render={({ field, fieldState }) => (
-            <PwField
-              id="reg-confirm-password"
-              label="Confirmar contraseña"
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              hasError={!!fieldState.error}
-              errorMsg={fieldState.error?.message}
-              disabled={isDisabled}
-            />
+        <div className="flex flex-col gap-1.5">
+          <AuthLabel htmlFor="reg-confirm-password">
+            Confirmar contraseña
+          </AuthLabel>
+          <Controller
+            name="confirmPassword"
+            control={control}
+            render={({ field, fieldState }) => (
+              <AuthPasswordInput
+                id="reg-confirm-password"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                disabled={isDisabled}
+                hasError={!!fieldState.error}
+                aria-invalid={!!fieldState.error}
+              />
+            )}
+          />
+          {errors.confirmPassword && (
+            <AuthFieldError message={errors.confirmPassword.message ?? ""} />
           )}
-        />
+        </div>
 
         {/* Terms checkbox */}
         <Controller
           name="acceptTerms"
           control={control}
           render={({ field, fieldState }) => (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 10,
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <Checkbox
                   checked={field.value}
-                  onChange={field.onChange}
+                  onCheckedChange={field.onChange}
                   disabled={isDisabled}
-                  style={{
-                    marginTop: 2,
-                    accentColor: "var(--ps-cyan)",
-                    width: 16,
-                    height: 16,
-                    flexShrink: 0,
-                  }}
+                  className="mt-0.5"
                 />
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "var(--ps-text-secondary)",
-                    lineHeight: 1.5,
-                  }}
-                >
+                <span className="text-[13px] text-muted-foreground leading-relaxed">
                   Acepto los{" "}
                   <Link
                     href="/terms"
-                    style={{
-                      color: "var(--ps-cyan)",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                    }}
+                    className="text-primary no-underline font-medium"
                   >
                     Términos de Servicio
                   </Link>{" "}
                   y la{" "}
                   <Link
                     href="/privacy"
-                    style={{
-                      color: "var(--ps-cyan)",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                    }}
+                    className="text-primary no-underline font-medium"
                   >
                     Política de Privacidad
                   </Link>
@@ -470,27 +294,11 @@ export function RegisterPageContent() {
         />
       </form>
 
-      <p
-        style={{
-          textAlign: "center",
-          fontSize: 13,
-          color: "var(--ps-text-secondary)",
-          margin: 0,
-        }}
-      >
-        ¿Ya tenés cuenta?
-        <Link
-          href="/auth/login"
-          style={{
-            color: "var(--ps-cyan)",
-            textDecoration: "none",
-            fontWeight: 600,
-            marginLeft: 4,
-          }}
-        >
-          Iniciar sesión →
-        </Link>
-      </p>
+      <AuthFooterLink
+        text="¿Ya tenés cuenta?"
+        href="/auth/login"
+        linkText="Iniciar sesión →"
+      />
     </AuthShell>
   );
 }
