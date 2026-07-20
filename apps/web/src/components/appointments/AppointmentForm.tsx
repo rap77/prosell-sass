@@ -229,23 +229,11 @@ export function AppointmentForm({
   // Fecha mínima = hoy
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: 13,
-    fontWeight: 500,
-    color: "var(--ps-text-primary)",
-    marginBottom: 6,
-  };
-
   const errorStyle: React.CSSProperties = {
-    margin: "4px 0 0",
-    fontSize: 11,
     color: "var(--ps-error)",
   };
 
   const hintStyle: React.CSSProperties = {
-    margin: "4px 0 0",
-    fontSize: 11,
     color: "var(--ps-text-tertiary)",
   };
 
@@ -258,12 +246,10 @@ export function AppointmentForm({
       {/* Backdrop */}
       <div
         onClick={onClose}
+        className="fixed inset-0 bg-black/55 backdrop-blur-sm z-40"
         style={{
-          position: "fixed",
-          inset: 0,
           background: "rgba(0,0,0,0.55)",
           backdropFilter: "blur(4px)",
-          zIndex: 40,
         }}
       />
 
@@ -273,51 +259,32 @@ export function AppointmentForm({
         aria-modal="true"
         aria-label="Agendar turno"
         onClick={(e) => e.stopPropagation()}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm z-50 max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border"
         style={{
-          position: "fixed",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "100%",
-          maxWidth: 500,
           background: "var(--ps-bg-surface)",
-          border: "1px solid var(--ps-border-default)",
-          borderRadius: 14,
+          borderColor: "var(--ps-border-default)",
           boxShadow: "0 24px 48px rgba(6,13,36,0.4)",
-          zIndex: 50,
-          maxHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
         }}
       >
         {/* Header */}
         <div
+          className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "16px 24px",
-            borderBottom: "1px solid var(--ps-border-default)",
-            flexShrink: 0,
+            borderColor: "var(--ps-border-default)",
           }}
         >
           <div>
             <h2
+              className="m-0 text-base font-bold tracking-tight"
               style={{
-                margin: 0,
-                fontSize: 16,
-                fontWeight: 700,
                 color: "var(--ps-text-primary)",
-                letterSpacing: "-0.01em",
               }}
             >
               Agendar turno
             </h2>
             <p
+              className="mt-0.5 text-xs"
               style={{
-                margin: "2px 0 0",
-                fontSize: 12,
                 color: "var(--ps-text-secondary)",
               }}
             >
@@ -328,17 +295,9 @@ export function AppointmentForm({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-transparent hover:bg-opacity-10 transition-colors"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: "none",
-              background: "transparent",
               color: "var(--ps-text-secondary)",
-              cursor: "pointer",
             }}
           >
             <X size={18} strokeWidth={2} />
@@ -346,75 +305,56 @@ export function AppointmentForm({
         </div>
 
         {/* Content */}
-        <div style={{ overflowY: "auto", padding: "20px 24px", flex: 1 }}>
+        <div className="overflow-y-auto px-6 py-5 flex-1">
           {/* A4.33: Banner de error */}
           {submitError && (
             <div
               data-testid="appointment-error-banner"
+              className="flex items-start gap-3 p-3.5 rounded-md mb-4 border"
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 12,
-                padding: 14,
-                borderRadius: 10,
-                marginBottom: 16,
-                border: `1px solid ${submitError.type === "conflict" ? "var(--ps-error)" : "var(--ps-warning)"}`,
-                background:
-                  submitError.type === "conflict"
-                    ? "var(--ps-error-bg)"
-                    : "var(--ps-warning-bg)",
+                borderColor: submitError.type === "conflict" ? "var(--ps-error)" : "var(--ps-warning)",
+                background: submitError.type === "conflict" ? "var(--ps-error-bg)" : "var(--ps-warning-bg)",
               }}
             >
               {submitError.type === "conflict" ? (
                 <AlertCircle
                   size={16}
                   strokeWidth={2}
+                  className="flex-shrink-0 mt-px"
                   style={{
                     color: "var(--ps-error)",
-                    flexShrink: 0,
-                    marginTop: 1,
                   }}
                 />
               ) : (
                 <AlertTriangle
                   size={16}
                   strokeWidth={2}
+                  className="flex-shrink-0 mt-px"
                   style={{
                     color: "var(--ps-warning)",
-                    flexShrink: 0,
-                    marginTop: 1,
                   }}
                 />
               )}
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <p
+                  className="m-0 text-sm font-semibold"
                   style={{
-                    margin: 0,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color:
-                      submitError.type === "conflict"
-                        ? "var(--ps-error)"
-                        : "var(--ps-warning)",
+                    color: submitError.type === "conflict" ? "var(--ps-error)" : "var(--ps-warning)",
                   }}
                 >
-                  {submitError.type === "conflict"
-                    ? "Conflicto de horario"
-                    : "Error de validación"}
+                  {submitError.type === "conflict" ? "Conflicto de horario" : "Error de validación"}
                 </p>
                 <p
+                  className="mt-1 text-xs"
                   style={{
-                    margin: "4px 0 0",
-                    fontSize: 12,
                     color: "var(--ps-text-secondary)",
                   }}
                 >
                   {submitError.message}
                 </p>
                 <p
+                  className="mt-1 text-xs"
                   style={{
-                    margin: "4px 0 0",
-                    fontSize: 11,
                     color: "var(--ps-text-tertiary)",
                   }}
                 >
@@ -426,13 +366,10 @@ export function AppointmentForm({
               <button
                 type="button"
                 onClick={() => setSubmitError(null)}
+                className="bg-none border-none cursor-pointer text-lg leading-none"
                 style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
                   color: "var(--ps-text-secondary)",
-                  padding: 2,
-                  lineHeight: 1,
+                  padding: "2px",
                 }}
               >
                 ×
@@ -443,12 +380,15 @@ export function AppointmentForm({
           <form
             onSubmit={handleSubmit(onSubmit)}
             id="appointment-form"
-            style={{ display: "flex", flexDirection: "column", gap: 16 }}
+            className="flex flex-col gap-4"
           >
             {/* Sucursal */}
             <div>
-              <label htmlFor="user_id" style={labelStyle}>
-                Sucursal <span style={{ color: "var(--ps-error)" }}>*</span>
+              <label htmlFor="user_id" className="block text-xs font-medium mb-1.5">
+                <span style={{ color: "var(--ps-text-primary)" }}>
+                  Sucursal
+                </span>{" "}
+                <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <select
                 id="user_id"
@@ -471,8 +411,11 @@ export function AppointmentForm({
 
             {/* Fecha */}
             <div>
-              <label htmlFor="date" style={labelStyle}>
-                Fecha <span style={{ color: "var(--ps-error)" }}>*</span>
+              <label htmlFor="date" className="block text-xs font-medium mb-1.5">
+                <span style={{ color: "var(--ps-text-primary)" }}>
+                  Fecha
+                </span>{" "}
+                <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <input
                 id="date"
@@ -481,14 +424,19 @@ export function AppointmentForm({
                 {...register("date")}
                 className={`ps-apt-input${errors.date ? " ps-apt-input--error" : ""}`}
               />
-              <p style={hintStyle}>Sólo días hábiles: lunes a viernes</p>
-              {errors.date && <p style={errorStyle}>{errors.date.message}</p>}
+              <p className="mt-1 text-xs" style={hintStyle}>Sólo días hábiles: lunes a viernes</p>
+              {errors.date && (
+                <p className="mt-1 text-xs" style={errorStyle}>{errors.date.message}</p>
+              )}
             </div>
 
             {/* Horario */}
             <div>
-              <label htmlFor="time" style={labelStyle}>
-                Horario <span style={{ color: "var(--ps-error)" }}>*</span>
+              <label htmlFor="time" className="block text-xs font-medium mb-1.5">
+                <span style={{ color: "var(--ps-text-primary)" }}>
+                  Horario
+                </span>{" "}
+                <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <select
                 id="time"
@@ -503,13 +451,15 @@ export function AppointmentForm({
                   </option>
                 ))}
               </select>
-              <p style={hintStyle}>Horario de atención: 9:00 – 18:00</p>
-              {errors.time && <p style={errorStyle}>{errors.time.message}</p>}
+              <p className="mt-1 text-xs" style={hintStyle}>Horario de atención: 9:00 – 18:00</p>
+              {errors.time && (
+                <p className="mt-1 text-xs" style={errorStyle}>{errors.time.message}</p>
+              )}
             </div>
 
             {/* Notas */}
             <div>
-              <label htmlFor="notes" style={labelStyle}>
+              <label htmlFor="notes" className="block text-xs font-medium mb-1.5" style={{ color: "var(--ps-text-primary)" }}>
                 Notas
               </label>
               <textarea
@@ -525,30 +475,20 @@ export function AppointmentForm({
 
         {/* Footer */}
         <div
+          className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t flex-shrink-0"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: 10,
-            padding: "14px 24px",
-            borderTop: "1px solid var(--ps-border-default)",
-            flexShrink: 0,
+            borderColor: "var(--ps-border-default)",
           }}
         >
           <button
             type="button"
             onClick={onClose}
             disabled={isCreating}
+            className="h-9 px-4 rounded text-xs font-medium cursor-pointer transition-opacity border"
             style={{
-              height: 38,
-              padding: "0 16px",
-              borderRadius: 8,
               background: "var(--ps-bg-elevated)",
-              border: "1px solid var(--ps-border-default)",
+              borderColor: "var(--ps-border-default)",
               color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
               opacity: isCreating ? 0.5 : 1,
             }}
           >
@@ -558,19 +498,10 @@ export function AppointmentForm({
             type="submit"
             form="appointment-form"
             disabled={isCreating}
+            className="inline-flex items-center gap-2 h-9 px-4.5 rounded text-xs font-bold cursor-pointer transition-opacity border-none"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              height: 38,
-              padding: "0 18px",
-              borderRadius: 8,
               background: "var(--ps-cyan)",
-              border: "none",
               color: "var(--ps-bg-base)",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
               opacity: isCreating ? 0.7 : 1,
             }}
           >
