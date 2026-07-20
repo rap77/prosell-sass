@@ -79,32 +79,17 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 12,
-          padding: 48,
-          textAlign: "center",
-        }}
-      >
-        <p style={{ margin: 0, fontSize: 14, color: "var(--ps-error)" }}>
+      <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
+        <p className="m-0 text-sm" style={{ color: "var(--ps-error)" }}>
           Error al cargar leads: {error.message}
         </p>
         <button
           type="button"
           onClick={() => refetch()}
+          className="h-9 px-4 text-sm font-semibold text-white rounded-lg cursor-pointer"
           style={{
-            height: 36,
-            padding: "0 16px",
             background: "var(--ps-cyan)",
             color: "var(--ps-bg-base)",
-            border: 0,
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
           }}
         >
           Reintentar
@@ -114,28 +99,14 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="flex items-center gap-2.5 flex-wrap">
         {/* Search */}
-        <div style={{ position: "relative", flex: "1 1 220px", maxWidth: 340 }}>
+        <div className="relative flex-1 max-w-xs" style={{ minWidth: "220px" }}>
           <span
-            style={{
-              position: "absolute",
-              left: 11,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "var(--ps-text-tertiary)",
-              pointerEvents: "none",
-              display: "inline-flex",
-            }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none inline-flex"
+            style={{ color: "var(--ps-text-tertiary)" }}
           >
             <Search size={14} strokeWidth={2} />
           </span>
@@ -147,18 +118,11 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
               setSearchQuery(e.target.value);
               setPage(0);
             }}
+            className="w-full h-9 pl-8 pr-3 text-sm rounded-lg outline-none"
             style={{
-              width: "100%",
-              height: 36,
-              paddingLeft: 32,
-              paddingRight: 12,
               background: "var(--ps-input-bg)",
               border: "1px solid var(--ps-input-border)",
-              borderRadius: 8,
               color: "var(--ps-text-primary)",
-              fontSize: 13,
-              outline: "none",
-              boxSizing: "border-box",
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = "var(--ps-cyan)";
@@ -173,7 +137,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         </div>
 
         {/* Status pills */}
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <div className="flex gap-1 flex-wrap">
           {STATUS_FILTERS.map(({ value, label }) => {
             const active = statusFilter === value;
             return (
@@ -184,19 +148,16 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
                   setStatusFilter(value);
                   setPage(0);
                 }}
+                className={`h-[30px] px-3 text-xs rounded-full whitespace-nowrap transition-all duration-150 ${
+                  active
+                    ? "font-semibold"
+                    : "font-normal"
+                }`}
                 style={{
-                  height: 30,
-                  padding: "0 12px",
                   background: active ? "var(--ps-badge-bg)" : "transparent",
                   border: `1px solid ${active ? "var(--ps-border-active)" : "var(--ps-input-border)"}`,
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: active ? 600 : 400,
                   color: active ? "var(--ps-cyan)" : "var(--ps-text-secondary)",
                   cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  transition:
-                    "border-color 150ms, color 150ms, background 150ms",
                 }}
               >
                 {label}
@@ -210,18 +171,10 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
           type="button"
           onClick={handleRefresh}
           data-testid="refresh-button"
+          className="w-9 h-9 inline-flex items-center justify-center bg-transparent rounded-lg cursor-pointer transition-all duration-150"
           style={{
-            width: 36,
-            height: 36,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "transparent",
             border: "1px solid var(--ps-input-border)",
-            borderRadius: 8,
             color: "var(--ps-text-secondary)",
-            cursor: "pointer",
-            transition: "border-color 150ms, color 150ms",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = "var(--ps-border-strong)";
@@ -249,20 +202,17 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
       {/* ── Table ───────────────────────────────────────────────────────── */}
       <div
         data-testid="lead-list"
+        className="rounded-xl overflow-hidden"
         style={{
           background: "var(--ps-bg-surface)",
           border: "1px solid var(--ps-border-default)",
-          borderRadius: 12,
-          overflow: "hidden",
         }}
       >
         {/* Column headers */}
         <div
+          className="grid gap-4 p-5"
           style={{
-            display: "grid",
             gridTemplateColumns: "36px 180px 170px 1fr auto auto",
-            gap: 16,
-            padding: "10px 20px",
             background: "var(--ps-bg-elevated)",
             borderBottom: "1px solid var(--ps-border-subtle)",
           }}
@@ -271,11 +221,8 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
           {COL_HEADERS.map((h) => (
             <span
               key={h}
+              className="text-xs font-semibold uppercase tracking-wide"
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
                 color: "var(--ps-text-tertiary)",
               }}
             >
@@ -287,11 +234,9 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         {/* Loading */}
         {isLoading && leads.length === 0 && (
           <div
+            className="p-10 text-center text-sm"
             style={{
-              padding: 40,
-              textAlign: "center",
               color: "var(--ps-text-secondary)",
-              fontSize: 13,
             }}
           >
             Cargando leads...
@@ -300,26 +245,12 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
 
         {/* Empty */}
         {!isLoading && leads.length === 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 10,
-              padding: 48,
-              textAlign: "center",
-            }}
-          >
+          <div className="flex flex-col items-center justify-center gap-2.5 p-12 text-center">
             <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
                 background: "var(--ps-bg-elevated)",
                 border: "1px solid var(--ps-border-default)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
               }}
             >
               <Users
@@ -329,9 +260,8 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
               />
             </div>
             <p
+              className="m-0 text-sm"
               style={{
-                margin: 0,
-                fontSize: 14,
                 color: "var(--ps-text-secondary)",
               }}
             >
@@ -347,7 +277,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
           <div
             key={lead.id}
             onClick={() => onLeadClick?.(lead.id)}
-            style={{ cursor: onLeadClick ? "pointer" : "default" }}
+            style={{ cursor: onLeadClick ? "pointer" : "default" } as React.CSSProperties}
           >
             <LeadListItem
               lead={lead}
@@ -361,26 +291,14 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
       </div>
 
       {/* ── Pagination ──────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
+      <div className="flex justify-center items-center gap-2">
         <button
           type="button"
           onClick={() => setPage((p) => Math.max(0, p - 1))}
           disabled={page === 0 || isLoading}
+          className="h-8 px-3.5 text-sm font-medium rounded-lg bg-transparent"
           style={{
-            height: 32,
-            padding: "0 14px",
-            background: "transparent",
             border: "1px solid var(--ps-input-border)",
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
             color:
               page === 0
                 ? "var(--ps-text-disabled)"
@@ -392,10 +310,9 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         </button>
 
         <span
+          className="text-xs px-2"
           style={{
-            fontSize: 12,
             color: "var(--ps-text-secondary)",
-            padding: "0 8px",
           }}
         >
           Página {page + 1}
@@ -405,14 +322,9 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
           type="button"
           onClick={() => setPage((p) => p + 1)}
           disabled={leads.length < limit || isLoading}
+          className="h-8 px-3.5 text-sm font-medium rounded-lg bg-transparent"
           style={{
-            height: 32,
-            padding: "0 14px",
-            background: "transparent",
             border: "1px solid var(--ps-input-border)",
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
             color:
               leads.length < limit
                 ? "var(--ps-text-disabled)"
