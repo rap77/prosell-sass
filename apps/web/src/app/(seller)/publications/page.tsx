@@ -11,6 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 import {
   Plus,
   Rocket,
@@ -203,27 +204,9 @@ function formatDate(v: string): string {
 
 function FbBadge() {
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        fontSize: 12,
-        color: "var(--ps-text-secondary)",
-      }}
-    >
-      <span
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          background: "#1877F2",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Facebook size={10} strokeWidth={2.5} style={{ color: "#fff" }} />
+    <span className="inline-flex items-center gap-1.25 text-xs text-ps-text-secondary">
+      <span className="flex h-4 w-4 items-center justify-center rounded bg-[#1877F2]">
+        <Facebook size={10} strokeWidth={2.5} className="text-white" />
       </span>
       Facebook Marketplace
     </span>
@@ -243,11 +226,11 @@ function PulseBox({
 }) {
   return (
     <div
+      className="bg-ps-elevated"
       style={{
         width: w,
         height: h,
         borderRadius: radius,
-        background: "var(--ps-bg-elevated)",
         animation: "psSkel 1.4s ease-in-out infinite",
       }}
     />
@@ -256,16 +239,10 @@ function PulseBox({
 
 function PublicationsPageSkeleton() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="flex flex-col gap-6">
       <style>{`@keyframes psSkel { 0%,100%{opacity:1} 50%{opacity:.45} }`}</style>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2">
           <PulseBox w={180} h={28} />
           <PulseBox w={300} h={16} />
         </div>
@@ -286,106 +263,41 @@ function EmptyState({
   onOpenModal: () => void;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 16,
-        padding: "56px 24px",
-        textAlign: "center",
-        background: "var(--ps-bg-surface)",
-        border: "1px dashed var(--ps-border-medium)",
-        borderRadius: 16,
-      }}
-    >
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: "50%",
-          background: "var(--ps-info-bg)",
-          border: "1px solid rgba(77,184,255,0.25)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-ps-border-medium bg-ps-surface px-6 py-14 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[rgba(77,184,255,0.25)] bg-ps-info-bg">
         <Rocket
           size={28}
-          style={{ color: "var(--ps-cyan)" }}
+          className="text-ps-cyan"
           strokeWidth={1.8}
         />
       </div>
-      <div style={{ maxWidth: 400 }}>
-        <h2
-          style={{
-            margin: "0 0 8px",
-            fontSize: 20,
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            color: "var(--ps-text-primary)",
-          }}
-        >
+      <div className="max-w-sm">
+        <h2 className="mb-2 text-xl font-bold leading-tight tracking-tighter text-ps-text-primary">
           Todavía no tenés publicaciones
         </h2>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 14,
-            color: "var(--ps-text-secondary)",
-            lineHeight: 1.6,
-          }}
-        >
+        <p className="m-0 text-sm leading-relaxed text-ps-text-secondary">
           Cuando publiques un vehículo en Facebook Marketplace aparecerá aquí
           con su estado más reciente.
         </p>
       </div>
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
+      <div className="flex flex-wrap justify-center gap-2.5">
         <button
           type="button"
           disabled={!canPublish}
           onClick={onOpenModal}
-          style={{
-            height: 38,
-            padding: "0 18px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            background: canPublish ? "var(--ps-cyan)" : "rgba(77,184,255,0.35)",
-            color: "var(--ps-bg-base)",
-            border: 0,
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: canPublish ? "pointer" : "not-allowed",
-          }}
+          className={cn(
+            "inline-flex h-9.5 items-center gap-1.5 rounded-lg border-0 px-4.5 text-xs font-semibold",
+            canPublish
+              ? "cursor-pointer bg-ps-cyan text-ps-base"
+              : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base"
+          )}
         >
           <Plus size={14} strokeWidth={2.5} />
           Nueva publicación
         </button>
         <Link
           href="/catalog"
-          style={{
-            height: 38,
-            padding: "0 18px",
-            display: "inline-flex",
-            alignItems: "center",
-            background: "transparent",
-            border: "1px solid var(--ps-input-border)",
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
-            color: "var(--ps-text-secondary)",
-            textDecoration: "none",
-          }}
+          className="inline-flex h-9.5 items-center rounded-lg border border-ps-input-border bg-transparent px-4.5 text-xs font-medium text-ps-text-secondary no-underline"
         >
           Ir al catálogo
         </Link>
@@ -408,84 +320,50 @@ function PublicationCard({
     <article
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="flex flex-col overflow-hidden rounded-xl border border-ps-border-default bg-ps-surface transition-all duration-180"
       style={{
-        background: "var(--ps-bg-surface)",
-        border: `1px solid ${hovered ? "var(--ps-border-medium)" : "var(--ps-border-default)"}`,
-        borderRadius: 12,
-        overflow: "hidden",
-        transition: "border-color 180ms, box-shadow 180ms",
+        borderColor: hovered ? "var(--ps-border-medium)" : "var(--ps-border-default)",
         boxShadow: hovered ? "0 4px 20px rgba(6,13,36,0.35)" : "none",
-        display: "flex",
-        flexDirection: "column",
       }}
     >
       {/* Image */}
-      <div
-        style={{
-          position: "relative",
-          aspectRatio: "16/9",
-          background: "var(--ps-bg-elevated)",
-        }}
-      >
+      <div className="relative bg-ps-bg-elevated" style={{ aspectRatio: "16/9" }}>
         {image ? (
           <Image
             src={image}
             alt={pub.title}
             fill
-            style={{ objectFit: "cover" }}
+            className="object-cover"
             unoptimized
           />
         ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <div className="flex h-full w-full items-center justify-center">
             <Rocket
               size={28}
-              style={{ color: "var(--ps-text-tertiary)" }}
+              className="text-ps-text-tertiary"
               strokeWidth={1.5}
             />
           </div>
         )}
-        <div style={{ position: "absolute", top: 10, left: 10 }}>
+        <div className="absolute left-2.5 top-2.5">
           <PublicationStatus status={pub.status} />
         </div>
       </div>
 
       {/* Content */}
-      <div
-        style={{
-          padding: "14px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          flex: 1,
-        }}
-      >
+      <div className="flex flex-1 flex-col gap-2 p-3.5">
         <p
+          className="m-0 overflow-hidden text-sm font-semibold leading-tight text-ps-text-primary"
           style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-            lineHeight: 1.3,
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
-            overflow: "hidden",
           }}
         >
           {pub.title}
         </p>
         <FbBadge />
-        <p
-          style={{ margin: 0, fontSize: 11, color: "var(--ps-text-tertiary)" }}
-        >
+        <p className="m-0 text-xs text-ps-text-tertiary">
           {formatDate(pub.updatedAt)}
         </p>
       </div>
@@ -552,109 +430,33 @@ export default function PublicationsPage() {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "60vh",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 480,
-            width: "100%",
-            padding: 40,
-            textAlign: "center",
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 16,
-          }}
-        >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              background: "var(--ps-error-bg)",
-              border: "1px solid rgba(240,68,56,0.25)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
-            }}
-          >
+      <div className="flex min-h-60vh items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-ps-border-default bg-ps-surface p-10 text-center">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(240,68,56,0.25)] bg-ps-error-bg">
             <AlertCircle
               size={26}
-              style={{ color: "var(--ps-error)" }}
+              className="text-ps-error"
               strokeWidth={1.8}
             />
           </div>
-          <h1
-            style={{
-              margin: "0 0 10px",
-              fontSize: 20,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h1 className="mb-2.5 text-xl font-bold leading-tight tracking-tighter text-ps-text-primary">
             No pudimos cargar las publicaciones
           </h1>
-          <p
-            style={{
-              margin: "0 0 24px",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-              lineHeight: 1.6,
-            }}
-          >
+          <p className="mb-6 text-sm leading-relaxed text-ps-text-secondary">
             {error.message}
           </p>
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              justifyContent: "center",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="flex flex-wrap justify-center gap-2.5">
             <button
               type="button"
               onClick={() => refetch()}
-              style={{
-                height: 38,
-                padding: "0 16px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: "transparent",
-                border: "1px solid var(--ps-input-border)",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--ps-text-secondary)",
-                cursor: "pointer",
-              }}
+              className="inline-flex h-9.5 items-center gap-1.5 rounded-lg border border-ps-input-border bg-transparent px-4 text-xs font-medium text-ps-text-secondary"
             >
               <RefreshCcw size={14} strokeWidth={2} />
               Reintentar
             </button>
             <Link
               href="/catalog"
-              style={{
-                height: 38,
-                padding: "0 16px",
-                display: "inline-flex",
-                alignItems: "center",
-                background: "var(--ps-cyan)",
-                color: "var(--ps-bg-base)",
-                border: 0,
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
+              className="inline-flex h-9.5 items-center rounded-lg border-0 bg-ps-cyan px-4 text-xs font-semibold text-ps-base no-underline"
             >
               Volver al catálogo
             </Link>
@@ -667,63 +469,23 @@ export default function PublicationsPage() {
   // ── Main ───────────────────────────────────────────────────────────────────
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
+      <div className="mx-auto flex max-w-5xl flex-col gap-6">
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 16,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "var(--ps-text-primary)",
-                lineHeight: 1.2,
-              }}
-            >
+            <h1 className="m-0 text-2xl font-bold leading-tight tracking-tighter text-ps-text-primary">
               Publicaciones
             </h1>
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: 13,
-                color: "var(--ps-text-secondary)",
-              }}
-            >
+            <p className="mt-1 text-sm text-ps-text-secondary">
               Administrá tus publicaciones de Facebook Marketplace y lanzá
               nuevas desde el catálogo.
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="flex items-center gap-2.5">
             {/* View mode toggle */}
             {publicationRows.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 2,
-                  background: "var(--ps-bg-elevated)",
-                  border: "1px solid var(--ps-border-default)",
-                  borderRadius: 8,
-                  padding: 3,
-                }}
-              >
+              <div className="flex gap-0.5 rounded-lg border border-ps-border-default bg-ps-bg-elevated p-0.75">
                 {VIEW_TABS.map(({ id, label, icon: Icon }) => {
                   const active = viewMode === id;
                   return (
@@ -731,27 +493,14 @@ export default function PublicationsPage() {
                       key={id}
                       type="button"
                       onClick={() => setViewMode(id)}
+                      className={cn(
+                        "inline-flex h-7 items-center gap-1.25 rounded px-2.5 text-xs transition-all duration-150",
+                        active
+                          ? "bg-ps-surface font-semibold text-ps-cyan shadow-sm"
+                          : "font-normal text-ps-text-secondary"
+                      )}
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 5,
-                        height: 28,
-                        padding: "0 10px",
-                        background: active
-                          ? "var(--ps-bg-surface)"
-                          : "transparent",
-                        border: 0,
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: active ? 600 : 400,
-                        color: active
-                          ? "var(--ps-cyan)"
-                          : "var(--ps-text-secondary)",
-                        cursor: "pointer",
-                        boxShadow: active
-                          ? "0 1px 4px rgba(6,13,36,0.3)"
-                          : "none",
-                        transition: "all 150ms",
+                        boxShadow: active ? "0 1px 4px rgba(6,13,36,0.3)" : "none",
                       }}
                     >
                       <Icon size={13} strokeWidth={active ? 2.5 : 2} />
@@ -766,23 +515,12 @@ export default function PublicationsPage() {
               type="button"
               disabled={!canCreatePublication}
               onClick={() => setIsPublishModalOpen(true)}
-              style={{
-                height: 36,
-                padding: "0 14px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: canCreatePublication
-                  ? "var(--ps-cyan)"
-                  : "rgba(77,184,255,0.35)",
-                color: "var(--ps-bg-base)",
-                border: 0,
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: canCreatePublication ? "pointer" : "not-allowed",
-                whiteSpace: "nowrap",
-              }}
+              className={cn(
+                "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border-0 px-3.5 text-xs font-semibold",
+                canCreatePublication
+                  ? "cursor-pointer bg-ps-cyan text-ps-base"
+                  : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base"
+              )}
             >
               <Plus size={14} strokeWidth={2.5} />
               Nueva publicación
@@ -792,34 +530,13 @@ export default function PublicationsPage() {
 
         {/* Facebook pages warning */}
         {facebookPages && facebookPages.length === 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              padding: "12px 16px",
-              borderRadius: 10,
-              background: "var(--ps-warning-bg)",
-              border: "1px solid rgba(245,166,35,0.25)",
-            }}
-          >
+          <div className="flex gap-2.5 rounded-xl border border-[rgba(245,166,35,0.25)] bg-ps-warning-bg p-3">
             <AlertTriangle
               size={15}
-              style={{
-                color: "var(--ps-warning)",
-                flexShrink: 0,
-                marginTop: 1,
-              }}
+              className="mt-0.25 flex-shrink-0 text-ps-warning"
               strokeWidth={2}
             />
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                color: "var(--ps-warning)",
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="m-0 text-sm leading-relaxed text-ps-warning">
               No hay páginas de Facebook conectadas. Podés abrir el modal, pero
               necesitás conectar una página antes de publicar.
             </p>
@@ -834,22 +551,10 @@ export default function PublicationsPage() {
           />
         ) : viewMode === "lista" ? (
           /* ── TABLE VIEW ────────────────────────────────────────────────── */
-          <div
-            style={{
-              background: "var(--ps-bg-surface)",
-              border: "1px solid var(--ps-border-default)",
-              borderRadius: 12,
-              overflow: "hidden",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="overflow-hidden rounded-2xl border border-ps-border-default bg-ps-surface">
+            <table className="w-full border-collapse">
               <thead>
-                <tr
-                  style={{
-                    background: "var(--ps-bg-elevated)",
-                    borderBottom: "1px solid var(--ps-border-subtle)",
-                  }}
-                >
+                <tr className="border-b border-ps-border-subtle bg-ps-bg-elevated">
                   {[
                     "Vehículo",
                     "Plataforma",
@@ -858,16 +563,8 @@ export default function PublicationsPage() {
                   ].map((h) => (
                     <th
                       key={h}
-                      style={{
-                        padding: "10px 20px",
-                        textAlign: "left",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "var(--ps-text-tertiary)",
-                        whiteSpace: "nowrap",
-                      }}
+                      className="p-5 text-left text-xs font-semibold uppercase tracking-wide text-ps-text-tertiary"
+                      style={{ whiteSpace: "nowrap" }}
                     >
                       {h}
                     </th>
@@ -878,10 +575,7 @@ export default function PublicationsPage() {
                 {publicationRows.map((pub) => (
                   <tr
                     key={pub.id}
-                    style={{
-                      borderBottom: "1px solid var(--ps-table-divider)",
-                      transition: "background 150ms",
-                    }}
+                    className="border-b border-ps-table-divider transition-colors duration-150"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.background =
                         "var(--ps-table-row-hover)")
@@ -891,45 +585,24 @@ export default function PublicationsPage() {
                     }
                   >
                     {/* Vehicle */}
-                    <td style={{ padding: "14px 20px", verticalAlign: "top" }}>
-                      <p
-                        style={{
-                          margin: "0 0 3px",
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: "var(--ps-text-primary)",
-                        }}
-                      >
+                    <td className="p-5 align-top">
+                      <p className="mb-0.75 text-sm font-semibold text-ps-text-primary">
                         {pub.title}
                       </p>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 11,
-                          color: "var(--ps-text-tertiary)",
-                          fontFamily: "monospace",
-                        }}
-                      >
+                      <p className="m-0 font-mono text-xs text-ps-text-tertiary">
                         {pub.productId}
                       </p>
                     </td>
                     {/* Platform */}
-                    <td style={{ padding: "14px 20px" }}>
+                    <td className="p-5">
                       <FbBadge />
                     </td>
                     {/* Status */}
-                    <td style={{ padding: "14px 20px" }}>
+                    <td className="p-5">
                       <PublicationStatus status={pub.status} />
                     </td>
                     {/* Updated */}
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        fontSize: 13,
-                        color: "var(--ps-text-secondary)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <td className="p-5 text-xs text-ps-text-secondary" style={{ whiteSpace: "nowrap" }}>
                       {formatDate(pub.updatedAt)}
                     </td>
                   </tr>
@@ -939,13 +612,7 @@ export default function PublicationsPage() {
           </div>
         ) : (
           /* ── GRID VIEW ─────────────────────────────────────────────────── */
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: 16,
-            }}
-          >
+          <div className="grid gap-4 auto-fill" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
             {publicationRows.map((pub) => (
               <PublicationCard key={pub.id} pub={pub} />
             ))}
