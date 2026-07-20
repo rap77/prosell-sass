@@ -128,7 +128,9 @@ const formSchema = z.object({
   slug: z
     .string()
     .min(1, { message: "Slug requerido" })
-    .regex(/^[a-z0-9-]+$/, { message: "Solo letras minúsculas, números y guiones" }),
+    .regex(/^[a-z0-9-]+$/, {
+      message: "Solo letras minúsculas, números y guiones",
+    }),
   icon: z.string().nullable(),
   description: z.string().nullable(),
   parent_id: z.string().nullable(),

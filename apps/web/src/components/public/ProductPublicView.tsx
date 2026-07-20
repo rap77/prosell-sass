@@ -114,7 +114,10 @@ ${shareUrl}`.trim();
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28">
       {/* Image Gallery */}
-      <div className="relative mt-6 w-full overflow-hidden rounded-2xl bg-ps-bg-muted" style={{ aspectRatio: "16/10" }}>
+      <div
+        className="relative mt-6 w-full overflow-hidden rounded-2xl bg-ps-bg-muted"
+        style={{ aspectRatio: "16/10" }}
+      >
         {images.length > 0 ? (
           <>
             <Image
@@ -135,7 +138,9 @@ ${shareUrl}`.trim();
                   aria-label="Imagen anterior"
                   className={cn(
                     "absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-none bg-black/50 text-white",
-                    hasPrevious ? "cursor-pointer opacity-100" : "cursor-default opacity-30"
+                    hasPrevious
+                      ? "cursor-pointer opacity-100"
+                      : "cursor-default opacity-30",
                   )}
                 >
                   <ChevronLeft size={24} />
@@ -146,7 +151,9 @@ ${shareUrl}`.trim();
                   aria-label="Siguiente imagen"
                   className={cn(
                     "absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-none bg-black/50 text-white",
-                    hasNext ? "cursor-pointer opacity-100" : "cursor-default opacity-30"
+                    hasNext
+                      ? "cursor-pointer opacity-100"
+                      : "cursor-default opacity-30",
                   )}
                 >
                   <ChevronRight size={24} />
@@ -178,7 +185,7 @@ ${shareUrl}`.trim();
                 "shrink-0 overflow-hidden rounded border-2 bg-ps-bg-muted p-0 cursor-pointer",
                 idx === currentImageIndex
                   ? "border-ps-accent"
-                  : "border-transparent"
+                  : "border-transparent",
               )}
               style={{ width: 64, height: 48 }}
             >
@@ -200,9 +207,7 @@ ${shareUrl}`.trim();
         <h1 className="m-0 text-2xl font-bold leading-tight text-ps-text-primary">
           {vehicleName}
         </h1>
-        <p className="mt-2 text-3xl font-bold text-ps-accent">
-          {price}
-        </p>
+        <p className="mt-2 text-3xl font-bold text-ps-accent">{price}</p>
       </div>
 
       {/* Location */}

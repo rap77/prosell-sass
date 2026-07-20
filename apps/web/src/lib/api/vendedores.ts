@@ -53,7 +53,9 @@ export function useVendedores(
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to fetch vendedores"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch vendedores"),
+        );
       }
 
       const data = BackendVendedorListResponseSchema.parse(await res.json());

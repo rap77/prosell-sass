@@ -28,11 +28,15 @@ import { cn } from "@/lib/utils";
 
 const securitySchema = z
   .object({
-    currentPassword: z.string().min(1, { message: "La contraseña actual es requerida" }),
-    newPassword: z
+    currentPassword: z
       .string()
-      .min(8, { message: "La nueva contraseña debe tener al menos 8 caracteres" }),
-    confirmPassword: z.string().min(1, { message: "Confirmá tu nueva contraseña" }),
+      .min(1, { message: "La contraseña actual es requerida" }),
+    newPassword: z.string().min(8, {
+      message: "La nueva contraseña debe tener al menos 8 caracteres",
+    }),
+    confirmPassword: z
+      .string()
+      .min(1, { message: "Confirmá tu nueva contraseña" }),
   })
   .superRefine((value, ctx) => {
     if (value.newPassword !== value.confirmPassword) {
@@ -322,7 +326,7 @@ export default function SettingsSecurityPage() {
                 "w-[38px] h-[38px] rounded-[10px] flex items-center justify-center shrink-0 border",
                 is2FAEnabled
                   ? "bg-ps-success-bg border-ps-success/25"
-                  : "bg-card border-border"
+                  : "bg-card border-border",
               )}
             >
               {is2FAEnabled ? (

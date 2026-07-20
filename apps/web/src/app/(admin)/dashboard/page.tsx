@@ -177,9 +177,7 @@ function CardHead({
 
 // ─── Recent leads body ────────────────────────────────────────────────────────
 
-type RecentLead = NonNullable<
-  ReturnType<typeof useLeads>["data"]
->[number];
+type RecentLead = NonNullable<ReturnType<typeof useLeads>["data"]>[number];
 
 function RecentLeadsList({
   leads,
@@ -493,9 +491,7 @@ export default function DashboardPage() {
                           width: `${pct}%`,
                           background: stage.fill,
                           boxShadow:
-                            "glow" in stage
-                              ? `0 0 10px ${stage.glow}`
-                              : "none",
+                            "glow" in stage ? `0 0 10px ${stage.glow}` : "none",
                         }}
                       />
                     </div>

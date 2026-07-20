@@ -22,9 +22,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         background: "var(--ps-bg-base)",
       }}
     >
-      <main
-        className="w-full max-w-[400px] flex flex-col gap-7"
-      >
+      <main className="w-full max-w-[400px] flex flex-col gap-7">
         {/* Brand */}
         <Link
           href="/"
@@ -49,9 +47,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </Link>
 
         {/* Icon + copy */}
-        <div
-          className="flex flex-col items-center gap-3.5"
-        >
+        <div className="flex flex-col items-center gap-3.5">
           <div
             className="w-[52px] h-[52px] rounded-[14px] border flex items-center justify-center"
             style={{

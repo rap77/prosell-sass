@@ -40,9 +40,7 @@ export function HeroShotSelector({
 
   if (images.length === 0) {
     return (
-      <p className="text-xs italic text-secondary">
-        No hay fotos disponibles.
-      </p>
+      <p className="text-xs italic text-secondary">No hay fotos disponibles.</p>
     );
   }
 

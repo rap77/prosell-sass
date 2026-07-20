@@ -95,9 +95,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
       }}
     >
       {/* Column header */}
-      <div
-        className="flex flex-col px-[14px] pt-[14px] pb-[10px] gap-1"
-      >
+      <div className="flex flex-col px-[14px] pt-[14px] pb-[10px] gap-1">
         <div className="flex items-center gap-2">
           {/* Status dot */}
           <span
@@ -108,9 +106,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
             }}
           />
           {/* Label */}
-          <span
-            className="flex-1 text-xs font-semibold text-[var(--ps-text-primary)]"
-          >
+          <span className="flex-1 text-xs font-semibold text-[var(--ps-text-primary)]">
             {COLUMN_LABELS[status] ?? status}
           </span>
           {/* Count badge */}
@@ -126,9 +122,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
 
         {/* Price totals */}
         {hasPrices && (
-          <div
-            className="flex flex-wrap gap-x-2 pl-4"
-          >
+          <div className="flex flex-wrap gap-x-2 pl-4">
             {Object.entries(totalsByCurrency).map(([currency, cents]) => (
               <span
                 key={currency}
@@ -159,9 +153,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
         ))}
 
         {leads.length === 0 && (
-          <div
-            className="flex-1 flex items-center justify-center text-xs text-[var(--ps-text-tertiary)] border border-dashed border-[var(--ps-border-subtle)] rounded-lg min-h-20 my-1"
-          >
+          <div className="flex-1 flex items-center justify-center text-xs text-[var(--ps-text-tertiary)] border border-dashed border-[var(--ps-border-subtle)] rounded-lg min-h-20 my-1">
             Arrastrá un lead aquí
           </div>
         )}

@@ -105,11 +105,7 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-4 h-full p-12 text-center">
       <div className="w-16 h-16 rounded-full bg-ps-elevated border border-ps-border-default flex items-center justify-center">
-        <Package
-          size={28}
-          className="text-ps-tertiary"
-          strokeWidth={1.5}
-        />
+        <Package size={28} className="text-ps-tertiary" strokeWidth={1.5} />
       </div>
       <div className="max-w-[320px]">
         <p className="m-0 mb-[6px] text-base font-semibold text-ps-text-primary">

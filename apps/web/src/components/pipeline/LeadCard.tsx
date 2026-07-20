@@ -112,14 +112,8 @@ export function LeadCard({ lead }: LeadCardProps) {
       {/* Footer: time in stage + vendedor avatar + mark-lost button */}
       <div className="mt-2.5 flex items-center justify-between gap-1.5">
         <div className="flex items-center gap-1">
-          <Clock
-            size={10}
-            strokeWidth={2}
-            className="text-ps-tertiary"
-          />
-          <span className="text-[10px] text-ps-tertiary">
-            {timeInStage}
-          </span>
+          <Clock size={10} strokeWidth={2} className="text-ps-tertiary" />
+          <span className="text-[10px] text-ps-tertiary">{timeInStage}</span>
         </div>
 
         <div className="flex items-center gap-1">

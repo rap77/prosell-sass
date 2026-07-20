@@ -166,15 +166,10 @@ export default function AdminNewDealerPage() {
         Nueva organización
       </h1>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4 max-w-md"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
         {/* Verticals — fundamental info first */}
         <fieldset className="flex flex-col gap-2 border-none p-0">
-          <legend className="text-xs mb-1.5">
-            Verticals *
-          </legend>
+          <legend className="text-xs mb-1.5">Verticals *</legend>
           {categoriesLoading && <p>Cargando verticals…</p>}
           {!categoriesLoading && verticals.length === 0 && (
             <p className="text-ps-text-secondary">

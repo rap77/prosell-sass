@@ -466,7 +466,11 @@ function ConfirmStep({
             Volver
           </button>
           {onCancel && (
-            <button type="button" onClick={onCancel} className={secondaryBtnClass}>
+            <button
+              type="button"
+              onClick={onCancel}
+              className={secondaryBtnClass}
+            >
               Cancelar
             </button>
           )}

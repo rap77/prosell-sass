@@ -34,10 +34,14 @@ const UPDATE_PROFILE_INPUT_SCHEMA = z.object({
 
 const CHANGE_PASSWORD_INPUT_SCHEMA = z
   .object({
-    currentPassword: z.string().min(1, { message: "La contraseña actual es requerida" }),
+    currentPassword: z
+      .string()
+      .min(1, { message: "La contraseña actual es requerida" }),
     newPassword: z
       .string()
-      .min(8, { message: "La nueva contraseña debe tener al menos 8 caracteres" }),
+      .min(8, {
+        message: "La nueva contraseña debe tener al menos 8 caracteres",
+      }),
   })
   .superRefine((value, context) => {
     if (value.currentPassword === value.newPassword) {
@@ -243,7 +247,11 @@ export function useChangePassword() {
           .json()
           .catch(() => ({ message: "No se pudo actualizar la contraseña" }));
 
-        throw new Error(mapSecurityErrorMessage(extractErrorMessage(payload, "Error en la petición")));
+        throw new Error(
+          mapSecurityErrorMessage(
+            extractErrorMessage(payload, "Error en la petición"),
+          ),
+        );
       }
     },
   });
@@ -270,7 +278,11 @@ export function useDisableTwoFactor() {
           .json()
           .catch(() => ({ message: "No se pudo deshabilitar 2FA" }));
 
-        throw new Error(mapSecurityErrorMessage(extractErrorMessage(payload, "Error en la petición")));
+        throw new Error(
+          mapSecurityErrorMessage(
+            extractErrorMessage(payload, "Error en la petición"),
+          ),
+        );
       }
     },
   });

@@ -149,9 +149,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
                   setPage(0);
                 }}
                 className={`h-[30px] px-3 text-xs rounded-full whitespace-nowrap transition-all duration-150 ${
-                  active
-                    ? "font-semibold"
-                    : "font-normal"
+                  active ? "font-semibold" : "font-normal"
                 }`}
                 style={{
                   background: active ? "var(--ps-badge-bg)" : "transparent",
@@ -277,7 +275,11 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
           <div
             key={lead.id}
             onClick={() => onLeadClick?.(lead.id)}
-            style={{ cursor: onLeadClick ? "pointer" : "default" } as React.CSSProperties}
+            style={
+              {
+                cursor: onLeadClick ? "pointer" : "default",
+              } as React.CSSProperties
+            }
           >
             <LeadListItem
               lead={lead}

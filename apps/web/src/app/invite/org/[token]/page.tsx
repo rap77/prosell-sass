@@ -30,7 +30,10 @@ export default function AcceptOrgInvitationPage() {
 
   if (token === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--ps-bg-base)", padding: "32px 24px" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--ps-bg-base)", padding: "32px 24px" }}
+      >
         <div
           className="w-full max-w-sm text-center rounded-lg"
           style={{
@@ -112,7 +115,10 @@ export default function AcceptOrgInvitationPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--ps-bg-base)", padding: "32px 24px" }}>
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: "var(--ps-bg-base)", padding: "32px 24px" }}
+    >
       <div className="w-full max-w-sm">
         <div
           className="rounded-lg"
@@ -133,20 +139,22 @@ export default function AcceptOrgInvitationPage() {
           </h1>
 
           {state === "success" && (
-            <div className="flex flex-col items-center text-center" style={{ gap: 12 }}>
+            <div
+              className="flex flex-col items-center text-center"
+              style={{ gap: 12 }}
+            >
               <CheckCircle2 size={48} style={{ color: "var(--ps-success)" }} />
-              <p style={{ color: "var(--ps-text-secondary)" }}>
-                {message}
-              </p>
+              <p style={{ color: "var(--ps-text-secondary)" }}>{message}</p>
             </div>
           )}
 
           {state === "expired" && (
-            <div className="flex flex-col items-center text-center" style={{ gap: 12 }}>
+            <div
+              className="flex flex-col items-center text-center"
+              style={{ gap: 12 }}
+            >
               <XCircle size={48} style={{ color: "var(--ps-error)" }} />
-              <p style={{ color: "var(--ps-text-secondary)" }}>
-                {message}
-              </p>
+              <p style={{ color: "var(--ps-text-secondary)" }}>{message}</p>
             </div>
           )}
 

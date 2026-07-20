@@ -101,25 +101,21 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
     setFile(null);
   };
 
-  const outlineBtnClass = "inline-flex items-center gap-1.5 h-9.5 px-4 rounded-lg bg-ps-bg-elevated border border-ps-border-default text-ps-text-secondary text-sm font-medium cursor-pointer transition-opacity duration-150";
+  const outlineBtnClass =
+    "inline-flex items-center gap-1.5 h-9.5 px-4 rounded-lg bg-ps-bg-elevated border border-ps-border-default text-ps-text-secondary text-sm font-medium cursor-pointer transition-opacity duration-150";
 
-  const primaryBtnClass = "inline-flex items-center gap-1.5 h-9.5 px-4.5 rounded-lg bg-ps-cyan border-0 text-ps-bg-base text-sm font-bold cursor-pointer transition-opacity duration-150";
+  const primaryBtnClass =
+    "inline-flex items-center gap-1.5 h-9.5 px-4.5 rounded-lg bg-ps-cyan border-0 text-ps-bg-base text-sm font-bold cursor-pointer transition-opacity duration-150";
 
   return (
     <div className="flex flex-col gap-6">
       {/* ── Header ── */}
-      <div
-        className="flex items-start justify-between gap-4"
-      >
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2
-            className="m-0 text-xl font-bold tracking-tight text-ps-text-primary"
-          >
+          <h2 className="m-0 text-xl font-bold tracking-tight text-ps-text-primary">
             Carga masiva de productos
           </h2>
-          <p
-            className="mt-1 text-sm text-ps-text-secondary"
-          >
+          <p className="mt-1 text-sm text-ps-text-secondary">
             Cargá múltiples productos desde un archivo CSV
           </p>
         </div>
@@ -131,9 +127,7 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
       </div>
 
       {/* ── Template download ── */}
-      <div
-        className="flex items-center justify-between px-5 py-4 bg-ps-bg-surface border border-ps-border-default rounded-xl gap-3"
-      >
+      <div className="flex items-center justify-between px-5 py-4 bg-ps-bg-surface border border-ps-border-default rounded-xl gap-3">
         <div className="flex items-center gap-3">
           <FileText
             size={18}
@@ -141,19 +135,19 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
             className="text-ps-text-secondary flex-shrink-0"
           />
           <div>
-            <p
-              className="m-0 text-sm font-semibold text-ps-text-primary"
-            >
+            <p className="m-0 text-sm font-semibold text-ps-text-primary">
               Plantilla CSV
             </p>
-            <p
-              className="mt-0.5 text-xs text-ps-text-secondary"
-            >
+            <p className="mt-0.5 text-xs text-ps-text-secondary">
               Descargá la plantilla con el formato correcto
             </p>
           </div>
         </div>
-        <button type="button" onClick={downloadTemplate} className={primaryBtnClass}>
+        <button
+          type="button"
+          onClick={downloadTemplate}
+          className={primaryBtnClass}
+        >
           <Download size={14} strokeWidth={2} />
           Descargar plantilla
         </button>
@@ -179,23 +173,17 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
             strokeWidth={1.5}
             className="text-ps-text-tertiary mb-4"
           />
-          <p
-            className="m-0 text-base font-semibold text-ps-text-primary"
-          >
+          <p className="m-0 text-base font-semibold text-ps-text-primary">
             {isDragActive
               ? "Soltá el archivo CSV acá"
               : "Arrastrá y soltá el archivo CSV acá"}
           </p>
-          <p
-            className="mt-1.5 text-sm text-ps-text-secondary"
-          >
+          <p className="mt-1.5 text-sm text-ps-text-secondary">
             o hacé click para buscar
           </p>
         </div>
       ) : (
-        <div
-          className="flex items-center justify-between p-3.5 bg-ps-bg-surface border border-ps-border-default rounded-xl"
-        >
+        <div className="flex items-center justify-between p-3.5 bg-ps-bg-surface border border-ps-border-default rounded-xl">
           <div className="flex items-center gap-3">
             <FileText
               size={28}
@@ -203,14 +191,10 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
               className="text-ps-cyan flex-shrink-0"
             />
             <div>
-              <p
-                className="m-0 text-sm font-semibold text-ps-text-primary"
-              >
+              <p className="m-0 text-sm font-semibold text-ps-text-primary">
                 {file.name}
               </p>
-              <p
-                className="mt-0.5 text-xs text-ps-text-secondary"
-              >
+              <p className="mt-0.5 text-xs text-ps-text-secondary">
                 {(file.size / 1024).toFixed(1)} KB
               </p>
             </div>

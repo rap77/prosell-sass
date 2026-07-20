@@ -197,9 +197,7 @@ function EditOrganizationForm({
         <fieldset className="flex flex-col gap-2 border-none p-0">
           <legend className="text-sm mb-1.5">Verticals</legend>
           {(verticalsLoading || categoriesLoading) && (
-            <p className="text-text-secondary">
-              Cargando verticals…
-            </p>
+            <p className="text-text-secondary">Cargando verticals…</p>
           )}
           {!verticalsLoading &&
             !categoriesLoading &&

@@ -265,11 +265,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 py-12 px-6 text-center">
         <div className="w-14 h-14 rounded-2xl bg-ps-error-bg border border-destructive flex items-center justify-center">
-          <AlertCircle
-            size={24}
-            strokeWidth={2}
-            className="text-destructive"
-          />
+          <AlertCircle size={24} strokeWidth={2} className="text-destructive" />
         </div>
         <div>
           <h1 className="m-0 text-xl font-semibold text-ps-text-primary">

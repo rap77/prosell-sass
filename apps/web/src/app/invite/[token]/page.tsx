@@ -36,7 +36,8 @@ const INVITATION_STATES = {
   already_member: "already_member",
 } as const;
 
-type InvitationState = (typeof INVITATION_STATES)[keyof typeof INVITATION_STATES];
+type InvitationState =
+  (typeof INVITATION_STATES)[keyof typeof INVITATION_STATES];
 
 // ============================================
 // COMPONENT
@@ -152,11 +153,7 @@ export default function AcceptInvitationPage() {
       case "expired":
         return (
           <div className="flex flex-col items-center gap-4">
-            <XCircle
-              className="text-ps-error"
-              size={48}
-              strokeWidth={1.5}
-            />
+            <XCircle className="text-ps-error" size={48} strokeWidth={1.5} />
             <div className="text-center">
               <h3 className="m-0 text-base font-bold text-ps-error">
                 Invitación vencida

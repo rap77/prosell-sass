@@ -111,11 +111,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2.5 p-20 text-ps-text-secondary">
-        <Loader2
-          size={20}
-          strokeWidth={2}
-          className="animate-spin"
-        />
+        <Loader2 size={20} strokeWidth={2} className="animate-spin" />
         <span className="text-sm">Cargando lead...</span>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>

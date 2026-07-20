@@ -19,7 +19,11 @@ export const CheckIcon = ({ size = 12 }: { size?: number }) => (
 );
 
 export const StarIcon = () => (
-  <svg className="w-3 h-3 text-ps-warning" fill="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-3 h-3 text-ps-warning"
+    fill="currentColor"
+    viewBox="0 0 24 24"
+  >
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
   </svg>
 );
@@ -32,7 +36,10 @@ export const StatusDot = ({ color = "currentColor" }: { color?: string }) => (
 
 export const PulseDot = ({ color = "var(--ps-cyan)" }: { color?: string }) => (
   <span className="relative w-2 h-2 inline-block shrink-0">
-    <span className="absolute inset-0 rounded-full" style={{ background: color }} />
+    <span
+      className="absolute inset-0 rounded-full"
+      style={{ background: color }}
+    />
     <span
       className="absolute -inset-1 rounded-full opacity-50 animate-[ps-pulse_1.8s_cubic-bezier(0.16,1,0.3,1)_infinite]"
       style={{ background: color }}
@@ -54,8 +61,19 @@ export const SectionTitle = ({ children }: { children: ReactNode }) => (
   </h2>
 );
 
-export const SectionSubtitle = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <p className={cn("text-[17px] leading-relaxed text-muted-foreground max-w-[600px] mx-auto", className)}>
+export const SectionSubtitle = ({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => (
+  <p
+    className={cn(
+      "text-[17px] leading-relaxed text-muted-foreground max-w-[600px] mx-auto",
+      className,
+    )}
+  >
     {children}
   </p>
 );
@@ -68,7 +86,15 @@ export const FeatureBadge = ({ children }: { children: ReactNode }) => (
   </span>
 );
 
-export const LiveBadge = ({ children, color = "#4DB8FF", bg = "rgba(77,184,255,0.14)" }: { children: ReactNode; color?: string; bg?: string }) => (
+export const LiveBadge = ({
+  children,
+  color = "#4DB8FF",
+  bg = "rgba(77,184,255,0.14)",
+}: {
+  children: ReactNode;
+  color?: string;
+  bg?: string;
+}) => (
   <span
     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
     style={{ color, background: bg }}
@@ -100,7 +126,13 @@ export const CheckItem = ({ children }: { children: ReactNode }) => (
 
 export const TrustItem = ({ children }: { children: ReactNode }) => (
   <span className="inline-flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
-    <svg className="w-3.5 h-3.5 text-ps-cyan" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <svg
+      className="w-3.5 h-3.5 text-ps-cyan"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
     {children}
@@ -109,8 +141,19 @@ export const TrustItem = ({ children }: { children: ReactNode }) => (
 
 // --- Cards ---
 
-export const MockCardWrapper = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <div className={cn("ps-ft-mock relative flex justify-center items-center min-h-[380px]", className)}>
+export const MockCardWrapper = ({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      "ps-ft-mock relative flex justify-center items-center min-h-[380px]",
+      className,
+    )}
+  >
     <div
       aria-hidden="true"
       className="absolute inset-[-10%] blur-[40px] pointer-events-none"
@@ -131,7 +174,13 @@ export const MockCardWrapper = ({ children, className }: { children: ReactNode; 
   </div>
 );
 
-export const GlassCard = ({ children, className }: { children: ReactNode; className?: string }) => (
+export const GlassCard = ({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => (
   <div
     className={cn(
       "bg-ps-glass-bg-strong border border-ps-accent-glow rounded-[20px] backdrop-blur-[24px] p-[22px] text-ps-text-primary",
@@ -146,11 +195,27 @@ export const GlassCard = ({ children, className }: { children: ReactNode; classN
   </div>
 );
 
-export const MetricCard = ({ label, value, delta }: { label: string; value: string; delta?: string }) => (
+export const MetricCard = ({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta?: string;
+}) => (
   <div className="bg-ps-metric-bg border border-ps-accent-glow-soft rounded-lg py-3 px-3.5">
-    <div className="text-[10.5px] text-ps-text-secondary mb-1 tracking-[0.04em]">{label}</div>
-    <div className="text-xl font-bold tracking-[-0.02em] leading-none">{value}</div>
-    {delta && <div className="text-[10.5px] text-ps-success font-semibold mt-0.5">{delta}</div>}
+    <div className="text-[10.5px] text-ps-text-secondary mb-1 tracking-[0.04em]">
+      {label}
+    </div>
+    <div className="text-xl font-bold tracking-[-0.02em] leading-none">
+      {value}
+    </div>
+    {delta && (
+      <div className="text-[10.5px] text-ps-success font-semibold mt-0.5">
+        {delta}
+      </div>
+    )}
   </div>
 );
 
@@ -196,7 +261,9 @@ interface SectionGradientBgProps {
   variant?: SectionGradientVariant;
 }
 
-export const SectionGradientBg = ({ variant = "default" }: SectionGradientBgProps) => (
+export const SectionGradientBg = ({
+  variant = "default",
+}: SectionGradientBgProps) => (
   <div
     aria-hidden="true"
     className="absolute inset-0 pointer-events-none"

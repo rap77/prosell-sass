@@ -25,9 +25,7 @@ export function FeatureFlagPanel() {
         <h3 className="m-0 text-xs font-bold text-ps-text-primary">
           Feature Flags
         </h3>
-        <span className="text-[10px] text-ps-text-tertiary">
-          (Dev Only)
-        </span>
+        <span className="text-[10px] text-ps-text-tertiary">(Dev Only)</span>
       </div>
 
       <div className="flex flex-col gap-1 mb-3">

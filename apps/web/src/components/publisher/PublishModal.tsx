@@ -301,9 +301,7 @@ export function PublishModal({
           {/* Submit error */}
           {submitError && (
             <div className="mb-4 bg-error-bg border border-error rounded-[10px] p-3">
-              <p className="m-0 text-xs text-error">
-                {submitError}
-              </p>
+              <p className="m-0 text-xs text-error">{submitError}</p>
             </div>
           )}
 

@@ -95,10 +95,7 @@ export function StatusQuickChange({
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="relative inline-block"
-    >
+    <div ref={containerRef} className="relative inline-block">
       {/* Trigger */}
       <button
         type="button"
@@ -158,9 +155,7 @@ export function StatusQuickChange({
                   />
                   <span className="flex-1">{label}</span>
                   {isCurrent && (
-                    <span
-                      className="text-[10px] text-ps-text-tertiary"
-                    >
+                    <span className="text-[10px] text-ps-text-tertiary">
                       Actual
                     </span>
                   )}

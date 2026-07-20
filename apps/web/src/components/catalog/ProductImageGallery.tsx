@@ -200,9 +200,7 @@ export function ProductImageGallery({
 
       {/* Thumbnail strip */}
       {renderableImages.length > 1 && (
-        <div
-          className="flex gap-2 overflow-x-auto pb-1"
-        >
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {renderableImages.map((image, index) => {
             const isActive = index === currentIndex;
             return (

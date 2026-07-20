@@ -85,9 +85,7 @@ export function LeadListItem({
 
       {/* Buyer info */}
       <div className="flex-shrink-0 w-[180px] min-w-0">
-        <p
-          className="m-0 text-sm font-semibold text-[var(--ps-text-primary)] whitespace-nowrap overflow-hidden text-ellipsis"
-        >
+        <p className="m-0 text-sm font-semibold text-[var(--ps-text-primary)] whitespace-nowrap overflow-hidden text-ellipsis">
           {lead.buyer_name}
           {isUnread && (
             <span
@@ -99,17 +97,13 @@ export function LeadListItem({
           )}
         </p>
         {lead.buyer_email && (
-          <p
-            className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap"
-          >
+          <p className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
             <Mail size={10} strokeWidth={2} className="flex-shrink-0" />
             {lead.buyer_email}
           </p>
         )}
         {lead.buyer_phone && (
-          <p
-            className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1"
-          >
+          <p className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1">
             <Phone size={10} strokeWidth={2} className="flex-shrink-0" />
             {lead.buyer_phone}
           </p>
@@ -120,14 +114,10 @@ export function LeadListItem({
       <div className="flex-shrink-0 w-[170px] min-w-0">
         {lead.product ? (
           <>
-            <p
-              className="m-0 text-sm font-medium text-[var(--ps-text-primary)] overflow-hidden text-ellipsis whitespace-nowrap"
-            >
+            <p className="m-0 text-sm font-medium text-[var(--ps-text-primary)] overflow-hidden text-ellipsis whitespace-nowrap">
               {lead.product.title}
             </p>
-            <p
-              className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1"
-            >
+            <p className="mt-0.5 text-xs text-[var(--ps-text-secondary)] flex items-center gap-1">
               <Car size={10} strokeWidth={2} className="flex-shrink-0" />
               {[
                 lead.product.attributes.year,
@@ -139,9 +129,7 @@ export function LeadListItem({
             </p>
           </>
         ) : (
-          <span
-            className="text-xs text-[var(--ps-text-tertiary)] italic"
-          >
+          <span className="text-xs text-[var(--ps-text-tertiary)] italic">
             Sin vehículo
           </span>
         )}
@@ -150,9 +138,7 @@ export function LeadListItem({
       {/* Message preview */}
       <div className="flex-1 min-w-0">
         {lead.message ? (
-          <p
-            className="m-0 text-xs text-[var(--ps-text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1.25"
-          >
+          <p className="m-0 text-xs text-[var(--ps-text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1.25">
             <MessageSquare
               size={11}
               strokeWidth={2}
@@ -162,9 +148,7 @@ export function LeadListItem({
             {lead.message}
           </p>
         ) : (
-          <span
-            className="text-xs text-[var(--ps-text-tertiary)] italic"
-          >
+          <span className="text-xs text-[var(--ps-text-tertiary)] italic">
             Sin mensaje
           </span>
         )}
@@ -181,14 +165,14 @@ export function LeadListItem({
 
       {/* Time + source */}
       <div className="flex-shrink-0 text-right min-w-[90px]">
-        <p
-          className="m-0 text-xs text-[var(--ps-text-secondary)]"
-        >
-          {timeAgo}
-        </p>
+        <p className="m-0 text-xs text-[var(--ps-text-secondary)]">{timeAgo}</p>
         <span
           className="inline-block mt-0.75 text-[10px] font-semibold tracking-widest uppercase text-[var(--ps-text-tertiary)]"
-          style={{ background: "rgba(138,155,191,0.08)", padding: "1px 6px", borderRadius: 4 }}
+          style={{
+            background: "rgba(138,155,191,0.08)",
+            padding: "1px 6px",
+            borderRadius: 4,
+          }}
         >
           {sourceLabel}
         </span>

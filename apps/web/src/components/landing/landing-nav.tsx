@@ -12,10 +12,7 @@ export function LandingNav() {
   return (
     <header className="sticky top-0 z-50 h-[72px] flex items-center bg-ps-nav-bg backdrop-blur-[20px] border-b border-ps-border-subtle">
       <div className="flex items-center gap-10 w-full max-w-[1280px] mx-auto px-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 no-underline"
-        >
+        <Link href="/" className="flex items-center gap-2.5 no-underline">
           <Image
             src="/logo-mark.png"
             alt="ProSell"

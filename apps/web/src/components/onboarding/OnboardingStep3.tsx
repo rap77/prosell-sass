@@ -89,14 +89,27 @@ export function OnboardingStep3({
       <div className="flex flex-col gap-6">
         {/* Encabezado */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0" style={{ background: "var(--ps-info-bg)" }}>
-            <Users size={18} strokeWidth={2} style={{ color: "var(--ps-cyan)" }} />
+          <div
+            className="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
+            style={{ background: "var(--ps-info-bg)" }}
+          >
+            <Users
+              size={18}
+              strokeWidth={2}
+              style={{ color: "var(--ps-cyan)" }}
+            />
           </div>
           <div>
-            <h2 className="m-0 text-base font-bold" style={{ color: "var(--ps-text-primary)" }}>
+            <h2
+              className="m-0 text-base font-bold"
+              style={{ color: "var(--ps-text-primary)" }}
+            >
               Invitá a tu equipo
             </h2>
-            <p className="mt-0.5 text-sm" style={{ color: "var(--ps-text-secondary)" }}>
+            <p
+              className="mt-0.5 text-sm"
+              style={{ color: "var(--ps-text-secondary)" }}
+            >
               Opcional — podés invitar a tu primer vendedor ahora o hacerlo
               después desde Configuración
             </p>
@@ -128,7 +141,13 @@ export function OnboardingStep3({
               />
             </div>
 
-            <div className="rounded-lg border border-dashed p-3.5 text-center text-sm" style={{ borderColor: "var(--ps-border-default)", color: "var(--ps-text-secondary)" }}>
+            <div
+              className="rounded-lg border border-dashed p-3.5 text-center text-sm"
+              style={{
+                borderColor: "var(--ps-border-default)",
+                color: "var(--ps-text-secondary)",
+              }}
+            >
               También podés invitar a más personas desde{" "}
               <strong style={{ color: "var(--ps-text-primary)" }}>
                 Configuración → Equipo

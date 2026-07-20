@@ -43,7 +43,9 @@ export function useCategories(): UseQueryResult<Category[], Error> {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to fetch categories"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch categories"),
+        );
       }
 
       // Validate the wire shape before projecting to the strict Category contract.

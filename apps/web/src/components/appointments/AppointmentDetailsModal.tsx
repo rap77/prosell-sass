@@ -130,9 +130,11 @@ export function AppointmentDetailsModal({
       >
         {/* Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-ps-border-default px-5 py-4">
-
           <div>
-            <h2 className="text-base font-bold text-ps-text-primary" style={{ letterSpacing: "-0.01em" }}>
+            <h2
+              className="text-base font-bold text-ps-text-primary"
+              style={{ letterSpacing: "-0.01em" }}
+            >
               Detalle del turno
             </h2>
             <p className="mt-0.5 text-xs text-ps-text-secondary">
@@ -205,13 +207,17 @@ export function AppointmentDetailsModal({
                 {lead.buyer_email && (
                   <div className="flex items-center gap-2.5 pl-6">
                     <Mail size={13} strokeWidth={2} style={iconStyle} />
-                    <span className="text-sm text-ps-text-secondary">{lead.buyer_email}</span>
+                    <span className="text-sm text-ps-text-secondary">
+                      {lead.buyer_email}
+                    </span>
                   </div>
                 )}
                 {lead.buyer_phone && (
                   <div className="flex items-center gap-2.5 pl-6">
                     <Phone size={13} strokeWidth={2} style={iconStyle} />
-                    <span className="text-sm text-ps-text-secondary">{lead.buyer_phone}</span>
+                    <span className="text-sm text-ps-text-secondary">
+                      {lead.buyer_phone}
+                    </span>
                   </div>
                 )}
               </div>

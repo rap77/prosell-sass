@@ -84,7 +84,9 @@ async function assignProductToBranch(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(extractErrorMessage(body, "Failed to assign product to branch"));
+    throw new Error(
+      extractErrorMessage(body, "Failed to assign product to branch"),
+    );
   }
 }
 
@@ -102,7 +104,9 @@ async function bulkAssignProductsToBranch(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(extractErrorMessage(body, "Failed to bulk assign products"));
+    throw new Error(
+      extractErrorMessage(body, "Failed to bulk assign products"),
+    );
   }
 }
 

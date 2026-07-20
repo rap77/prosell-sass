@@ -48,9 +48,7 @@ export default function GlobalRootErrorPage({
             fontFamily: "system-ui, -apple-system, sans-serif",
           }}
         >
-          <main
-            className="w-full max-w-[400px] flex flex-col gap-7"
-          >
+          <main className="w-full max-w-[400px] flex flex-col gap-7">
             {/* Brand */}
             <Link
               href="/"

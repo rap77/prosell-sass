@@ -11,7 +11,10 @@ export default function NotFound() {
       <main className="w-full max-w-sm flex flex-col gap-7">
         {/* Brand */}
         <div>
-          <Link href="/" className="inline-flex items-center gap-2.5 no-underline">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2.5 no-underline"
+          >
             <Image
               src="/logo-mark.png"
               alt="ProSell"

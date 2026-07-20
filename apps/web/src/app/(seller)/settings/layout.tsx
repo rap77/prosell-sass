@@ -46,7 +46,7 @@ export default function SettingsLayout({
                 "inline-flex items-center px-[18px] py-[7px] rounded-lg text-[13px] no-underline whitespace-nowrap transition-all",
                 isActive
                   ? "font-semibold bg-card text-foreground shadow-sm"
-                  : "font-medium bg-transparent text-muted-foreground hover:text-foreground"
+                  : "font-medium bg-transparent text-muted-foreground hover:text-foreground",
               )}
             >
               {tab.label}

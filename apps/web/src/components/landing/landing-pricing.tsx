@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { CheckItem, SectionLabel, SectionSubtitle, SectionTitle, TrustItem } from "./landing-shared";
+import {
+  CheckItem,
+  SectionLabel,
+  SectionSubtitle,
+  SectionTitle,
+  TrustItem,
+} from "./landing-shared";
 import { PRICING_PLANS } from "./_data";
 
 export function LandingPricing() {
@@ -22,7 +28,8 @@ export function LandingPricing() {
           <SectionLabel>Precios</SectionLabel>
           <SectionTitle>Empezá gratis. Escalá cuando vendás más.</SectionTitle>
           <SectionSubtitle className="max-w-[520px]">
-            Sin contratos largos. Sin letra chica. Pagás comisión solo cuando cerrás — alineados con tu éxito.
+            Sin contratos largos. Sin letra chica. Pagás comisión solo cuando
+            cerrás — alineados con tu éxito.
           </SectionSubtitle>
         </div>
 
@@ -43,7 +50,8 @@ export function LandingPricing() {
             ))}
           </div>
           <span className="text-[12.5px] text-muted-foreground inline-flex items-center gap-1.5">
-            <span className="text-ps-warning">⚡</span>Recomendado — pagás cuando vendés
+            <span className="text-ps-warning">⚡</span>Recomendado — pagás
+            cuando vendés
           </span>
         </div>
 
@@ -72,10 +80,15 @@ export function LandingPricing() {
               <div className="text-[40px] font-extrabold tracking-[-0.03em] leading-none mb-2">
                 {plan.price}
                 {plan.priceUnit && (
-                  <span className="text-base font-medium text-muted-foreground"> {plan.priceUnit}</span>
+                  <span className="text-base font-medium text-muted-foreground">
+                    {" "}
+                    {plan.priceUnit}
+                  </span>
                 )}
               </div>
-              <div className="text-[12.5px] text-muted-foreground mb-[22px] leading-snug">{plan.note}</div>
+              <div className="text-[12.5px] text-muted-foreground mb-[22px] leading-snug">
+                {plan.note}
+              </div>
               <div className="h-px bg-ps-accent-glow-soft mb-[22px]" />
               <ul className="list-none p-0 mb-7 flex flex-col gap-[11px] flex-1">
                 {plan.features.map((f) => (

@@ -112,7 +112,9 @@ export function useAppointments(
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to fetch appointments"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch appointments"),
+        );
       }
 
       const data = BackendAppointmentListResponseSchema.parse(await res.json());
@@ -195,7 +197,9 @@ export function useUpdateAppointmentStatus() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to update appointment status"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to update appointment status"),
+        );
       }
 
       const data = BackendAppointmentResponseSchema.parse(await res.json());

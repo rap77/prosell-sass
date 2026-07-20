@@ -32,7 +32,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const registerSchema = z
   .object({
-    fullName: z.string().min(2, { message: "Mínimo 2 caracteres" }).max(100).trim(),
+    fullName: z
+      .string()
+      .min(2, { message: "Mínimo 2 caracteres" })
+      .max(100)
+      .trim(),
     email: z
       .string()
       .min(1, { message: "El email es requerido" })
@@ -42,7 +46,10 @@ const registerSchema = z
       .min(8, { message: "Mínimo 8 caracteres" })
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        { message: "Debe tener mayúscula, minúscula, número y símbolo (@$!%*?&)" },
+        {
+          message:
+            "Debe tener mayúscula, minúscula, número y símbolo (@$!%*?&)",
+        },
       ),
     confirmPassword: z.string().min(1, { message: "Confirmá tu contraseña" }),
     acceptTerms: z

@@ -63,7 +63,7 @@ const config: Config = {
         },
 
         // ProSell design tokens (--ps-* from globals.css)
-// ponytail: only tokens without shadcn equivalents
+        // ponytail: only tokens without shadcn equivalents
         ps: {
           // Backgrounds
           base: "var(--ps-bg-base)",

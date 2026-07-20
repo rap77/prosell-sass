@@ -119,9 +119,7 @@ function KpiCard({
           {label}
         </p>
         {sub && (
-          <p className="mt-[3px] text-[11px] text-ps-text-tertiary">
-            {sub}
-          </p>
+          <p className="mt-[3px] text-[11px] text-ps-text-tertiary">{sub}</p>
         )}
       </div>
     </div>
@@ -559,7 +557,10 @@ export default function AnalyticsPage() {
                   <div className="flex items-center gap-1.5">
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: color, boxShadow: `0 0 6px ${color}` }}
+                      style={{
+                        background: color,
+                        boxShadow: `0 0 6px ${color}`,
+                      }}
                     />
                     <span className="text-xs font-semibold text-ps-text-primary">
                       {label}

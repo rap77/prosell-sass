@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AvatarStack, GlassCard, MetricCard, PulseDot, StarIcon } from "./landing-shared";
+import {
+  AvatarStack,
+  GlassCard,
+  MetricCard,
+  PulseDot,
+  StarIcon,
+} from "./landing-shared";
 
 export function LandingHero() {
   const t = useTranslations("landing.hero");
@@ -27,10 +33,16 @@ export function LandingHero() {
           </p>
 
           <div className="ps-cta-row flex gap-3 items-center mb-10">
-            <Link href="/auth/register" className="ps-btn-primary py-[13px] px-6 text-[15px]">
+            <Link
+              href="/auth/register"
+              className="ps-btn-primary py-[13px] px-6 text-[15px]"
+            >
               {t("cta")}
             </Link>
-            <Link href="/auth/login" className="ps-btn-ghost py-[13px] px-6 text-[15px]">
+            <Link
+              href="/auth/login"
+              className="ps-btn-ghost py-[13px] px-6 text-[15px]"
+            >
               {t("ctaSecondary")}
             </Link>
           </div>
@@ -39,10 +51,22 @@ export function LandingHero() {
           <div className="flex items-center gap-3.5">
             <AvatarStack
               avatars={[
-                { initials: "MR", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
-                { initials: "JC", bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)" },
-                { initials: "AL", bg: "linear-gradient(135deg,#7DCEFF,#4DB8FF)" },
-                { initials: "SP", bg: "linear-gradient(135deg,#F5A623,#F04438)" },
+                {
+                  initials: "MR",
+                  bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)",
+                },
+                {
+                  initials: "JC",
+                  bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)",
+                },
+                {
+                  initials: "AL",
+                  bg: "linear-gradient(135deg,#7DCEFF,#4DB8FF)",
+                },
+                {
+                  initials: "SP",
+                  bg: "linear-gradient(135deg,#F5A623,#F04438)",
+                },
               ]}
             />
             <div>
@@ -73,10 +97,15 @@ export function LandingHero() {
 
           <GlassCard className="relative w-full max-w-[520px] animate-[ps-float_6s_ease-in-out_infinite]">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-[15px] font-semibold">{t("mockup.pipeline")}</span>
+              <span className="text-[15px] font-semibold">
+                {t("mockup.pipeline")}
+              </span>
               <span
                 className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                style={{ color: "var(--ps-success)", background: "rgba(34,211,160,0.14)" }}
+                style={{
+                  color: "var(--ps-success)",
+                  background: "rgba(34,211,160,0.14)",
+                }}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-ps-success" />
                 {t("mockup.live")}
@@ -86,7 +115,11 @@ export function LandingHero() {
             <div className="grid grid-cols-3 gap-2 mb-5">
               {[
                 { label: t("mockup.revenue"), value: "$284K", delta: "+12.4%" },
-                { label: t("mockup.openDeals"), value: "47", delta: t("mockup.inProgress") },
+                {
+                  label: t("mockup.openDeals"),
+                  value: "47",
+                  delta: t("mockup.inProgress"),
+                },
                 { label: t("mockup.winRate"), value: "68%", delta: "+5.2%" },
               ].map((m) => (
                 <MetricCard key={m.label} {...m} />
@@ -131,11 +164,39 @@ export function LandingHero() {
               style={{ background: "rgba(77,184,255,0.06)" }}
             >
               {[
-                { av: "A", name: "Acme Tech", amount: "$48K", stage: t("mockup.stages.closing"), sc: "var(--ps-success)", sb: "rgba(34,211,160,0.14)", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
-                { av: "N", name: "Northwind Labs", amount: "$32K", stage: t("mockup.stages.demo"), sc: "var(--ps-cyan)", sb: "rgba(77,184,255,0.14)", sbCyan: true, bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)" },
-                { av: "G", name: "Globex SA", amount: "$76K", stage: t("mockup.stages.proposal"), sc: "var(--ps-warning)", sb: "var(--ps-warning-bg)", bg: "linear-gradient(135deg,#F5A623,#F04438)" },
+                {
+                  av: "A",
+                  name: "Acme Tech",
+                  amount: "$48K",
+                  stage: t("mockup.stages.closing"),
+                  sc: "var(--ps-success)",
+                  sb: "rgba(34,211,160,0.14)",
+                  bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)",
+                },
+                {
+                  av: "N",
+                  name: "Northwind Labs",
+                  amount: "$32K",
+                  stage: t("mockup.stages.demo"),
+                  sc: "var(--ps-cyan)",
+                  sb: "rgba(77,184,255,0.14)",
+                  sbCyan: true,
+                  bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)",
+                },
+                {
+                  av: "G",
+                  name: "Globex SA",
+                  amount: "$76K",
+                  stage: t("mockup.stages.proposal"),
+                  sc: "var(--ps-warning)",
+                  sb: "var(--ps-warning-bg)",
+                  bg: "linear-gradient(135deg,#F5A623,#F04438)",
+                },
               ].map((d) => (
-                <div key={d.name} className="flex items-center gap-3 py-[11px] px-3.5 bg-ps-metric-bg">
+                <div
+                  key={d.name}
+                  className="flex items-center gap-3 py-[11px] px-3.5 bg-ps-metric-bg"
+                >
                   <div
                     className="w-[30px] h-[30px] rounded-lg shrink-0 flex items-center justify-center text-xs font-bold text-ps-base"
                     style={{ background: d.bg }}
@@ -145,7 +206,9 @@ export function LandingHero() {
                   <span className="flex-1 text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
                     {d.name}
                   </span>
-                  <span className="text-[13px] font-bold shrink-0">{d.amount}</span>
+                  <span className="text-[13px] font-bold shrink-0">
+                    {d.amount}
+                  </span>
                   <span
                     className="text-[10.5px] font-semibold py-0.5 px-2.5 rounded-full shrink-0"
                     style={{ color: d.sc, background: d.sb }}
@@ -169,14 +232,24 @@ export function LandingHero() {
               className="w-[26px] h-[26px] rounded-md shrink-0 flex items-center justify-center text-ps-success"
               style={{ background: "rgba(34,211,160,0.15)" }}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                 <polyline points="17 6 23 6 23 12" />
               </svg>
             </div>
             <div>
-              <b className="block font-semibold text-[12.5px]">{t("mockup.conversionTitle")}</b>
-              <span className="text-[10.5px] text-ps-text-secondary">{t("mockup.conversionDelta")}</span>
+              <b className="block font-semibold text-[12.5px]">
+                {t("mockup.conversionTitle")}
+              </b>
+              <span className="text-[10.5px] text-ps-text-secondary">
+                {t("mockup.conversionDelta")}
+              </span>
             </div>
           </div>
 
@@ -192,13 +265,23 @@ export function LandingHero() {
               className="w-[26px] h-[26px] rounded-md shrink-0 flex items-center justify-center text-ps-cyan"
               style={{ background: "rgba(77,184,255,0.15)" }}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
             </div>
             <div>
-              <b className="block font-semibold text-[12.5px]">{t("mockup.dealClosed")} · $48K</b>
-              <span className="text-[10.5px] text-ps-text-secondary">Acme Tech</span>
+              <b className="block font-semibold text-[12.5px]">
+                {t("mockup.dealClosed")} · $48K
+              </b>
+              <span className="text-[10.5px] text-ps-text-secondary">
+                Acme Tech
+              </span>
             </div>
           </div>
         </div>

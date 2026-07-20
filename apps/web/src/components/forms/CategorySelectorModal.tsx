@@ -81,11 +81,7 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
   const [breadcrumb, setBreadcrumb] = useState<NavLevel[]>([]);
 
   if (verticals.length === 0) {
-    return (
-      <p className="text-xs text-tertiary">
-        Cargando categorías...
-      </p>
-    );
+    return <p className="text-xs text-tertiary">Cargando categorías...</p>;
   }
 
   // Level 0: show verticals
@@ -126,10 +122,7 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
           Inicio
         </button>
         {breadcrumbPath.map((name, idx) => (
-          <span
-            key={idx}
-            className="flex items-center gap-2"
-          >
+          <span key={idx} className="flex items-center gap-2">
             <span className="text-tertiary">/</span>
             <button
               type="button"
@@ -185,7 +178,10 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
 
 function Grid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid auto-fill gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+    <div
+      className="grid auto-fill gap-3"
+      style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
+    >
       {children}
     </div>
   );
@@ -232,11 +228,7 @@ function CategoryCard({
       >
         {label}
       </span>
-      {sublabel && (
-        <span className="text-xs text-tertiary">
-          {sublabel}
-        </span>
-      )}
+      {sublabel && <span className="text-xs text-tertiary">{sublabel}</span>}
     </button>
   );
 }

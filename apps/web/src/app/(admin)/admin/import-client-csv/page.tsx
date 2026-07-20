@@ -69,9 +69,7 @@ export default function ImportClientCSVPage() {
       </div>
 
       {orgsLoading || catsLoading ? (
-        <p className="text-xs text-ps-text-secondary">
-          Cargando…
-        </p>
+        <p className="text-xs text-ps-text-secondary">Cargando…</p>
       ) : (
         <BulkImportClientCSV
           organizations={orgs}

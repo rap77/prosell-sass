@@ -40,7 +40,7 @@ const NOTIFICATION_OPTIONS = [
 
 export default function SettingsNotificationsPage() {
   const [states, setStates] = useState<Record<string, boolean>>(
-    Object.fromEntries(NOTIFICATION_OPTIONS.map((o) => [o.id, o.defaultOn]))
+    Object.fromEntries(NOTIFICATION_OPTIONS.map((o) => [o.id, o.defaultOn])),
   );
 
   const toggle = (id: string, value: boolean) =>
@@ -76,15 +76,13 @@ export default function SettingsNotificationsPage() {
                     "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors border",
                     isOn
                       ? "bg-ps-info-bg border-primary/20"
-                      : "bg-card border-border"
+                      : "bg-card border-border",
                   )}
                 >
                   <Bell
                     size={14}
                     strokeWidth={2}
-                    className={cn(
-                      isOn ? "text-primary" : "text-ps-tertiary"
-                    )}
+                    className={cn(isOn ? "text-primary" : "text-ps-tertiary")}
                   />
                 </div>
 

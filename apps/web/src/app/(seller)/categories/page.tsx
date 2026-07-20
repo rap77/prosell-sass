@@ -123,9 +123,7 @@ function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
       onClick={onClick}
       className={cn(
         "relative w-[38px] h-[22px] rounded-full border flex-shrink-0 cursor-pointer transition-all duration-150 ease-out",
-        on
-          ? "bg-ps-cyan border-ps-border-active"
-          : "border-ps-border-subtle",
+        on ? "bg-ps-cyan border-ps-border-active" : "border-ps-border-subtle",
       )}
       style={{
         background: on ? undefined : T.switchOffBg,

@@ -228,7 +228,9 @@ export async function getLeadAuditTrail(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(extractErrorMessage(body, "Failed to fetch lead audit trail"));
+    throw new Error(
+      extractErrorMessage(body, "Failed to fetch lead audit trail"),
+    );
   }
 
   const data = BackendLeadDetailResponseSchema.parse(await res.json());
@@ -292,7 +294,9 @@ export function useUpdateLeadStatus(leadId: string) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to update lead status"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to update lead status"),
+        );
       }
 
       const data = BackendLeadResponseSchema.parse(await res.json());
@@ -347,7 +351,9 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to fetch team metrics"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch team metrics"),
+        );
       }
 
       return TeamMetricsResponseSchema.parse(await res.json());
@@ -375,7 +381,9 @@ export function useLeadDuplicates(
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(body, "Failed to fetch duplicates"));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch duplicates"),
+        );
       }
 
       return LeadDuplicatesResponseSchema.parse(await res.json());

@@ -29,7 +29,10 @@ export function LandingProblemSolution() {
             </span>
           </h2>
           <p className="text-lg leading-relaxed text-muted-foreground max-w-[600px] mx-auto mb-10">
-            Vender hoy significa estar en múltiples canales a la vez, responder antes que tu competencia y saber exactamente qué funciona. Sin un sistema que unifique todo eso, el presupuesto se va y los leads no vuelven.
+            Vender hoy significa estar en múltiples canales a la vez, responder
+            antes que tu competencia y saber exactamente qué funciona. Sin un
+            sistema que unifique todo eso, el presupuesto se va y los leads no
+            vuelven.
           </p>
 
           {/* Pain chips */}
@@ -43,8 +46,12 @@ export function LandingProblemSolution() {
                 key={c.num}
                 className="flex items-center gap-3 bg-ps-error-bg border border-ps-danger-hover-border rounded-[10px] py-4 px-5"
               >
-                <span className="text-2xl font-bold text-destructive tracking-[-0.02em]">{c.num}</span>
-                <span className="text-xs text-muted-foreground leading-snug text-left max-w-[140px]">{c.lbl}</span>
+                <span className="text-2xl font-bold text-destructive tracking-[-0.02em]">
+                  {c.num}
+                </span>
+                <span className="text-xs text-muted-foreground leading-snug text-left max-w-[140px]">
+                  {c.lbl}
+                </span>
               </div>
             ))}
           </div>
@@ -60,7 +67,13 @@ export function LandingProblemSolution() {
             }}
           />
           <div className="w-10 h-10 rounded-full flex items-center justify-center bg-ps-badge border border-ps-accent-glow-intense text-ps-cyan mx-4">
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <svg
+              className="w-[18px] h-[18px]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
               <line x1="12" y1="5" x2="12" y2="19" />
               <polyline points="19 12 12 19 5 12" />
             </svg>
@@ -68,7 +81,8 @@ export function LandingProblemSolution() {
           <div
             className="flex-1 h-px max-w-[220px]"
             style={{
-              background: "linear-gradient(to right, rgba(77,184,255,0.2), transparent)",
+              background:
+                "linear-gradient(to right, rgba(77,184,255,0.2), transparent)",
             }}
           />
         </div>
@@ -84,7 +98,9 @@ export function LandingProblemSolution() {
             </span>
           </h2>
           <p className="text-base leading-relaxed text-muted-foreground max-w-[560px] mx-auto">
-            Vehículos, inmuebles, productos — ProSell se adapta a lo que vendés. Vos traés el stock, nosotros ponemos la infraestructura de distribución, inteligencia y cierre.
+            Vehículos, inmuebles, productos — ProSell se adapta a lo que vendés.
+            Vos traés el stock, nosotros ponemos la infraestructura de
+            distribución, inteligencia y cierre.
           </p>
         </div>
 
@@ -93,7 +109,13 @@ export function LandingProblemSolution() {
           {[
             {
               icon: (
-                <svg className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                <svg
+                  className="w-[22px] h-[22px]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  viewBox="0 0 24 24"
+                >
                   <circle cx="18" cy="5" r="3" />
                   <circle cx="6" cy="12" r="3" />
                   <circle cx="18" cy="19" r="3" />
@@ -108,7 +130,13 @@ export function LandingProblemSolution() {
             },
             {
               icon: (
-                <svg className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                <svg
+                  className="w-[22px] h-[22px]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  viewBox="0 0 24 24"
+                >
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
               ),
@@ -119,7 +147,13 @@ export function LandingProblemSolution() {
             },
             {
               icon: (
-                <svg className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                <svg
+                  className="w-[22px] h-[22px]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  viewBox="0 0 24 24"
+                >
                   <line x1="18" y1="20" x2="18" y2="10" />
                   <line x1="12" y1="20" x2="12" y2="4" />
                   <line x1="6" y1="20" x2="6" y2="14" />
@@ -138,10 +172,17 @@ export function LandingProblemSolution() {
               <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-ps-tertiary mb-2.5">
                 {c.kicker}
               </div>
-              <h3 className="text-[19px] font-bold tracking-[-0.015em] leading-snug mb-3">{c.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground mb-6 flex-1">{c.desc}</p>
+              <h3 className="text-[19px] font-bold tracking-[-0.015em] leading-snug mb-3">
+                {c.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground mb-6 flex-1">
+                {c.desc}
+              </p>
               <span className="self-start inline-flex items-center gap-2 py-1.5 px-3 rounded-full border border-ps-border-strong bg-ps-hover-bg-sm text-ps-cyan text-[11.5px] font-semibold">
-                <span className="w-[5px] h-[5px] rounded-full bg-ps-cyan" style={{ boxShadow: "0 0 6px var(--ps-cyan)" }} />
+                <span
+                  className="w-[5px] h-[5px] rounded-full bg-ps-cyan"
+                  style={{ boxShadow: "0 0 6px var(--ps-cyan)" }}
+                />
                 {c.badge}
               </span>
             </div>
@@ -150,7 +191,9 @@ export function LandingProblemSolution() {
 
         {/* Niche switcher */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-12">
-          <span className="text-[13px] text-muted-foreground mr-1">Disponible para:</span>
+          <span className="text-[13px] text-muted-foreground mr-1">
+            Disponible para:
+          </span>
           {[
             { label: "Vehículos", ico: "🚗", active: true },
             { label: "Inmuebles", ico: "🏠", active: false },

@@ -312,8 +312,14 @@ export function AppointmentForm({
               data-testid="appointment-error-banner"
               className="flex items-start gap-3 p-3.5 rounded-md mb-4 border"
               style={{
-                borderColor: submitError.type === "conflict" ? "var(--ps-error)" : "var(--ps-warning)",
-                background: submitError.type === "conflict" ? "var(--ps-error-bg)" : "var(--ps-warning-bg)",
+                borderColor:
+                  submitError.type === "conflict"
+                    ? "var(--ps-error)"
+                    : "var(--ps-warning)",
+                background:
+                  submitError.type === "conflict"
+                    ? "var(--ps-error-bg)"
+                    : "var(--ps-warning-bg)",
               }}
             >
               {submitError.type === "conflict" ? (
@@ -339,10 +345,15 @@ export function AppointmentForm({
                 <p
                   className="m-0 text-sm font-semibold"
                   style={{
-                    color: submitError.type === "conflict" ? "var(--ps-error)" : "var(--ps-warning)",
+                    color:
+                      submitError.type === "conflict"
+                        ? "var(--ps-error)"
+                        : "var(--ps-warning)",
                   }}
                 >
-                  {submitError.type === "conflict" ? "Conflicto de horario" : "Error de validación"}
+                  {submitError.type === "conflict"
+                    ? "Conflicto de horario"
+                    : "Error de validación"}
                 </p>
                 <p
                   className="mt-1 text-xs"
@@ -384,7 +395,10 @@ export function AppointmentForm({
           >
             {/* Sucursal */}
             <div>
-              <label htmlFor="user_id" className="block text-xs font-medium mb-1.5">
+              <label
+                htmlFor="user_id"
+                className="block text-xs font-medium mb-1.5"
+              >
                 <span style={{ color: "var(--ps-text-primary)" }}>
                   Sucursal
                 </span>{" "}
@@ -411,10 +425,11 @@ export function AppointmentForm({
 
             {/* Fecha */}
             <div>
-              <label htmlFor="date" className="block text-xs font-medium mb-1.5">
-                <span style={{ color: "var(--ps-text-primary)" }}>
-                  Fecha
-                </span>{" "}
+              <label
+                htmlFor="date"
+                className="block text-xs font-medium mb-1.5"
+              >
+                <span style={{ color: "var(--ps-text-primary)" }}>Fecha</span>{" "}
                 <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <input
@@ -424,18 +439,23 @@ export function AppointmentForm({
                 {...register("date")}
                 className={`ps-apt-input${errors.date ? " ps-apt-input--error" : ""}`}
               />
-              <p className="mt-1 text-xs" style={hintStyle}>Sólo días hábiles: lunes a viernes</p>
+              <p className="mt-1 text-xs" style={hintStyle}>
+                Sólo días hábiles: lunes a viernes
+              </p>
               {errors.date && (
-                <p className="mt-1 text-xs" style={errorStyle}>{errors.date.message}</p>
+                <p className="mt-1 text-xs" style={errorStyle}>
+                  {errors.date.message}
+                </p>
               )}
             </div>
 
             {/* Horario */}
             <div>
-              <label htmlFor="time" className="block text-xs font-medium mb-1.5">
-                <span style={{ color: "var(--ps-text-primary)" }}>
-                  Horario
-                </span>{" "}
+              <label
+                htmlFor="time"
+                className="block text-xs font-medium mb-1.5"
+              >
+                <span style={{ color: "var(--ps-text-primary)" }}>Horario</span>{" "}
                 <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <select
@@ -451,15 +471,23 @@ export function AppointmentForm({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs" style={hintStyle}>Horario de atención: 9:00 – 18:00</p>
+              <p className="mt-1 text-xs" style={hintStyle}>
+                Horario de atención: 9:00 – 18:00
+              </p>
               {errors.time && (
-                <p className="mt-1 text-xs" style={errorStyle}>{errors.time.message}</p>
+                <p className="mt-1 text-xs" style={errorStyle}>
+                  {errors.time.message}
+                </p>
               )}
             </div>
 
             {/* Notas */}
             <div>
-              <label htmlFor="notes" className="block text-xs font-medium mb-1.5" style={{ color: "var(--ps-text-primary)" }}>
+              <label
+                htmlFor="notes"
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: "var(--ps-text-primary)" }}
+              >
                 Notas
               </label>
               <textarea

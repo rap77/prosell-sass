@@ -22,7 +22,10 @@ import {
 function mapVerifyError(err: unknown): { message: string; notFound: boolean } {
   if (err instanceof ApiError) {
     if (err.status === 404) {
-      return { message: "El enlace de verificación no existe.", notFound: true };
+      return {
+        message: "El enlace de verificación no existe.",
+        notFound: true,
+      };
     }
     if (err.status === 400) {
       return {
@@ -30,10 +33,16 @@ function mapVerifyError(err: unknown): { message: string; notFound: boolean } {
         notFound: false,
       };
     }
-    return { message: err.message || "No pudimos verificar tu email.", notFound: false };
+    return {
+      message: err.message || "No pudimos verificar tu email.",
+      notFound: false,
+    };
   }
   return {
-    message: getErrorMessage(err, "No pudimos verificar tu email. Intentá de nuevo."),
+    message: getErrorMessage(
+      err,
+      "No pudimos verificar tu email. Intentá de nuevo.",
+    ),
     notFound: false,
   };
 }

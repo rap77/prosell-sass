@@ -85,14 +85,27 @@ const publishSchema = z.object({
     .max(5000)
     .optional(),
   price_usd: z.number().positive("Precio debe ser mayor a 0"),
-  facebook_page_id: z.string().min(1, { message: "Seleccioná una página de Facebook" }),
+  facebook_page_id: z
+    .string()
+    .min(1, { message: "Seleccioná una página de Facebook" }),
   hero_shot_index: z.number().int().min(0),
-  zip_code: z.string().min(5, { message: "ZIP code mínimo 5 caracteres" }).max(10),
-  image_urls: z.array(z.string().url()).min(1, { message: "Necesitás al menos una foto" }),
+  zip_code: z
+    .string()
+    .min(5, { message: "ZIP code mínimo 5 caracteres" })
+    .max(10),
+  image_urls: z
+    .array(z.string().url())
+    .min(1, { message: "Necesitás al menos una foto" }),
 
   // Vehicle fields (required by Facebook Marketplace)
-  vehicle_type: z.string().min(1, { message: "Seleccioná el tipo de vehículo" }),
-  year: z.number().int().min(1900, { message: "Año inválido" }).max(2026, { message: "Año inválido" }),
+  vehicle_type: z
+    .string()
+    .min(1, { message: "Seleccioná el tipo de vehículo" }),
+  year: z
+    .number()
+    .int()
+    .min(1900, { message: "Año inválido" })
+    .max(2026, { message: "Año inválido" }),
   make: z.string().min(1, { message: "Seleccioná la marca" }),
   model: z.string().min(1, { message: "Ingresá el modelo" }),
   mileage: z.number().int().min(0, { message: "Millaje inválido" }),
@@ -157,9 +170,7 @@ interface PublishFormProps {
 // HELPERS
 // ============================================
 
-const requiredMark = (
-  <span className="text-[var(--ps-error)] ml-0.5">*</span>
-);
+const requiredMark = <span className="text-[var(--ps-error)] ml-0.5">*</span>;
 
 function SelectField({
   id,
@@ -177,7 +188,10 @@ function SelectField({
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
+      <label
+        htmlFor={id}
+        className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+      >
         {label}
         {required && requiredMark}
       </label>
@@ -189,7 +203,9 @@ function SelectField({
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>}
+      {error && (
+        <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>
+      )}
     </div>
   );
 }
@@ -208,12 +224,17 @@ function InputField({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
+      <label
+        htmlFor={id}
+        className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+      >
         {label}
         {required && requiredMark}
       </label>
       <input id={id} {...props} className="ps-pub-input" />
-      {error && <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>}
+      {error && (
+        <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>
+      )}
     </div>
   );
 }
@@ -308,7 +329,6 @@ export function PublishForm({
     onSubmit(payload);
   };
 
-
   return (
     <>
       <style>{FORM_STYLES}</style>
@@ -331,13 +351,17 @@ export function PublishForm({
             onHeroChange={handleHeroChange}
           />
           {errors.image_urls && (
-            <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.image_urls.message}</p>
+            <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+              {errors.image_urls.message}
+            </p>
           )}
         </div>
 
         {/* ── TÍTULO Y DESCRIPCIÓN ── */}
         <div className="border-t border-[var(--ps-border-subtle)] pt-4 flex flex-col gap-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">Publicación</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">
+            Publicación
+          </p>
 
           <InputField
             id="title"
@@ -349,7 +373,10 @@ export function PublishForm({
           />
 
           <div>
-            <label htmlFor="description" className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
+            <label
+              htmlFor="description"
+              className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+            >
               Descripción{" "}
               <span className="font-normal text-[var(--ps-text-tertiary)]">
                 (opcional)
@@ -363,7 +390,9 @@ export function PublishForm({
               style={{ resize: "none" }}
             />
             {errors.description && (
-              <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.description.message}</p>
+              <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
@@ -391,7 +420,9 @@ export function PublishForm({
 
         {/* ── DATOS DEL VEHÍCULO ── */}
         <div className="border-t border-[var(--ps-border-subtle)] pt-4 flex flex-col gap-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">Datos del vehículo</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">
+            Datos del vehículo
+          </p>
 
           <div className="grid grid-cols-2 gap-4">
             <SelectField
@@ -404,7 +435,10 @@ export function PublishForm({
             />
 
             <div>
-              <label htmlFor="year" className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
+              <label
+                htmlFor="year"
+                className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+              >
                 Año{requiredMark}
               </label>
               <select
@@ -419,7 +453,11 @@ export function PublishForm({
                   </option>
                 ))}
               </select>
-              {errors.year && <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.year.message}</p>}
+              {errors.year && (
+                <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+                  {errors.year.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -530,10 +568,15 @@ export function PublishForm({
 
         {/* ── FACEBOOK ── */}
         <div className="border-t border-[var(--ps-border-subtle)] pt-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-4">Facebook</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-4">
+            Facebook
+          </p>
 
           <div>
-            <label htmlFor="facebook_page_id" className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1">
+            <label
+              htmlFor="facebook_page_id"
+              className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+            >
               Página de Facebook{requiredMark}
             </label>
             <select
@@ -549,7 +592,9 @@ export function PublishForm({
               ))}
             </select>
             {errors.facebook_page_id && (
-              <p className="mt-1 text-[10px] text-[var(--ps-error)]">{errors.facebook_page_id.message}</p>
+              <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+                {errors.facebook_page_id.message}
+              </p>
             )}
           </div>
         </div>

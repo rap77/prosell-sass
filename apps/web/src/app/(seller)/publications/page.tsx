@@ -265,11 +265,7 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-ps-border-medium bg-ps-surface px-6 py-14 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[rgba(77,184,255,0.25)] bg-ps-info-bg">
-        <Rocket
-          size={28}
-          className="text-ps-cyan"
-          strokeWidth={1.8}
-        />
+        <Rocket size={28} className="text-ps-cyan" strokeWidth={1.8} />
       </div>
       <div className="max-w-sm">
         <h2 className="mb-2 text-xl font-bold leading-tight tracking-tighter text-ps-text-primary">
@@ -289,7 +285,7 @@ function EmptyState({
             "inline-flex h-9.5 items-center gap-1.5 rounded-lg border-0 px-4.5 text-xs font-semibold",
             canPublish
               ? "cursor-pointer bg-ps-cyan text-ps-base"
-              : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base"
+              : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base",
           )}
         >
           <Plus size={14} strokeWidth={2.5} />
@@ -322,12 +318,17 @@ function PublicationCard({
       onMouseLeave={() => setHovered(false)}
       className="flex flex-col overflow-hidden rounded-xl border border-ps-border-default bg-ps-surface transition-all duration-180"
       style={{
-        borderColor: hovered ? "var(--ps-border-medium)" : "var(--ps-border-default)",
+        borderColor: hovered
+          ? "var(--ps-border-medium)"
+          : "var(--ps-border-default)",
         boxShadow: hovered ? "0 4px 20px rgba(6,13,36,0.35)" : "none",
       }}
     >
       {/* Image */}
-      <div className="relative bg-ps-bg-elevated" style={{ aspectRatio: "16/9" }}>
+      <div
+        className="relative bg-ps-bg-elevated"
+        style={{ aspectRatio: "16/9" }}
+      >
         {image ? (
           <Image
             src={image}
@@ -497,10 +498,12 @@ export default function PublicationsPage() {
                         "inline-flex h-7 items-center gap-1.25 rounded px-2.5 text-xs transition-all duration-150",
                         active
                           ? "bg-ps-surface font-semibold text-ps-cyan shadow-sm"
-                          : "font-normal text-ps-text-secondary"
+                          : "font-normal text-ps-text-secondary",
                       )}
                       style={{
-                        boxShadow: active ? "0 1px 4px rgba(6,13,36,0.3)" : "none",
+                        boxShadow: active
+                          ? "0 1px 4px rgba(6,13,36,0.3)"
+                          : "none",
                       }}
                     >
                       <Icon size={13} strokeWidth={active ? 2.5 : 2} />
@@ -519,7 +522,7 @@ export default function PublicationsPage() {
                 "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border-0 px-3.5 text-xs font-semibold",
                 canCreatePublication
                   ? "cursor-pointer bg-ps-cyan text-ps-base"
-                  : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base"
+                  : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base",
               )}
             >
               <Plus size={14} strokeWidth={2.5} />
@@ -602,7 +605,10 @@ export default function PublicationsPage() {
                       <PublicationStatus status={pub.status} />
                     </td>
                     {/* Updated */}
-                    <td className="p-5 text-xs text-ps-text-secondary" style={{ whiteSpace: "nowrap" }}>
+                    <td
+                      className="p-5 text-xs text-ps-text-secondary"
+                      style={{ whiteSpace: "nowrap" }}
+                    >
                       {formatDate(pub.updatedAt)}
                     </td>
                   </tr>
@@ -612,7 +618,12 @@ export default function PublicationsPage() {
           </div>
         ) : (
           /* ── GRID VIEW ─────────────────────────────────────────────────── */
-          <div className="grid gap-4 auto-fill" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+          <div
+            className="grid gap-4 auto-fill"
+            style={{
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+            }}
+          >
             {publicationRows.map((pub) => (
               <PublicationCard key={pub.id} pub={pub} />
             ))}

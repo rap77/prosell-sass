@@ -174,7 +174,10 @@ export function OrganizationFormFields({
   return (
     <div className="flex flex-col gap-4">
       {/* Identity row: Name + Siglas + Color */}
-      <div className="grid gap-3 items-end" style={{ gridTemplateColumns: "1fr auto auto" }}>
+      <div
+        className="grid gap-3 items-end"
+        style={{ gridTemplateColumns: "1fr auto auto" }}
+      >
         <label className="flex flex-col gap-1.5">
           Nombre *
           <input
@@ -246,7 +249,10 @@ export function OrganizationFormFields({
         />
         {showContact && (
           <div style={sectionBodyStyle}>
-            <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "1fr 1fr" }}
+            >
               <label className="flex flex-col gap-1.5">
                 Teléfono
                 <input
@@ -311,7 +317,10 @@ export function OrganizationFormFields({
                 style={inputStyle}
               />
             </label>
-            <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "1fr 1fr" }}
+            >
               <label className="flex flex-col gap-1.5">
                 Ciudad
                 <input
@@ -331,7 +340,10 @@ export function OrganizationFormFields({
                 />
               </label>
             </div>
-            <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "1fr 1fr" }}
+            >
               <label className="flex flex-col gap-1.5">
                 Código postal
                 <input
@@ -385,7 +397,10 @@ export function OrganizationFormFields({
           onToggle={() => setShowSocial(!showSocial)}
         />
         {showSocial && (
-          <div className="grid gap-3 mt-2" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          <div
+            className="grid gap-3 mt-2"
+            style={{ gridTemplateColumns: "1fr 1fr" }}
+          >
             <label className="flex flex-col gap-1.5">
               Instagram
               <input
