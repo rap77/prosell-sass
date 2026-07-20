@@ -71,12 +71,11 @@ async def _create_test_org(session: AsyncSession) -> OrganizationModel:
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("_setup_db_override")
 class TestPublicProductRouter:
     """Test GET /api/v1/public/products/{slug} and /image-urls endpoints."""
 
-    async def test_get_published_product_returns_product(
-        self, shared_session: AsyncSession, _setup_db_override
-    ):
+    async def test_get_published_product_returns_product(self, shared_session: AsyncSession):
         """GET /{slug} returns published product with marketplace=true."""
         org = await _create_test_org(shared_session)
 
@@ -115,7 +114,7 @@ class TestPublicProductRouter:
         assert data["published_to_marketplace"] is True
         assert data["view_count"] == 6  # incremented from 5
 
-    async def test_get_product_not_found(self, _setup_db_override) -> None:
+    async def test_get_product_not_found(self) -> None:
         """GET /{slug} returns 404 when product doesn't exist."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/nonexistent-slug")
@@ -124,7 +123,7 @@ class TestPublicProductRouter:
         assert "Product not found" in response.json()["detail"]
 
     async def test_get_unpublished_product_still_accessible_via_slug(
-        self, shared_session: AsyncSession, _setup_db_override
+        self, shared_session: AsyncSession
     ):
         """GET /{slug} returns product even when status != published.
 
@@ -155,7 +154,7 @@ class TestPublicProductRouter:
         assert response.json()["title"] == "Unpublished Car"
 
     async def test_get_not_marketplace_product_still_accessible_via_slug(
-        self, shared_session: AsyncSession, _setup_db_override
+        self, shared_session: AsyncSession
     ):
         """GET /{slug} returns product even when published_to_marketplace=false.
 
@@ -185,9 +184,7 @@ class TestPublicProductRouter:
         assert response.status_code == 200
         assert response.json()["title"] == "Internal Only Car"
 
-    async def test_get_product_increments_view_count(
-        self, shared_session: AsyncSession, _setup_db_override
-    ):
+    async def test_get_product_increments_view_count(self, shared_session: AsyncSession):
         """GET /{slug} increments view_count."""
         org = await _create_test_org(shared_session)
 
@@ -220,7 +217,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_returns_signed_urls(
-        self, mock_spaces_dep, shared_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, shared_session: AsyncSession
     ):
         """GET /{slug}/image-urls returns signed URLs for all images."""
         mock_spaces = AsyncMock()
@@ -261,7 +258,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_cover_image_first_when_separate(
-        self, mock_spaces_dep, shared_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, shared_session: AsyncSession
     ):
         """GET /{slug}/image-urls puts cover_image first if not in image_urls."""
         mock_spaces = AsyncMock()
@@ -301,7 +298,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_reorders_cover_to_first(
-        self, mock_spaces_dep, shared_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, shared_session: AsyncSession
     ):
         """GET /{slug}/image-urls moves cover to first position when it's in the list."""
         mock_spaces = AsyncMock()
@@ -342,7 +339,7 @@ class TestPublicProductRouter:
         assert data["images"][2]["key"] == "car-back.jpg"
         assert data["cover_image_key"] == "car-side.jpg"
 
-    async def test_get_product_image_urls_not_found(self, _setup_db_override) -> None:
+    async def test_get_product_image_urls_not_found(self) -> None:
         """GET /{slug}/image-urls returns 404 if product doesn't exist."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products/nonexistent/image-urls")
@@ -351,7 +348,7 @@ class TestPublicProductRouter:
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
     async def test_get_product_image_urls_works_for_draft(
-        self, mock_spaces_dep, shared_session: AsyncSession, _setup_db_override
+        self, mock_spaces_dep, shared_session: AsyncSession
     ):
         """GET /{slug}/image-urls works for draft products (slug = secret link)."""
         mock_spaces = AsyncMock()
