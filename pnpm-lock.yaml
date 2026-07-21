@@ -71,8 +71,8 @@ importers:
         specifier: ^6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)
       '@hookform/resolvers':
-        specifier: ^5.0.0
-        version: 5.4.0(react-hook-form@7.71.1(react@19.2.4))
+        specifier: ^3.0.0
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -143,8 +143,8 @@ importers:
         specifier: ^2.0.0
         version: 2.6.1
       zod:
-        specifier: ^4.0.0
-        version: 4.4.3
+        specifier: ^3.0.0
+        version: 3.25.76
       zustand:
         specifier: ^5.0.11
         version: 5.0.11(@types/react@19.2.13)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
@@ -666,6 +666,11 @@ packages:
     resolution: {integrity: sha512-4H+/MWbz3ntA50lrPif+7TsvMeX3R1GSYjiLULz0+zEJ7/Yfd9pupZmAwUs/PBpA6aAcFmeRr0laWfcz1a9V1A==}
     peerDependencies:
       '@fullcalendar/core': ~6.1.20
+
+  '@hookform/resolvers@3.10.0':
+    resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
+    peerDependencies:
+      react-hook-form: ^7.0.0
 
   '@hookform/resolvers@5.4.0':
     resolution: {integrity: sha512-EIsqr/t/qbinPIhGjMdtvutIN1Kk4uwbROE9/UQ93CAVGR7GkA7Y92+fX80OzXi/OB67jVFYwKGO1WzkxmkFZw==}
@@ -4386,6 +4391,9 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -4783,6 +4791,10 @@ snapshots:
     dependencies:
       '@fullcalendar/core': 6.1.20
       '@fullcalendar/daygrid': 6.1.20(@fullcalendar/core@6.1.20)
+
+  '@hookform/resolvers@3.10.0(react-hook-form@7.71.1(react@19.2.4))':
+    dependencies:
+      react-hook-form: 7.71.1(react@19.2.4)
 
   '@hookform/resolvers@5.4.0(react-hook-form@7.71.1(react@19.2.4))':
     dependencies:
@@ -6718,8 +6730,8 @@ snapshots:
       '@babel/parser': 7.29.0
       eslint: 9.39.2(jiti@2.6.1)
       hermes-parser: 0.25.1
-      zod: 4.4.3
-      zod-validation-error: 4.0.2(zod@4.4.3)
+      zod: 3.25.76
+      zod-validation-error: 4.0.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
 
@@ -8636,9 +8648,11 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-validation-error@4.0.2(zod@4.4.3):
+  zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:
-      zod: 4.4.3
+      zod: 3.25.76
+
+  zod@3.25.76: {}
 
   zod@4.4.3: {}
 
