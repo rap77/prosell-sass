@@ -127,10 +127,11 @@
 
 1. **Multi-Account Facebook Architecture** 🆕 CRÍTICO
    - Tabla `facebook_accounts` (org_id, user_id, access_token, expires_at)
-   - OAuth FB flow per vendedor
-   - Admin impersonation (usar cuenta vendedor inactivo)
+   - OAuth FB flow per cuenta
+   - **Admin ProSell publica** (no vendedores individuales por ahora)
+   - **Unlimited cuentas per org** (sin tier limits)
    - Token refresh automático (cronjob)
-   - Selector cuenta al publicar
+   - Selector cuenta al publicar (dropdown)
 
 2. **Task Queue (Redis + Taskiq)**
    - Redis 7.4+ setup (Docker)
@@ -146,7 +147,12 @@
 
 4. **Image + Video Optimization Pipeline** 🆕
    - **Images**: Resize/compress (1200x630 max, <500KB)
-   - **Videos**: FFmpeg transcode (H.264, max 60s, <10MB)
+   - **Videos**: FFmpeg transcode siguiendo **FB Marketplace specs 2026**:
+     - Format: MP4 (H.264 video codec, AAC audio)
+     - Resolution: 1080x1080 (1:1 square) o 1080x1920 (9:16 vertical)
+     - Max duration: 240 min (recomendado: 60s para conversión)
+     - Max size: 4GB (target compress: 3-5MB para 60s)
+     - FPS: 30fps
    - Watermark overlay (org logo)
    - CDN upload (Cloudflare R2)
    - Thumbnail generation (videos)
@@ -340,39 +346,46 @@
    - Link FB conversation → ProSell lead
    - Deduplication (FB user ID)
 
-5. **WhatsApp Business API Webhook**
-   - Webhook recibir mensajes WhatsApp
+5. **WhatsApp Playwright Scraping (Temporal MVP)** 🆕
+   - Playwright scraping WhatsApp Web
+   - Auto-login con QR code (saved session)
+   - Poll new messages (cada 30s)
    - Auto-create activity en lead
    - Link WhatsApp conversation → ProSell lead
    - Phone number matching
+   - **Nota**: Temporal hasta WhatsApp Business API aprobada (migración Sprint E)
 
-6. **Unified Inbox (Básico)**
+6. **Unified Inbox (Básico — Read-Only + Redirect)**
    - Vista única FB Messages + WhatsApp
    - Filtrar por canal
    - Mark as read/unread
-   - Quick reply (link to channel)
+   - Quick reply: **redirect to channel** (FB Messenger o WhatsApp Web)
+   - **Nota**: Reply directo desde ProSell → Sprint E (si demand validated)
 
 #### Tech Stack
 
 - Kanban: @dnd-kit (ya instalado)
 - Webhooks: FastAPI + ngrok (dev) / webhook.site (prod)
 - FB Webhooks: Graph API subscriptions
-- WhatsApp: WhatsApp Business API (Twilio o Meta oficial)
+- **WhatsApp MVP**: Playwright + WhatsApp Web (temporal)
+- **WhatsApp Production**: WhatsApp Business API (Sprint E post-approval)
 
 #### Acceptance Criteria
 
 - [ ] Kanban drag funciona (desktop + mobile)
 - [ ] Timeline muestra actividades cronológicas
 - [ ] FB Messages → ProSell lead < 1min
-- [ ] WhatsApp → ProSell lead < 1min
+- [ ] **WhatsApp scraping → ProSell lead < 1min** (Playwright)
 - [ ] Unified inbox muestra ambos canales
-- [ ] Quick reply funciona
+- [ ] Quick reply redirect funciona (abre FB Messenger o WhatsApp Web)
+- [ ] WhatsApp session persiste (no re-login cada vez)
 
 #### Risks
 
-- 🔴 WhatsApp API approval (mitigación: empezar con Twilio sandbox)
+- 🟡 **Playwright WhatsApp scraping frágil** (mitigación: retry logic + fallback manual, migrar API Sprint E)
+- 🟡 WhatsApp Web session expire (mitigación: re-auth flow automático)
 - 🟡 FB webhook security (mitigación: verify signature)
-- 🟡 Message threading complejo (mitigación: MVP = solo captura)
+- 🟢 Message threading complejo (mitigación: MVP = solo captura, threading Sprint E)
 
 ---
 
@@ -409,20 +422,31 @@
 
 #### Features Multi-Canal 🆕
 
-6. **Message Threading**
+6. **WhatsApp Business API Migration** (si aprobada)
+   - Migrar de Playwright scraping → WhatsApp Business API
+   - Webhook oficial (más robusto que polling)
+   - Mejor performance + reliability
+
+7. **Reply Directo desde ProSell** (upgrade from redirect)
+   - Responder FB Messages desde ProSell (Graph API Send)
+   - Responder WhatsApp desde ProSell (WhatsApp Send API)
+   - Textarea + send button en unified inbox
+   - **Nota**: Solo si WhatsApp API aprobada, sino mantener redirect
+
+8. **Message Threading**
    - Agrupar mensajes por conversation_id
    - Thread view (chat-like)
-   - Reply desde ProSell (redirect to channel)
+   - History completo por lead
 
-7. **Auto-Lead Creation Rules**
+9. **Auto-Lead Creation Rules**
    - Si mensaje nuevo + no existe lead → auto-create
    - Extract info from message (nombre, interés)
    - Smart assignment (by keyword, product mention)
 
-8. **Channel Analytics**
-   - Response time por canal
-   - Messages per day
-   - Conversion rate per channel
+10. **Channel Analytics**
+    - Response time por canal
+    - Messages per day
+    - Conversion rate per channel
 
 #### Acceptance Criteria
 
@@ -469,12 +493,13 @@
 
 ---
 
-### **Sprint G (Q1 2027): AI Agent Auto-Responder** 🆕
+### **Sprint G (Q1 2027): AI Agent Auto-Responder** 🆕 POST-MVP
 
-**Objetivo**: Agente AI que atienda mensajes y dé info a leads
+**Objetivo**: Agente AI que atienda mensajes 24/7 con escalamiento humano
 **Duración**: 3 semanas
 **Equipo**: 1 dev
 **Inversión**: $960
+**Decisión**: POST-MVP (después de Wallet Sprint H)
 
 #### Features
 
@@ -488,11 +513,16 @@
    - Embed productos (marca, modelo, año, precio, specs)
    - Buscar productos relevantes por query lead
 
-3. **Auto-Responder FB Messages + WhatsApp**
+3. **Auto-Responder FB Messages + WhatsApp (Always-On Híbrido)**
+   - **Always-on**: AI responde 24/7 (mejor UX para leads)
    - Webhook → detect question → call Assistant
    - Generate response → send via channel API
+   - **Escalamiento humano**:
+     - Keywords: "hablar con vendedor", "agente humano", "representante"
+     - Sentiment analysis: si lead frustrado → auto-escalate
+     - Queue para vendedor disponible
    - Fallback: "Un vendedor te contactará pronto"
-   - Human handoff: keyword "hablar con vendedor"
+   - **Buena programación**: Prompt engineering + RAG + few-shot examples
 
 4. **AI Agent Dashboard**
    - Conversaciones atendidas
@@ -557,22 +587,23 @@
 
 ## 📋 Resumen Inversión
 
-| Sprint                                 | Duración | Inversión | Prioridad |
-| -------------------------------------- | -------- | --------- | --------- |
-| 0: Mobile-First Foundation             | 1 sem    | $320      | 🔴 P0     |
-| A: FB Automation Core + Multi + Video  | 3 sem    | $960      | 🔴 P0     |
-| B: FB Automation Intelligence          | 3 sem    | $960      | 🔴 P0     |
-| C: Production-Ready + FB Lead Ads      | 3 sem    | $960      | 🔴 P0     |
-| i18n: Multi-idioma                     | 2 sem    | $960      | 🔴 P0     |
-| D: CRM Básico + Multi-Canal Fase 1     | 2 sem    | $640      | 🟡 P1     |
-| E: CRM Intermedio + Multi-Canal Fase 2 | 2 sem    | $640      | 🟡 P1     |
-| F: CRM Avanzado + Workflows            | 3 sem    | $960      | 🟢 P2     |
-| G: AI Agent Auto-Responder             | 3 sem    | $960      | 🟢 P2     |
-| H: Wallet                              | 3 sem    | $960      | 🟢 P3     |
+| Sprint                                 | Duración | Inversión | Prioridad        |
+| -------------------------------------- | -------- | --------- | ---------------- |
+| 0: Mobile-First Foundation             | 1 sem    | $320      | 🔴 P0            |
+| A: FB Automation Core + Multi + Video  | 3 sem    | $960      | 🔴 P0            |
+| B: FB Automation Intelligence          | 3 sem    | $960      | 🔴 P0            |
+| C: Production-Ready + FB Lead Ads      | 3 sem    | $960      | 🔴 P0            |
+| i18n: Multi-idioma                     | 2 sem    | $960      | 🔴 P0            |
+| D: CRM Básico + Multi-Canal Fase 1     | 2 sem    | $640      | 🟡 P1            |
+| E: CRM Intermedio + Multi-Canal Fase 2 | 2 sem    | $640      | 🟡 P1            |
+| F: CRM Avanzado + Workflows            | 3 sem    | $960      | 🟢 P2 (opcional) |
+| H: Wallet                              | 3 sem    | $960      | 🟢 P3            |
+| G: AI Agent Auto-Responder             | 3 sem    | $960      | 🟢 POST-MVP      |
 
 **MVP Mobile-First (0-E)**: **$6,080** | 16 semanas (~4 meses)
-**Full con AI (0-G)**: **$7,360** | 22 semanas (~5.5 meses)
-**Full con Wallet (0-H)**: **$8,320** | 25 semanas (~6 meses)
+**Con Workflows (0-F)**: **$7,040** | 19 semanas (~4.5 meses)
+**Con Wallet (0-H)**: **$8,000** | 22 semanas (~5.5 meses)
+**Full con AI (0-G+H)**: **$8,960** | 25 semanas (~6 meses)
 
 ---
 
@@ -708,19 +739,31 @@
 
 ## 🔄 Cambios vs Roadmap v4.0
 
-| Feature                 | v4.0   | v5.0 (NUEVO)          |
-| ----------------------- | ------ | --------------------- |
-| Mobile-first            | ❌ No  | ✅ Sprint 0 (P0)      |
-| Video soporte           | ❌ No  | ✅ Sprint A           |
-| Multi-cuenta FB         | ❌ No  | ✅ Sprint A (CRÍTICO) |
-| FB Messages webhook     | ❌ No  | ✅ Sprint D           |
-| WhatsApp webhook        | ❌ No  | ✅ Sprint D           |
-| Unified inbox           | ❌ No  | ✅ Sprint D           |
-| Message threading       | ❌ No  | ✅ Sprint E           |
-| AI Agent auto-responder | ❌ No  | ✅ Sprint G           |
-| Total sprints           | 7      | 9                     |
-| MVP investment          | $5,120 | $6,080                |
-| Full investment         | $7,040 | $8,320                |
+| Feature                      | v4.0   | v5.0 (NUEVO)                       |
+| ---------------------------- | ------ | ---------------------------------- |
+| Mobile-first                 | ❌ No  | ✅ Sprint 0 (P0) — BLOCKER         |
+| Video soporte                | ❌ No  | ✅ Sprint A (FB Marketplace specs) |
+| Multi-cuenta FB              | ❌ No  | ✅ Sprint A (unlimited)            |
+| FB Messages webhook          | ❌ No  | ✅ Sprint D                        |
+| WhatsApp scraping (temporal) | ❌ No  | ✅ Sprint D (Playwright MVP)       |
+| WhatsApp API (production)    | ❌ No  | ✅ Sprint E (post-approval)        |
+| Unified inbox                | ❌ No  | ✅ Sprint D (read-only + redirect) |
+| Reply directo                | ❌ No  | ✅ Sprint E (si API aprobada)      |
+| Message threading            | ❌ No  | ✅ Sprint E                        |
+| AI Agent auto-responder      | ❌ No  | ✅ Sprint G (POST-MVP, always-on)  |
+| Total sprints                | 7      | 9                                  |
+| MVP investment               | $5,120 | $6,080                             |
+| Full investment (con Wallet) | $7,040 | $8,000                             |
+
+---
+
+## 📝 Decisiones Técnicas Tomadas (User Feedback)
+
+1. **WhatsApp MVP**: Playwright scraping WhatsApp Web (temporal) → migrar WhatsApp Business API cuando aprobada (Sprint E)
+2. **Video specs**: FB Marketplace exact specs (MP4 H.264, 1080x1080, max 4GB, 30fps)
+3. **Multi-cuenta FB**: Unlimited cuentas per org (admin ProSell publica, no vendedores individuales por ahora)
+4. **AI Agent**: Always-on híbrido con escalamiento humano (keywords + sentiment analysis). POST-MVP después de Wallet.
+5. **Unified inbox**: Empezar read-only + redirect (Sprint D) → evolucionar reply directo (Sprint E si WhatsApp API aprobada)
 
 ---
 
@@ -733,6 +776,9 @@
 - [Facebook Graph API](https://developers.facebook.com/docs/graph-api)
 - [WhatsApp Business API](https://developers.facebook.com/docs/whatsapp)
 - [OpenAI Assistant API](https://platform.openai.com/docs/assistants)
+- [Facebook Ad Specs 2026](https://www.blog.udonis.co/digital-marketing/facebook-ads/facebook-ad-specs)
+- [Facebook Video Size & Format Guide](https://www.crowbert.com/blog/facebook-video-format-and-size)
+- [Facebook Video Ads Specs](https://superscale.ai/learn/facebook-video-ads/)
 
 ---
 
