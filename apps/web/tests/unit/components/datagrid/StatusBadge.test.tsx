@@ -39,13 +39,13 @@ describe("StatusBadge", () => {
     expect(srText).toBeInTheDocument();
   });
 
-  it("applies rounded styling via inline style", () => {
+  it("applies rounded styling via Tailwind class", () => {
     const { container } = render(<StatusBadge status="published" />);
     const badge = container.querySelector(
       '[data-testid="vehicle-status"]',
     ) as HTMLElement;
     expect(badge).toBeTruthy();
-    // Styled with inline borderRadius — not a Tailwind class
-    expect(badge.style.borderRadius).toBeTruthy();
+    // Styled with Tailwind rounded-full class
+    expect(badge.className).toContain("rounded-full");
   });
 });

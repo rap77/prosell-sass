@@ -9,7 +9,9 @@ const CURRENT_USER_SCHEMA = z.object({
   email: z
     .string()
     .trim()
-    .refine((value) => EMAIL_REGEX.test(value), "Correo inválido"),
+    .refine((value) => EMAIL_REGEX.test(value), {
+      message: "Correo inválido",
+    }),
   full_name: z.string().min(1),
   tenant_id: z.string().nullable().optional(),
 });
@@ -27,7 +29,9 @@ const UPDATE_PROFILE_INPUT_SCHEMA = z.object({
   email: z
     .string()
     .trim()
-    .refine((value) => EMAIL_REGEX.test(value), "Correo inválido"),
+    .refine((value) => EMAIL_REGEX.test(value), {
+      message: "Correo inválido",
+    }),
   phone: z.string().trim().optional(),
   organizationId: z.string().optional(),
 });
@@ -37,11 +41,9 @@ const CHANGE_PASSWORD_INPUT_SCHEMA = z
     currentPassword: z
       .string()
       .min(1, { message: "La contraseña actual es requerida" }),
-    newPassword: z
-      .string()
-      .min(8, {
-        message: "La nueva contraseña debe tener al menos 8 caracteres",
-      }),
+    newPassword: z.string().min(8, {
+      message: "La nueva contraseña debe tener al menos 8 caracteres",
+    }),
   })
   .superRefine((value, context) => {
     if (value.currentPassword === value.newPassword) {
@@ -51,7 +53,10 @@ const CHANGE_PASSWORD_INPUT_SCHEMA = z
         message: "La nueva contraseña debe ser diferente a la actual",
       });
     }
-  });
+  }) as z.ZodType<{
+  currentPassword: string;
+  newPassword: string;
+}>;
 
 const DISABLE_TWO_FACTOR_INPUT_SCHEMA = z.object({
   totpCode: z

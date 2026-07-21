@@ -98,7 +98,8 @@ describe("ProductImageGallery", () => {
       render(<ProductImageGallery images={mockImages} />);
 
       const gallery = screen.getByTestId("image-gallery");
-      expect(gallery).toHaveStyle({ flexDirection: "column" });
+      // Gallery uses flex flex-col Tailwind classes for column direction
+      expect(gallery.className).toContain("flex-col");
     });
   });
 

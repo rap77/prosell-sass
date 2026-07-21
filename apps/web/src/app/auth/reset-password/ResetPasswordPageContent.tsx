@@ -35,14 +35,20 @@ const resetSchema = z
       .min(8, { message: "Mínimo 8 caracteres" })
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Debe tener mayúscula, minúscula, número y símbolo (@$!%*?&)",
+        {
+          message:
+            "Debe tener mayúscula, minúscula, número y símbolo (@$!%*?&)",
+        },
       ),
     confirmPassword: z.string().min(1, { message: "Confirmá tu contraseña" }),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
-  });
+  }) as z.ZodType<{
+  password: string;
+  confirmPassword: string;
+}>;
 
 type ResetValues = z.infer<typeof resetSchema>;
 
