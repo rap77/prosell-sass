@@ -44,6 +44,19 @@ repos:
         stages: [pre-commit]
         files: ^docs/superpowers/specs/.*\.md$
 
+      # ============================================
+      # Frontend - lint-staged (ESLint + Prettier)
+      # Runs ESLint --fix and Prettier --write on staged files.
+      # Configured in package.json under "lint-staged" key.
+      # ============================================
+      - id: lint-staged
+        name: lint-staged (ESLint + Prettier)
+        entry: pnpm lint-staged
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        files: \.(ts|tsx|js|jsx|json|css|md|yaml|yml)$
+
   # ============================================
   # Python - Ruff (lint + format)
   # ============================================
