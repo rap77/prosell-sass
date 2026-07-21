@@ -278,21 +278,30 @@ export function UnifiedProductForm({
     }
   }, [mode, existingProduct, reset]);
 
+  // Reset state when mode changes to non-edit
   useEffect(() => {
     if (mode !== "edit") {
       initializedOwnershipProductId.current = null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional reset on mode change
       setPendingBrokers([]);
       setSelectedOrgId(null);
-      return;
     }
+  }, [mode]);
 
-    // Reset state immediately when switching to a different product
-    // (prevents stale brokers from previous product showing in dialog)
-    if (initializedOwnershipProductId.current !== productId) {
+  // Reset state when switching products in edit mode
+  useEffect(() => {
+    if (mode === "edit" && initializedOwnershipProductId.current !== productId) {
       setPendingBrokers([]);
       setSelectedOrgId(null);
       setOrgDirty(false);
       setBrokersDirty(false);
+    }
+  }, [mode, productId]);
+
+  // Initialize ownership data when in edit mode
+  useEffect(() => {
+    if (mode !== "edit") {
+      return;
     }
 
     // Wait for data before initializing

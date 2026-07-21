@@ -90,9 +90,11 @@ export function KanbanBoard() {
   const { data: vendedores = [] } = useVendedores();
 
   // Local mirror — source of truth for the board UI.
-  // Drag updates this synchronously; server data syncs back via useEffect after invalidation.
+  // Sync server data to local state - updates when server data changes after mutations
   const [localLeads, setLocalLeads] = useState<Lead[]>(leadsFromServer);
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional sync from server after mutations
     setLocalLeads(leadsFromServer);
   }, [leadsFromServer]);
 

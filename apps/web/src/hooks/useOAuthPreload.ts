@@ -27,7 +27,7 @@
  * ```
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 import { logger } from "@/lib/logger";
 
@@ -79,8 +79,8 @@ export function useOAuthPreload(
     state.get("oauth-preload", true),
   );
 
-  // Track preload state
-  const isPreloadedRef = useRef(false);
+  // Track preload state - useState for reactivity when exposed in return
+  const [isPreloaded, setIsPreloaded] = useState(false);
   const hasAttemptedRef = useRef(false);
 
   /**
@@ -88,7 +88,7 @@ export function useOAuthPreload(
    * Runs once, non-blocking, silent failure
    */
   useEffect(() => {
-    if (!usePreload || isPreloadedRef.current || hasAttemptedRef.current) {
+    if (!usePreload || isPreloaded || hasAttemptedRef.current) {
       return;
     }
 
@@ -97,7 +97,7 @@ export function useOAuthPreload(
     // Dynamic import with error handling
     import(/* webpackMode: "eager" */ importPath)
       .then(() => {
-        isPreloadedRef.current = true;
+        setIsPreloaded(true);
         logger.info("[OAuth Preload] Initial preload successful");
       })
       .catch(() => {
@@ -106,21 +106,21 @@ export function useOAuthPreload(
           "[OAuth Preload] Initial preload failed (will retry on hover)",
         );
       });
-  }, [importPath, usePreload]);
+  }, [importPath, usePreload, isPreloaded]);
 
   /**
    * Mouse enter retry handler
    * Retries preload if initial attempt failed
    */
   const handleMouseEnter = () => {
-    if (!usePreload || isPreloadedRef.current) {
+    if (!usePreload || isPreloaded) {
       return;
     }
 
     // Retry preload on hover
     import(/* webpackMode: "eager" */ importPath)
       .then(() => {
-        isPreloadedRef.current = true;
+        setIsPreloaded(true);
         logger.info("[OAuth Preload] Hover retry successful");
       })
       .catch(() => {
@@ -130,7 +130,7 @@ export function useOAuthPreload(
   };
 
   return {
-    isPreloaded: isPreloadedRef.current,
+    isPreloaded,
     handleMouseEnter,
   };
 }
