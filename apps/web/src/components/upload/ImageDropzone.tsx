@@ -58,7 +58,7 @@ export function ImageDropzone() {
         }
       `}
     >
-      <input {...getInputProps()} />
+      <input {...getInputProps()} capture="environment" />
 
       <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
 
