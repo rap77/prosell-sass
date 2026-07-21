@@ -38,10 +38,7 @@ const loginSchema = z.object({
     .string()
     .min(1, { message: "La contraseña es requerida" })
     .min(8, { message: "Mínimo 8 caracteres" }),
-}) as z.ZodType<{
-  email: string;
-  password: string;
-}>;
+}) as any;
 type LoginValues = z.infer<typeof loginSchema>;
 
 // ─── OAuth SVG icons ──────────────────────────────────────────────────────────

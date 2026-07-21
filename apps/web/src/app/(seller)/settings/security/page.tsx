@@ -53,11 +53,7 @@ const securitySchema = z
         message: "La nueva contraseña debe ser diferente a la actual",
       });
     }
-  }) as z.ZodType<{
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}>;
+  }) as any;
 
 type SecurityFormValues = z.infer<typeof securitySchema>;
 

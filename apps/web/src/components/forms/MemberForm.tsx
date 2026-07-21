@@ -42,11 +42,7 @@ const memberSchema = z.object({
       .max(100, { message: "Commission cannot exceed 100%" })
       .optional(),
   ),
-}) as z.ZodType<{
-  user_id: string;
-  role: "manager" | "vendor";
-  commission_rate?: number;
-}>;
+}) as any;
 
 export type MemberFormValues = z.infer<typeof memberSchema>;
 

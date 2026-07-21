@@ -59,13 +59,7 @@ const registerSchema = z
   .refine((d) => d.password === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
-  }) as z.ZodType<{
-  fullName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  acceptTerms: boolean;
-}>;
+  }) as any;
 
 type RegisterValues = z.infer<typeof registerSchema>;
 

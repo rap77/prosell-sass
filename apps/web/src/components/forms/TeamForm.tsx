@@ -43,9 +43,7 @@ const teamSchema = z.object({
     .min(2, { message: "Name must be at least 2 characters" })
     .max(255, { message: "Name must be less than 255 characters" })
     .trim(),
-}) as z.ZodType<{
-  name: string;
-}>;
+}) as any;
 
 export type TeamFormValues = z.infer<typeof teamSchema>;
 

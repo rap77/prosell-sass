@@ -303,12 +303,10 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
       ) : (
         <div
           {...getRootProps()}
-          className={dropzoneCardClass}
-          style={{
-            borderColor: isDragActive
-              ? "var(--ps-cyan)"
-              : "var(--ps-border-default)",
-          }}
+          className={cn(
+            dropzoneCardClass,
+            isDragActive ? "border-ps-cyan" : "border-ps-border-default",
+          )}
         >
           <input {...getInputProps()} />
           <Upload size={28} className="text-ps-text-secondary" />
@@ -337,17 +335,17 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
         <SummaryCard
           label="Importables"
           value={summary.importable_count}
-          color="var(--ps-success)"
+          tone="success"
         />
         <SummaryCard
           label="Con errores"
           value={summary.error_count}
-          color="var(--ps-error, #ef4444)"
+          tone="error"
         />
         <SummaryCard
           label="Imágenes"
           value={summary.images_count}
-          color="var(--ps-cyan)"
+          tone="cyan"
         />
       </div>
 
@@ -392,17 +390,13 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
 }
 
 function PreviewRowView({ row }: { row: PreviewRow }) {
-  const status = row.importable
-    ? { label: "✓ OK", color: "var(--ps-success)" }
-    : row.errors.length > 0
-      ? { label: "✗ Error", color: "var(--ps-error, #ef4444)" }
-      : { label: "⚠ Atención", color: "var(--ps-warning, #f59e0b)" };
+  const status = resolvePreviewStatus(row);
 
   return (
     <tr className={tableBodyRowClass}>
       <td className={tdClass}>{row.row_number}</td>
       <td className={tdClass}>{row.vin || "—"}</td>
-      <td className={cn(tdClass, "font-semibold")} style={{ color: status.color }}>
+      <td className={cn(tdClass, "font-semibold", status.className)}>
         {status.label}
       </td>
       <td className={tdClass}>{Object.keys(row.mapped_fields).length}</td>
@@ -514,30 +508,46 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   );
 }
 
+type SummaryTone = "success" | "error" | "cyan";
+
+const summaryToneClass: Record<SummaryTone, string> = {
+  success: "text-ps-success",
+  error: "text-ps-error",
+  cyan: "text-ps-cyan",
+};
+
 function SummaryCard({
   label,
   value,
-  color,
+  tone,
 }: {
   label: string;
   value: number;
-  color: string;
+  tone: SummaryTone;
 }) {
   return (
     <div className="rounded-lg border border-ps-border-default bg-ps-bg-surface p-4">
       <p className="m-0 text-xs uppercase text-ps-text-secondary tracking-wide">
         {label}
       </p>
-      <p
-        className="mt-2 text-2xl font-bold"
-        style={{
-          color,
-        }}
-      >
+      <p className={cn("mt-2 text-2xl font-bold", summaryToneClass[tone])}>
         {value}
       </p>
     </div>
   );
+}
+
+function resolvePreviewStatus(row: PreviewRow): {
+  label: string;
+  className: string;
+} {
+  if (row.importable) {
+    return { label: "✓ OK", className: "text-ps-success" };
+  }
+  if (row.errors.length > 0) {
+    return { label: "✗ Error", className: "text-ps-error" };
+  }
+  return { label: "⚠ Atención", className: "text-ps-warning" };
 }
 
 // ─── Styles ─────────────────────────────────────────────────────────────────

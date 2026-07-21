@@ -117,28 +117,7 @@ const publishSchema = z.object({
   transmission: z.string().optional(),
   clean_title: z.boolean().default(true),
   vin: z.string().optional(),
-}) as z.ZodType<{
-  title: string;
-  description?: string;
-  price_usd: number;
-  facebook_page_id: string;
-  hero_shot_index: number;
-  zip_code: string;
-  image_urls: string[];
-  vehicle_type: string;
-  year: number;
-  make: string;
-  model: string;
-  mileage: number;
-  body_style?: string;
-  exterior_color?: string;
-  interior_color?: string;
-  vehicle_condition?: string;
-  fuel_type?: string;
-  transmission?: string;
-  clean_title: boolean;
-  vin?: string;
-}>;
+}) as any;
 
 type PublishFormValues = z.infer<typeof publishSchema>;
 

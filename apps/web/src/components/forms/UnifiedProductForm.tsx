@@ -244,8 +244,7 @@ export function UnifiedProductForm({
   // expensive on large categories; memo avoids re-derivation on every keystroke
   const { combinedSchema, defaultValues } = useMemo(() => {
     const attrSchema = buildZodSchema(category.attribute_schema);
-    const combined = FIXED_FIELDS_SCHEMA.merge(attrSchema) as z.ZodType<
-      Record<string, unknown>
+    const combined = FIXED_FIELDS_SCHEMA.merge(attrSchema) as any
     >;
     const defaults = {
       price: 0,
