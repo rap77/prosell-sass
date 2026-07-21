@@ -34,7 +34,7 @@ interface VehicleData {
   price_cents: number;
   zip_code: string;
   image_urls: string[];
-  tenant_id: string;
+  tenant_id?: string;
 }
 
 interface FacebookPage {
@@ -49,7 +49,7 @@ interface VehicleOption {
   price_cents: number;
   zip_code: string;
   image_urls: string[];
-  tenant_id: string;
+  tenant_id?: string;
   year?: number;
   make?: string;
   model?: string;

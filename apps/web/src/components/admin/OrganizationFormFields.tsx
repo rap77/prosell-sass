@@ -62,38 +62,12 @@ interface OrganizationFormFieldsProps {
   defaultExpanded?: boolean;
 }
 
-// ponytail: extracted to module scope to satisfy React Compiler
-const inputStyle = {
-  height: 38,
-  padding: "0 12px",
-  borderRadius: 8,
-  border: "1px solid var(--ps-border-default)",
-  background: "var(--ps-bg-elevated)",
-  color: "var(--ps-text-primary)",
-};
-
-const inputErrorStyle = {
-  ...inputStyle,
-  border: "1px solid var(--ps-error)",
-};
-
-const errorTextStyle = {
-  fontSize: 11,
-  color: "var(--ps-error)",
-  marginTop: 4,
-};
-
-const sectionDividerStyle = {
-  borderTop: "1px solid var(--ps-border-default)",
-  paddingTop: 8,
-};
-
-const sectionBodyStyle = {
-  display: "flex",
-  flexDirection: "column" as const,
-  gap: 12,
-  marginTop: 8,
-};
+const inputClassName =
+  "h-[38px] rounded-lg border border-ps-border-default bg-ps-elevated px-3 py-0 text-ps-text-primary";
+const errorInputClassName = "border-ps-danger-hover-border";
+const errorTextClassName = "mt-1 text-[11px] text-ps-error";
+const sectionDividerClassName = "border-t border-ps-border-default pt-2";
+const sectionBodyClassName = "mt-2 flex flex-col gap-3";
 
 // ponytail: extracted outside render to satisfy React Compiler
 function SectionHeader({
@@ -175,8 +149,7 @@ export function OrganizationFormFields({
     <div className="flex flex-col gap-4">
       {/* Identity row: Name + Siglas + Color */}
       <div
-        className="grid gap-3 items-end"
-        style={{ gridTemplateColumns: "1fr auto auto" }}
+        className="grid grid-cols-[1fr_auto_auto] items-end gap-3"
       >
         <label className="flex flex-col gap-1.5">
           Nombre *
@@ -185,7 +158,7 @@ export function OrganizationFormFields({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             required
-            style={inputStyle}
+            className={inputClassName}
           />
         </label>
         <label className="flex flex-col gap-1.5">
@@ -198,7 +171,7 @@ export function OrganizationFormFields({
             }
             maxLength={5}
             placeholder="ACME"
-            style={{ ...inputStyle, width: 80, textTransform: "uppercase" }}
+            className={cn(inputClassName, "w-20 uppercase")}
           />
         </label>
         <label className="flex flex-col gap-1.5">
@@ -207,12 +180,7 @@ export function OrganizationFormFields({
             type="color"
             value={color}
             onChange={(e) => onColorChange(e.target.value)}
-            style={{
-              ...inputStyle,
-              width: 50,
-              padding: 4,
-              cursor: "pointer",
-            }}
+            className={cn(inputClassName, "w-[50px] cursor-pointer p-1")}
           />
         </label>
       </div>
@@ -224,7 +192,7 @@ export function OrganizationFormFields({
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
           rows={3}
-          style={{ ...inputStyle, height: "auto", padding: 12 }}
+          className={cn(inputClassName, "h-auto p-3")}
         />
       </label>
 
@@ -236,22 +204,21 @@ export function OrganizationFormFields({
           value={website}
           onChange={(e) => onWebsiteChange(e.target.value)}
           placeholder="https://example.com"
-          style={inputStyle}
+          className={inputClassName}
         />
       </label>
 
       {/* Contact section */}
-      <div style={sectionDividerStyle}>
+      <div className={sectionDividerClassName}>
         <SectionHeader
           title="Contacto"
           isOpen={showContact}
           onToggle={() => setShowContact(!showContact)}
         />
         {showContact && (
-          <div style={sectionBodyStyle}>
+          <div className={sectionBodyClassName}>
             <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: "1fr 1fr" }}
+              className="grid grid-cols-2 gap-3"
             >
               <label className="flex flex-col gap-1.5">
                 Teléfono
@@ -261,10 +228,10 @@ export function OrganizationFormFields({
                   onChange={(e) => onPhoneChange(e.target.value)}
                   onBlur={() => setPhoneTouched(true)}
                   placeholder="+54 9 11 1234-5678"
-                  style={phoneError ? inputErrorStyle : inputStyle}
+                  className={cn(inputClassName, phoneError && errorInputClassName)}
                 />
                 {phoneError && (
-                  <span style={errorTextStyle}>
+                  <span className={errorTextClassName}>
                     Formato E.164: +código país + número
                   </span>
                 )}
@@ -275,7 +242,7 @@ export function OrganizationFormFields({
                   type="email"
                   value={email}
                   onChange={(e) => onEmailChange(e.target.value)}
-                  style={inputStyle}
+                  className={inputClassName}
                 />
               </label>
             </div>
@@ -287,10 +254,10 @@ export function OrganizationFormFields({
                 onChange={(e) => onWhatsappChange(e.target.value)}
                 onBlur={() => setWhatsappTouched(true)}
                 placeholder="+54 9 11 1234-5678"
-                style={whatsappError ? inputErrorStyle : inputStyle}
+                className={cn(inputClassName, whatsappError && errorInputClassName)}
               />
               {whatsappError && (
-                <span style={errorTextStyle}>
+                <span className={errorTextClassName}>
                   Formato E.164: +código país + número
                 </span>
               )}
@@ -300,26 +267,25 @@ export function OrganizationFormFields({
       </div>
 
       {/* Address section */}
-      <div style={sectionDividerStyle}>
+      <div className={sectionDividerClassName}>
         <SectionHeader
           title="Dirección"
           isOpen={showAddress}
           onToggle={() => setShowAddress(!showAddress)}
         />
         {showAddress && (
-          <div style={sectionBodyStyle}>
+          <div className={sectionBodyClassName}>
             <label className="flex flex-col gap-1.5">
               Calle y número
               <input
                 type="text"
                 value={streetAddress}
                 onChange={(e) => onStreetAddressChange(e.target.value)}
-                style={inputStyle}
+                className={inputClassName}
               />
             </label>
             <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: "1fr 1fr" }}
+              className="grid grid-cols-2 gap-3"
             >
               <label className="flex flex-col gap-1.5">
                 Ciudad
@@ -327,7 +293,7 @@ export function OrganizationFormFields({
                   type="text"
                   value={city}
                   onChange={(e) => onCityChange(e.target.value)}
-                  style={inputStyle}
+                  className={inputClassName}
                 />
               </label>
               <label className="flex flex-col gap-1.5">
@@ -336,13 +302,12 @@ export function OrganizationFormFields({
                   type="text"
                   value={state}
                   onChange={(e) => onStateChange(e.target.value)}
-                  style={inputStyle}
+                  className={inputClassName}
                 />
               </label>
             </div>
             <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: "1fr 1fr" }}
+              className="grid grid-cols-2 gap-3"
             >
               <label className="flex flex-col gap-1.5">
                 Código postal
@@ -350,7 +315,7 @@ export function OrganizationFormFields({
                   type="text"
                   value={postalCode}
                   onChange={(e) => onPostalCodeChange(e.target.value)}
-                  style={inputStyle}
+                  className={inputClassName}
                 />
               </label>
               <label className="flex flex-col gap-1.5">
@@ -359,7 +324,7 @@ export function OrganizationFormFields({
                   type="text"
                   value={country}
                   onChange={(e) => onCountryChange(e.target.value)}
-                  style={inputStyle}
+                  className={inputClassName}
                 />
               </label>
             </div>
@@ -368,7 +333,7 @@ export function OrganizationFormFields({
       </div>
 
       {/* Fiscal section */}
-      <div style={sectionDividerStyle}>
+      <div className={sectionDividerClassName}>
         <SectionHeader
           title="Información fiscal"
           isOpen={showFiscal}
@@ -382,7 +347,7 @@ export function OrganizationFormFields({
                 type="text"
                 value={taxId}
                 onChange={(e) => onTaxIdChange(e.target.value)}
-                style={inputStyle}
+                className={inputClassName}
               />
             </label>
           </div>
@@ -390,7 +355,7 @@ export function OrganizationFormFields({
       </div>
 
       {/* Social section */}
-      <div style={sectionDividerStyle}>
+      <div className={sectionDividerClassName}>
         <SectionHeader
           title="Redes sociales"
           isOpen={showSocial}
@@ -398,8 +363,7 @@ export function OrganizationFormFields({
         />
         {showSocial && (
           <div
-            className="grid gap-3 mt-2"
-            style={{ gridTemplateColumns: "1fr 1fr" }}
+            className="grid grid-cols-2 gap-3 mt-2"
           >
             <label className="flex flex-col gap-1.5">
               Instagram
@@ -408,7 +372,7 @@ export function OrganizationFormFields({
                 value={instagram}
                 onChange={(e) => onInstagramChange(e.target.value)}
                 placeholder="@usuario"
-                style={inputStyle}
+                className={inputClassName}
               />
             </label>
             <label className="flex flex-col gap-1.5">
@@ -418,7 +382,7 @@ export function OrganizationFormFields({
                 value={facebook}
                 onChange={(e) => onFacebookChange(e.target.value)}
                 placeholder="https://facebook.com/..."
-                style={inputStyle}
+                className={inputClassName}
               />
             </label>
           </div>

@@ -21,41 +21,21 @@ import { Lead, LeadStatus, useLeads } from "@/lib/api/leads";
 import { LeadListItem } from "./LeadListItem";
 import { Search, RefreshCw, Download, AlertCircle } from "lucide-react";
 import { useVendedores } from "@/lib/api/vendedores";
+import { cn } from "@/lib/utils";
 
 // ============================================
 // STYLES
 // ============================================
 
-const FILTER_STYLES = `
-  .ps-tll-input,
-  .ps-tll-select {
-    border-radius: 8px;
-    border: 1px solid var(--ps-input-border);
-    background: var(--ps-input-bg);
-    color: var(--ps-text-primary);
-    font-size: 13px;
-    padding: 8px 12px;
-    outline: none;
-    font-family: inherit;
-    transition: border-color 0.15s;
-    box-sizing: border-box;
-  }
-  .ps-tll-input:focus,
-  .ps-tll-select:focus {
-    border-color: var(--ps-cyan);
-  }
-  .ps-tll-input::placeholder {
-    color: var(--ps-text-tertiary);
-  }
-  .ps-tll-select option {
-    background: var(--ps-bg-surface);
-    color: var(--ps-text-primary);
-  }
+const SPIN_KEYFRAMES = `
   @keyframes spinRefresh {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
   }
 `;
+
+const INPUT_CLASS =
+  "rounded-lg border border-ps-border-default bg-ps-surface px-3 py-2 text-sm text-ps-text-primary outline-none transition-colors font-[inherit] placeholder:text-ps-text-tertiary focus:border-ps-cyan";
 
 // ============================================
 // TYPES
@@ -179,38 +159,19 @@ export function TeamLeadList({
   // Estado de error
   if (error) {
     return (
-      <div
-        style={{
-          padding: 32,
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 16,
-        }}
-      >
+      <div className="flex flex-col items-center gap-4 p-8 text-center">
         <AlertCircle
           size={32}
           strokeWidth={1.5}
-          style={{ color: "var(--ps-error)" }}
+          className="text-ps-error"
         />
-        <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
+        <p className="m-0 text-[13px] text-ps-error">
           Error al cargar los leads: {error.message}
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          style={{
-            height: 36,
-            padding: "0 16px",
-            borderRadius: 8,
-            background: "var(--ps-bg-elevated)",
-            border: "1px solid var(--ps-border-default)",
-            color: "var(--ps-text-secondary)",
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
+          className="h-9 px-4 rounded-lg bg-ps-elevated border border-ps-border-default text-ps-text-secondary text-[13px] font-medium cursor-pointer"
         >
           Reintentar
         </button>
@@ -232,7 +193,7 @@ export function TeamLeadList({
 
   return (
     <>
-      <style>{FILTER_STYLES}</style>
+      <style>{SPIN_KEYFRAMES}</style>
 
       <div className="flex flex-col gap-4">
         {/* ── Filtros ── */}
@@ -242,8 +203,7 @@ export function TeamLeadList({
             <Search
               size={14}
               strokeWidth={2}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: "var(--ps-text-tertiary)" }}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-ps-text-tertiary"
             />
             <input
               type="text"
@@ -253,7 +213,7 @@ export function TeamLeadList({
                 setSearchQuery(e.target.value);
                 setPage(0);
               }}
-              className="ps-tll-input pl-8 w-full"
+              className={cn(INPUT_CLASS, "pl-8 w-full")}
               data-testid="search-input"
             />
           </div>
@@ -262,7 +222,7 @@ export function TeamLeadList({
           <select
             value={vendedorFilter}
             onChange={(e) => setVendedorFilter(e.target.value)}
-            className="ps-tll-select w-48"
+            className={cn(INPUT_CLASS, "w-48")}
             data-testid="vendedor-filter"
           >
             <option value="all">Todos los vendedores</option>
@@ -281,7 +241,7 @@ export function TeamLeadList({
               if (value === "all" || isLeadStatus(value))
                 setStatusFilter(value);
             }}
-            className="ps-tll-select w-48"
+            className={cn(INPUT_CLASS, "w-48")}
             data-testid="status-filter"
           >
             <option value="all">Todos los estados</option>
@@ -298,8 +258,7 @@ export function TeamLeadList({
             onClick={handleExportToCSV}
             disabled={leads.length === 0}
             data-testid="export-csv-button"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-xs font-medium text-[var(--ps-text-secondary)] cursor-pointer transition-opacity duration-150"
-            style={{ opacity: leads.length === 0 ? 0.5 : 1 }}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-ps-border-default bg-ps-elevated text-xs font-medium text-ps-text-secondary cursor-pointer transition-opacity duration-150 disabled:opacity-50"
           >
             <Download size={13} strokeWidth={2} />
             Exportar CSV
@@ -311,7 +270,7 @@ export function TeamLeadList({
             onClick={() => void handleRefresh()}
             data-testid="refresh-button"
             aria-label="Actualizar lista"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-[var(--ps-text-secondary)] cursor-pointer"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-ps-border-default bg-ps-elevated text-ps-text-secondary cursor-pointer"
           >
             <RefreshCw
               size={14}
@@ -328,10 +287,10 @@ export function TeamLeadList({
         {/* ── Tabla de leads ── */}
         <div
           data-testid="team-lead-list"
-          className="border border-[var(--ps-border-default)] rounded-xl overflow-hidden"
+          className="border border-ps-border-default rounded-xl overflow-hidden"
         >
           {/* Header de columnas */}
-          <div className="flex items-center gap-4 px-4 py-3 bg-[var(--ps-bg-elevated)] border-b border-[var(--ps-border-default)] text-xs font-semibold uppercase tracking-widest text-[var(--ps-text-tertiary)]">
+          <div className="flex items-center gap-4 px-4 py-3 bg-ps-elevated border-b border-ps-border-default text-xs font-semibold uppercase tracking-widest text-ps-text-tertiary">
             <div className="w-48">Comprador</div>
             <div className="w-48">Vehículo</div>
             <div className="flex-1">Mensaje</div>
@@ -342,14 +301,14 @@ export function TeamLeadList({
 
           {/* Estado de carga */}
           {isLoading && leads.length === 0 && (
-            <div className="px-8 py-8 text-center text-sm text-[var(--ps-text-secondary)]">
+            <div className="px-8 py-8 text-center text-sm text-ps-text-secondary">
               Cargando leads...
             </div>
           )}
 
           {/* Estado vacío */}
           {!isLoading && leads.length === 0 && (
-            <div className="px-8 py-8 text-center text-sm text-[var(--ps-text-secondary)]">
+            <div className="px-8 py-8 text-center text-sm text-ps-text-secondary">
               Sin resultados. Ajustá los filtros.
             </div>
           )}
@@ -360,7 +319,9 @@ export function TeamLeadList({
               <div
                 key={lead.id}
                 onClick={() => onLeadClick?.(lead.id)}
-                style={{ cursor: onLeadClick ? "pointer" : "default" }}
+                className={cn(
+                  onLeadClick ? "cursor-pointer" : "cursor-default",
+                )}
               >
                 <LeadListItem
                   lead={lead}
@@ -377,7 +338,7 @@ export function TeamLeadList({
                           onReassignLead(lead.id);
                         }}
                         data-testid={`reassign-${lead.id}`}
-                        className="h-7 px-2.5 rounded text-xs font-medium text-[var(--ps-text-secondary)] cursor-pointer border border-[var(--ps-border-default)] bg-transparent transition-colors duration-150"
+                        className="h-7 px-2.5 rounded text-xs font-medium text-ps-text-secondary cursor-pointer border border-ps-border-default bg-transparent transition-colors duration-150"
                       >
                         Reasignar
                       </button>
@@ -396,8 +357,7 @@ export function TeamLeadList({
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0 || isLoading}
             data-testid="previous-page"
-            className="h-9 px-4 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-sm font-medium text-[var(--ps-text-secondary)] cursor-pointer transition-opacity duration-150"
-            style={{ opacity: page === 0 || isLoading ? 0.5 : 1 }}
+            className="h-9 px-4 rounded-lg border border-ps-border-default bg-ps-elevated text-sm font-medium text-ps-text-secondary cursor-pointer transition-opacity duration-150 disabled:opacity-50"
           >
             Anterior
           </button>
@@ -406,8 +366,7 @@ export function TeamLeadList({
             onClick={() => setPage((p) => p + 1)}
             disabled={leads.length < limit || isLoading}
             data-testid="next-page"
-            className="h-9 px-4 rounded-lg border border-[var(--ps-border-default)] bg-[var(--ps-bg-elevated)] text-sm font-medium text-[var(--ps-text-secondary)] cursor-pointer transition-opacity duration-150"
-            style={{ opacity: leads.length < limit || isLoading ? 0.5 : 1 }}
+            className="h-9 px-4 rounded-lg border border-ps-border-default bg-ps-elevated text-sm font-medium text-ps-text-secondary cursor-pointer transition-opacity duration-150 disabled:opacity-50"
           >
             Siguiente
           </button>

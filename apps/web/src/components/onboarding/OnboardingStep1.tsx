@@ -17,7 +17,12 @@ const step1Schema = z.object({
   description: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   website: z.string().trim().url("URL inválida").optional().or(z.literal("")),
-});
+}) as z.ZodType<{
+  name: string;
+  description?: string;
+  phone?: string;
+  website?: string;
+}>;
 
 export type Step1Data = z.infer<typeof step1Schema>;
 

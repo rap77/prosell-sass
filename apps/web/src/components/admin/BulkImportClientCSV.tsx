@@ -18,7 +18,7 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, X, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -289,7 +289,7 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
 
       {file ? (
         <div className={fileCardClass}>
-          <FileText size={20} style={{ color: "var(--ps-cyan)" }} />
+          <FileText size={20} className="text-ps-cyan" />
           <span className="flex-1 text-xs">{file.name}</span>
           <button
             type="button"
@@ -311,7 +311,7 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
           }}
         >
           <input {...getInputProps()} />
-          <Upload size={28} style={{ color: "var(--ps-text-secondary)" }} />
+          <Upload size={28} className="text-ps-text-secondary" />
           <p className="m-0 text-xs">
             {isDragActive
               ? "Soltá el archivo acá"
@@ -402,7 +402,7 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
     <tr className={tableBodyRowClass}>
       <td className={tdClass}>{row.row_number}</td>
       <td className={tdClass}>{row.vin || "—"}</td>
-      <td className={tdClass} style={{ color: status.color, fontWeight: 600 }}>
+      <td className={cn(tdClass, "font-semibold")} style={{ color: status.color }}>
         {status.label}
       </td>
       <td className={tdClass}>{Object.keys(row.mapped_fields).length}</td>
