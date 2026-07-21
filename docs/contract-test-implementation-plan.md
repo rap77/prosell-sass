@@ -530,9 +530,7 @@ test.describe("Status Code Verification", () => {
 
   test("products: 422 on invalid create", async ({ request }) => {
     const response = await request.post("/api/v1/products", {
-      data: {
-        /* invalid */
-      },
+      data: {/* invalid */},
     });
     expect(response.status()).toBe(422);
   });

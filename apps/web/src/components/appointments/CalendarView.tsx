@@ -18,10 +18,7 @@ import { format, parseISO } from "date-fns";
  * Calendar view types
  */
 type CalendarView =
-  | "dayGridMonth"
-  | "timeGridWeek"
-  | "timeGridDay"
-  | "listWeek";
+  "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek";
 
 /**
  * Status badge colors for appointments

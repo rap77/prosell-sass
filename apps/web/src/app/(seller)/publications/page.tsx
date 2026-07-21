@@ -48,12 +48,7 @@ function isVehicleCategory(p: Product): p is ProductWithVehicle {
 // ─── Domain types (unchanged) ─────────────────────────────────────────────────
 
 type PublicationListStatus =
-  | "pending"
-  | "publishing"
-  | "published"
-  | "failed"
-  | "expired"
-  | "sold";
+  "pending" | "publishing" | "published" | "failed" | "expired" | "sold";
 
 interface PublicationRow {
   id: string;

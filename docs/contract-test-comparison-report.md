@@ -361,9 +361,7 @@ test.describe("Layer 2: {Resource} - Contract Validation", () => {
   test.describe("POST /api/v1/{resource} - Create", () => {
     test("should create with valid data", async ({ request }) => {
       const response = await request.post("/api/v1/{resource}", {
-        data: {
-          /* valid payload */
-        },
+        data: {/* valid payload */},
       });
       expect(response.status()).toBe(201);
       // Validate response structure
@@ -373,9 +371,7 @@ test.describe("Layer 2: {Resource} - Contract Validation", () => {
 
     test("should reject invalid data", async ({ request }) => {
       const response = await request.post("/api/v1/{resource}", {
-        data: {
-          /* invalid payload */
-        },
+        data: {/* invalid payload */},
       });
       expect(response.status()).toBe(422);
     });

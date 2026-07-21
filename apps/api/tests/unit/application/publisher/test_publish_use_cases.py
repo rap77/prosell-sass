@@ -42,6 +42,7 @@ async def test_publish_vehicle_creates_publication_record(mock_publication_repo_
     use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
         publication_repo=mock_publication_repo_with_publication,
         seller_user_id=uuid4(),
+        seller_tenant_id=uuid4(),
         task_dispatcher=mock_dispatcher,
     )
     request = PublishProductRequest(
@@ -70,6 +71,7 @@ async def test_publish_vehicle_dispatches_task_with_publication_id(
     use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
         publication_repo=mock_publication_repo_with_publication,
         seller_user_id=uuid4(),
+        seller_tenant_id=uuid4(),
         task_dispatcher=mock_dispatcher,
     )
     request = PublishProductRequest(

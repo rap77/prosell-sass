@@ -33,11 +33,7 @@ import {
  *   layout requests this group (defense in depth — see `Sidebar()` below).
  */
 export type NavGroup =
-  | "general"
-  | "inventario"
-  | "ventas"
-  | "configuración"
-  | "concesionarios";
+  "general" | "inventario" | "ventas" | "configuración" | "concesionarios";
 
 // Render order for nav groups. A typed list lets us iterate without casting
 // the keys back to NavGroup (Object.entries widens them to string).

@@ -1,4 +1,4 @@
-import { ZodSchema, ZodError } from 'zod';
+import { ZodSchema, ZodError } from "zod";
 
 /**
  * Custom Zod resolver for React Hook Form + Zod 4
@@ -21,7 +21,7 @@ export function zodResolver<TValues extends Record<string, any> = any>(
         const errors: Record<string, any> = {};
 
         for (const issue of error.issues) {
-          const path = issue.path.join('.');
+          const path = issue.path.join(".");
 
           if (path) {
             errors[path] = {

@@ -65,9 +65,9 @@ The project uses **Zod 3**, NOT Zod 4. The following patterns are VALID:
 
 ```typescript
 // VALID - Zod 3 string validators with message argument
-z.string().min(1, "Required")
-z.string().email("Invalid email")
-z.string().url("Invalid URL")
+z.string().min(1, "Required");
+z.string().email("Invalid email");
+z.string().url("Invalid URL");
 
 // DO NOT require Zod 4 style:
 // z.string().min(1, { error: "Required" })  ← NOT required yet

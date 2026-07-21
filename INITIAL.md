@@ -217,14 +217,15 @@ Scenario: Using backup code
 ```
 
 **2FA Rules**:
-| Role | 2FA Required | From When |
-|------|--------------|-----------|
-| MASTER | YES | Immediate |
-| MANAGER | YES | Immediate |
-| SELLER_PROSELL | NO | - |
-| ORG_ADMIN | YES | When creating org |
-| ORG_SELLER | NO | - |
-| CLIENT | NO | - |
+
+| Role           | 2FA Required | From When         |
+| -------------- | ------------ | ----------------- |
+| MASTER         | YES          | Immediate         |
+| MANAGER        | YES          | Immediate         |
+| SELLER_PROSELL | NO           | -                 |
+| ORG_ADMIN      | YES          | When creating org |
+| ORG_SELLER     | NO           | -                 |
+| CLIENT         | NO           | -                 |
 
 ---
 

@@ -88,9 +88,7 @@ export interface GenericProductAttributes {
  * Discriminated union of all product attribute types
  */
 export type ProductAttributes =
-  | VehicleAttributes
-  | RealEstateAttributes
-  | GenericProductAttributes;
+  VehicleAttributes | RealEstateAttributes | GenericProductAttributes;
 
 /**
  * Type guard to check if attributes are vehicle attributes

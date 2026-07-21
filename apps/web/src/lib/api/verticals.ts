@@ -81,19 +81,18 @@ interface CategoryNodeShape {
 }
 
 // ponytail: ZodType<Shape> — constrains output only; needed for z.lazy + .default()
-const categoryNodeSchema: z.ZodType<CategoryNodeShape> =
-  z.lazy(() =>
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      slug: z.string(),
-      attribute_schema: z.record(z.string(), attributeSchemaEntrySchema),
-      attribute_groups: z.array(attributeGroupSchema).default([]),
-      presentation: categoryPresentationSchema.nullable(),
-      filter_fields: z.array(filterFieldSchema),
-      children: z.array(categoryNodeSchema).default([]),
-    }),
-  );
+const categoryNodeSchema: z.ZodType<CategoryNodeShape> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    attribute_schema: z.record(z.string(), attributeSchemaEntrySchema),
+    attribute_groups: z.array(attributeGroupSchema).default([]),
+    presentation: categoryPresentationSchema.nullable(),
+    filter_fields: z.array(filterFieldSchema),
+    children: z.array(categoryNodeSchema).default([]),
+  }),
+);
 
 const verticalResponseSchema = z.object({
   id: z.string(),

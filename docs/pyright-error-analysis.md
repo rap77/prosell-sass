@@ -17,18 +17,18 @@ The root cause is **systemic**: pytest fixtures lack type annotations, and this 
 
 ### TL;DR - Priority Matrix
 
-| Priority | Category                                           | Errors                           | Impact | Effort  | Recommendation                                  |
+| Priority | Category | Errors | Impact | Effort | Recommendation |
 | -------- | -------------------------------------------------- | -------------------------------- | ------ | ------- | ----------------------------------------------- | ------------------------- |
-| P0       | Production: Missing type args on `dict`/`list`     | 16                               | HIGH   | LOW     | Annotate `dict[str, Any]` and `list[...]`       |
-| P0       | Production: `UUID                                  | None`passed where`UUID` expected | 12     | HIGH    | LOW                                             | Add None-guard assertions |
-| P0       | Production: Task imports (`async_session_factory`) | 8                                | HIGH   | LOW     | Fix import paths                                |
-| P1       | Production: Unused imports in `domain/base.py`     | 3                                | LOW    | TRIVIAL | Remove unused imports                           |
-| P1       | Production: SQLAlchemy `select()` with UUID        | 4                                | MEDIUM | LOW     | Use `column == value` instead of `select(UUID)` |
-| P1       | Production: Library stub issues (Pillow LANCZOS)   | 4                                | LOW    | TRIVIAL | Use `Image.Resampling.LANCZOS`                  |
-| P2       | Tests: Fixture parameter annotations               | 521                              | LOW    | MEDIUM  | Add type hints to all fixtures                  |
-| P2       | Tests: Propagated unknown types                    | 1,058+                           | LOW    | HIGH    | Fix fixtures, propagation auto-resolves         |
-| P3       | Tests: Files with 80+ errors                       | ~900                             | LOW    | TRIVIAL | Add to pyright exclude list                     |
-| P3       | Config: pythonVersion mismatch                     | 0                                | MEDIUM | TRIVIAL | Align pyrightconfig to 3.12                     |
+| P0 | Production: Missing type args on `dict`/`list` | 16 | HIGH | LOW | Annotate `dict[str, Any]` and `list[...]` |
+| P0 | Production: `UUID                                  | None`passed where`UUID` expected | 12 | HIGH | LOW | Add None-guard assertions |
+| P0 | Production: Task imports (`async_session_factory`) | 8 | HIGH | LOW | Fix import paths |
+| P1 | Production: Unused imports in `domain/base.py` | 3 | LOW | TRIVIAL | Remove unused imports |
+| P1 | Production: SQLAlchemy `select()` with UUID | 4 | MEDIUM | LOW | Use `column == value` instead of `select(UUID)` |
+| P1 | Production: Library stub issues (Pillow LANCZOS) | 4 | LOW | TRIVIAL | Use `Image.Resampling.LANCZOS` |
+| P2 | Tests: Fixture parameter annotations | 521 | LOW | MEDIUM | Add type hints to all fixtures |
+| P2 | Tests: Propagated unknown types | 1,058+ | LOW | HIGH | Fix fixtures, propagation auto-resolves |
+| P3 | Tests: Files with 80+ errors | ~900 | LOW | TRIVIAL | Add to pyright exclude list |
+| P3 | Config: pythonVersion mismatch | 0 | MEDIUM | TRIVIAL | Align pyrightconfig to 3.12 |
 
 ---
 

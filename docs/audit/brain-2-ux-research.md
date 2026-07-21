@@ -73,12 +73,13 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 - SEO y visibilidad orgánica
 
 **Impacto en vida del dealer:**
-| Aspecto | Evaluación |
-|---------|------------|
+
+| Aspecto                         | Evaluación                                             |
+| ------------------------------- | ------------------------------------------------------ |
 | **Resuelve problema principal** | ❌ NO (el problema es generación de leads en Facebook) |
-| **Agrega valor inmediato** | ⚠️ DUDOSO (ya están en Facebook) |
-| **Crea carga adicional** | ✅ SÍ (otra plataforma que gestionar) |
-| **Esfuerzo cognitivo** | ✅ AUMENTA (deben mantener otro canal) |
+| **Agrega valor inmediato**      | ⚠️ DUDOSO (ya están en Facebook)                       |
+| **Crea carga adicional**        | ✅ SÍ (otra plataforma que gestionar)                  |
+| **Esfuerzo cognitivo**          | ✅ AUMENTA (deben mantener otro canal)                 |
 
 **Veredicto UX**: Es un "nice-to-have" que no ataca el "Job to be Done" principal.
 
@@ -94,12 +95,13 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 - Dashboard en tiempo real
 
 **Impacto en vida del dealer:**
-| Aspecto | Evaluación |
-|---------|------------|
-| **Resuelve problema principal** | ✅ SÍ (elimina carga manual) |
-| **Elimina fricción** | ✅ SÍ (cero latencia) |
-| **Da visibilidad** | ✅ SÍ (dashboard de estado) |
-| **Escala sin esfuerzo** | ✅ SÍ (de 1 a 100+ autos/día) |
+
+| Aspecto                         | Evaluación                    |
+| ------------------------------- | ----------------------------- |
+| **Resuelve problema principal** | ✅ SÍ (elimina carga manual)  |
+| **Elimina fricción**            | ✅ SÍ (cero latencia)         |
+| **Da visibilidad**              | ✅ SÍ (dashboard de estado)   |
+| **Escala sin esfuerzo**         | ✅ SÍ (de 1 a 100+ autos/día) |
 
 **Veredicto UX**: Es un **game-changer** que cementa retención y permite escalar.
 

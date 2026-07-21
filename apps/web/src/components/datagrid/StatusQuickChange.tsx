@@ -25,13 +25,7 @@ import { toast } from "sonner";
 // ============================================
 
 type VehicleStatus =
-  | "published"
-  | "pending"
-  | "failed"
-  | "draft"
-  | "expired"
-  | "online"
-  | "sold";
+  "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold";
 
 interface StatusQuickChangeProps {
   vehicleId: string;

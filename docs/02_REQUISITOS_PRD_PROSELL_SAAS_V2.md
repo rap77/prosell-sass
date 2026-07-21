@@ -269,14 +269,15 @@ Scenario: Uso de código de respaldo
 ```
 
 **Reglas 2FA**:
-| Rol | 2FA Obligatorio | Desde cuándo |
-|-----|-----------------|--------------|
-| MASTER | SÍ | Inmediato |
-| MANAGER | SÍ | Inmediato |
-| SELLER_PROSELL | NO | - |
-| ORG_ADMIN | SÍ | Al crear org |
-| ORG_SELLER | NO | - |
-| CLIENT | NO | - |
+
+| Rol            | 2FA Obligatorio | Desde cuándo |
+| -------------- | --------------- | ------------ |
+| MASTER         | SÍ              | Inmediato    |
+| MANAGER        | SÍ              | Inmediato    |
+| SELLER_PROSELL | NO              | -            |
+| ORG_ADMIN      | SÍ              | Al crear org |
+| ORG_SELLER     | NO              | -            |
+| CLIENT         | NO              | -            |
 
 ---
 

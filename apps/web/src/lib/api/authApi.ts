@@ -62,10 +62,7 @@ const PASSWORD_REGEX = hoistRegExp(
 
 // Type union for all possible API responses
 type ApiResponse =
-  | LoginResponse
-  | UserResponse
-  | MessageResponse
-  | Enable2FAResponse;
+  LoginResponse | UserResponse | MessageResponse | Enable2FAResponse;
 
 // Module-level cache for frequent operations
 const requestCache = new Map<string, ApiResponse>();

@@ -81,18 +81,19 @@ Unit tests: ~30% of test files
 ```
 
 **Problematic Files (Pyright Errors)**:
-| File | Errors | Root Cause |
-|------|--------|------------|
-| test_lead_api.py | 213 | Complex fixtures |
-| test_lead_repository.py | 192 | Complex fixtures |
-| test_organization_api.py | 168 | Complex fixtures |
-| test_create_appointment_use_case.py | 139 | Complex fixtures |
-| test_confirm_appointment_use_case.py | 116 | Complex fixtures |
-| test_cancel_appointment_use_case.py | 116 | Complex fixtures |
-| test_user_branch_api.py | 102 | Complex fixtures |
-| test_facebook_webhook_use_case.py | 101 | Complex fixtures |
-| test_lead_use_cases.py | 98 | Complex fixtures |
-| test_appointment_api.py | 96 | Complex fixtures |
+
+| File                                 | Errors | Root Cause       |
+| ------------------------------------ | ------ | ---------------- |
+| test_lead_api.py                     | 213    | Complex fixtures |
+| test_lead_repository.py              | 192    | Complex fixtures |
+| test_organization_api.py             | 168    | Complex fixtures |
+| test_create_appointment_use_case.py  | 139    | Complex fixtures |
+| test_confirm_appointment_use_case.py | 116    | Complex fixtures |
+| test_cancel_appointment_use_case.py  | 116    | Complex fixtures |
+| test_user_branch_api.py              | 102    | Complex fixtures |
+| test_facebook_webhook_use_case.py    | 101    | Complex fixtures |
+| test_lead_use_cases.py               | 98     | Complex fixtures |
+| test_appointment_api.py              | 96     | Complex fixtures |
 
 ### Mypy + pytest-mypy-plugins Viability
 

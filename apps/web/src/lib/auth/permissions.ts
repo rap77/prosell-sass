@@ -39,12 +39,7 @@ export enum Permission {
 }
 
 export type RoleType =
-  | "super_admin"
-  | "admin"
-  | "manager"
-  | "sales_agent"
-  | "sales_user"
-  | "viewer";
+  "super_admin" | "admin" | "manager" | "sales_agent" | "sales_user" | "viewer";
 
 export const ROLE_PERMISSIONS: Record<RoleType, Permission[]> = {
   super_admin: Object.values(Permission),

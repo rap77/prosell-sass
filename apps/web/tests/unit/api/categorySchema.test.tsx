@@ -139,15 +139,17 @@ describe("usePatchCategorySchema", () => {
 });
 
 describe("useCategorySchemaHistory", () => {
+  beforeEach(() => vi.resetAllMocks());
+
   it("fetches history from /api/v1/categories/{id}/schema/history", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
         Promise.resolve([
           {
-            id: "00000000-0000-0000-0000-000000000001",
+            id: "550e8400-e29b-41d4-a716-446655440001",
             changed_at: "2026-06-25T10:00:00Z",
-            changed_by_user_id: "00000000-0000-0000-0000-000000000002",
+            changed_by_user_id: "550e8400-e29b-41d4-a716-446655440002",
             change_summary: "added: year",
             migration_applied: false,
             migration_warnings: [],
@@ -159,7 +161,13 @@ describe("useCategorySchemaHistory", () => {
       wrapper: makeWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => {
+      // Debug: check error state if not success
+      if (result.current.isError) {
+        console.error("Query error:", result.current.error);
+      }
+      return expect(result.current.isSuccess).toBe(true);
+    });
     expect(result.current.data?.[0].change_summary).toBe("added: year");
   });
 });

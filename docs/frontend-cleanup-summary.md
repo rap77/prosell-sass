@@ -165,15 +165,10 @@ apps/web/src/
 // Create test store with skipHydration to avoid act() warnings
 const createTestAuthStore = () =>
   create<AuthState>()(
-    persist(
-      (set, get) => ({
-        /* ... */
-      }),
-      {
-        name: "auth-storage",
-        skipHydration: true, // Key: prevents async hydration
-      },
-    ),
+    persist((set, get) => ({/* ... */}), {
+      name: "auth-storage",
+      skipHydration: true, // Key: prevents async hydration
+    }),
   );
 
 // Test persist by checking localStorage directly

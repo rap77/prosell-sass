@@ -160,11 +160,7 @@ export function TeamLeadList({
   if (error) {
     return (
       <div className="flex flex-col items-center gap-4 p-8 text-center">
-        <AlertCircle
-          size={32}
-          strokeWidth={1.5}
-          className="text-ps-error"
-        />
+        <AlertCircle size={32} strokeWidth={1.5} className="text-ps-error" />
         <p className="m-0 text-[13px] text-ps-error">
           Error al cargar los leads: {error.message}
         </p>

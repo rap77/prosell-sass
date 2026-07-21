@@ -290,7 +290,10 @@ export function UnifiedProductForm({
 
   // Reset state when switching products in edit mode
   useEffect(() => {
-    if (mode === "edit" && initializedOwnershipProductId.current !== productId) {
+    if (
+      mode === "edit" &&
+      initializedOwnershipProductId.current !== productId
+    ) {
       setPendingBrokers([]);
       setSelectedOrgId(null);
       setOrgDirty(false);

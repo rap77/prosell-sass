@@ -148,9 +148,7 @@ export function OrganizationFormFields({
   return (
     <div className="flex flex-col gap-4">
       {/* Identity row: Name + Siglas + Color */}
-      <div
-        className="grid grid-cols-[1fr_auto_auto] items-end gap-3"
-      >
+      <div className="grid grid-cols-[1fr_auto_auto] items-end gap-3">
         <label className="flex flex-col gap-1.5">
           Nombre *
           <input
@@ -217,9 +215,7 @@ export function OrganizationFormFields({
         />
         {showContact && (
           <div className={sectionBodyClassName}>
-            <div
-              className="grid grid-cols-2 gap-3"
-            >
+            <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 Teléfono
                 <input
@@ -228,7 +224,10 @@ export function OrganizationFormFields({
                   onChange={(e) => onPhoneChange(e.target.value)}
                   onBlur={() => setPhoneTouched(true)}
                   placeholder="+54 9 11 1234-5678"
-                  className={cn(inputClassName, phoneError && errorInputClassName)}
+                  className={cn(
+                    inputClassName,
+                    phoneError && errorInputClassName,
+                  )}
                 />
                 {phoneError && (
                   <span className={errorTextClassName}>
@@ -254,7 +253,10 @@ export function OrganizationFormFields({
                 onChange={(e) => onWhatsappChange(e.target.value)}
                 onBlur={() => setWhatsappTouched(true)}
                 placeholder="+54 9 11 1234-5678"
-                className={cn(inputClassName, whatsappError && errorInputClassName)}
+                className={cn(
+                  inputClassName,
+                  whatsappError && errorInputClassName,
+                )}
               />
               {whatsappError && (
                 <span className={errorTextClassName}>
@@ -284,9 +286,7 @@ export function OrganizationFormFields({
                 className={inputClassName}
               />
             </label>
-            <div
-              className="grid grid-cols-2 gap-3"
-            >
+            <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 Ciudad
                 <input
@@ -306,9 +306,7 @@ export function OrganizationFormFields({
                 />
               </label>
             </div>
-            <div
-              className="grid grid-cols-2 gap-3"
-            >
+            <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 Código postal
                 <input
@@ -362,9 +360,7 @@ export function OrganizationFormFields({
           onToggle={() => setShowSocial(!showSocial)}
         />
         {showSocial && (
-          <div
-            className="grid grid-cols-2 gap-3 mt-2"
-          >
+          <div className="grid grid-cols-2 gap-3 mt-2">
             <label className="flex flex-col gap-1.5">
               Instagram
               <input

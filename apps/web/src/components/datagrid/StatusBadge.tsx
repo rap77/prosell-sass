@@ -13,13 +13,7 @@ import {
 } from "lucide-react";
 
 export type VehicleStatus =
-  | "published"
-  | "pending"
-  | "failed"
-  | "draft"
-  | "expired"
-  | "online"
-  | "sold";
+  "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold";
 
 interface StatusBadgeProps {
   status: VehicleStatus;
