@@ -45,7 +45,7 @@ const resetSchema = z
   .refine((d) => d.password === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
-  }) as any;
+  });
 
 type ResetValues = z.infer<typeof resetSchema>;
 

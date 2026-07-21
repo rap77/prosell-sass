@@ -117,7 +117,7 @@ const publishSchema = z.object({
   transmission: z.string().optional(),
   clean_title: z.boolean().default(true),
   vin: z.string().optional(),
-}) as any;
+});
 
 type PublishFormValues = z.infer<typeof publishSchema>;
 

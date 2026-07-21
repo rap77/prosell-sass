@@ -53,7 +53,7 @@ const securitySchema = z
         message: "La nueva contraseña debe ser diferente a la actual",
       });
     }
-  }) as any;
+  });
 
 type SecurityFormValues = z.infer<typeof securitySchema>;
 

@@ -35,7 +35,7 @@ const CURRENCIES = [
 const step2Schema = z.object({
   timezone: z.string().min(1, { message: "Seleccioná una zona horaria" }),
   currency: z.string().min(1, { message: "Seleccioná una moneda" }),
-}) as any;
+});
 
 export type Step2Data = z.infer<typeof step2Schema>;
 

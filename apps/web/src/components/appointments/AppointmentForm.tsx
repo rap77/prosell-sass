@@ -97,7 +97,7 @@ const appointmentFormSchema = z
   .refine((data) => !isWeekend(data.date), {
     message: "No se pueden agendar turnos en fin de semana (sábado/domingo)",
     path: ["date"],
-  }) as any;
+  });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 

@@ -135,7 +135,7 @@ const formSchema = z.object({
   description: z.string().nullable(),
   parent_id: z.string().nullable(),
   is_active: z.boolean(),
-}) as any;
+});
 
 type FormValues = z.infer<typeof formSchema>;
 

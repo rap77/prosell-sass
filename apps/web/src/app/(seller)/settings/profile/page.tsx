@@ -27,7 +27,7 @@ const profileSchema = z.object({
   lastName: z.string().trim().min(1, { message: "El apellido es requerido" }),
   email: z.string().email({ message: "Correo inválido" }),
   phone: z.string().trim().optional(),
-}) as any;
+});
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 

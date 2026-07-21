@@ -34,7 +34,7 @@ const forgotSchema = z.object({
     .string()
     .min(1, { message: "El email es requerido" })
     .email({ message: "El email no es válido" }),
-}) as any;
+});
 type ForgotValues = z.infer<typeof forgotSchema>;
 
 // ─── Success panel ────────────────────────────────────────────────────────────

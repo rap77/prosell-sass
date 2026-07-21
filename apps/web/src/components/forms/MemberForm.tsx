@@ -42,7 +42,7 @@ const memberSchema = z.object({
       .max(100, { message: "Commission cannot exceed 100%" })
       .optional(),
   ),
-}) as any;
+});
 
 export type MemberFormValues = z.infer<typeof memberSchema>;
 
