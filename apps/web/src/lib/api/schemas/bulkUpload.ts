@@ -13,7 +13,7 @@ export const BulkUploadRowErrorSchema = z.object({
   row_number: z.number().int(),
   column: z.string().nullable().optional(),
   message: z.string(),
-  raw_row: z.record(z.string()).optional().default({}),
+  raw_row: z.record(z.string(), z.string()).optional().default({}),
 });
 
 /**

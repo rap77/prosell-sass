@@ -80,14 +80,14 @@ interface CategoryNodeShape {
   children?: CategoryNodeShape[];
 }
 
-// ponytail: ZodType<Shape, ZodTypeDef, unknown> — constrains output only; needed for z.lazy + .default()
-const categoryNodeSchema: z.ZodType<CategoryNodeShape, z.ZodTypeDef, unknown> =
+// ponytail: ZodType<Shape> — constrains output only; needed for z.lazy + .default()
+const categoryNodeSchema: z.ZodType<CategoryNodeShape> =
   z.lazy(() =>
     z.object({
       id: z.string(),
       name: z.string(),
       slug: z.string(),
-      attribute_schema: z.record(attributeSchemaEntrySchema),
+      attribute_schema: z.record(z.string(), attributeSchemaEntrySchema),
       attribute_groups: z.array(attributeGroupSchema).default([]),
       presentation: categoryPresentationSchema.nullable(),
       filter_fields: z.array(filterFieldSchema),
@@ -161,7 +161,7 @@ export function useOrgVerticals(
  */
 const filterValuesSchema = z
   .object({
-    values: z.record(z.array(z.string())),
+    values: z.record(z.string(), z.array(z.string())),
   })
   .extend({
     truncated: z.array(z.string()).optional(),

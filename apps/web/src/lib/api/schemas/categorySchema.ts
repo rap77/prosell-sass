@@ -45,7 +45,7 @@ export const AttributeFieldSchema = z.object({
  * `?force=true` to apply. Empty array / false on read or additive PATCH.
  */
 export const CategorySchemaResponseSchema = z.object({
-  attributes: z.record(AttributeFieldSchema),
+  attributes: z.record(z.string(), AttributeFieldSchema),
   attribute_groups: z.array(AttributeGroupSchema).default([]),
   schema_version: z.string(),
   updated_at: z.string(),

@@ -260,6 +260,7 @@ export function PublishForm({
     setValue,
     formState: { errors },
   } = useForm<PublishFormValues>({
+    // @ts-expect-error - Zod 4 type inference issue with complex schema
     resolver: zodResolver(publishSchema),
     defaultValues: {
       title: vehicleData?.title ?? "",
@@ -334,7 +335,10 @@ export function PublishForm({
       <style>{FORM_STYLES}</style>
 
       <form
-        onSubmit={handleSubmit(handleFormSubmit)}
+        onSubmit={
+          // @ts-expect-error - Zod 4 complex schema type inference
+          handleSubmit(handleFormSubmit)
+        }
         className="flex flex-col gap-5"
       >
         {/* ── FOTOS ── */}
