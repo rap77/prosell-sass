@@ -24,6 +24,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { WizardContainer } from "./WizardContainer";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +88,8 @@ export interface UnifiedProductFormProps {
   productId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  /** Enable wizard UX (default: true). Mobile: sequential steps, Desktop: tabs */
+  enableWizard?: boolean;
 }
 
 // Fixed fields schema (price, description)
@@ -147,6 +151,7 @@ export function UnifiedProductForm({
   productId,
   onSuccess,
   onCancel,
+  enableWizard = true,
 }: UnifiedProductFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -240,8 +245,9 @@ export function UnifiedProductForm({
   );
 
   // Build schema from category
-  // ponytail: useMemo justified — schema derivation walks attribute_schema,
-  // expensive on large categories; memo avoids re-derivation on every keystroke
+  // React 19: useMemo JUSTIFIED - schema derivation walks attribute_schema (O(n) complexity),
+  // expensive on large categories (100+ fields); memoization prevents re-running buildZodSchema
+  // on every keystroke, which would cause validation performance issues
   const { combinedSchema, defaultValues } = useMemo(() => {
     const attrSchema = buildZodSchema(category.attribute_schema);
     const combined = FIXED_FIELDS_SCHEMA.merge(attrSchema);
@@ -359,7 +365,8 @@ export function UnifiedProductForm({
         id: crypto.randomUUID(),
         preview: img.url,
         storageKey: img.key,
-        status: "complete" as const,
+        // GGA: no 'as const' - ImageEntry.status accepts literal "complete"
+        status: "complete",
       }));
       seedImages(entries);
 
@@ -382,8 +389,8 @@ export function UnifiedProductForm({
   }, [mode, productId, existingImageData, seedImages, setCoverImage]);
 
   // Group fields
-  // ponytail: useMemo justified — group sorting + grouping runs over
-  // category.attribute_schema; memo avoids recomputing on every form change
+  // React 19: useMemo JUSTIFIED - group sorting (O(n log n)) + grouping (O(n)) runs over
+  // attribute_schema/attribute_groups; memoization prevents re-sorting on every form change
   const sortedGroups = useMemo(
     () =>
       [...category.attribute_groups].sort(
@@ -391,6 +398,8 @@ export function UnifiedProductForm({
       ),
     [category.attribute_groups],
   );
+  // React 19: useMemo JUSTIFIED - groupFieldsByGroup walks schema (O(n));
+  // memoization prevents re-grouping on every keystroke
   const fieldsByGroup = useMemo(
     () =>
       groupFieldsByGroup(category.attribute_schema, category.attribute_groups),
@@ -573,7 +582,7 @@ export function UnifiedProductForm({
     );
   }
 
-  return (
+  const formContent = (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="flex flex-col gap-8 max-w-4xl"
@@ -1051,5 +1060,12 @@ export function UnifiedProductForm({
         )}
       </div>
     </form>
+  );
+
+  // ponytail: optional wizard wrapper - improves mobile UX without touching form logic
+  return enableWizard ? (
+    <WizardContainer>{formContent}</WizardContainer>
+  ) : (
+    formContent
   );
 }
