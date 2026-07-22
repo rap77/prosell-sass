@@ -14,6 +14,13 @@ vi.mock("@/lib/hooks/useClipboardPasteImage", () => ({
   useClipboardPasteImage: vi.fn(),
 }));
 
+// Mock compression hook (Task 4b)
+vi.mock("@/lib/hooks/useImageCompression", () => ({
+  useImageCompression: () => ({
+    compressImage: vi.fn((file: File) => Promise.resolve(file)), // ponytail: passthrough for tests
+  }),
+}));
+
 describe("ImageDropzone Mobile Camera", () => {
   beforeEach(() => {
     vi.clearAllMocks();
