@@ -87,6 +87,35 @@ describe("DataGrid Touch Targets (Minimum Viable)", () => {
 
     expect(actionsColumn).toBeDefined();
   });
+
+  it("should make Actions column sticky right on mobile (Task 2b)", () => {
+    render(<DataGrid data={mockData} onEdit={vi.fn()} />);
+
+    // Find Actions column header
+    const actionsHeader = screen
+      .getAllByRole("columnheader")
+      .find((th) => th.textContent === "Actions");
+
+    // Should be sticky right-0 for always-visible actions on mobile
+    expect(actionsHeader?.className).toMatch(/sticky/);
+    expect(actionsHeader?.className).toMatch(/right-0/);
+  });
+
+  it("should make Actions cell sticky right in each row (Task 2b)", () => {
+    render(<DataGrid data={mockData} onEdit={vi.fn()} />);
+
+    // Get first row
+    const rows = screen.getAllByTestId("product-row");
+    const firstRow = rows[0];
+
+    // Get Actions cell (last td)
+    const cells = firstRow?.querySelectorAll("td");
+    const actionsCell = cells?.[cells.length - 1];
+
+    // Should be sticky right-0
+    expect(actionsCell?.className).toMatch(/sticky/);
+    expect(actionsCell?.className).toMatch(/right-0/);
+  });
 });
 
 describe("DataGrid Desktop Compatibility", () => {

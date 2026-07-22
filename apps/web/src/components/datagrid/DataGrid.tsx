@@ -87,18 +87,24 @@ function getColumnMeta(meta: unknown): ColumnMeta | undefined {
   };
 }
 
+// GGA TypeScript const-types: derive type from const object
+const PRODUCT_STATUS = {
+  PUBLISHED: "published",
+  PENDING: "pending",
+  FAILED: "failed",
+  DRAFT: "draft",
+  EXPIRED: "expired",
+  ONLINE: "online",
+  SOLD: "sold",
+} as const;
+
+type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
+
 export interface ProductRow {
   id: string;
   title: string;
   price: number;
-  status:
-    | "published"
-    | "pending"
-    | "failed"
-    | "draft"
-    | "expired"
-    | "online"
-    | "sold";
+  status: ProductStatus;
   photo_url?: string;
   year?: number;
   make?: string;
@@ -248,6 +254,11 @@ export function DataGrid({
           />
         </div>
       ),
+      // Task 2b: Actions always visible on mobile (sticky right, no swipe needed)
+      meta: {
+        headerClassName: "sticky right-0 bg-background z-10",
+        cellClassName: "sticky right-0 bg-background",
+      },
     },
   ];
 

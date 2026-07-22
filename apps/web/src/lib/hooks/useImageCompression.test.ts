@@ -25,9 +25,7 @@ describe("useImageCompression", () => {
       type: "image/webp",
     });
 
-    (imageCompression as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      compressedFile,
-    );
+    vi.mocked(imageCompression).mockResolvedValueOnce(compressedFile);
 
     const { result } = renderHook(() => useImageCompression());
 
@@ -50,18 +48,16 @@ describe("useImageCompression", () => {
       type: "image/webp",
     });
 
-    (imageCompression as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      webpFile,
-    );
+    vi.mocked(imageCompression).mockResolvedValueOnce(webpFile);
 
     const { result } = renderHook(() => useImageCompression());
 
-    let compressed: File | null = null;
+    let compressed!: File;
     await act(async () => {
       compressed = await result.current.compressImage(jpegFile);
     });
 
-    expect(compressed?.type).toBe("image/webp");
+    expect(compressed.type).toBe("image/webp");
   });
 
   it("should track compression progress", async () => {
@@ -72,20 +68,18 @@ describe("useImageCompression", () => {
 
     let progressCallback: ((progress: number) => void) | undefined;
 
-    (imageCompression as ReturnType<typeof vi.fn>).mockImplementationOnce(
-      async (_, options) => {
-        progressCallback = options.onProgress;
-        // Simulate progress updates
-        if (progressCallback) {
-          progressCallback(0);
-          progressCallback(50);
-          progressCallback(100);
-        }
-        return new File(["compressed"], "photo.webp", {
-          type: "image/webp",
-        });
-      },
-    );
+    vi.mocked(imageCompression).mockImplementationOnce(async (_, options) => {
+      progressCallback = options.onProgress;
+      // Simulate progress updates
+      if (progressCallback) {
+        progressCallback(0);
+        progressCallback(50);
+        progressCallback(100);
+      }
+      return new File(["compressed"], "photo.webp", {
+        type: "image/webp",
+      });
+    });
 
     const { result } = renderHook(() => useImageCompression());
 
@@ -108,7 +102,7 @@ describe("useImageCompression", () => {
     });
 
     // Simulate compression failure
-    (imageCompression as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+    vi.mocked(imageCompression).mockRejectedValueOnce(
       new Error("Compression failed"),
     );
 
@@ -129,7 +123,7 @@ describe("useImageCompression", () => {
       type: "image/jpeg",
     });
 
-    (imageCompression as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+    vi.mocked(imageCompression).mockResolvedValueOnce(
       new File(["compressed"], "photo.webp", { type: "image/webp" }),
     );
 
