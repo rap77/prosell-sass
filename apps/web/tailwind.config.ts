@@ -78,10 +78,14 @@ const config: Config = {
           // Status (shadcn lacks success/warning)
           success: "var(--ps-success)",
           warning: "var(--ps-warning)",
+          error: "var(--ps-error)",
           "success-bg": "var(--ps-success-bg)",
           "warning-bg": "var(--ps-warning-bg)",
           "error-bg": "var(--ps-error-bg)",
           "info-bg": "var(--ps-info-bg)",
+          // Form / inputs
+          "input-bg": "var(--ps-input-bg)",
+          "input-border": "var(--ps-input-border)",
           // Brand
           cyan: "var(--ps-cyan)",
           "cyan-hover": "var(--ps-cyan-hover)",
