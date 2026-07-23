@@ -287,7 +287,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
 
           {/* Timeline */}
           <DetailCard title="Fechas">
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <p className="m-0 text-[11px] text-ps-tertiary uppercase tracking-wider font-semibold">
                   Creado

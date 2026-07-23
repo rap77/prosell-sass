@@ -137,7 +137,7 @@ export function RegisterPageContent() {
       />
 
       {/* OAuth first (matches design order) */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         <AuthOAuthButton
           label="Google"
           icon={<GoogleSvg />}
