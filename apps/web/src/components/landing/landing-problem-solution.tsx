@@ -105,7 +105,7 @@ export function LandingProblemSolution() {
         </div>
 
         {/* Solution cards */}
-        <div className="ps-sol-grid grid grid-cols-3 gap-5">
+        <div className="ps-sol-grid grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
             {
               icon: (

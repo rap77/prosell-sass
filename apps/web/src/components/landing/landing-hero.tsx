@@ -112,7 +112,7 @@ export function LandingHero() {
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-5">
               {[
                 { label: t("mockup.revenue"), value: "$284K", delta: "+12.4%" },
                 {

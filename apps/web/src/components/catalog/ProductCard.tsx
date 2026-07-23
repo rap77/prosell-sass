@@ -179,7 +179,7 @@ export function ProductCard({
         <p className="text-lg font-bold text-foreground md:text-xl">{price}</p>
 
         {metaCells.length > 0 && (
-          <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <dl className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-xs">
             {metaCells.map((cell) => (
               <div key={cell.key} className="flex flex-col">
                 <dt className="text-muted-foreground">{cell.label}</dt>

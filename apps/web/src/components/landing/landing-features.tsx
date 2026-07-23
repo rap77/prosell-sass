@@ -53,7 +53,7 @@ export function LandingFeatures() {
         </div>
 
         {/* Row 1: Distribución */}
-        <div className="ps-ft-row grid grid-cols-2 gap-20 items-center mb-[100px]">
+        <div className="ps-ft-row grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-[100px]">
           <div className="ps-ft-text max-w-[520px]">
             <FeatureBadge>Distribución</FeatureBadge>
             <h3 className="ps-ft-h3 text-[32px] font-bold leading-[1.2] tracking-[-0.022em] mb-[18px]">
@@ -116,7 +116,7 @@ export function LandingFeatures() {
               </div>
             </div>
             {/* Channel grid */}
-            <div className="grid grid-cols-2 gap-2 mb-[18px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-[18px]">
               {[
                 { swatch: "#1877F2", label: "FB Marketplace", abbr: "f" },
                 { swatch: "#F5A623", label: "AutoTrader", abbr: "AT" },
@@ -164,7 +164,7 @@ export function LandingFeatures() {
         </div>
 
         {/* Row 2: Leads (reversed) */}
-        <div className="ps-ft-row reverse grid grid-cols-2 gap-20 items-center mb-[100px]">
+        <div className="ps-ft-row reverse grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-[100px]">
           <MockCardWrapper>
             <div className="flex items-center justify-between mb-[18px]">
               <span className="text-sm font-semibold">Leads · Hoy</span>
@@ -292,7 +292,7 @@ export function LandingFeatures() {
         </div>
 
         {/* Row 3: Inteligencia */}
-        <div className="ps-ft-row grid grid-cols-2 gap-20 items-center">
+        <div className="ps-ft-row grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div className="ps-ft-text max-w-[520px]">
             <FeatureBadge>Inteligencia</FeatureBadge>
             <h3 className="ps-ft-h3 text-[32px] font-bold leading-[1.2] tracking-[-0.022em] mb-[18px]">
@@ -348,7 +348,7 @@ export function LandingFeatures() {
               ))}
             </div>
             {/* Metric chips */}
-            <div className="grid grid-cols-2 gap-2 mb-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3.5">
               {[
                 { v: "$148", l: "costo/lead promedio" },
                 { v: "3.2x", l: "ROI por canal" },

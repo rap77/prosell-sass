@@ -15,14 +15,7 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import {
-  Loader2,
-  Users,
-  TrendingUp,
-  Target,
-  Zap,
-  AlertCircle,
-} from "lucide-react";
+import { Users, TrendingUp, Target, Zap, AlertCircle } from "lucide-react";
 import {
   useTeamMetrics,
   useLeads,
@@ -296,7 +289,7 @@ function AnalyticsSkeleton() {
     <div className="flex flex-col gap-6">
       <style>{`@keyframes psPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }`}</style>
       {/* KPI cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
@@ -311,7 +304,7 @@ function AnalyticsSkeleton() {
         ))}
       </div>
       {/* Charts */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-ps-surface border border-ps-border-default rounded-xl p-5 h-72">
           <PulseBox h={16} w="40%" />
         </div>

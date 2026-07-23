@@ -82,7 +82,7 @@ export function BranchStatsCard({
           <PulseBox height={18} width={192} />
         </div>
         <div className={contentClass}>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <PulseBox height={64} />
             <PulseBox height={64} />
             <PulseBox height={64} />

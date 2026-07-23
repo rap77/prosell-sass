@@ -179,6 +179,7 @@ ${shareUrl}`.trim();
         <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
           {images.map((url, idx) => (
             <button
+              type="button"
               key={idx}
               onClick={() => setCurrentImageIndex(idx)}
               className={cn(
@@ -224,7 +225,7 @@ ${shareUrl}`.trim();
           <h2 className="border-b border-ps-border-subtle pb-2 text-lg font-semibold text-ps-text-primary">
             Detalles
           </h2>
-          <div className="mt-4 grid grid-cols-2 gap-3 gap-x-6">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 gap-x-6">
             {displayAttrs.map((attr) => {
               const value = product.attributes?.[attr.key];
               // ponytail: `format` is optional on the union; narrow with `'in'`
