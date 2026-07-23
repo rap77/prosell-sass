@@ -98,7 +98,7 @@ export default function ProductsPage() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>
           <p className="text-sm text-muted-foreground">
@@ -107,7 +107,7 @@ export default function ProductsPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-full md:w-auto"
         >
           <Plus className="h-4 w-4" />
           New Product
@@ -116,7 +116,7 @@ export default function ProductsPage() {
 
       {/* Status Filter */}
       <nav
-        className="mb-4 flex items-center gap-2"
+        className="mb-4 flex flex-wrap items-center gap-2"
         aria-label="Product status filter"
       >
         <Filter className="h-4 w-4 text-muted-foreground" />
@@ -250,18 +250,18 @@ export default function ProductsPage() {
               </select>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row gap-2">
               <button
                 type="submit"
                 disabled={createProduct.isPending}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full md:w-auto"
               >
                 {createProduct.isPending ? "Saving..." : "Save"}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent"
+                className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent w-full md:w-auto"
               >
                 Cancel
               </button>

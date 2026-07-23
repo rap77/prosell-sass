@@ -422,7 +422,7 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-tight">
             Analytics
@@ -439,7 +439,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* ── KPI row ────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           icon={Users}
           label="Total de leads"
@@ -473,7 +473,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* ── Main grid: Funnel + Leaderboard ───────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pipeline funnel */}
         <SectionCard title="Funnel de pipeline">
           <div className="flex flex-col gap-4">

@@ -391,7 +391,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-6">
         <div>
           <h1 className="mb-1 text-[22px] font-bold tracking-[-0.015em] text-ps-text-primary">
             {greeting}, {firstName}
@@ -416,7 +416,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI row ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {KPIS.map(({ label, value, delta, trend, Icon }) => (
           <div
             key={label}
@@ -444,7 +444,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Two-column section ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
         {/* Leads recientes */}
         <Card>
           <CardHead
@@ -481,7 +481,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={stage.status}
-                    className="grid grid-cols-[90px_1fr_44px] gap-3 items-center"
+                    className="grid grid-cols-[70px_1fr_36px] md:grid-cols-[90px_1fr_44px] gap-3 items-center"
                   >
                     <span className="text-[13px] font-semibold text-ps-text-primary">
                       {stage.label}
