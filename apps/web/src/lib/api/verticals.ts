@@ -106,6 +106,8 @@ const orgVerticalsResponseSchema = z.object({
   verticals: z.array(verticalResponseSchema),
 });
 
+type ParsedOrgVerticalsResponse = z.infer<typeof orgVerticalsResponseSchema>;
+
 const errorBodySchema = z
   .object({ detail: z.string().optional() })
   .passthrough();
@@ -118,10 +120,21 @@ const errorBodySchema = z
  */
 export function useOrgVerticals(
   organizationId: string | null,
-): UseQueryResult<OrgVerticalsResponse, Error> {
+): UseQueryResult<ParsedOrgVerticalsResponse, Error> {
+  // ponytail: mock verticals for UI testing - set NEXT_PUBLIC_MOCK_DATA=true
+  const useMocks =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
+
   return useQuery({
     queryKey: ["org-verticals", organizationId],
-    queryFn: async (): Promise<OrgVerticalsResponse> => {
+    queryFn: async (): Promise<ParsedOrgVerticalsResponse> => {
+      // ponytail: return mock verticals if enabled (avoids DB dependency for UI testing)
+      if (useMocks) {
+        const { MOCK_VERTICALS } = await import("@/lib/mocks/verticals");
+        return orgVerticalsResponseSchema.parse(MOCK_VERTICALS);
+      }
+
       const res = await fetch(
         `/api/v1/organizations/${organizationId}/verticals`,
         { credentials: "include" },
@@ -138,8 +151,7 @@ export function useOrgVerticals(
       }
       const raw: unknown = await res.json();
       const parsed = orgVerticalsResponseSchema.parse(raw);
-      // ponytail: Zod validates, types drift — cast is safe; fix types when it hurts
-      return parsed as unknown as OrgVerticalsResponse;
+      return parsed;
     },
     enabled: Boolean(organizationId),
     staleTime: 5 * 60 * 1000,

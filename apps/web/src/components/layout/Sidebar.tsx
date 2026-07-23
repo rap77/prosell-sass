@@ -298,7 +298,7 @@ export function Sidebar({ groups }: SidebarProps) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={toggleMobileDrawer}
-              className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm md:hidden"
               aria-label="Close menu"
             />
 
@@ -310,7 +310,7 @@ export function Sidebar({ groups }: SidebarProps) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
-              className="fixed left-0 top-0 z-40 h-screen w-64 md:hidden"
+              className="fixed left-0 top-0 z-[70] h-screen w-64 md:hidden"
               style={{
                 background: "var(--ps-bg-sidebar)",
                 borderRight: "1px solid var(--ps-border-subtle)",

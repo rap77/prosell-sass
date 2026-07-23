@@ -58,13 +58,13 @@ export function LandingTestimonials() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-3 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           {TESTIMONIALS_3.map((t) => (
             <TestimonialCard key={t.name} t={t} />
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {TESTIMONIALS_2.map((t) => (
             <TestimonialCard key={t.name} t={t} />
           ))}

@@ -159,14 +159,14 @@ function CardHead({
   linkHref?: string;
 }) {
   return (
-    <div className="flex items-center justify-between mb-3.5">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3.5">
       <h2 className="m-0 text-[15px] font-semibold text-ps-text-primary">
         {title}
       </h2>
       {linkLabel && linkHref && (
         <Link
           href={linkHref}
-          className="text-xs text-ps-cyan font-medium no-underline"
+          className="text-xs text-ps-cyan font-medium no-underline whitespace-nowrap"
         >
           {linkLabel}
         </Link>
@@ -416,22 +416,24 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI row ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3.5">
         {KPIS.map(({ label, value, delta, trend, Icon }) => (
           <div
             key={label}
-            className="relative bg-ps-surface border border-ps-border-subtle rounded-xl p-5 flex flex-col gap-1.5 transition-colors duration-200 hover:border-ps-border-medium"
+            className="relative bg-ps-surface border border-ps-border-subtle rounded-xl p-3 lg:p-5 flex flex-col gap-1 lg:gap-1.5 transition-colors duration-200 hover:border-ps-border-medium"
           >
-            <div className="absolute top-[18px] right-[18px] w-8 h-8 rounded-lg bg-ps-accent-glow-soft border border-ps-border-default inline-flex items-center justify-center text-ps-cyan">
-              <Icon size={16} strokeWidth={2} />
+            <div className="absolute top-3 right-3 lg:top-[18px] lg:right-[18px] w-7 h-7 lg:w-8 lg:h-8 rounded-lg bg-ps-accent-glow-soft border border-ps-border-default inline-flex items-center justify-center text-ps-cyan">
+              <Icon size={14} strokeWidth={2} className="lg:w-4 lg:h-4" />
             </div>
-            <span className="text-[13px] text-ps-text-secondary">{label}</span>
-            <span className="text-[36px] font-extrabold tracking-[-0.03em] leading-none text-ps-text-primary mt-0.5 mb-1 tabular-nums">
+            <span className="text-[11px] lg:text-[13px] text-ps-text-secondary">
+              {label}
+            </span>
+            <span className="text-[28px] lg:text-[36px] font-extrabold tracking-[-0.03em] leading-none text-ps-text-primary mt-0.5 mb-1 tabular-nums">
               {value}
             </span>
             <span
               className={cn(
-                "text-xs font-semibold",
+                "text-[10px] lg:text-xs font-semibold",
                 trend === "up" ? "text-ps-success" : "text-ps-warning",
               )}
             >

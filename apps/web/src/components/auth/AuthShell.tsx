@@ -142,11 +142,13 @@ function AuthBrandPanel() {
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="ps-auth-split grid grid-cols-[1.05fr_1fr] min-h-screen">
-      <AuthBrandPanel />
+    <div className="ps-auth-split grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] min-h-screen">
+      <div className="hidden lg:block">
+        <AuthBrandPanel />
+      </div>
 
-      <main className="bg-background flex flex-col justify-center items-center p-12">
-        <div className="w-full max-w-[400px] flex flex-col gap-5">
+      <main className="bg-background flex flex-col justify-center items-center p-6 md:p-12">
+        <div className="w-full max-w-[400px] flex flex-col gap-4 md:gap-5">
           {children}
         </div>
       </main>
@@ -165,11 +167,11 @@ export function AuthFormHead({
 }) {
   return (
     <div>
-      <h1 className="text-[28px] font-bold tracking-tight leading-tight mb-1.5 text-foreground">
+      <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight leading-tight mb-1 md:mb-1.5 text-foreground">
         {title}
       </h1>
       {subtitle && (
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-[13px] md:text-sm text-muted-foreground leading-relaxed">
           {subtitle}
         </p>
       )}
@@ -190,7 +192,7 @@ export const AuthInput = ({
 }: AuthInputProps) => (
   <Input
     className={cn(
-      "h-11 text-[15px]",
+      "h-10 md:h-11 text-[14px] md:text-[15px]",
       "focus:border-primary focus:ring-2 focus:ring-primary/20",
       hasError &&
         "border-destructive focus:border-destructive focus:ring-destructive/20",
@@ -254,7 +256,7 @@ export function AuthSubmitButton({
     <Button
       type="submit"
       disabled={disabled}
-      className="mt-2 w-full h-11 text-[15px] font-semibold"
+      className="mt-1 md:mt-2 w-full h-10 md:h-11 text-[14px] md:text-[15px] font-semibold"
     >
       {isLoading && <Loader2 className="animate-spin" />}
       {isLoading ? loadingLabel : label}

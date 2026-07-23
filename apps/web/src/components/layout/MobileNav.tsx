@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { LayoutGrid, PlusCircle, Users, MoreHorizontal } from "lucide-react";
+import { useLayoutStore } from "@/lib/stores/layoutStore";
+import { LayoutGrid, PlusCircle, Users, Menu } from "lucide-react";
 
 /**
  * Mobile bottom navigation component following Thumb Zone pattern.
@@ -19,6 +19,9 @@ import { LayoutGrid, PlusCircle, Users, MoreHorizontal } from "lucide-react";
  */
 export function MobileNav() {
   const pathname = usePathname();
+  const toggleMobileDrawer = useLayoutStore(
+    (state) => state.toggleMobileDrawer,
+  );
 
   const navItems = [
     {
@@ -41,41 +44,62 @@ export function MobileNav() {
     },
     {
       label: "Más",
-      href: "/more",
-      icon: MoreHorizontal,
-      active: pathname === "/more" || pathname.startsWith("/more/"),
-      // TODO: Implement drawer for Más action
+      href: "#",
+      icon: Menu,
+      active: false,
+      isDrawerToggle: true,
     },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-background md:hidden">
-      <div className="flex h-full items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background md:hidden pb-safe">
+      <div className="flex h-16 items-center justify-around px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isDrawerToggle =
+            "isDrawerToggle" in item && item.isDrawerToggle;
+
+          if (isDrawerToggle) {
+            return (
+              <button
+                key={item.label}
+                onClick={toggleMobileDrawer}
+                className="flex flex-1 flex-col items-center justify-center gap-0.5"
+              >
+                <div
+                  className={cn(
+                    "h-11 w-11 rounded-full transition-colors inline-flex items-center justify-center",
+                    "text-muted-foreground hover:text-foreground hover:bg-muted",
+                  )}
+                >
+                  <Icon className="h-6 w-6" strokeWidth={2} />
+                </div>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {item.label}
+                </span>
+              </button>
+            );
+          }
+
           return (
             <a
               key={item.href}
               href={item.href}
-              className="flex flex-1 flex-col items-center justify-center gap-1"
+              className="flex flex-1 flex-col items-center justify-center gap-0.5"
             >
-              <Button
-                variant="ghost"
-                size="icon"
+              <div
                 className={cn(
-                  "h-12 w-12 rounded-full transition-colors",
+                  "h-11 w-11 rounded-full transition-colors inline-flex items-center justify-center",
                   item.active
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
-                aria-label={item.label}
-                aria-current={item.active ? "page" : undefined}
               >
                 <Icon className="h-6 w-6" strokeWidth={2} />
-              </Button>
+              </div>
               <span
                 className={cn(
-                  "text-xs font-medium",
+                  "text-[11px] font-medium",
                   item.active ? "text-foreground" : "text-muted-foreground",
                 )}
               >

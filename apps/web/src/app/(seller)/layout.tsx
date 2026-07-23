@@ -24,18 +24,8 @@ export default function SellerLayout({
     <div className="flex h-screen overflow-hidden">
       {/* ponytail: clear navigation flag when layout mounts */}
       <NavigationCleanup />
-      {/* Desktop sidebar - hidden on mobile */}
-      <div className="hidden md:block">
-        <Sidebar
-          groups={[
-            "general",
-            "inventario",
-            "ventas",
-            "concesionarios",
-            "configuración",
-          ]}
-        />
-      </div>
+      {/* Sidebar - handles mobile drawer + desktop sidebar internally */}
+      <Sidebar groups={["general", "inventario", "ventas", "concesionarios"]} />
 
       {/* Main content area */}
       <MainContentWrapper>

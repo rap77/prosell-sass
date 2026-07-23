@@ -147,8 +147,8 @@ export function OrganizationFormFields({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Identity row: Name + Siglas + Color */}
-      <div className="grid grid-cols-[1fr_auto_auto] items-end gap-3">
+      {/* Identity row: Name + Siglas + Color — ponytail: stack on mobile, horizontal on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] items-end gap-3">
         <label className="flex flex-col gap-1.5">
           Nombre *
           <input
@@ -215,7 +215,8 @@ export function OrganizationFormFields({
         />
         {showContact && (
           <div className={sectionBodyClassName}>
-            <div className="grid grid-cols-2 gap-3">
+            {/* ponytail: 1 col mobile, 2 cols desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 Teléfono
                 <input
@@ -286,7 +287,8 @@ export function OrganizationFormFields({
                 className={inputClassName}
               />
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            {/* ponytail: 1 col mobile, 2 cols desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 Ciudad
                 <input
@@ -306,7 +308,8 @@ export function OrganizationFormFields({
                 />
               </label>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            {/* ponytail: 1 col mobile, 2 cols desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 Código postal
                 <input
@@ -360,7 +363,8 @@ export function OrganizationFormFields({
           onToggle={() => setShowSocial(!showSocial)}
         />
         {showSocial && (
-          <div className="grid grid-cols-2 gap-3 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            {/* ponytail: 1 col mobile, 2 cols desktop */}
             <label className="flex flex-col gap-1.5">
               Instagram
               <input

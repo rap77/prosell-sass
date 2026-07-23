@@ -78,8 +78,8 @@ export function LandingFooter() {
   return (
     <footer className="relative bg-ps-sidebar border-t border-ps-border-subtle pt-16 px-8 z-[1]">
       <div className="max-w-[1280px] mx-auto">
-        <div className="ps-footer-grid grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 pb-12">
-          <div>
+        <div className="ps-footer-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-8 sm:gap-10 lg:gap-12 pb-12">
+          <div className="text-center lg:text-left">
             <Link
               href="/"
               className="inline-flex items-center gap-2.5 no-underline mb-4"
@@ -95,10 +95,10 @@ export function LandingFooter() {
                 ProSell
               </span>
             </Link>
-            <p className="text-[13px] leading-relaxed text-ps-text-secondary max-w-[220px] mb-[22px]">
+            <p className="text-[13px] leading-relaxed text-ps-text-secondary max-w-[220px] mx-auto lg:mx-0 mb-[22px]">
               La infraestructura de ventas para equipos que escalan.
             </p>
-            <div className="flex gap-2.5">
+            <div className="flex gap-2.5 justify-center lg:justify-start">
               {[
                 { label: "LinkedIn", Icon: LinkedInIcon },
                 { label: "X", Icon: XIcon },
@@ -117,11 +117,11 @@ export function LandingFooter() {
           </div>
 
           {FOOTER_COLS.map((col) => (
-            <div key={col.label}>
+            <div key={col.label} className="text-center lg:text-left">
               <div className="text-xs font-bold uppercase tracking-[0.08em] text-ps-tertiary mb-4">
                 {col.label}
               </div>
-              <ul className="list-none p-0 m-0 flex flex-col gap-3">
+              <ul className="list-none p-0 m-0 flex flex-col gap-3 items-center lg:items-start">
                 {col.links.map((link) => (
                   <li key={link}>
                     <a href="#" className="ps-footer-link">
@@ -134,7 +134,7 @@ export function LandingFooter() {
           ))}
         </div>
 
-        <div className="border-t border-ps-border-subtle py-6 flex items-center justify-between flex-wrap gap-3">
+        <div className="border-t border-ps-border-subtle py-6 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-3">
           <span className="text-xs text-ps-tertiary">
             © {new Date().getFullYear()} ProSell. Todos los derechos reservados.
           </span>
