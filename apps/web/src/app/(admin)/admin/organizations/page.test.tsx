@@ -129,4 +129,96 @@ describe("AdminDealersPage", () => {
       screen.queryByRole("link", { name: /nueva organización/i }),
     ).not.toBeInTheDocument();
   });
+
+  describe("Mobile-First Responsive", () => {
+    it("should have responsive header with flex-col on mobile", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => true,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [],
+        isLoading: false,
+        error: null,
+      });
+
+      const { container } = render(<AdminDealersPage />);
+
+      // Header should have responsive classes
+      const header = container.querySelector(
+        'div[class*="flex-col"][class*="md:flex-row"]',
+      );
+      expect(header).toBeInTheDocument();
+    });
+
+    it("should have full-width button on mobile", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => true,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [],
+        isLoading: false,
+        error: null,
+      });
+
+      render(<AdminDealersPage />);
+
+      const button = screen.getByRole("link", { name: /nueva organización/i });
+
+      // Should have w-full md:w-auto classes
+      expect(button.className).toMatch(/w-full/);
+      expect(button.className).toMatch(/md:w-auto/);
+    });
+
+    it("should have touch-friendly list items (min 44px height)", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => false,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [{ id: "org-1", name: "Test Org" }],
+        isLoading: false,
+        error: null,
+      });
+
+      const { container } = render(<AdminDealersPage />);
+
+      // List item links should have min-h-[44px]
+      const link = container.querySelector('a[class*="min-h-[44px]"]');
+      expect(link).toBeInTheDocument();
+    });
+
+    it("should have no inline styles", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => true,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [{ id: "org-1", name: "Test Org" }],
+        isLoading: false,
+        error: null,
+      });
+
+      const { container } = render(<AdminDealersPage />);
+
+      // No elements should have inline styles (except icon color via className)
+      const elementsWithStyle = container.querySelectorAll("[style]");
+
+      // Filter out Lucide icons (they have inline styles internally)
+      const nonIconElements = Array.from(elementsWithStyle).filter(
+        (el) => !el.tagName.toLowerCase().includes("svg"),
+      );
+
+      expect(nonIconElements.length).toBe(0);
+    });
+  });
 });

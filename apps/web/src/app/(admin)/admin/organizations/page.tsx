@@ -24,93 +24,57 @@ export default function AdminOrganizationsPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontWeight: 700,
-            color: "var(--ps-text-primary)",
-          }}
-        >
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+        <h1 className="m-0 text-[22px] font-bold text-ps-text-primary">
           Organizaciones
         </h1>
 
         {hasPermission(Permission.ORG_ADMIN_VIEW_ALL) && (
           <Link
             href="/admin/organizations/new"
-            style={{
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              padding: "0 14px",
-              borderRadius: 8,
-              background: "var(--ps-cyan)",
-              color: "var(--ps-bg-base)",
-              fontWeight: 700,
-              textDecoration: "none",
-            }}
+            className="h-11 flex items-center justify-center px-[14px] rounded-lg bg-ps-cyan text-ps-bg-base font-bold no-underline w-full md:w-auto"
           >
             Nueva organización
           </Link>
         )}
       </div>
 
+      {/* Loading */}
       {isLoading && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            color: "var(--ps-text-secondary)",
-          }}
-        >
+        <div className="flex items-center gap-2 text-ps-text-secondary">
           <Loader2 size={16} className="animate-spin" />
           Cargando organizaciones…
         </div>
       )}
 
+      {/* Error */}
       {error && (
-        <p style={{ color: "var(--ps-error)" }}>
+        <p className="text-ps-error">
           Error al cargar organizaciones: {error.message}
         </p>
       )}
 
+      {/* Empty state */}
       {!isLoading && !error && organizations.length === 0 && (
-        <p style={{ color: "var(--ps-text-secondary)" }}>
+        <p className="text-ps-text-secondary">
           No hay organizaciones registrados.
         </p>
       )}
 
-      <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Organizations list */}
+      <ul className="flex flex-col gap-2 p-0 m-0 list-none">
         {organizations.map((organization) => (
           <li key={organization.id}>
             <Link
               href={`/admin/organizations/${organization.id}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "12px 16px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-border-subtle)",
-                textDecoration: "none",
-                color: "var(--ps-text-primary)",
-              }}
+              className="flex items-center gap-[10px] p-3 md:px-4 min-h-[44px] rounded-lg border border-ps-border-subtle no-underline text-ps-text-primary hover:border-ps-border-medium transition-colors"
             >
-              <Building2 size={16} style={{ color: "var(--ps-cyan)" }} />
-              {organization.name}
+              <Building2 size={16} className="text-ps-cyan flex-shrink-0" />
+              <span className="flex-1 truncate">{organization.name}</span>
               {(organization.broker_count ?? 0) > 0 && (
-                <span
-                  style={{ fontSize: 12, color: "var(--ps-text-secondary)" }}
-                >
+                <span className="text-[12px] text-ps-text-secondary flex-shrink-0">
                   ({organization.broker_count} brokers)
                 </span>
               )}

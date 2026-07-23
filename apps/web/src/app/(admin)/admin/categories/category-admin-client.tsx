@@ -57,7 +57,7 @@ export function CategoryAdminClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
         <div>
           <h1 className="text-2xl font-semibold">Categorías</h1>
           <p className="text-sm text-muted-foreground">
@@ -65,7 +65,10 @@ export function CategoryAdminClient() {
           </p>
         </div>
         {isSuperAdmin && (
-          <Button onClick={() => handleCreate(null)}>
+          <Button
+            onClick={() => handleCreate(null)}
+            className="w-full md:w-auto"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Nueva categoría
           </Button>
