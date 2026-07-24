@@ -5,17 +5,18 @@ import ProductsPage from "./page";
 // Mock dependencies
 vi.mock("@/lib/api/products", () => ({
   useProducts: vi.fn(() => ({
-    data: {
-      products: [],
-      total: 0,
-      page: 1,
-      page_size: 10,
-      total_pages: 1,
-    },
+    data: [],
     isLoading: false,
   })),
   useCreateProduct: vi.fn(() => ({
     mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  useUpdateProductStatus: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
     isPending: false,
   })),
 }));
@@ -37,18 +38,16 @@ vi.mock("next/link", () => ({
   }) => <a href={href}>{children}</a>,
 }));
 
-describe.skip("ProductsPage - Mobile-First", () => {
+describe("ProductsPage - Mobile-First", () => {
   it("header should be responsive: flex-col md:flex-row", () => {
     const { container } = render(<ProductsPage />);
 
-    const header = container.querySelector(
-      ".flex.items-center.justify-between.mb-6",
-    );
+    const header = container.querySelector(".flex.justify-between.mb-6");
     expect(header).toBeTruthy();
-    expect(
-      header?.className.includes("flex-col") &&
-        header?.className.includes("md:flex-row"),
-    ).toBe(true);
+    expect(header?.className).toContain("flex-col");
+    expect(header?.className).toContain("md:flex-row");
+    expect(header?.className).toContain("md:items-center");
+    expect(header?.className).toContain("gap-4");
   });
 
   it("new product button should stack on mobile: w-full md:w-auto", () => {
@@ -70,19 +69,20 @@ describe.skip("ProductsPage - Mobile-First", () => {
     expect(filterNav?.className).toContain("flex-wrap");
   });
 
-  it("form action buttons should stack on mobile", () => {
+  it("form action buttons should stack on mobile", async () => {
     const { getByText, container } = render(<ProductsPage />);
 
     // Open form
     const newButton = getByText("New Product");
-    newButton.click();
+    await vi.waitFor(() => newButton.click());
 
-    // Action buttons container
-    const actionButtons = container.querySelector(".flex.gap-2");
+    // Action buttons container (last .flex.gap-2 is the form buttons)
+    const allFlexGap = container.querySelectorAll(".flex.gap-2");
+    const actionButtons = allFlexGap[allFlexGap.length - 1]; // Last one is form buttons
     expect(actionButtons).toBeTruthy();
     expect(
       actionButtons?.className.includes("flex-col") ||
-        actionButtons?.className.includes("flex-wrap"),
+        actionButtons?.className.includes("md:flex-row"),
     ).toBe(true);
   });
 });

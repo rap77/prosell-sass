@@ -9,20 +9,15 @@ vi.mock("@/hooks/useAuth", () => ({
 
 vi.mock("@/lib/api/leads", () => ({
   useLeads: vi.fn(() => ({
-    data: {
-      leads: [],
-      total: 0,
-      page: 1,
-      page_size: 10,
-      total_pages: 1,
-    },
+    data: [],
     isLoading: false,
   })),
   useTeamMetrics: vi.fn(() => ({
     data: {
       total_leads: 42,
-      new_today: 5,
+      new_leads_last_24h: 5,
       active_leads: 32,
+      conversion_rate: 0.35,
       vendedor_breakdown: [],
       pipeline: {
         new: 10,
@@ -40,9 +35,7 @@ vi.mock("@/lib/api/leads", () => ({
     NEW: "new",
     CONTACTED: "contacted",
     QUALIFIED: "qualified",
-    PROPOSAL: "proposal",
-    NEGOTIATION: "negotiation",
-    WON: "won",
+    APPOINTMENT_SET: "appointment_set",
     LOST: "lost",
   },
 }));
@@ -57,27 +50,23 @@ vi.mock("next/link", () => ({
   }) => <a href={href}>{children}</a>,
 }));
 
-describe.skip("DashboardPage - Mobile-First", () => {
+describe("DashboardPage - Mobile-First", () => {
   it("top bar should wrap on mobile: flex-wrap or flex-col md:flex-row", () => {
     const { container } = render(<DashboardPage />);
 
-    const topBar = container.querySelector(
-      ".flex.items-center.justify-between.gap-6",
-    );
+    const topBar = container.querySelector(".flex.justify-between");
     expect(topBar).toBeTruthy();
-    expect(
-      topBar?.className.includes("flex-wrap") ||
-        topBar?.className.includes("flex-col"),
-    ).toBe(true);
+    expect(topBar?.className.includes("flex-wrap")).toBe(true);
+    expect(topBar?.className.includes("items-center")).toBe(true);
+    expect(topBar?.className.includes("gap-6")).toBe(true);
   });
 
   it("KPI grid should have adequate mobile spacing: gap-4 or better", () => {
     const { container } = render(<DashboardPage />);
 
-    const kpiGrid = container.querySelector(
-      ".grid.grid-cols-2.lg\\:grid-cols-4",
-    );
+    const kpiGrid = container.querySelector(".grid.grid-cols-2");
     expect(kpiGrid).toBeTruthy();
+    expect(kpiGrid?.className).toContain("lg:grid-cols-4");
     expect(
       kpiGrid?.className.includes("gap-4") ||
         kpiGrid?.className.includes("gap-5") ||
