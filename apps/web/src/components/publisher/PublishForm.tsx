@@ -222,18 +222,13 @@ export function PublishForm({
     setValue,
     formState: { errors },
   } = useForm<PublishFormValues>({
-    /**
-     * @ts-expect-error
-     * Zod 3 limitation: resolver type inference fails with mixed optionals + constraints.
-     *
-     * Issue: publishSchema uses Zod 3 syntax with fields like `description.optional().min(10)`
-     * which confuses TypeScript's inference of the resolved values type.
-     *
-     * Runtime behavior: Zod validates correctly; the type mismatch is purely a
-     * TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
-     *
-     * Safe because: Form values are validated by Zod schema before submission.
-     */
+    // Zod 3 limitation: resolver type inference fails with mixed optionals + constraints.
+    // Issue: publishSchema uses Zod 3 syntax with fields like `description.optional().min(10)`
+    // which confuses TypeScript's inference of the resolved values type.
+    // Runtime behavior: Zod validates correctly; the type mismatch is purely a
+    // TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
+    // Safe because: Form values are validated by Zod schema before submission.
+    // @ts-expect-error - Zod resolver inference limitation
     resolver: zodResolver(publishSchema),
     defaultValues: {
       title: vehicleData?.title ?? "",
@@ -306,22 +301,15 @@ export function PublishForm({
   return (
     <>
       <form
-        onSubmit={
-          /**
-           * @ts-expect-error
-           * Zod 3 limitation: handleSubmit type inference fails with optional fields + constraints.
-           *
-           * Issue: publishSchema uses Zod 3 syntax with `.optional().min(10)` patterns
-           * which confuses TypeScript's inference of handleSubmit's parameter types.
-           *
-           * Runtime behavior: Zod validates correctly; the type mismatch is purely a
-           * TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
-           *
-           * Safe because: Form values are validated by Zod schema before submission,
-           * and handleFormSubmit only accesses validated fields.
-           */
-          handleSubmit(handleFormSubmit)
-        }
+        // Zod 3 limitation: handleSubmit type inference fails with optional fields + constraints.
+        // Issue: publishSchema uses Zod 3 syntax with `.optional().min(10)` patterns
+        // which confuses TypeScript's inference of handleSubmit's parameter types.
+        // Runtime behavior: Zod validates correctly; the type mismatch is purely a
+        // TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
+        // Safe because: Form values are validated by Zod schema before submission,
+        // and handleFormSubmit only accesses validated fields.
+        // @ts-expect-error - Zod handleSubmit inference limitation
+        onSubmit={handleSubmit(handleFormSubmit)}
         className="flex flex-col gap-5"
       >
         {/* ── FOTOS ── */}

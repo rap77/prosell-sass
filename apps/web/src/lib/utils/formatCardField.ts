@@ -43,12 +43,18 @@ export function formatCardField(
   value: unknown,
   schema: Record<string, AttributeSchemaEntry>,
 ): FormattedCardField {
-  const entry = schema[field.key];
+  // Normalize: backend may send string shortcuts (e.g. "make") or objects ({ key, source })
+  const normalized =
+    typeof field === "string"
+      ? { key: field, source: `attributes.${field}` }
+      : field;
+
+  const entry = schema[normalized.key];
   const label =
-    entry?.label ?? KNOWN_LABELS[field.key] ?? humanizeKey(field.key);
+    entry?.label ?? KNOWN_LABELS[normalized.key] ?? humanizeKey(normalized.key);
 
   if (value === undefined || value === null) {
-    return { key: field.key, label, value: null };
+    return { key: normalized.key, label, value: null };
   }
 
   let formatted: string;
@@ -64,5 +70,5 @@ export function formatCardField(
     formatted = String(value);
   }
 
-  return { key: field.key, label, value: formatted };
+  return { key: normalized.key, label, value: formatted };
 }

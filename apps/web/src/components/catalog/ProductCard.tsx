@@ -86,9 +86,11 @@ export function ProductCard({
   // --- Card fields meta grid (max 4, skip cells with missing values) ---
   const metaCells = (presentation?.card_fields ?? [])
     .slice(0, MAX_META_CELLS)
-    .map((field) =>
-      formatCardField(field, productAttributes[field.key], attributeSchema),
-    )
+    .map((field) => {
+      // Normalize: backend may send string shortcuts or objects
+      const key = typeof field === "string" ? field : field.key;
+      return formatCardField(field, productAttributes[key], attributeSchema);
+    })
     .filter((cell) => cell.value !== null);
 
   // --- Price (separate slot) ---

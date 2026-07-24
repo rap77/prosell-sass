@@ -32,7 +32,9 @@ function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
         ? z.string().min(1, { message: "Required" })
         : z.string().optional();
     }
-    const [first, ...rest] = options;
+    // Convert options to strings (backend may send numbers for select fields)
+    const stringOptions = options.map(String);
+    const [first, ...rest] = stringOptions;
     let schema: ZodTypeAny = z.enum([first, ...rest]);
     if (!entry.required) {
       schema = schema.optional();

@@ -64,11 +64,14 @@ function FieldInput({
             <SelectValue placeholder={`Seleccionar ${label}`} />
           </SelectTrigger>
           <SelectContent>
-            {entry.options.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
+            {entry.options.map((opt) => {
+              const optStr = String(opt);
+              return (
+                <SelectItem key={optStr} value={optStr}>
+                  {optStr}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
@@ -115,7 +118,9 @@ export function GenericFormFields({
   onChange,
   disabled,
 }: GenericFormFieldsProps) {
-  const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+  const sortedGroups = [...groups].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
   const groupKeys = new Set(sortedGroups.map((g) => g.key));
 
   const fieldsByGroup: Record<string, string[]> = { _ungrouped: [] };

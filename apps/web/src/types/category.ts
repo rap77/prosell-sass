@@ -44,8 +44,12 @@ export interface AttributeGroup {
   key: string;
   /** Human-readable section label shown in the form. */
   label: string;
-  /** Render order (ascending). */
-  order: number;
+  /** Render order (ascending). Optional - backend may not always provide it. */
+  order?: number;
+  /** Optional fields list - backend passthrough. */
+  fields?: string[];
+  /** Allow extra fields from backend (pydantic extra="allow"). */
+  [key: string]: unknown;
 }
 
 /** A single entry in `attribute_schema`. */
@@ -60,8 +64,8 @@ export interface AttributeSchemaEntry {
   unit?: string;
   /** Optional human-readable label override (defaults to humanized key). */
   label?: string;
-  /** For `select` type: allowed values. */
-  options?: string[];
+  /** For `select` type: allowed values. Backend may return numbers. */
+  options?: (string | number)[];
   /** Optional per-attribute constraints (e.g. Slider bounds for `range`). */
   validation_rules?: ValidationRules;
   /** References an `AttributeGroup.key` for section grouping in forms. */
@@ -70,6 +74,8 @@ export interface AttributeSchemaEntry {
   vin_decode_key?: string;
   /** Special renderer type for form fields. */
   render_as?: "vin_decode" | "textarea";
+  /** Allow extra fields from backend (pydantic extra="allow"). */
+  [key: string]: unknown;
 }
 
 /* ---------- presentation contract ---------- */
@@ -78,11 +84,17 @@ export interface AttributeSchemaEntry {
  * One `card_field` shown in the ProductCard's meta grid (2-col, max 4).
  * `source` uses dot notation: `attributes.<key>` for now; reserved for future
  * nested sources (e.g. `organization.name`).
+ *
+ * Backend may also send string shortcuts (e.g. ["make", "model"]) instead of objects.
  */
-export interface CardField {
-  key: string;
-  source: string;
-}
+export type CardField =
+  | string
+  | {
+      key: string;
+      source: string;
+      /** Allow extra fields from backend (pydantic extra="allow"). */
+      [key: string]: unknown;
+    };
 
 /**
  * `filter_fields` describes how a category's attributes map to catalog filters.
@@ -108,6 +120,8 @@ export interface CategoryPresentation {
   title_template?: string | null;
   subtitle_template?: string | null;
   filter_fields?: FilterField[];
+  /** Allow extra fields from backend (pydantic extra="allow"). */
+  [key: string]: unknown;
 }
 
 /* ---------- category ---------- */

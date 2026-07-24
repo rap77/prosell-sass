@@ -120,17 +120,21 @@ export function FilterSidebar({
                 <h3 className="font-semibold mb-3 text-sm">{label}</h3>
                 <div className="space-y-2">
                   {options.map((option) => {
-                    const checked = selected.includes(option);
-                    const inputId = `${controlId}-${option}`;
+                    const optionStr = String(option);
+                    const checked = selected.includes(optionStr);
+                    const inputId = `${controlId}-${optionStr}`;
                     return (
-                      <div key={option} className="flex items-center space-x-2">
+                      <div
+                        key={optionStr}
+                        className="flex items-center space-x-2"
+                      >
                         <Checkbox
                           id={inputId}
                           checked={checked}
                           onCheckedChange={(next) => {
                             const updated = next
-                              ? [...selected, option]
-                              : selected.filter((v) => v !== option);
+                              ? [...selected, optionStr]
+                              : selected.filter((v) => v !== optionStr);
                             setFilter(field.key, updated);
                           }}
                         />
@@ -205,11 +209,14 @@ export function FilterSidebar({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <option value="">Any</option>
-                {options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                {options.map((option) => {
+                  const optionStr = String(option);
+                  return (
+                    <option key={optionStr} value={optionStr}>
+                      {optionStr}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           );
