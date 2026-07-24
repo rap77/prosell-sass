@@ -279,10 +279,12 @@ vi.mock("next-intl", () => ({
 // Solution: Replace motion components with regular HTML elements in tests.
 vi.mock("framer-motion", () => {
   const createMotionComponent = (element: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return React.forwardRef<any, any>(({ children, ...props }, ref) =>
-      React.createElement(element, { ...props, ref }, children),
+    const Component = React.forwardRef<any, any>(
+      ({ children, ...props }, ref) =>
+        React.createElement(element, { ...props, ref }, children),
     );
+    Component.displayName = `Motion${element.charAt(0).toUpperCase()}${element.slice(1)}`;
+    return Component;
   };
 
   return {
