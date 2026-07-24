@@ -61,7 +61,7 @@ jobs:
         # Hash-pinned for supply-chain security (wheel + sdist).
         run: |
           python -m pip install --upgrade pip
-          pip install graphifyy==0.8.41 \
+          python -m pip install graphifyy==0.8.41 \
             --hash=sha256:ac2134b89a801e1a8bdf8f9b2bf2ac273c60e8cb8745f5818e6b22098002ebe3 \
             --hash=sha256:6f9fcf249962c6839c038b1bb4da718ee9cc940ea87fd2c65d4339bb33a8efca
 
@@ -126,7 +126,7 @@ jobs:
       - name: Install graphify
         run: |
           python -m pip install --upgrade pip
-          pip install graphifyy==0.8.41 \
+          python -m pip install graphifyy==0.8.41 \
             --hash=sha256:ac2134b89a801e1a8bdf8f9b2bf2ac273c60e8cb8745f5818e6b22098002ebe3 \
             --hash=sha256:6f9fcf249962c6839c038b1bb4da718ee9cc940ea87fd2c65d4339bb33a8efca
 
