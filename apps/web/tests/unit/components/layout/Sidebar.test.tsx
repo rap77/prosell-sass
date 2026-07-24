@@ -26,16 +26,37 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 // Mock Zustand store
-vi.mock("@/lib/stores/layoutStore", () => ({
-  useLayoutStore: vi.fn(() => ({
-    sidebarCollapsed: false,
-    toggleSidebar: vi.fn(),
-  })),
+const { mockUseLayoutStore } = vi.hoisted(() => ({
+  mockUseLayoutStore: vi.fn(),
 }));
+
+vi.mock("@/lib/stores/layoutStore", () => ({
+  useLayoutStore: mockUseLayoutStore,
+}));
+
+// Helper to mock layout store state
+const mockLayoutStore = (state: {
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+}) => {
+  mockUseLayoutStore.mockImplementation(
+    (selector?: (s: typeof state) => unknown) => {
+      if (!selector) return state;
+      return selector(state);
+    },
+  );
+};
 
 describe("Sidebar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Reset layout store to default state
+    mockLayoutStore({
+      sidebarCollapsed: false,
+      toggleSidebar: vi.fn(),
+    });
+
     // Reset useAuth to default mock (seller without permissions)
     vi.mocked(useAuth).mockReturnValue({
       user: {

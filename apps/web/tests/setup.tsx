@@ -265,3 +265,36 @@ Object.defineProperty(window, "matchMedia", {
 
 // Mock scrollIntoView for Radix UI Select
 Element.prototype.scrollIntoView = vi.fn(() => {});
+
+// Mock next-intl for i18n tests
+vi.mock("next-intl", () => ({
+  useLocale: () => "es",
+  useTranslations: () => (key: string) => key,
+  NextIntlClientProvider: ({ children }: ChildrenProps) => <>{children}</>,
+}));
+
+// Mock framer-motion to fix React 19 onClick compatibility
+// React 19 + framer-motion + vitest have an incompatibility where
+// motion components don't properly handle mocked onClick handlers.
+// Solution: Replace motion components with regular HTML elements in tests.
+vi.mock("framer-motion", () => {
+  const createMotionComponent = (element: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return React.forwardRef<any, any>(({ children, ...props }, ref) =>
+      React.createElement(element, { ...props, ref }, children),
+    );
+  };
+
+  return {
+    motion: {
+      div: createMotionComponent("div"),
+      aside: createMotionComponent("aside"),
+      nav: createMotionComponent("nav"),
+      button: createMotionComponent("button"),
+      span: createMotionComponent("span"),
+      ul: createMotionComponent("ul"),
+      li: createMotionComponent("li"),
+    },
+    AnimatePresence: ({ children }: ChildrenProps) => <>{children}</>,
+  };
+});

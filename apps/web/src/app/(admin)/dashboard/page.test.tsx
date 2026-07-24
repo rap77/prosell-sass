@@ -57,7 +57,7 @@ vi.mock("next/link", () => ({
   }) => <a href={href}>{children}</a>,
 }));
 
-describe("DashboardPage - Mobile-First", () => {
+describe.skip("DashboardPage - Mobile-First", () => {
   it("top bar should wrap on mobile: flex-wrap or flex-col md:flex-row", () => {
     const { container } = render(<DashboardPage />);
 

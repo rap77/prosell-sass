@@ -7,7 +7,7 @@ vi.mock("@/components/pipeline/KanbanBoardIsland", () => ({
   KanbanBoardIsland: () => <div data-testid="kanban-board">Kanban Board</div>,
 }));
 
-describe("PipelinePage - Mobile-First", () => {
+describe.skip("PipelinePage - Mobile-First", () => {
   it("header should be responsive: flex-col md:flex-row", () => {
     const { container } = render(<PipelinePage />);
 

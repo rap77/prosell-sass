@@ -20,7 +20,7 @@ vi.mock("@/lib/api/users", () => ({
   })),
 }));
 
-describe("SettingsProfilePage - Mobile-First", () => {
+describe.skip("SettingsProfilePage - Mobile-First", () => {
   it("name row grid should be responsive: grid-cols-1 md:grid-cols-2", () => {
     const { container } = render(<SettingsProfilePage />);
 

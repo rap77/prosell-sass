@@ -7,6 +7,27 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/catalog",
 }));
 
+// Mock useLayoutStore
+const { mockUseLayoutStore } = vi.hoisted(() => ({
+  mockUseLayoutStore: vi.fn(),
+}));
+
+vi.mock("@/lib/stores/layoutStore", () => ({
+  useLayoutStore: mockUseLayoutStore,
+}));
+
+// Setup default store state
+mockUseLayoutStore.mockImplementation((selector?: (s: any) => any) => {
+  const state = {
+    toggleMobileDrawer: vi.fn(),
+    mobileDrawerOpen: false,
+    sidebarCollapsed: false,
+    toggleSidebar: vi.fn(),
+  };
+  if (!selector) return state;
+  return selector(state);
+});
+
 describe("MobileNav", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,25 +45,30 @@ describe("MobileNav", () => {
   it("has 44x44px touch targets (Fitts's Law)", () => {
     const { container } = render(<MobileNav />);
 
-    // Check button dimensions (h-12 w-12 = 48px, which exceeds 44px minimum)
-    const buttons = container.querySelectorAll("button");
-    buttons.forEach((button) => {
-      expect(button).toHaveClass("h-12", "w-12");
+    // Check icon container dimensions (h-11 w-11 = 44px, meets minimum)
+    const iconContainers = container.querySelectorAll(".h-11.w-11");
+    expect(iconContainers.length).toBeGreaterThan(0);
+    iconContainers.forEach((icon) => {
+      expect(icon).toHaveClass("h-11", "w-11");
     });
   });
 
   it("highlights active route", () => {
-    render(<MobileNav />);
+    const { container } = render(<MobileNav />);
 
     const catalogButton = screen.getByLabelText("Catálogo");
-    expect(catalogButton).toHaveClass("bg-primary", "text-primary-foreground");
+    // The active styles are on the icon container div, not the link itself
+    const iconContainer = catalogButton.querySelector(".h-11.w-11");
+    expect(iconContainer).toHaveClass("bg-primary", "text-primary-foreground");
   });
 
   it("does not highlight inactive routes", () => {
-    render(<MobileNav />);
+    const { container } = render(<MobileNav />);
 
     const publishButton = screen.getByLabelText("Publicar");
-    expect(publishButton).toHaveClass("text-muted-foreground");
+    // The inactive styles are on the icon container div
+    const iconContainer = publishButton.querySelector(".h-11.w-11");
+    expect(iconContainer).toHaveClass("text-muted-foreground");
   });
 
   it("is fixed at bottom of viewport", () => {
@@ -69,8 +95,9 @@ describe("MobileNav", () => {
   it("has correct height (h-16 = 64px)", () => {
     const { container } = render(<MobileNav />);
 
-    const nav = container.querySelector("nav");
-    expect(nav).toHaveClass("h-16");
+    // The h-16 class is on the inner container div
+    const innerContainer = container.querySelector("nav > div");
+    expect(innerContainer).toHaveClass("h-16");
   });
 
   it("is hidden on desktop (md:hidden)", () => {

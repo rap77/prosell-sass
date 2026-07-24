@@ -64,6 +64,7 @@ export function MobileNav() {
               <button
                 key={item.label}
                 onClick={toggleMobileDrawer}
+                aria-label={item.label}
                 className="flex flex-1 flex-col items-center justify-center gap-0.5"
               >
                 <div
@@ -85,6 +86,8 @@ export function MobileNav() {
             <a
               key={item.href}
               href={item.href}
+              aria-label={item.label}
+              aria-current={item.active ? "page" : undefined}
               className="flex flex-1 flex-col items-center justify-center gap-0.5"
             >
               <div

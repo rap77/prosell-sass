@@ -4,7 +4,14 @@ import { userEvent } from "@testing-library/user-event";
 import { MainContentWrapper } from "./MainContentWrapper";
 import { useLayoutStore } from "@/lib/stores/layoutStore";
 
-vi.mock("@/lib/stores/layoutStore");
+// Mock with Zustand selector pattern (React 19 compatibility)
+const { mockUseLayoutStore } = vi.hoisted(() => ({
+  mockUseLayoutStore: vi.fn(),
+}));
+
+vi.mock("@/lib/stores/layoutStore", () => ({
+  useLayoutStore: mockUseLayoutStore,
+}));
 
 describe("MainContentWrapper", () => {
   const mockToggleMobileDrawer = vi.fn();
@@ -12,9 +19,15 @@ describe("MainContentWrapper", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    // Implement Zustand selector pattern
+    const mockState = {
       sidebarCollapsed: false,
       toggleMobileDrawer: mockToggleMobileDrawer,
+    };
+
+    mockUseLayoutStore.mockImplementation((selector) => {
+      if (!selector) return mockState;
+      return selector(mockState);
     });
   });
 

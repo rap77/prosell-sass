@@ -6,9 +6,21 @@ import { useLayoutStore } from "@/lib/stores/layoutStore";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 
-// Mock hooks
-vi.mock("@/lib/stores/layoutStore");
-vi.mock("@/hooks/useAuth");
+// Mock hooks with explicit implementations (React 19 requires proper mock structure)
+// Use vi.hoisted() to ensure mock functions are available before module mocking
+const { mockUseLayoutStore, mockUseAuth } = vi.hoisted(() => ({
+  mockUseLayoutStore: vi.fn(),
+  mockUseAuth: vi.fn(),
+}));
+
+vi.mock("@/lib/stores/layoutStore", () => ({
+  useLayoutStore: mockUseLayoutStore,
+}));
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: mockUseAuth,
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: vi.fn(),
 }));
@@ -17,18 +29,26 @@ describe("Sidebar Mobile Drawer", () => {
   const mockToggleMobileDrawer = vi.fn();
   const mockHasPermission = vi.fn(() => true);
 
+  // Helper to setup Zustand store mock with selector pattern
+  const mockStore = (state: Partial<ReturnType<typeof useLayoutStore>>) => {
+    mockUseLayoutStore.mockImplementation((selector?: (s: any) => any) => {
+      if (!selector) return state;
+      return selector(state);
+    });
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default mocks
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    // Default mocks - use helper with Zustand selector pattern
+    mockStore({
       sidebarCollapsed: false,
       toggleSidebar: vi.fn(),
       mobileDrawerOpen: false,
       toggleMobileDrawer: mockToggleMobileDrawer,
     });
 
-    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockUseAuth.mockReturnValue({
       hasPermission: mockHasPermission,
       user: {
         first_name: "Test",
@@ -61,7 +81,7 @@ describe("Sidebar Mobile Drawer", () => {
   it("should open drawer when hamburger clicked", async () => {
     const user = userEvent.setup();
 
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockStore({
       sidebarCollapsed: false,
       toggleSidebar: vi.fn(),
       mobileDrawerOpen: false,
@@ -85,7 +105,7 @@ describe("Sidebar Mobile Drawer", () => {
   });
 
   it("should render drawer with backdrop when open", () => {
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockStore({
       sidebarCollapsed: false,
       toggleSidebar: vi.fn(),
       mobileDrawerOpen: true, // DRAWER OPEN
@@ -105,7 +125,7 @@ describe("Sidebar Mobile Drawer", () => {
     const user = userEvent.setup();
     const mockToggle = vi.fn();
 
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockStore({
       sidebarCollapsed: false,
       toggleSidebar: vi.fn(),
       mobileDrawerOpen: true,
@@ -126,7 +146,7 @@ describe("Sidebar Mobile Drawer", () => {
     const { rerender } = render(<Sidebar groups={["general"]} />);
 
     // Open drawer
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockStore({
       sidebarCollapsed: false,
       toggleSidebar: vi.fn(),
       mobileDrawerOpen: true,
@@ -159,8 +179,8 @@ describe("Sidebar Mobile Drawer", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("should have correct z-index layering (spec: hamburger z-50, drawer z-40)", () => {
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+  it("should have correct z-index layering (desktop z-40, mobile drawer z-[70])", () => {
+    mockStore({
       sidebarCollapsed: false,
       toggleSidebar: vi.fn(),
       mobileDrawerOpen: true,
@@ -171,9 +191,14 @@ describe("Sidebar Mobile Drawer", () => {
 
     const sidebars = screen.getAllByRole("complementary", { name: /sidebar/i });
 
-    // Both desktop and mobile drawer should have z-40
-    sidebars.forEach((sidebar) => {
-      expect(sidebar).toHaveClass("z-40");
-    });
+    // Desktop sidebar: z-40
+    expect(sidebars[0]).toHaveClass("z-40");
+
+    // Mobile drawer: z-[70]
+    expect(sidebars[1]).toHaveClass("z-[70]");
+
+    // Backdrop should have z-[60]
+    const backdrop = screen.getByTestId("sidebar-drawer-backdrop");
+    expect(backdrop).toHaveClass("z-[60]");
   });
 });
