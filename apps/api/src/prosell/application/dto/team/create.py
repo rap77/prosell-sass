@@ -20,6 +20,6 @@ class AddTeamMemberRequest(BaseModel):
 
     team_id: UUID
     user_id: UUID
-    tenant_id: UUID
+    tenant_id: UUID | None = None  # Optional - backend derives from current_user if not provided
     role: str = Field(default="vendor", pattern="^(manager|vendor)$")
     commission_rate: float | None = Field(default=None, ge=0, le=100)

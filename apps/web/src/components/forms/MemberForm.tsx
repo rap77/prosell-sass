@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores";
 import { Controller } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -76,10 +75,6 @@ export interface MemberFormProps {
 export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
   const [isPending, startTransition] = useTransition();
 
-  // Get tenant_id from auth store
-  const { user } = useAuthStore();
-  const tenantId = user?.id || ""; // Use user ID as tenant_id for now
-
   // Get store methods
   const { addMember, isLoading, error, clearError } = useTeamStore();
 
@@ -89,7 +84,6 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-    setValue,
   } = useForm<MemberFormValues>({
     /**
      * @ts-expect-error
@@ -134,7 +128,6 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
     try {
       await addMember(teamId, {
         user_id: data.user_id,
-        tenant_id: tenantId,
         role: data.role,
         commission_rate: data.commission_rate ?? null,
       });

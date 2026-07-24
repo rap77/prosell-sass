@@ -43,7 +43,7 @@ export interface UpdateTeamRequest {
 export interface AddTeamMemberRequest {
   team_id: string;
   user_id: string;
-  tenant_id: string;
+  tenant_id?: string; // Optional - backend derives from current_user
   role?: TeamMemberRole;
   commission_rate?: number | null;
 }
