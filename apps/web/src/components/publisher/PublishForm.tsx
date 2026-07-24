@@ -222,14 +222,11 @@ export function PublishForm({
     setValue,
     formState: { errors },
   } = useForm<PublishFormValues>({
-    // Zod 3 limitation: resolver type inference fails with mixed optionals + constraints.
-    // Issue: publishSchema uses Zod 3 syntax with fields like `description.optional().min(10)`
-    // which confuses TypeScript's inference of the resolved values type.
-    // Runtime behavior: Zod validates correctly; the type mismatch is purely a
-    // TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
-    // Safe because: Form values are validated by Zod schema before submission.
-    // @ts-expect-error - Zod resolver inference limitation
-    resolver: zodResolver(publishSchema),
+    // Explicit any cast to work around Zod 3 + react-hook-form v5 inference limitation.
+    // The schema uses mixed optional/constraint patterns (e.g., description.min().optional())
+    // which confuse TypeScript's resolver type inference.
+    // Safe: Zod validates all fields at runtime; type mismatch is TS-only artifact.
+    resolver: zodResolver(publishSchema) as any,
     defaultValues: {
       title: vehicleData?.title ?? "",
       description: vehicleData?.description ?? "",
@@ -301,15 +298,9 @@ export function PublishForm({
   return (
     <>
       <form
-        // Zod 3 limitation: handleSubmit type inference fails with optional fields + constraints.
-        // Issue: publishSchema uses Zod 3 syntax with `.optional().min(10)` patterns
-        // which confuses TypeScript's inference of handleSubmit's parameter types.
-        // Runtime behavior: Zod validates correctly; the type mismatch is purely a
-        // TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
-        // Safe because: Form values are validated by Zod schema before submission,
-        // and handleFormSubmit only accesses validated fields.
-        // @ts-expect-error - Zod handleSubmit inference limitation
-        onSubmit={handleSubmit(handleFormSubmit)}
+        // Explicit cast to work around Zod 3 + react-hook-form handleSubmit inference.
+        // Safe: Form values are validated by Zod schema before handleFormSubmit receives them.
+        onSubmit={handleSubmit(handleFormSubmit as any)}
         className="flex flex-col gap-5"
       >
         {/* ── FOTOS ── */}

@@ -51,7 +51,8 @@ function isValidTransition(from: LeadStatus, to: LeadStatus): boolean {
 // Type guards — safer than type assertions
 function isLeadStatus(value: unknown): value is LeadStatus {
   return (
-    typeof value === "string" && KANBAN_COLUMNS.includes(value as LeadStatus)
+    typeof value === "string" &&
+    (KANBAN_COLUMNS as readonly string[]).includes(value)
   );
 }
 
@@ -142,7 +143,13 @@ export function KanbanBoard() {
       acc[status] = localLeads.filter((l) => l.status === status);
       return acc;
     },
-    {} as Record<LeadStatus, Lead[]>,
+    {
+      [LeadStatus.NEW]: [],
+      [LeadStatus.CONTACTED]: [],
+      [LeadStatus.QUALIFIED]: [],
+      [LeadStatus.APPOINTMENT_SET]: [],
+      [LeadStatus.LOST]: [],
+    },
   );
 
   // Only show vendedores who have leads in the current board
@@ -315,7 +322,7 @@ export function KanbanBoard() {
             <KanbanColumn
               key={status}
               status={status}
-              leads={columnLeads[status]}
+              leads={columnLeads[status] ?? []}
             />
           ))}
         </div>
