@@ -142,10 +142,47 @@ jobs:
       - name: Validate spec status lifecycle
         run: python3 scripts/validate_spec_status.py
 
+  validate-code-standards:
+    name: Validate Code Standards (Anti --no-verify)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tailwind 4 validation
+        run: bash scripts/validate-tailwind.sh
+        continue-on-error: false
+
+      - name: Fail if violations detected
+        run: |
+          if grep -r "var(--ps-" apps/web/src/components/ apps/web/src/app/ 2>/dev/null; then
+            echo "❌ FATAL: TailwindCSS 4 violations detected (var() in className)"
+            echo "This commit bypassed pre-commit hooks with --no-verify"
+            exit 1
+          fi
+          echo "✅ No TailwindCSS 4 violations detected"
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint-python, lint-node, test-python, test-node, validate-specs]
+    needs:
+      [
+        lint-python,
+        lint-node,
+        test-python,
+        test-node,
+        validate-specs,
+        validate-code-standards,
+      ]
     steps:
       - uses: actions/checkout@v6
 
