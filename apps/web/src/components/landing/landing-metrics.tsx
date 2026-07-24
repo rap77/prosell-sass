@@ -56,11 +56,11 @@ export function LandingMetrics() {
           </SectionSubtitle>
         </div>
 
-        <div className="grid grid-cols-4 items-center mx-auto mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6 lg:gap-0 items-center mx-auto mb-16">
           {STATS.map((s, idx) => (
-            <div key={s.num} className="relative text-center py-2 px-6">
+            <div key={s.num} className="relative text-center py-6 sm:py-4 px-6">
               {idx > 0 && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-px h-[60px] bg-ps-accent-glow-soft" />
+                <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-px h-[60px] bg-ps-accent-glow-soft" />
               )}
               <div
                 className={`text-[56px] font-extrabold tracking-[-0.035em] leading-none mb-3.5 ${s.color}`}

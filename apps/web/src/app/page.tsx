@@ -26,7 +26,13 @@ export default function HomePage() {
     <>
       <LandingStyles />
 
-      <div className="min-h-screen bg-[var(--ps-bg-base)] text-[var(--ps-text-primary)] overflow-x-hidden">
+      <div
+        className="min-h-screen overflow-x-clip"
+        style={{
+          backgroundColor: "var(--ps-bg-base)",
+          color: "var(--ps-text-primary)",
+        }}
+      >
         {/* Fixed background decoration */}
         <div
           aria-hidden="true"

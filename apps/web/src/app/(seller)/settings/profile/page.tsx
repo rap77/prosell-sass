@@ -68,7 +68,7 @@ export default function SettingsProfilePage() {
         lastName: values.lastName,
         email: values.email,
         phone: values.phone,
-        organizationId: organizationQuery.data?.id,
+        // ponytail: organizationId removed — backend derives from session (tenant spoofing prevention)
       });
       updateUser({
         first_name: values.firstName,
@@ -104,7 +104,7 @@ export default function SettingsProfilePage() {
 
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {/* Name row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="firstName">Nombre</Label>
             <Input
@@ -168,7 +168,11 @@ export default function SettingsProfilePage() {
 
         {/* Submit */}
         <div className="flex justify-end pt-1">
-          <Button type="submit" disabled={isPending}>
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="w-full md:w-auto"
+          >
             {isPending && <Loader2 className="animate-spin" />}
             {isPending ? "Guardando…" : "Guardar cambios"}
           </Button>

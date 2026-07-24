@@ -58,18 +58,53 @@ function SignedPhotoCell({
   );
 }
 
+// ponytail: minimal type helper for TanStack meta
+interface ColumnMeta {
+  headerClassName?: string;
+  cellClassName?: string;
+}
+
+// ponytail: type guard for GGA TypeScript strict compliance
+function getColumnMeta(meta: unknown): ColumnMeta | undefined {
+  if (!meta || typeof meta !== "object") {
+    return undefined;
+  }
+
+  const obj = meta as Record<string, unknown>;
+
+  // Validate shape: both fields optional, must be strings when present
+  if (
+    (obj.headerClassName !== undefined &&
+      typeof obj.headerClassName !== "string") ||
+    (obj.cellClassName !== undefined && typeof obj.cellClassName !== "string")
+  ) {
+    return undefined;
+  }
+
+  return {
+    headerClassName: obj.headerClassName as string | undefined,
+    cellClassName: obj.cellClassName as string | undefined,
+  };
+}
+
+// GGA TypeScript const-types: derive type from const object
+const PRODUCT_STATUS = {
+  PUBLISHED: "published",
+  PENDING: "pending",
+  FAILED: "failed",
+  DRAFT: "draft",
+  EXPIRED: "expired",
+  ONLINE: "online",
+  SOLD: "sold",
+} as const;
+
+type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
+
 export interface ProductRow {
   id: string;
   title: string;
   price: number;
-  status:
-    | "published"
-    | "pending"
-    | "failed"
-    | "draft"
-    | "expired"
-    | "online"
-    | "sold";
+  status: ProductStatus;
   photo_url?: string;
   year?: number;
   make?: string;
@@ -154,6 +189,11 @@ export function DataGrid({
       ),
       enableSorting: false,
       enableHiding: false,
+      meta: {
+        // ponytail: sticky first column for mobile horizontal scroll
+        cellClassName: "sticky left-0 z-20 bg-background",
+        headerClassName: "sticky left-0 z-20 bg-muted",
+      },
     },
     {
       accessorKey: "photo_url",
@@ -214,6 +254,11 @@ export function DataGrid({
           />
         </div>
       ),
+      // Task 2b: Actions always visible on mobile (sticky right, no swipe needed)
+      meta: {
+        headerClassName: "sticky right-0 bg-background z-10",
+        cellClassName: "sticky right-0 bg-background",
+      },
     },
   ];
 
@@ -300,24 +345,35 @@ export function DataGrid({
         </div>
       )}
 
-      <div ref={tableContainerRef} className="h-[600px] overflow-auto">
+      <div
+        ref={tableContainerRef}
+        className="h-[600px] overflow-auto overflow-x-auto touch-pan-x"
+      >
         <table className="w-full border-collapse">
           <thead className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-4 py-3 text-left text-sm font-medium text-foreground border-b border-border"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </th>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const meta = getColumnMeta(header.column.columnDef.meta);
+                  const headerClassName = meta?.headerClassName || "";
+
+                  return (
+                    <th
+                      key={header.id}
+                      className={cn(
+                        "px-4 py-3 text-left text-sm font-medium text-foreground border-b border-border",
+                        headerClassName,
+                      )}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
@@ -338,11 +394,22 @@ export function DataGrid({
                 onKeyDown={handleRowKeyDown(row.original.id)}
                 tabIndex={onRowClick ? 0 : undefined}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 text-sm">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const meta = getColumnMeta(cell.column.columnDef.meta);
+                  const cellClassName = meta?.cellClassName || "";
+
+                  return (
+                    <td
+                      key={cell.id}
+                      className={cn("px-4 py-3 text-sm", cellClassName)}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

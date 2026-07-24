@@ -248,7 +248,8 @@ export default function AdminNewDealerPage() {
           <p className="m-0 text-xs text-ps-text-secondary">
             Los brokers son personas que pueden ser propietarias de productos.
           </p>
-          <div className="flex gap-2">
+          {/* ponytail: stack on mobile, horizontal on desktop */}
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={brokerName}
@@ -264,7 +265,8 @@ export default function AdminNewDealerPage() {
               className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary"
             />
           </div>
-          <div className="flex gap-2">
+          {/* ponytail: stack on mobile, horizontal on desktop */}
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="tel"
               value={brokerPhone}

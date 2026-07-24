@@ -165,8 +165,8 @@ export function ProductCard({
         </div>
       </button>
 
-      {/* Body */}
-      <div className="flex flex-col gap-2 p-4">
+      {/* Body — ponytail: pb-14 on mobile to prevent toolbar overlap, md:pb-4 on desktop (hover reveals toolbar) */}
+      <div className="flex flex-col gap-2 p-4 pb-14 md:pb-4">
         <h3 className="truncate text-sm font-semibold text-foreground">
           {product.title}
         </h3>
@@ -175,10 +175,11 @@ export function ProductCard({
           <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
         )}
 
-        <p className="text-base font-bold text-foreground">{price}</p>
+        {/* ponytail: bigger price on mobile for readability (text-lg → 18px, md:text-xl → 20px) */}
+        <p className="text-lg font-bold text-foreground md:text-xl">{price}</p>
 
         {metaCells.length > 0 && (
-          <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <dl className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-xs">
             {metaCells.map((cell) => (
               <div key={cell.key} className="flex flex-col">
                 <dt className="text-muted-foreground">{cell.label}</dt>
@@ -189,16 +190,13 @@ export function ProductCard({
         )}
       </div>
 
-      {/* Actions — visually hidden by default; revealed on mouse hover OR
-          keyboard focus-within (a11y: WCAG 2.1.1 Keyboard). The toolbar
-          stays in the a11y tree so screen readers and keyboard users
-          can Tab onto Ver/Editar/Eliminar. The visual reveal is purely
-          CSS-driven — no React state, no aria-hidden toggle. */}
+      {/* Actions — ponytail: always visible on mobile (bg-card opaque), hidden on desktop until hover (bg-card/95 semi-transparent).
+          Mobile users need permanent access to actions; desktop users get cleaner cards with hover reveal. */}
       <div
         data-testid="product-card-actions"
         role="toolbar"
         aria-label="Acciones del producto"
-        className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-border bg-card/95 px-2 py-1.5 transition-opacity md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100"
+        className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-border bg-card px-2 py-1.5 transition-opacity md:pointer-events-none md:bg-card/95 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100"
       >
         <button
           type="button"

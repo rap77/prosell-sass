@@ -167,7 +167,7 @@ function DetailPageSkeleton() {
         <PulseBox w={120} h={36} />
         <PulseBox w={100} h={36} />
       </div>
-      <div className="grid grid-cols-[1.15fr_0.85fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6">
         <PulseBox h={420} radius={12} />
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2.5">
@@ -176,7 +176,7 @@ function DetailPageSkeleton() {
             <PulseBox w="50%" h={28} />
             <PulseBox w="30%" h={20} />
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {Array.from({ length: 6 }).map((_, i) => (
               <PulseBox key={i} h={72} radius={10} />
             ))}
@@ -401,7 +401,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
         </div>
 
         {/* Main grid: gallery | info */}
-        <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 items-start">
           {/* Gallery */}
           <SectionCard className="p-4">
             <ProductImageGallery images={productImages} />
@@ -456,7 +456,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
               </div>
 
               {attributeItems.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {attributeItems.map((item) => (
                     <DetailItem
                       key={`${item.label}-${item.value}`}

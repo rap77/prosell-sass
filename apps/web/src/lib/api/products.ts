@@ -663,6 +663,11 @@ export function useInfiniteProducts(
   filters?: ProductFilters,
   limit: number = 50,
 ) {
+  // ponytail: mock data for UI testing without DB - set NEXT_PUBLIC_MOCK_DATA=true
+  const useMocks =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
+
   const queryParams = new URLSearchParams();
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.search) queryParams.append("search", filters.search);
@@ -677,6 +682,50 @@ export function useInfiniteProducts(
   return useInfiniteQuery({
     queryKey: ["products", "infinite", filters, limit],
     queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      // ponytail: return mock data if enabled (avoids DB dependency for UI testing)
+      if (useMocks) {
+        const { MOCK_PRODUCTS } = await import("@/lib/mocks/products");
+
+        // ponytail: apply filters to mocks (search, status, category) - minimal implementation
+        let filtered = MOCK_PRODUCTS;
+
+        // Search filter (title + description case-insensitive)
+        if (filters?.search) {
+          const term = filters.search.toLowerCase();
+          filtered = filtered.filter(
+            (p) =>
+              p.title.toLowerCase().includes(term) ||
+              p.description?.toLowerCase().includes(term),
+          );
+        }
+
+        // Status filter
+        if (filters?.status) {
+          filtered = filtered.filter((p) => {
+            const mapped = mapProductStatusToVehicleStatus(p.status);
+            return mapped === filters.status;
+          });
+        }
+
+        // Category filter
+        if (filters?.category_id) {
+          filtered = filtered.filter(
+            (p) => p.category_id === filters.category_id,
+          );
+        }
+
+        // Pagination
+        const skip = pageParam ? parseInt(pageParam, 10) : 0;
+        const items = filtered.slice(skip, skip + limit);
+        const nextOffset = skip + items.length;
+
+        return {
+          items,
+          next_cursor: nextOffset < filtered.length ? String(nextOffset) : null,
+          has_more: nextOffset < filtered.length,
+        } as const;
+      }
+
       const params = new URLSearchParams(queryParams);
       // ponytail: pageParam is the offset (encoded as string), backend expects "skip"
       if (pageParam) {

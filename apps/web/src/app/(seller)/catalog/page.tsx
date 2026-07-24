@@ -220,6 +220,14 @@ export default function CatalogPage() {
 
   const search = searchParams.get("search") ?? "";
   const status = getApiStatus(searchParams.get("status") ?? undefined);
+
+  // ponytail: search param handler (separate from sidebar filters)
+  const handleSearchChange = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value) params.set("search", value);
+    else params.delete("search");
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
   const attributes: Record<string, string> = {};
   for (const [key, value] of Object.entries(values)) {
     if (value) attributes[key] = value;
@@ -396,7 +404,8 @@ export default function CatalogPage() {
               />
             </div>
 
-            <div className="flex items-start justify-between gap-4 mb-4">
+            {/* ponytail: vertical layout on mobile (flex-col), horizontal on desktop (md:flex-row) to prevent overflow */}
+            <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-start md:justify-between md:gap-4">
               {/* Title + count */}
               <div>
                 <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-tight">
@@ -409,9 +418,9 @@ export default function CatalogPage() {
                 </p>
               </div>
 
-              {/* Search + CTA */}
-              <div className="flex items-center gap-2.5">
-                <div className="relative">
+              {/* Search + CTA — ponytail: full width on mobile, auto width on desktop */}
+              <div className="flex items-center gap-2.5 w-full md:w-auto">
+                <div className="relative flex-1 md:flex-initial">
                   <span className="absolute left-[11px] top-1/2 -translate-y-1/2 text-ps-tertiary pointer-events-none inline-flex">
                     <Search size={14} strokeWidth={2} />
                   </span>
@@ -419,11 +428,11 @@ export default function CatalogPage() {
                     type="search"
                     placeholder="Buscar producto..."
                     value={search}
-                    onChange={(e) => setFilter("search", e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
                     className={cn(
-                      "h-9 w-[220px] pl-8 pr-3 border rounded-lg text-ps-text-primary text-[13px] outline-none box-border",
+                      "h-9 w-full pl-8 pr-3 border rounded-lg text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
                       searchFocused
                         ? "border-ps-border-active shadow-input-focus"
                         : "border-ps-border-default",
@@ -434,10 +443,12 @@ export default function CatalogPage() {
                 <button
                   type="button"
                   onClick={() => router.push("/catalog/create")}
-                  className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap"
+                  className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                  aria-label="Agregar producto"
                 >
                   <Plus size={14} strokeWidth={2.5} />
-                  Agregar producto
+                  {/* ponytail: hide text on mobile (icon only), show on desktop */}
+                  <span className="hidden md:inline">Agregar producto</span>
                 </button>
               </div>
             </div>

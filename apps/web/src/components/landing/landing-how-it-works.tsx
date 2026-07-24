@@ -88,7 +88,7 @@ export function LandingHowItWorks() {
           </SectionSubtitle>
         </div>
 
-        <div className="grid grid-cols-3 gap-8 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14">
           {STEPS.map((step) => (
             <div key={step.num} className="ps-hw-step">
               <span className="absolute top-5 right-6 text-[13px] font-bold tracking-[0.04em] text-ps-cyan-faint">

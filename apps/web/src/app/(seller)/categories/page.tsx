@@ -227,7 +227,9 @@ function CtaButton({
       onMouseLeave={() => setHov(false)}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-lg border-0 font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap text-ps-bg-base",
-        full ? "h-10 w-full text-[13.5px]" : "h-[38px] px-4 text-[13.5px]",
+        full
+          ? "h-10 w-full text-[13.5px]"
+          : "h-[38px] px-4 text-[13.5px] w-full md:w-auto",
         hov ? "bg-ps-cyan-hover" : "bg-ps-cyan",
       )}
       style={{
@@ -286,7 +288,7 @@ function NicheCard({
       <div className="flex items-center gap-[14px]">
         <span
           className={cn(
-            "w-[52px] h-[52px] rounded-xl inline-flex items-center justify-center flex-shrink-0 border",
+            "w-10 h-10 md:w-13 md:h-13 rounded-xl inline-flex items-center justify-center flex-shrink-0 border",
             active ? "bg-ps-info-bg border-ps-border-medium" : undefined,
           )}
           style={{
@@ -337,7 +339,7 @@ function NicheCard({
 
       {/* Stats */}
       <div
-        className="flex flex-wrap gap-2"
+        className="hidden md:flex flex-wrap gap-2"
         style={{ opacity: active ? 1 : 0.7 }}
       >
         {[
@@ -439,7 +441,7 @@ function NicheCard({
 
       {/* Actions */}
       {active ? (
-        <div className="flex gap-2 pt-[6px] border-t border-ps-border-subtle">
+        <div className="flex flex-col md:flex-row gap-2 pt-[6px] border-t border-ps-border-subtle">
           <GhostButton icon={SlidersHorizontal} label="Configurar" />
           <GhostButton icon={Package} label="Ver productos" />
         </div>
@@ -555,31 +557,33 @@ function CustomFieldsCard({ contextLabel }: { contextLabel: string }) {
       </div>
 
       {/* Table */}
-      <table className="w-full border-separate border-spacing-0">
-        <thead>
-          <tr>
-            {COLS.map((col) => (
-              <th
-                key={col}
-                className={cn(
-                  "text-[10.5px] font-bold tracking-[0.1em] uppercase text-ps-tertiary py-3 px-[14px] border-b border-ps-border-subtle",
-                  col === "" ? "text-right" : "text-left",
-                  col === "Nombre del campo" && "pl-5",
-                )}
-                style={{ background: T.chipBg }}
-              >
-                {col}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {CUSTOM_FIELDS.map((field) => {
-            const chip = TYPE_CHIPS[field.type];
-            return <FieldRow key={field.name} field={field} chip={chip} />;
-          })}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto touch-pan-x">
+        <table className="w-full border-separate border-spacing-0">
+          <thead>
+            <tr>
+              {COLS.map((col) => (
+                <th
+                  key={col}
+                  className={cn(
+                    "text-[10.5px] font-bold tracking-[0.1em] uppercase text-ps-tertiary py-3 px-[14px] border-b border-ps-border-subtle",
+                    col === "" ? "text-right" : "text-left",
+                    col === "Nombre del campo" && "pl-5",
+                  )}
+                  style={{ background: T.chipBg }}
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {CUSTOM_FIELDS.map((field) => {
+              const chip = TYPE_CHIPS[field.type];
+              return <FieldRow key={field.name} field={field} chip={chip} />;
+            })}
+          </tbody>
+        </table>
+      </div>
 
       <div className="py-3 px-5 border-t border-ps-border-subtle">
         <AddFieldButton />
@@ -666,10 +670,11 @@ function FieldRow({
 function PageSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {[1, 2].map((i) => (
           <div
             key={i}
+            data-testid="skeleton-card"
             className="h-[280px] bg-ps-surface rounded-2xl border border-ps-border-subtle opacity-50"
           />
         ))}
@@ -714,7 +719,7 @@ export default function CategoriesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-end justify-between gap-6 mb-[26px]">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-[26px]">
         <div>
           <h1 className="m-0 mb-1 text-[22px] font-bold tracking-[-0.015em] text-ps-text-primary">
             Categorías
@@ -727,7 +732,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Niches grid */}
-      <div className="grid grid-cols-2 gap-4 mb-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-7">
         {categories.map((cat) => (
           <NicheCard
             key={cat.id}

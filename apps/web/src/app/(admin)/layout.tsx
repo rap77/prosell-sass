@@ -25,18 +25,16 @@ export default function AdminLayout({
     <div className="flex h-screen overflow-hidden">
       {/* ponytail: clear navigation flag when layout mounts */}
       <NavigationCleanup />
-      {/* Desktop sidebar - hidden on mobile */}
-      <div className="hidden md:block">
-        <Sidebar
-          groups={[
-            "general",
-            "inventario",
-            "ventas",
-            "concesionarios",
-            "configuración",
-          ]}
-        />
-      </div>
+      {/* Sidebar - desktop always visible, mobile drawer */}
+      <Sidebar
+        groups={[
+          "general",
+          "inventario",
+          "ventas",
+          "concesionarios",
+          "configuración",
+        ]}
+      />
 
       {/* Main content area */}
       <MainContentWrapper>

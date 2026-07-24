@@ -45,7 +45,7 @@ export function HeroShotSelector({
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       {images.map((url, index) => {
         const isSelected = index === heroIndex;
         const isHovered = hoveredIndex === index;

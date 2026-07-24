@@ -10,7 +10,7 @@ export default function PipelinePage() {
   return (
     <div className="flex flex-col gap-6 h-full">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary leading-[1.2]">
             Pipeline

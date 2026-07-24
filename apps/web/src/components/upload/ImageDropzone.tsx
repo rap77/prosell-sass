@@ -4,6 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { Upload } from "lucide-react";
 import { useUploadStore } from "@/lib/stores/uploadStore";
 import { useClipboardPasteImage } from "@/lib/hooks/useClipboardPasteImage";
+import { useImageCompression } from "@/lib/hooks/useImageCompression";
 
 /**
  * ImageDropzone — entry point for new uploads.
@@ -22,19 +23,25 @@ import { useClipboardPasteImage } from "@/lib/hooks/useClipboardPasteImage";
  */
 export function ImageDropzone() {
   const { addFile } = useUploadStore();
+  const { compressImage } = useImageCompression();
 
-  const onDrop = (acceptedFiles: File[]) => {
-    // Wrap so `addFile` gets ONLY the File — `forEach` would otherwise
-    // pass (file, index, array), and the store action takes a single
-    // File. Keeps the contract identical to the paste path below.
-    acceptedFiles.forEach((file) => addFile(file));
+  const onDrop = async (acceptedFiles: File[]) => {
+    // Compress each file before adding to store (Task 4b: client-side compression)
+    // ponytail: Promise.all for parallel compression (faster than sequential)
+    const compressedFiles = await Promise.all(
+      acceptedFiles.map((file) => compressImage(file)),
+    );
+
+    compressedFiles.forEach((file) => addFile(file));
   };
 
-  // Paste-to-upload: a user with a screenshot in their clipboard can
-  // press Ctrl/Cmd+V anywhere on the page and the file lands in the
-  // store. The hook owns the window listener and the image-only
-  // filter; this component just hands the File off.
-  useClipboardPasteImage(addFile);
+  // Paste-to-upload with compression: compress before adding to store
+  const handlePaste = async (file: File) => {
+    const compressed = await compressImage(file);
+    addFile(compressed);
+  };
+
+  useClipboardPasteImage(handlePaste);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -58,7 +65,7 @@ export function ImageDropzone() {
         }
       `}
     >
-      <input {...getInputProps()} />
+      <input {...getInputProps()} capture="environment" />
 
       <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
 

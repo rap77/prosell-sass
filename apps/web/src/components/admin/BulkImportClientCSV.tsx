@@ -331,7 +331,7 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
   const { summary, rows } = preview;
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <SummaryCard
           label="Importables"
           value={summary.importable_count}

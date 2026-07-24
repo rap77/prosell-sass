@@ -4,7 +4,7 @@ import { FAQ_ITEMS } from "./_data";
 export function LandingFaq() {
   return (
     <section className="py-[100px] px-8 border-t border-ps-border-subtle">
-      <div className="max-w-[1280px] mx-auto grid grid-cols-[1fr_1.6fr] gap-20 items-start">
+      <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-12 lg:gap-20 items-start">
         <div>
           <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-ps-cyan mb-[18px]">
             FAQ

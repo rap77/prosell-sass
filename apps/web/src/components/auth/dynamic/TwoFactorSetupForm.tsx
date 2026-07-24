@@ -83,7 +83,7 @@ export function SetupStateSkeleton() {
       </div>
 
       {/* Backup codes skeleton */}
-      <div className="grid grid-cols-2 gap-2 bg-muted rounded-lg p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-muted rounded-lg p-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="h-8 bg-muted animate-pulse rounded" />
         ))}
@@ -380,7 +380,7 @@ export function TwoFactorSetupForm({
                     autenticación.
                   </p>
                   {formState.backupCodes.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 bg-muted rounded-lg p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-muted rounded-lg p-4">
                       {formState.backupCodes.map((code, index) => (
                         <code
                           key={index}

@@ -301,8 +301,8 @@
 // ============================================ */
 
 /* Auth split-layout responsive */
-@media (max-width: 768px) {
-  /* Left brand panel is hidden on mobile */
+@media (max-width: 1024px) {
+  /* Left brand panel is hidden on mobile/tablet */
   .ps-auth-split > aside[aria-hidden="true"] {
     display: none;
   }

@@ -24,9 +24,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
+import { useLayoutStore } from "@/lib/stores/layoutStore";
 import { TeamSwitcher } from "@/components/teams/TeamSwitcher";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { OrganizationPicker } from "@/components/admin/OrganizationPicker";
 
 /**
@@ -105,6 +107,9 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
   const router = useRouter();
   const { logout, user: authUser, isAdmin } = useAuth();
   const breadcrumbOverrides = useBreadcrumbStore((state) => state.labels);
+  const toggleMobileDrawer = useLayoutStore(
+    (state) => state.toggleMobileDrawer,
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   // Use real user data from auth context, fallback to placeholder
@@ -137,13 +142,14 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
     });
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b bg-background">
-      <div className="flex h-full items-center px-6 gap-4">
+    <header className="sticky top-0 z-30 border-b bg-background">
+      <div className="flex h-16 items-center px-6 gap-4">
         {/* Sidebar collapse toggle - mobile only */}
         <Button
           variant="ghost"
           size="icon"
           className="md:hidden"
+          onClick={toggleMobileDrawer}
           aria-label="Toggle sidebar"
         >
           <svg
@@ -163,8 +169,8 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
           </svg>
         </Button>
 
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm">
+        {/* Breadcrumbs - hidden on mobile */}
+        <nav className="hidden md:flex items-center gap-2 text-sm">
           <Link
             href="/dashboard"
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -248,6 +254,9 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
         {/* Theme toggle */}
         <ThemeToggle />
 
+        {/* Locale switcher */}
+        <LocaleSwitcher />
+
         {/* Notification bell */}
         <NotificationBell />
 
@@ -296,6 +305,38 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+
+      {/* Mobile breadcrumb subheader */}
+      <div className="md:hidden border-t bg-muted/30 px-4 py-2">
+        <nav className="flex items-center gap-2 text-xs overflow-x-auto">
+          <Link
+            href="/dashboard"
+            className="text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+          >
+            Inicio
+          </Link>
+          {breadcrumbs.map((crumb, index) => (
+            <div
+              key={crumb.href}
+              className="flex items-center gap-2 flex-shrink-0"
+            >
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              {index === breadcrumbs.length - 1 ? (
+                <span className="font-medium text-foreground whitespace-nowrap">
+                  {crumb.label}
+                </span>
+              ) : (
+                <Link
+                  href={crumb.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                >
+                  {crumb.label}
+                </Link>
+              )}
+            </div>
+          ))}
+        </nav>
       </div>
     </header>
   );

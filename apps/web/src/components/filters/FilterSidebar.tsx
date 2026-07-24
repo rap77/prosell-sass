@@ -54,10 +54,13 @@ export function FilterSidebar({
   const { values, setFilter, setFilters, clearAll } = useCatalogFilters(fields);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // ponytail: hide on mobile if no filters - saves 256px of precious screen space
+  if (fields.length === 0) return null;
+
   return (
     <aside
       aria-label="Catalog filters"
-      className={`relative border-r bg-background transition-all duration-300 ${
+      className={`relative border-r bg-background transition-all duration-300 hidden md:block ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >

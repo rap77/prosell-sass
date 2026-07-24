@@ -5,7 +5,9 @@ import { useLayoutStore } from "@/lib/stores/layoutStore";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { usePathname } from "next/navigation";
-import { LucideIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import {
   LayoutDashboard,
@@ -22,7 +24,8 @@ import {
 } from "lucide-react";
 
 /**
- * Navigation group types for role-based sidebar filtering.
+ * Navigation groups for role-based sidebar filtering.
+ * Const-first pattern for type safety (GGA TypeScript Const Types Rule).
  *
  * - 'general'        → top-level items (Dashboard), no group header shown
  * - 'inventario'     → catalog & publications
@@ -32,18 +35,15 @@ import {
  *   Permission.ORG_ADMIN_VIEW_ALL regardless of whether the caller's
  *   layout requests this group (defense in depth — see `Sidebar()` below).
  */
-export type NavGroup =
-  "general" | "inventario" | "ventas" | "configuración" | "concesionarios";
-
-// Render order for nav groups. A typed list lets us iterate without casting
-// the keys back to NavGroup (Object.entries widens them to string).
-const NAV_GROUP_ORDER: NavGroup[] = [
+const NAV_GROUP_ORDER = [
   "general",
   "inventario",
   "ventas",
   "concesionarios",
   "configuración",
-];
+] as const;
+
+export type NavGroup = (typeof NAV_GROUP_ORDER)[number];
 
 interface NavItem {
   label: string;
@@ -135,16 +135,39 @@ interface SidebarProps {
  * Collapsible sidebar navigation component using Compound Components pattern.
  *
  * Features:
- * - Context API for shared state (isOpen, toggle)
- * - Dedicated navigation and footer subcomponents
- * - Smooth transitions using opacity/transform only (CSS-01 anti-pattern)
+ * - Desktop: fixed sidebar with collapse toggle
+ * - Mobile: hidden by default, drawer overlay on toggle
+ * - Framer Motion slide animations (mobile drawer)
+ * - Auto-close drawer on route change (mobile)
  * - Role-based filtering via `groups` prop
  * - Active route highlighting
  */
 export function Sidebar({ groups }: SidebarProps) {
-  const { sidebarCollapsed, toggleSidebar } = useLayoutStore();
+  // Zustand 5: use selectors to avoid re-renders on unrelated state changes
+  const sidebarCollapsed = useLayoutStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useLayoutStore((state) => state.toggleSidebar);
+  const mobileDrawerOpen = useLayoutStore((state) => state.mobileDrawerOpen);
+  const toggleMobileDrawer = useLayoutStore(
+    (state) => state.toggleMobileDrawer,
+  );
+
   const { hasPermission } = useAuth();
   const pathname = usePathname();
+  const isMountRef = useRef(true);
+
+  // Auto-close mobile drawer on route change (skip mount)
+  useEffect(() => {
+    if (isMountRef.current) {
+      isMountRef.current = false;
+      return;
+    }
+
+    if (mobileDrawerOpen) {
+      toggleMobileDrawer();
+    }
+    // ponytail: pathname change triggers close, not the toggle function itself
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Filter navigation items based on user role. Groups with sensitive items
   // get extra permission checks — defense in depth so a layout misconfiguration
@@ -161,11 +184,15 @@ export function Sidebar({ groups }: SidebarProps) {
     return true;
   });
 
-  return (
+  // Sidebar content (shared between desktop and mobile drawer)
+  const sidebarContent = (
     <aside
+      role="complementary"
       aria-label="Sidebar"
       className={cn(
         "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out",
+        // Desktop: always visible with collapse
+        "hidden md:block",
         sidebarCollapsed ? "w-16" : "w-64",
       )}
       style={{
@@ -252,6 +279,79 @@ export function Sidebar({ groups }: SidebarProps) {
         <SidebarFooter collapsed={sidebarCollapsed} />
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar (always visible with collapse) */}
+      {sidebarContent}
+
+      {/* Mobile drawer (AnimatePresence for smooth slide) */}
+      <AnimatePresence>
+        {mobileDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              data-testid="sidebar-drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={toggleMobileDrawer}
+              className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm md:hidden"
+              aria-label="Close menu"
+            />
+
+            {/* Drawer (slide from left) */}
+            <motion.aside
+              role="complementary"
+              aria-label="Sidebar"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
+              className="fixed left-0 top-0 z-[70] h-screen w-64 md:hidden"
+              style={{
+                background: "var(--ps-bg-sidebar)",
+                borderRight: "1px solid var(--ps-border-subtle)",
+              }}
+            >
+              <div className="flex h-full flex-col">
+                {/* Logo */}
+                <div
+                  className="flex h-16 items-center justify-center border-b px-4"
+                  style={{ borderBottomColor: "var(--ps-border-subtle)" }}
+                >
+                  <span
+                    className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight"
+                    style={{ color: "var(--ps-text-primary)" }}
+                  >
+                    <Image
+                      src="/logo-mark.png"
+                      alt="ProSell"
+                      width={271}
+                      height={294}
+                      className="h-[26px] w-auto flex-shrink-0"
+                    />
+                    ProSell
+                  </span>
+                </div>
+
+                {/* Navigation */}
+                <SidebarNav
+                  items={visibleItems}
+                  pathname={pathname}
+                  collapsed={false} // Mobile drawer always expanded
+                />
+
+                {/* Footer */}
+                <SidebarFooter collapsed={false} />
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

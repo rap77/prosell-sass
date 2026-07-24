@@ -112,7 +112,7 @@ export function LoginPageContent() {
         onSubmit={handleSubmit(onSubmit)}
         autoComplete="on"
         noValidate
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-4 md:gap-5"
       >
         {/* Email */}
         <div className="flex flex-col gap-1.5">
@@ -170,7 +170,7 @@ export function LoginPageContent() {
       <AuthDivider label="o continuá con" />
 
       {/* OAuth */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <AuthOAuthButton
           label="Google"
           icon={<GoogleSvg />}

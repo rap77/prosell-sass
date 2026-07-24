@@ -53,10 +53,7 @@ const CHANGE_PASSWORD_INPUT_SCHEMA = z
         message: "La nueva contraseña debe ser diferente a la actual",
       });
     }
-  }) as z.ZodType<{
-  currentPassword: string;
-  newPassword: string;
-}>;
+  });
 
 const DISABLE_TWO_FACTOR_INPUT_SCHEMA = z.object({
   totpCode: z
@@ -87,10 +84,7 @@ export interface UpdateProfileInput {
   organizationId?: string;
 }
 
-export interface ChangePasswordInput {
-  currentPassword: string;
-  newPassword: string;
-}
+export type ChangePasswordInput = z.infer<typeof CHANGE_PASSWORD_INPUT_SCHEMA>;
 
 export interface DisableTwoFactorInput {
   totpCode: string;
@@ -177,9 +171,25 @@ async function updateOrganizationFields(
 }
 
 export function useCurrentOrganizationProfile() {
+  // ponytail: mock org profile for UI testing - set NEXT_PUBLIC_MOCK_DATA=true
+  const useMocks =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
+
   return useQuery({
     queryKey: ["organization-profile"],
-    queryFn: getCurrentOrganization,
+    queryFn: async () => {
+      // ponytail: return mock org if enabled (avoids DB dependency for UI testing)
+      if (useMocks) {
+        return {
+          id: "org-1",
+          code: "PRO",
+          color: "#0EA5E9",
+          phone: "+54 11 1234-5678",
+        } satisfies OrganizationProfile;
+      }
+      return getCurrentOrganization();
+    },
     staleTime: 60_000,
   });
 }
