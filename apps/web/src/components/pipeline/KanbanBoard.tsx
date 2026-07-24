@@ -110,7 +110,6 @@ export function KanbanBoard() {
   const [localLeads, setLocalLeads] = useState<Lead[]>(leadsFromServer);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional sync from server after mutations
     setLocalLeads(leadsFromServer);
   }, [leadsFromServer]);
 
@@ -285,11 +284,6 @@ export function KanbanBoard() {
               value={vendedorFilter}
               onChange={(e) => setVendedorFilter(e.target.value)}
               className="h-8.5 pl-3 pr-8 appearance-none bg-ps-input-bg border border-ps-input-border rounded-lg text-ps-text-primary text-xs outline-none cursor-pointer"
-              style={{
-                background: "var(--ps-input-bg)",
-                borderColor: "var(--ps-input-border)",
-                color: "var(--ps-text-primary)",
-              }}
             >
               <option value="">Todos los vendedores</option>
               {vendedores
