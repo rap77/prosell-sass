@@ -22,6 +22,7 @@ import type {
   PublishVehicleRequest,
 } from "@/lib/api/publisherApi";
 import { PublishForm } from "./PublishForm";
+import { cn } from "@/lib/utils";
 
 // ============================================
 // TYPES
@@ -118,11 +119,10 @@ function CategoryBErrorBanner({
         type="button"
         disabled={!checked || unlockMutation.isPending}
         onClick={() => unlockMutation.mutate()}
-        className="mt-3 h-[34px] px-3.5 bg-error text-white text-xs font-semibold border-none rounded-lg cursor-pointer"
-        style={{
-          opacity: !checked || unlockMutation.isPending ? 0.5 : 1,
-          transition: "opacity 0.15s",
-        }}
+        className={cn(
+          "mt-3 h-[34px] px-3.5 bg-error text-white text-xs font-semibold border-none rounded-lg cursor-pointer transition-opacity duration-150",
+          (!checked || unlockMutation.isPending) && "opacity-50",
+        )}
       >
         {unlockMutation.isPending
           ? "Desbloqueando..."
@@ -181,12 +181,16 @@ export function PublishModal({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: PublishVehicleRequest) =>
-      updateListing(currentPublication!.id, {
+    mutationFn: (data: PublishVehicleRequest) => {
+      if (!currentPublication) {
+        throw new Error("No publication to update");
+      }
+      return updateListing(currentPublication.id, {
         title: data.title,
         description: data.description,
         price_cents: data.price_cents,
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog"] });
       onClose();
@@ -194,7 +198,12 @@ export function PublishModal({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteListing(currentPublication!.id),
+    mutationFn: () => {
+      if (!currentPublication) {
+        throw new Error("No publication to delete");
+      }
+      return deleteListing(currentPublication.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog"] });
       onClose();
@@ -219,6 +228,9 @@ export function PublishModal({
 
   if (!isOpen) return null;
 
+  // Type narrowing: mode is guaranteed to be non-null here due to isOpen check
+  const currentMode = mode as "publish" | "update";
+
   return (
     <>
       {/* Backdrop */}
@@ -232,7 +244,9 @@ export function PublishModal({
         role="dialog"
         aria-modal="true"
         aria-label={
-          mode === "publish" ? "Preparar publicación" : "Actualizar publicación"
+          currentMode === "publish"
+            ? "Preparar publicación"
+            : "Actualizar publicación"
         }
         onClick={(e) => e.stopPropagation()}
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[672px] bg-surface border border-border-default rounded-xl z-50 max-h-[85vh] flex flex-col overflow-hidden shadow-[0_24px_48px_rgb(0_0_0_/_0.15)]"
@@ -240,7 +254,7 @@ export function PublishModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-default shrink-0">
           <h2 className="m-0 text-base font-bold tracking-tight text-text-primary">
-            {mode === "publish"
+            {currentMode === "publish"
               ? "Preparar Publicación"
               : "Actualizar Publicación"}
           </h2>
@@ -305,13 +319,13 @@ export function PublishModal({
           )}
 
           <PublishForm
-            mode={mode!}
+            mode={currentMode}
             key={selectedVehicleData?.id ?? "publish-form"}
             vehicleData={selectedVehicleData}
             currentPublication={currentPublication}
             facebookPages={facebookPages}
             onSubmit={handleSubmit}
-            onDelete={mode === "update" ? handleDelete : undefined}
+            onDelete={currentMode === "update" ? handleDelete : undefined}
             isSubmitting={isSubmitting}
             isDeleting={deleteMutation.isPending}
           />
