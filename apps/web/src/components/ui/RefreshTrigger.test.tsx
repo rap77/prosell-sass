@@ -99,7 +99,7 @@ describe("RefreshTrigger Pull-to-Refresh", () => {
 
   it("should show loading state during refresh", async () => {
     const onRefresh = vi.fn(
-      () => new Promise((resolve) => setTimeout(resolve, 100)),
+      (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 100)),
     );
     const { container } = render(
       <RefreshTrigger onRefresh={onRefresh}>

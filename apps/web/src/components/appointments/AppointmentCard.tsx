@@ -13,6 +13,7 @@ import { format, parseISO } from "date-fns";
 import { Appointment, AppointmentStatus } from "@/lib/api/appointments";
 import { Lead } from "@/lib/api/leads";
 import { Calendar, Clock, User, Car } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ============================================
 // STATUS CONFIG
