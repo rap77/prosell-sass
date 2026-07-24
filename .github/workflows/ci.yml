@@ -162,15 +162,6 @@ jobs:
         run: bash scripts/validate-tailwind.sh
         continue-on-error: false
 
-      - name: Fail if violations detected
-        run: |
-          if grep -r "var(--ps-" apps/web/src/components/ apps/web/src/app/ 2>/dev/null; then
-            echo "❌ FATAL: TailwindCSS 4 violations detected (var() in className)"
-            echo "This commit bypassed pre-commit hooks with --no-verify"
-            exit 1
-          fi
-          echo "✅ No TailwindCSS 4 violations detected"
-
   build:
     name: Build
     runs-on: ubuntu-latest
