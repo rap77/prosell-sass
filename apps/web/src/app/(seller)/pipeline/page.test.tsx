@@ -11,14 +11,12 @@ describe("PipelinePage - Mobile-First", () => {
   it("header should be responsive: flex-col md:flex-row", () => {
     const { container } = render(<PipelinePage />);
 
-    const header = container.querySelector(
-      ".flex.items-start.justify-between.gap-4",
-    );
+    const header = container.querySelector(".flex.justify-between");
     expect(header).toBeTruthy();
-    expect(
-      header?.className.includes("flex-col") &&
-        header?.className.includes("md:flex-row"),
-    ).toBe(true);
+    expect(header?.className).toContain("flex-col");
+    expect(header?.className).toContain("md:flex-row");
+    expect(header?.className).toContain("md:items-start");
+    expect(header?.className).toContain("gap-4");
   });
 
   it("should render KanbanBoard component", () => {

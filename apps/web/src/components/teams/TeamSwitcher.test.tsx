@@ -35,9 +35,12 @@ vi.mock("@/lib/api/teamApi", () => ({
 }));
 
 // Mock teamStore
-const mockUseTeamStore = vi.fn();
+const { mockUseTeamStore } = vi.hoisted(() => ({
+  mockUseTeamStore: vi.fn(),
+}));
+
 vi.mock("@/stores/teamStore", () => ({
-  useTeamStore: () => mockUseTeamStore(),
+  useTeamStore: mockUseTeamStore,
 }));
 
 // Mock useRouter
@@ -85,13 +88,18 @@ describe("TeamSwitcher", () => {
 
   describe("Rendering", () => {
     it("renders the team switcher button", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -101,13 +109,18 @@ describe("TeamSwitcher", () => {
     });
 
     it("displays current team name when available", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -116,13 +129,18 @@ describe("TeamSwitcher", () => {
     });
 
     it("displays placeholder when no current team is selected", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: null,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -131,13 +149,18 @@ describe("TeamSwitcher", () => {
     });
 
     it("shows loading state when teams are being fetched", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: [],
         currentTeam: null,
         isLoading: true,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -146,13 +169,18 @@ describe("TeamSwitcher", () => {
     });
 
     it("shows error state when teams fetch fails", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: [],
         currentTeam: null,
         isLoading: false,
         error: { message: "Failed to load teams" },
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -164,13 +192,18 @@ describe("TeamSwitcher", () => {
   describe("Team Dropdown", () => {
     it("opens dropdown when button is clicked", async () => {
       const user = userEvent.setup();
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -187,13 +220,18 @@ describe("TeamSwitcher", () => {
 
     it("displays all available teams in dropdown", async () => {
       const user = userEvent.setup();
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -213,13 +251,18 @@ describe("TeamSwitcher", () => {
       const user = userEvent.setup();
       const mockSetCurrentTeam = vi.fn();
 
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockTeams[0],
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: mockSetCurrentTeam,
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -238,13 +281,18 @@ describe("TeamSwitcher", () => {
       const user = userEvent.setup();
       const mockSetCurrentTeam = vi.fn();
 
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockTeams[0],
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: mockSetCurrentTeam,
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -264,13 +312,18 @@ describe("TeamSwitcher", () => {
   describe("Integration with teamStore", () => {
     it("fetches teams on mount when teams list is empty", () => {
       const mockFetchTeams = vi.fn();
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: [],
         currentTeam: null,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: mockFetchTeams,
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -283,13 +336,18 @@ describe("TeamSwitcher", () => {
 
     it("does not fetch teams on mount when teams list is not empty", () => {
       const mockFetchTeams = vi.fn();
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: mockFetchTeams,
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -300,13 +358,18 @@ describe("TeamSwitcher", () => {
 
   describe("Accessibility", () => {
     it("has proper button label for screen readers", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
@@ -316,13 +379,18 @@ describe("TeamSwitcher", () => {
     });
 
     it("shows team icon", () => {
-      mockUseTeamStore.mockReturnValue({
+      const mockState = {
         teams: mockTeams,
         currentTeam: mockCurrentTeam,
         isLoading: false,
         error: null,
         fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
+      };
+
+      mockUseTeamStore.mockImplementation((selector) => {
+        if (!selector) return mockState;
+        return selector(mockState);
       });
 
       render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);

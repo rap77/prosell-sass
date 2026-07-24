@@ -9,13 +9,7 @@ vi.mock("@/hooks/useAuth", () => ({
 
 vi.mock("@/lib/api/leads", () => ({
   useLeads: vi.fn(() => ({
-    data: {
-      leads: [],
-      total: 0,
-      page: 1,
-      page_size: 10,
-      total_pages: 1,
-    },
+    data: [],
     isLoading: false,
   })),
   useTeamMetrics: vi.fn(() => ({
@@ -23,6 +17,7 @@ vi.mock("@/lib/api/leads", () => ({
       total_leads: 42,
       new_leads_last_24h: 5,
       active_leads: 32,
+      conversion_rate: 0.35,
       vendedor_breakdown: [],
       pipeline: {
         new: 10,
@@ -40,9 +35,7 @@ vi.mock("@/lib/api/leads", () => ({
     NEW: "new",
     CONTACTED: "contacted",
     QUALIFIED: "qualified",
-    PROPOSAL: "proposal",
-    NEGOTIATION: "negotiation",
-    WON: "won",
+    APPOINTMENT_SET: "appointment_set",
     LOST: "lost",
   },
 }));
@@ -61,14 +54,11 @@ describe("AnalyticsPage - Mobile-First", () => {
   it("header should wrap on mobile: flex-wrap or flex-col md:flex-row", () => {
     const { container } = render(<AnalyticsPage />);
 
-    const header = container.querySelector(
-      ".flex.items-start.justify-between.gap-4",
-    );
+    const header = container.querySelector(".flex.justify-between");
     expect(header).toBeTruthy();
-    expect(
-      header?.className.includes("flex-wrap") ||
-        header?.className.includes("flex-col"),
-    ).toBe(true);
+    expect(header?.className.includes("flex-wrap")).toBe(true);
+    expect(header?.className.includes("items-start")).toBe(true);
+    expect(header?.className.includes("gap-4")).toBe(true);
   });
 
   it("KPI grid should be responsive: grid-cols-2 md:grid-cols-4", () => {

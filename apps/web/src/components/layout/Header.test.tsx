@@ -161,7 +161,8 @@ describe("Header — breadcrumb humanization", () => {
 
     render(<Header />);
 
-    const nav = screen.getByRole("navigation");
+    const navs = screen.getAllByRole("navigation");
+    const nav = navs[0]; // First nav (desktop breadcrumbs)
     // "Home" must NOT appear — we switched to "Inicio"
     expect(within(nav).queryByText("Home")).not.toBeInTheDocument();
     expect(within(nav).getByText("Inicio")).toBeInTheDocument();
@@ -172,7 +173,8 @@ describe("Header — breadcrumb humanization", () => {
 
     render(<Header />);
 
-    const nav = screen.getByRole("navigation");
+    const navs = screen.getAllByRole("navigation");
+    const nav = navs[0]; // First nav (desktop breadcrumbs)
     expect(within(nav).getByText("Inicio")).toBeInTheDocument();
     expect(within(nav).getByText("Catálogo")).toBeInTheDocument();
   });
@@ -186,7 +188,8 @@ describe("Header — breadcrumb humanization", () => {
     expect(container.textContent).not.toContain(SAMPLE_UUID);
     expect(container.innerHTML).not.toContain(SAMPLE_UUID);
 
-    const nav = screen.getByRole("navigation");
+    const navs = screen.getAllByRole("navigation");
+    const nav = navs[0]; // First nav (desktop breadcrumbs)
     expect(within(nav).getByText("Inicio")).toBeInTheDocument();
     expect(within(nav).getByText("Catálogo")).toBeInTheDocument();
     expect(within(nav).getByText("Detalle")).toBeInTheDocument();
@@ -199,7 +202,8 @@ describe("Header — breadcrumb humanization", () => {
 
     expect(container.textContent).not.toContain(SAMPLE_UUID);
 
-    const nav = screen.getByRole("navigation");
+    const navs = screen.getAllByRole("navigation");
+    const nav = navs[0]; // First nav (desktop breadcrumbs)
     expect(within(nav).getByText("Inicio")).toBeInTheDocument();
     expect(within(nav).getByText("Catálogo")).toBeInTheDocument();
     expect(within(nav).getByText("Detalle")).toBeInTheDocument();
@@ -213,7 +217,8 @@ describe("Header — breadcrumb humanization", () => {
 
     const { container } = render(<Header />);
 
-    const nav = screen.getByRole("navigation");
+    const navs = screen.getAllByRole("navigation");
+    const nav = navs[0]; // First nav (desktop breadcrumbs)
     expect(within(nav).getByText("Toyota Corolla 2020")).toBeInTheDocument();
     // The generic fallback must NOT be used when an override exists.
     expect(within(nav).queryByText("Detalle")).not.toBeInTheDocument();
@@ -227,7 +232,8 @@ describe("Header — breadcrumb humanization", () => {
 
     const { container } = render(<Header />);
 
-    const nav = screen.getByRole("navigation");
+    const navs = screen.getAllByRole("navigation");
+    const nav = navs[0]; // First nav (desktop breadcrumbs)
     expect(within(nav).getByText("Toyota Corolla 2020")).toBeInTheDocument();
     expect(within(nav).getByText("Editar")).toBeInTheDocument();
     expect(within(nav).queryByText("Detalle")).not.toBeInTheDocument();
