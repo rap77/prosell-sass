@@ -30,6 +30,7 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 // Mock lead data
 const mockLead: Lead = {
   id: "lead-123",
+  product_id: "prod-1",
   buyer_name: "Juan Pérez",
   buyer_email: "juan@example.com",
   buyer_phone: "+54 11 1234-5678",
@@ -41,11 +42,16 @@ const mockLead: Lead = {
   product: {
     id: "prod-1",
     title: "Toyota Corolla 2020",
+    price_cents: 1500000,
+    currency: "ARS",
+    status: "active",
     attributes: {
       year: 2020,
       make: "Toyota",
       model: "Corolla",
     },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   },
 };
 

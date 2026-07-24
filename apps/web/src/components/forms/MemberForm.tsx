@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores";
 import { Controller } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -76,10 +75,6 @@ export interface MemberFormProps {
 export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
   const [isPending, startTransition] = useTransition();
 
-  // Get tenant_id from auth store
-  const { user } = useAuthStore();
-  const tenantId = user?.id || ""; // Use user ID as tenant_id for now
-
   // Get store methods
   const { addMember, isLoading, error, clearError } = useTeamStore();
 
@@ -89,9 +84,17 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-    setValue,
   } = useForm<MemberFormValues>({
-    // @ts-expect-error - Zod 4 preprocess type inference issue
+    /**
+     * @ts-expect-error
+     * Zod 3 limitation: zodResolver type inference fails with .preprocess() transforms.
+     *
+     * Issue: memberSchema uses Zod 3 .preprocess() to lowercase email, which breaks
+     * TypeScript's type inference for the resolver.
+     *
+     * Runtime behavior: Validation works correctly (acceptable per Legacy Exceptions
+     * until issue #74).
+     */
     resolver: zodResolver(memberSchema),
     mode: "all",
     defaultValues: {
@@ -125,7 +128,6 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
     try {
       await addMember(teamId, {
         user_id: data.user_id,
-        tenant_id: tenantId,
         role: data.role,
         commission_rate: data.commission_rate ?? null,
       });
@@ -149,7 +151,15 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         startTransition(() => {
-          // @ts-expect-error - Type inference with preprocess
+          /**
+           * @ts-expect-error
+           * Zod 3 limitation: handleSubmit typing incompatible with .preprocess() transforms.
+           *
+           * Issue: Zod 3 .preprocess() breaks type inference for handleSubmit parameters.
+           *
+           * Runtime behavior: Handler signature is correct (acceptable per Legacy Exceptions
+           * until issue #74).
+           */
           handleSubmit(onSubmit)(e);
         });
       }}

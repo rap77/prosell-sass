@@ -45,6 +45,19 @@ repos:
         files: ^docs/superpowers/specs/.*\.md$
 
       # ============================================
+      # Tailwind 4 enforcement — block var(--ps-*) in className.
+      # var() is ONLY allowed in style attribute for dynamic values.
+      # Semantic classes MUST be used in className.
+      # ============================================
+      - id: validate-tailwind
+        name: validate tailwind 4 rules
+        entry: bash scripts/validate-tailwind.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        files: \.(tsx|jsx)$
+
+      # ============================================
       # Frontend - lint-staged (ESLint + Prettier)
       # Runs ESLint --fix and Prettier --write on staged files.
       # Configured in package.json under "lint-staged" key.

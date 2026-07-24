@@ -215,20 +215,15 @@ async def add_team_member(
     team_member_repo: SqlAlchemyTeamMemberRepository = Depends(get_team_member_repository),
 ) -> TeamMemberResponse:
     """Add a user as a member to a team."""
-    # SECURITY: Verify tenant_id matches authenticated user
+    # SECURITY: Verify user has tenant_id
     if not current_user.tenant_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User does not have an associated organization",
         )
-    if request.tenant_id != current_user.tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tenant ID mismatch - access denied",
-        )
 
-    # Override with user's tenant_id to prevent spoofing
-    request.tenant_id = current_user.tenant_id
+    # SECURITY: Always derive tenant_id from authenticated user (ignore client-provided value)
+    tenant_id = current_user.tenant_id
 
     use_case = AddTeamMemberUseCase(
         team_repository=team_repo,
@@ -238,7 +233,7 @@ async def add_team_member(
         return await use_case.execute(
             team_id=team_id,
             user_id=request.user_id,
-            tenant_id=request.tenant_id,
+            tenant_id=tenant_id,  # Always from current_user, never from client
             role=request.role,
             commission_rate=request.commission_rate,
         )

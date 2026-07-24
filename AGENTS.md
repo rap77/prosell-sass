@@ -44,6 +44,68 @@ grep -A 30 "^## M3:" tasks/plan.md   # task details
 4. Commit with conventional commits: `feat(scope): description`
 5. Mark done in `tasks/todo.md`
 
+## ⛔ Git Safety Protocol (MANDATORY)
+
+**NEVER use `git commit --no-verify` or `-n` flag under ANY circumstances.**
+
+This project has 4 layers of defense against hook bypass:
+
+1. ❌ **CLAUDE.md instructions** (you are reading this - OBEY IT)
+2. ❌ **permissions.deny rules** (backup - you should not reach this)
+3. ✅ **PreToolUse hook** (`.claude/hooks/block-no-verify.sh`) - BLOCKS execution BEFORE it runs
+4. ✅ **CI/CD server-side validation** (GitHub Actions) - REJECTS the push if violations exist
+
+**Why this matters:**
+
+- Pre-commit hooks enforce code quality (Ruff, Pyright, TailwindCSS 4 validation)
+- Bypassing hooks with `--no-verify` introduces violations into the codebase
+- These violations break CI/CD and block other developers
+
+**If hooks fail:**
+
+1. READ the error message
+2. FIX the code violations
+3. Try again WITHOUT `--no-verify`
+
+**DO NOT:**
+
+- Use `--no-verify` to "save time"
+- Use `git stash` to manipulate staged commits
+- Use quiet flags to hide validation output
+
+See `.claude/hooks/README.md` for implementation details.
+
+## 🤖 GGA Trust Protocol (MANDATORY)
+
+**Gentleman Guardian Angel (GGA) violations are ALWAYS legitimate until proven otherwise.**
+
+When GGA reports a violation:
+
+1. ✅ **Assume GGA is correct** — violations are real until investigation proves otherwise
+2. ✅ **Investigate the cause root** — understand WHY GGA flagged it before claiming "false positive"
+3. ✅ **Fix first, question later** — prioritize fixing the reported issue over debating validity
+4. ❌ **NEVER say "false positive"** without concrete evidence that GGA misinterpreted the rules
+5. ❌ **NEVER dismiss GGA** with "GGA is too strict" — the rules are OUR rules, not GGA's
+
+**Historical pattern (learned the hard way)**:
+
+- Every time we said "GGA false positive", GGA was actually RIGHT
+- The issue was always OUR misinterpretation of the rules, not GGA's error
+- Examples:
+  - "var() in style is allowed" → NO, only for calculated values (e.g., `width: ${percent}%`)
+  - "Duplicated style+className" → REDUNDANT, style was overwriting className
+  - "Missing import" → RUNTIME ERROR that would crash the app
+
+**If you think GGA is wrong**:
+
+1. Read the exact rule in AGENTS.md
+2. Check validate-tailwind.sh for the actual validation logic
+3. Search engram for past discussions on this topic
+4. Show the user the conflict and ask for clarification
+5. Update the rules if needed — but assume GGA interprets them correctly
+
+**Remember**: GGA uses the SAME rules (AGENTS.md) that we wrote. If GGA reports a violation, it's following OUR standards.
+
 ## Available Skills
 
 Use `$skill-name`:
@@ -287,12 +349,31 @@ scripts/mm/README.md
 
 - Server Actions over API routes for mutations
 
+### TailwindCSS 4 Rules
+
+**REJECT if:**
+
+- `var(--ps-*)` in `className` attribute - use semantic classes instead
+  ```tsx
+  ❌ className="text-[var(--ps-error)]"
+  ✅ className="text-ps-error"
+  ```
+- `var()` is ONLY allowed in `style` attribute for dynamic values
+- Type assertions without validation (`as Type` without prior type guard)
+
+**REQUIRE:**
+
+- Semantic Tailwind classes for all design tokens (bg-ps-_, text-ps-_, border-ps-*)
+- Type guards before type assertions in critical paths
+- `@ts-expect-error` MUST have detailed description explaining the issue
+
 ### Code Quality
 
 **REJECT if:**
 
 - `console.log` in committed code (use proper logging)
-- `// @ts-ignore` or `// @ts-expect-error` without justification
+- `// @ts-ignore` or `// @ts-expect-error` without detailed justification
+- Type assertions (`as Type`) without validation via type guards
 - Nested conditionals instead of early returns
 
 **PREFER:**
