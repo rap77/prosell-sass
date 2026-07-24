@@ -51,10 +51,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python 3.13
+      - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Install graphify
         # PyPI package is 'graphifyy' (double-y); binary is 'graphify' (single-y).
@@ -118,10 +118,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python 3.13
+      - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Install graphify
         run: |
