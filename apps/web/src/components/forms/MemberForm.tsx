@@ -91,7 +91,16 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
     formState: { errors, isSubmitting },
     setValue,
   } = useForm<MemberFormValues>({
-    // @ts-expect-error - Zod 4 preprocess type inference issue
+    /**
+     * @ts-expect-error
+     * Zod 3 limitation: zodResolver type inference fails with .preprocess() transforms.
+     *
+     * Issue: memberSchema uses Zod 3 .preprocess() to lowercase email, which breaks
+     * TypeScript's type inference for the resolver.
+     *
+     * Runtime behavior: Validation works correctly (acceptable per Legacy Exceptions
+     * until issue #74).
+     */
     resolver: zodResolver(memberSchema),
     mode: "all",
     defaultValues: {
@@ -149,7 +158,15 @@ export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         startTransition(() => {
-          // @ts-expect-error - Type inference with preprocess
+          /**
+           * @ts-expect-error
+           * Zod 3 limitation: handleSubmit typing incompatible with .preprocess() transforms.
+           *
+           * Issue: Zod 3 .preprocess() breaks type inference for handleSubmit parameters.
+           *
+           * Runtime behavior: Handler signature is correct (acceptable per Legacy Exceptions
+           * until issue #74).
+           */
           handleSubmit(onSubmit)(e);
         });
       }}

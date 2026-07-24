@@ -30,47 +30,13 @@ import {
 } from "@/lib/constants/fbVehicleOptions";
 
 // ============================================
-// STYLES
+// TAILWIND CLASS HELPERS
 // ============================================
 
-const FORM_STYLES = `
-  .ps-pub-input,
-  .ps-pub-select,
-  .ps-pub-textarea {
-    width: 100%;
-    border-radius: 8px;
-    border: 1px solid var(--ps-input-border);
-    background: var(--ps-input-bg);
-    color: var(--ps-text-primary);
-    font-size: 13px;
-    padding: 8px 12px;
-    outline: none;
-    font-family: inherit;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    box-sizing: border-box;
-  }
-  .ps-pub-input:focus,
-  .ps-pub-select:focus,
-  .ps-pub-textarea:focus {
-    border-color: var(--ps-cyan);
-    box-shadow: var(--ps-input-focus-shadow);
-  }
-  .ps-pub-input::placeholder,
-  .ps-pub-textarea::placeholder {
-    color: var(--ps-text-tertiary);
-  }
-  .ps-pub-select option {
-    background: var(--ps-bg-surface);
-    color: var(--ps-text-primary);
-  }
-  .ps-pub-checkbox {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    accent-color: var(--ps-cyan);
-    cursor: pointer;
-  }
-`;
+// ponytail: reusable className strings - avoids 16+ repetitions
+const inputClasses =
+  "w-full rounded-lg border border-ps-input-border bg-ps-input-bg text-ps-text-primary text-[13px] px-3 py-2 outline-none transition-[border-color,box-shadow] duration-150 focus:border-ps-cyan focus:shadow-ps-input-focus placeholder:text-ps-text-tertiary";
+const checkboxClasses = "w-4 h-4 rounded accent-ps-cyan cursor-pointer";
 
 // ============================================
 // VALIDATION SCHEMA
@@ -170,7 +136,7 @@ interface PublishFormProps {
 // HELPERS
 // ============================================
 
-const requiredMark = <span className="text-[var(--ps-error)] ml-0.5">*</span>;
+const requiredMark = <span className="text-ps-error ml-0.5">*</span>;
 
 function SelectField({
   id,
@@ -190,12 +156,12 @@ function SelectField({
     <div>
       <label
         htmlFor={id}
-        className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+        className="block text-xs font-medium text-ps-text-primary mb-1"
       >
         {label}
         {required && requiredMark}
       </label>
-      <select id={id} {...props} className="ps-pub-select">
+      <select id={id} {...props} className={inputClasses}>
         <option value="">Seleccioná...</option>
         {options.map((opt) => (
           <option key={opt.key} value={opt.key}>
@@ -203,9 +169,7 @@ function SelectField({
           </option>
         ))}
       </select>
-      {error && (
-        <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>
-      )}
+      {error && <p className="mt-1 text-[10px] text-ps-error">{error}</p>}
     </div>
   );
 }
@@ -226,15 +190,13 @@ function InputField({
     <div>
       <label
         htmlFor={id}
-        className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+        className="block text-xs font-medium text-ps-text-primary mb-1"
       >
         {label}
         {required && requiredMark}
       </label>
-      <input id={id} {...props} className="ps-pub-input" />
-      {error && (
-        <p className="mt-1 text-[10px] text-[var(--ps-error)]">{error}</p>
-      )}
+      <input id={id} {...props} className={inputClasses} />
+      {error && <p className="mt-1 text-[10px] text-ps-error">{error}</p>}
     </div>
   );
 }
@@ -260,7 +222,18 @@ export function PublishForm({
     setValue,
     formState: { errors },
   } = useForm<PublishFormValues>({
-    // @ts-expect-error - Zod 4 type inference issue with complex schema
+    /**
+     * @ts-expect-error
+     * Zod 3 limitation: resolver type inference fails with mixed optionals + constraints.
+     *
+     * Issue: publishSchema uses Zod 3 syntax with fields like `description.optional().min(10)`
+     * which confuses TypeScript's inference of the resolved values type.
+     *
+     * Runtime behavior: Zod validates correctly; the type mismatch is purely a
+     * TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
+     *
+     * Safe because: Form values are validated by Zod schema before submission.
+     */
     resolver: zodResolver(publishSchema),
     defaultValues: {
       title: vehicleData?.title ?? "",
@@ -332,20 +305,30 @@ export function PublishForm({
 
   return (
     <>
-      <style>{FORM_STYLES}</style>
-
       <form
         onSubmit={
-          // @ts-expect-error - Zod 4 complex schema type inference
+          /**
+           * @ts-expect-error
+           * Zod 3 limitation: handleSubmit type inference fails with optional fields + constraints.
+           *
+           * Issue: publishSchema uses Zod 3 syntax with `.optional().min(10)` patterns
+           * which confuses TypeScript's inference of handleSubmit's parameter types.
+           *
+           * Runtime behavior: Zod validates correctly; the type mismatch is purely a
+           * TypeScript compiler artifact (acceptable per Legacy Exceptions until issue #74).
+           *
+           * Safe because: Form values are validated by Zod schema before submission,
+           * and handleFormSubmit only accesses validated fields.
+           */
           handleSubmit(handleFormSubmit)
         }
         className="flex flex-col gap-5"
       >
         {/* ── FOTOS ── */}
         <div>
-          <p className="block text-xs font-medium text-[var(--ps-text-primary)] mb-2">
+          <p className="block text-xs font-medium text-ps-text-primary mb-2">
             Fotos{requiredMark}
-            <span className="font-normal text-[var(--ps-text-tertiary)] ml-1.5">
+            <span className="font-normal text-ps-tertiary ml-1.5">
               — click para elegir portada
             </span>
           </p>
@@ -355,15 +338,15 @@ export function PublishForm({
             onHeroChange={handleHeroChange}
           />
           {errors.image_urls && (
-            <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+            <p className="mt-1 text-[10px] text-ps-error">
               {errors.image_urls.message}
             </p>
           )}
         </div>
 
         {/* ── TÍTULO Y DESCRIPCIÓN ── */}
-        <div className="border-t border-[var(--ps-border-subtle)] pt-4 flex flex-col gap-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">
+        <div className="border-t border-ps-border-subtle pt-4 flex flex-col gap-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ps-tertiary mb-0">
             Publicación
           </p>
 
@@ -379,22 +362,20 @@ export function PublishForm({
           <div>
             <label
               htmlFor="description"
-              className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+              className="block text-xs font-medium text-ps-text-primary mb-1"
             >
               Descripción{" "}
-              <span className="font-normal text-[var(--ps-text-tertiary)]">
-                (opcional)
-              </span>
+              <span className="font-normal text-ps-tertiary">(opcional)</span>
             </label>
             <textarea
               id="description"
               rows={3}
               {...register("description")}
-              className="ps-pub-textarea"
+              className={inputClasses}
               style={{ resize: "none" }}
             />
             {errors.description && (
-              <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+              <p className="mt-1 text-[10px] text-ps-error">
                 {errors.description.message}
               </p>
             )}
@@ -423,8 +404,8 @@ export function PublishForm({
         </div>
 
         {/* ── DATOS DEL VEHÍCULO ── */}
-        <div className="border-t border-[var(--ps-border-subtle)] pt-4 flex flex-col gap-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-0">
+        <div className="border-t border-ps-border-subtle pt-4 flex flex-col gap-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ps-tertiary mb-0">
             Datos del vehículo
           </p>
 
@@ -441,14 +422,14 @@ export function PublishForm({
             <div>
               <label
                 htmlFor="year"
-                className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+                className="block text-xs font-medium text-ps-text-primary mb-1"
               >
                 Año{requiredMark}
               </label>
               <select
                 id="year"
                 {...register("year", { valueAsNumber: true })}
-                className="ps-pub-select"
+                className={inputClasses}
               >
                 <option value="">Seleccioná...</option>
                 {FB_YEARS.map((y) => (
@@ -458,7 +439,7 @@ export function PublishForm({
                 ))}
               </select>
               {errors.year && (
-                <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+                <p className="mt-1 text-[10px] text-ps-error">
                   {errors.year.message}
                 </p>
               )}
@@ -562,31 +543,31 @@ export function PublishForm({
             <input
               type="checkbox"
               {...register("clean_title")}
-              className="ps-pub-checkbox"
+              className={checkboxClasses}
             />
-            <span className="text-xs text-[var(--ps-text-primary)]">
+            <span className="text-xs text-ps-text-primary">
               Título limpio (Clean Title)
             </span>
           </label>
         </div>
 
         {/* ── FACEBOOK ── */}
-        <div className="border-t border-[var(--ps-border-subtle)] pt-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ps-text-tertiary)] mb-4">
+        <div className="border-t border-ps-border-subtle pt-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ps-tertiary mb-4">
             Facebook
           </p>
 
           <div>
             <label
               htmlFor="facebook_page_id"
-              className="block text-xs font-medium text-[var(--ps-text-primary)] mb-1"
+              className="block text-xs font-medium text-ps-text-primary mb-1"
             >
               Página de Facebook{requiredMark}
             </label>
             <select
               id="facebook_page_id"
               {...register("facebook_page_id")}
-              className="ps-pub-select"
+              className={inputClasses}
             >
               <option value="">Seleccioná una página...</option>
               {facebookPages.map((page) => (
@@ -596,7 +577,7 @@ export function PublishForm({
               ))}
             </select>
             {errors.facebook_page_id && (
-              <p className="mt-1 text-[10px] text-[var(--ps-error)]">
+              <p className="mt-1 text-[10px] text-ps-error">
                 {errors.facebook_page_id.message}
               </p>
             )}
@@ -604,13 +585,13 @@ export function PublishForm({
         </div>
 
         {/* ── BOTONES ── */}
-        <div className="flex items-center justify-between pt-2 border-t border-[var(--ps-border-subtle)]">
+        <div className="flex items-center justify-between pt-2 border-t border-ps-border-subtle">
           {mode === "update" && onDelete && (
             <button
               type="button"
               onClick={onDelete}
               disabled={isDeleting || isSubmitting}
-              className="h-9.5 px-4 text-xs font-medium text-[var(--ps-error)] bg-transparent border border-[var(--ps-error)] rounded-lg cursor-pointer transition-opacity duration-150"
+              className="h-9.5 px-4 text-xs font-medium text-ps-error bg-transparent border border-ps-error rounded-lg cursor-pointer transition-opacity duration-150"
               style={{ opacity: isDeleting || isSubmitting ? 0.5 : 1 }}
             >
               {isDeleting ? "Eliminando..." : "Eliminar / Finalizar"}
@@ -620,7 +601,7 @@ export function PublishForm({
           <button
             type="submit"
             disabled={isSubmitting || isDeleting}
-            className="ml-auto h-9.5 px-5 text-xs font-bold text-[var(--ps-bg-base)] bg-[var(--ps-cyan)] border-0 rounded-lg cursor-pointer transition-opacity duration-150"
+            className="ml-auto h-9.5 px-5 text-xs font-bold text-ps-base bg-ps-cyan border-0 rounded-lg cursor-pointer transition-opacity duration-150"
             style={{ opacity: isSubmitting || isDeleting ? 0.5 : 1 }}
           >
             {isSubmitting

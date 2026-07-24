@@ -20,16 +20,14 @@ export function OnboardingProgress({
     <div className="flex flex-col gap-2.5">
       {/* Label row */}
       <div className="flex justify-between items-center">
-        <span className="text-xs font-medium text-[var(--ps-text-secondary)]">
+        <span className="text-xs font-medium text-ps-text-secondary">
           Paso {currentStep} de {totalSteps}
         </span>
-        <span className="text-xs font-semibold text-[var(--ps-cyan)]">
-          {percent}%
-        </span>
+        <span className="text-xs font-semibold text-ps-cyan">{percent}%</span>
       </div>
 
       {/* Progress track */}
-      <div className="h-1.5 w-full rounded-full bg-[var(--ps-bg-elevated)] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-ps-elevated overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-300"
           style={{

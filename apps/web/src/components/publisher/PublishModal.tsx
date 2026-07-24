@@ -108,7 +108,7 @@ function CategoryBErrorBanner({
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          style={{ width: 16, height: 16, accentColor: "var(--ps-cyan)" }}
+          className="w-4 h-4 accent-ps-cyan"
         />
         <span className="text-xs text-error">
           Ya validé mi cuenta de Facebook
@@ -235,7 +235,7 @@ export function PublishModal({
           mode === "publish" ? "Preparar publicación" : "Actualizar publicación"
         }
         onClick={(e) => e.stopPropagation()}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[672px] bg-surface border border-border-default rounded-xl shadow-[0_24px_48px_var(--ps-shadow-overlay)] z-50 max-h-[85vh] flex flex-col overflow-hidden"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[672px] bg-surface border border-border-default rounded-xl z-50 max-h-[85vh] flex flex-col overflow-hidden shadow-[0_24px_48px_rgb(0_0_0_/_0.15)]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-default shrink-0">
@@ -248,15 +248,7 @@ export function PublishModal({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg border-0 bg-transparent text-text-secondary cursor-pointer transition-[background_color_0.15s,color_0.15s]"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--ps-bg-elevated)";
-              e.currentTarget.style.color = "var(--ps-text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "var(--ps-text-secondary)";
-            }}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg border-0 bg-transparent text-ps-text-secondary hover:bg-ps-bg-elevated hover:text-ps-text-primary cursor-pointer transition-[background-color,color] duration-150"
           >
             <X size={18} strokeWidth={2} />
           </button>

@@ -88,7 +88,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
 
   return (
     <div
-      className="flex flex-col flex-1 min-w-[260px] rounded-[12px] overflow-hidden border border-[var(--ps-border-default)] bg-[var(--ps-bg-surface)]"
+      className="flex flex-col flex-1 min-w-[260px] rounded-[12px] overflow-hidden border border-ps-border-default bg-ps-surface"
       style={{
         // Top accent line simulated via boxShadow so it doesn't affect layout
         boxShadow: `inset 0 3px 0 0 ${theme.accent}`,
@@ -106,12 +106,12 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
             }}
           />
           {/* Label */}
-          <span className="flex-1 text-xs font-semibold text-[var(--ps-text-primary)]">
+          <span className="flex-1 text-xs font-semibold text-ps-text-primary">
             {COLUMN_LABELS[status] ?? status}
           </span>
           {/* Count badge */}
           <span
-            className="inline-flex items-center justify-center min-w-[22px] h-5 px-[7px] rounded-[20px] bg-[var(--ps-bg-elevated)] border border-[var(--ps-border-subtle)] text-xs font-bold"
+            className="inline-flex items-center justify-center min-w-[22px] h-5 px-[7px] rounded-[20px] bg-ps-elevated border border-ps-border-subtle text-xs font-bold"
             style={{
               color: leads.length > 0 ? theme.dot : "var(--ps-text-tertiary)",
             }}
@@ -126,7 +126,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
             {Object.entries(totalsByCurrency).map(([currency, cents]) => (
               <span
                 key={currency}
-                className="text-xs font-medium text-[var(--ps-text-secondary)]"
+                className="text-xs font-medium text-ps-text-secondary"
               >
                 {new Intl.NumberFormat("es-AR", {
                   style: "currency",
@@ -153,7 +153,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
         ))}
 
         {leads.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-xs text-[var(--ps-text-tertiary)] border border-dashed border-[var(--ps-border-subtle)] rounded-lg min-h-20 my-1">
+          <div className="flex-1 flex items-center justify-center text-xs text-ps-tertiary border border-dashed border-ps-border-subtle rounded-lg min-h-20 my-1">
             Arrastrá un lead aquí
           </div>
         )}

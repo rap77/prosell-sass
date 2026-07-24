@@ -8,7 +8,7 @@
  * All colors via var(--ps-*) tokens.
  */
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -46,6 +46,22 @@ const VALID_TRANSITIONS: Partial<Record<LeadStatus, LeadStatus[]>> = {
 
 function isValidTransition(from: LeadStatus, to: LeadStatus): boolean {
   return (VALID_TRANSITIONS[from] ?? []).includes(to);
+}
+
+// Type guards — safer than type assertions
+function isLeadStatus(value: unknown): value is LeadStatus {
+  return (
+    typeof value === "string" && KANBAN_COLUMNS.includes(value as LeadStatus)
+  );
+}
+
+function isLead(value: unknown): value is Lead {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    "status" in value
+  );
 }
 
 const COLUMN_LABELS: Record<LeadStatus, string> = {
@@ -120,23 +136,24 @@ export function KanbanBoard() {
   });
 
   // Group leads by status column — from local state, not from query cache
-  const columnLeads = useMemo(
-    () =>
-      KANBAN_COLUMNS.reduce<Record<LeadStatus, Lead[]>>(
-        (acc, status) => {
-          acc[status] = localLeads.filter((l) => l.status === status);
-          return acc;
-        },
-        {} as Record<LeadStatus, Lead[]>,
-      ),
-    [localLeads],
+  // ponytail: React 19 compiler handles memoization automatically
+  const columnLeads = KANBAN_COLUMNS.reduce<Record<LeadStatus, Lead[]>>(
+    (acc, status) => {
+      acc[status] = localLeads.filter((l) => l.status === status);
+      return acc;
+    },
+    Object.fromEntries(KANBAN_COLUMNS.map((status) => [status, []])) as Record<
+      LeadStatus,
+      Lead[]
+    >,
   );
 
   // Only show vendedores who have leads in the current board
-  const activeVendedorIds = useMemo(
-    () =>
-      new Set(localLeads.map((l) => l.vendedor_id).filter(Boolean) as string[]),
-    [localLeads],
+  // ponytail: React 19 compiler handles memoization automatically
+  const activeVendedorIds = new Set(
+    localLeads
+      .map((l) => l.vendedor_id)
+      .filter((id): id is string => Boolean(id)),
   );
 
   const sensors = useSensors(
@@ -144,8 +161,8 @@ export function KanbanBoard() {
   );
 
   function handleDragStart(event: DragStartEvent) {
-    const lead = event.active.data.current?.lead as Lead | undefined;
-    if (lead) setActiveLead(lead);
+    const leadCandidate = event.active.data.current?.lead;
+    if (isLead(leadCandidate)) setActiveLead(leadCandidate);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -156,17 +173,19 @@ export function KanbanBoard() {
       return;
     }
 
-    const lead = active.data.current?.lead as Lead | undefined;
-    if (!lead) {
+    const leadCandidate = active.data.current?.lead;
+    if (!isLead(leadCandidate)) {
       setActiveLead(null);
       return;
     }
-    if (!KANBAN_COLUMNS.includes(over.id as LeadStatus)) {
+    const lead = leadCandidate;
+
+    if (!isLeadStatus(over.id)) {
       setActiveLead(null);
       return;
     }
 
-    const targetStatus = over.id as LeadStatus;
+    const targetStatus = over.id;
     if (lead.status === targetStatus) {
       setActiveLead(null);
       return;
