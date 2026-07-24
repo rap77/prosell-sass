@@ -110,6 +110,7 @@ export function KanbanBoard() {
   const [localLeads, setLocalLeads] = useState<Lead[]>(leadsFromServer);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync server query to local optimistic state for drag-and-drop
     setLocalLeads(leadsFromServer);
   }, [leadsFromServer]);
 
@@ -141,10 +142,7 @@ export function KanbanBoard() {
       acc[status] = localLeads.filter((l) => l.status === status);
       return acc;
     },
-    Object.fromEntries(KANBAN_COLUMNS.map((status) => [status, []])) as Record<
-      LeadStatus,
-      Lead[]
-    >,
+    {} as Record<LeadStatus, Lead[]>,
   );
 
   // Only show vendedores who have leads in the current board

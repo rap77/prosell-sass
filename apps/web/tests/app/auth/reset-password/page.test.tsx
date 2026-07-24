@@ -35,7 +35,7 @@ describe("ResetPasswordPage", () => {
   describe("Component Type", () => {
     it("should be an async function", () => {
       // Async Server Components in Next.js are async functions
-      expect(ResetPasswordPage.constructor.name).toBe("AsyncFunction"); // @ts-ignore
+      expect(ResetPasswordPage.constructor.name).toBe("AsyncFunction");
     });
   });
 });

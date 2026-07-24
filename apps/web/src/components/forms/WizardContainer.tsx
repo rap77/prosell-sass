@@ -44,19 +44,21 @@ export function WizardContainer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [sections, setSections] = useState<HTMLElement[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
+  // ponytail: state only for auto mode, derive isMobile to avoid setState in effect
+  const [isAutoAndMobile, setIsAutoAndMobile] = useState(false);
 
-  // Detect viewport
+  // Auto mode: listen to viewport resize
   useEffect(() => {
-    if (variant === "auto") {
-      const checkMobile = () => setIsMobile(window.innerWidth < 768);
-      checkMobile();
-      window.addEventListener("resize", checkMobile);
-      return () => window.removeEventListener("resize", checkMobile);
-    } else {
-      setIsMobile(variant === "mobile");
-    }
+    if (variant !== "auto") return;
+
+    const checkMobile = () => setIsAutoAndMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, [variant]);
+
+  // Derive isMobile: auto uses state (updates on resize), mobile/desktop use variant directly
+  const isMobile = variant === "auto" ? isAutoAndMobile : variant === "mobile";
 
   // Find all sections after mount
   useEffect(() => {
