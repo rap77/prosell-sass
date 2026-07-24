@@ -75,6 +75,37 @@ This project has 4 layers of defense against hook bypass:
 
 See `.claude/hooks/README.md` for implementation details.
 
+## 🤖 GGA Trust Protocol (MANDATORY)
+
+**Gentleman Guardian Angel (GGA) violations are ALWAYS legitimate until proven otherwise.**
+
+When GGA reports a violation:
+
+1. ✅ **Assume GGA is correct** — violations are real until investigation proves otherwise
+2. ✅ **Investigate the cause root** — understand WHY GGA flagged it before claiming "false positive"
+3. ✅ **Fix first, question later** — prioritize fixing the reported issue over debating validity
+4. ❌ **NEVER say "false positive"** without concrete evidence that GGA misinterpreted the rules
+5. ❌ **NEVER dismiss GGA** with "GGA is too strict" — the rules are OUR rules, not GGA's
+
+**Historical pattern (learned the hard way)**:
+
+- Every time we said "GGA false positive", GGA was actually RIGHT
+- The issue was always OUR misinterpretation of the rules, not GGA's error
+- Examples:
+  - "var() in style is allowed" → NO, only for calculated values (e.g., `width: ${percent}%`)
+  - "Duplicated style+className" → REDUNDANT, style was overwriting className
+  - "Missing import" → RUNTIME ERROR that would crash the app
+
+**If you think GGA is wrong**:
+
+1. Read the exact rule in AGENTS.md
+2. Check validate-tailwind.sh for the actual validation logic
+3. Search engram for past discussions on this topic
+4. Show the user the conflict and ask for clarification
+5. Update the rules if needed — but assume GGA interprets them correctly
+
+**Remember**: GGA uses the SAME rules (AGENTS.md) that we wrote. If GGA reports a violation, it's following OUR standards.
+
 ## Available Skills
 
 Use `$skill-name`:
