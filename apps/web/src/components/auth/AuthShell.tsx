@@ -144,7 +144,7 @@ function AuthBrandPanel() {
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="ps-auth-split grid grid-cols-1 lg:grid-cols-[45fr_55fr] min-h-screen">
-      <div className="hidden lg:block">
+      <div className="hidden lg:flex h-full">
         <AuthBrandPanel />
       </div>
 
