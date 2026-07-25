@@ -103,6 +103,9 @@ export async function generateMetadata({
   // Get first image URL for Open Graph
   const coverImageUrl = imageData?.images?.[0]?.url;
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://prosellweb.com";
+  const productUrl = `${baseUrl}/p/${slug}`;
+
   return {
     title: `${fullTitle} - ${price}`,
     description,
@@ -110,6 +113,7 @@ export async function generateMetadata({
       title: `${fullTitle} - ${price}`,
       description,
       type: "website",
+      url: productUrl,
       images: coverImageUrl
         ? [
             {
