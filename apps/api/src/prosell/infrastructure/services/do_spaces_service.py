@@ -55,6 +55,7 @@ class DOSpacesService(IDOSpacesService):
 
         self.s3_client = boto3.client(
             "s3",
+            region_name=self.region,
             endpoint_url=self.endpoint,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
@@ -68,6 +69,7 @@ class DOSpacesService(IDOSpacesService):
         if override_public_endpoint and override_public_endpoint != self.endpoint:
             self.s3_signer = boto3.client(
                 "s3",
+                region_name=self.region,
                 endpoint_url=override_public_endpoint,
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=secret_access_key,
