@@ -242,14 +242,14 @@ class TestPublicProductRouter:
         assert response.json()["view_count"] == initial_view_count + 3
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
-    async def test_get_product_image_urls_returns_signed_urls(
+    async def test_get_product_image_urls_returns_public_urls(
         self, mock_spaces_dep, shared_session: AsyncSession
     ):
-        """GET /{slug}/image-urls returns signed URLs for all images."""
+        """GET /{slug}/image-urls returns public URLs for WhatsApp/OG sharing."""
         mock_spaces = AsyncMock()
-        mock_spaces.generate_download_url.side_effect = [
-            "https://do.spaces.com/car-front-signed?token=abc123",
-            "https://do.spaces.com/car-side-signed?token=def456",
+        mock_spaces.get_public_url.side_effect = [
+            "https://nyc3.digitaloceanspaces.com/prosell-assets/car-front.jpg",
+            "https://nyc3.digitaloceanspaces.com/prosell-assets/car-side.jpg",
         ]
         mock_spaces_dep.return_value = mock_spaces
 
@@ -281,8 +281,9 @@ class TestPublicProductRouter:
         data = response.json()
         assert len(data["images"]) == 2
         assert data["images"][0]["key"] == "car-front.jpg"
-        # ponytail: DO Spaces uses AWS-style signing, not token=
-        assert "X-Amz-Signature=" in data["images"][0]["url"]
+        # ponytail: public URLs for WhatsApp/OG - no signed params
+        assert "X-Amz-Signature=" not in data["images"][0]["url"]
+        assert data["images"][0]["expires_in"] == 0  # public URL never expires
         assert data["images"][1]["key"] == "car-side.jpg"
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
@@ -291,7 +292,7 @@ class TestPublicProductRouter:
     ):
         """GET /{slug}/image-urls puts cover_image first if not in image_urls."""
         mock_spaces = AsyncMock()
-        mock_spaces.generate_download_url.side_effect = [
+        mock_spaces.get_public_url.side_effect = [
             "https://do.spaces.com/cover-signed",
             "https://do.spaces.com/other1-signed",
             "https://do.spaces.com/other2-signed",
@@ -333,7 +334,7 @@ class TestPublicProductRouter:
     ):
         """GET /{slug}/image-urls moves cover to first position when it's in the list."""
         mock_spaces = AsyncMock()
-        mock_spaces.generate_download_url.side_effect = [
+        mock_spaces.get_public_url.side_effect = [
             "https://do.spaces.com/car-side-signed",
             "https://do.spaces.com/car-front-signed",
             "https://do.spaces.com/car-back-signed",
@@ -385,7 +386,7 @@ class TestPublicProductRouter:
     ):
         """GET /{slug}/image-urls works for draft products (slug = secret link)."""
         mock_spaces = AsyncMock()
-        mock_spaces.generate_download_url.return_value = "https://do.spaces.com/signed"
+        mock_spaces.get_public_url.return_value = "https://do.spaces.com/signed"
         mock_spaces_dep.return_value = mock_spaces
 
         org = await _create_test_org(shared_session)
