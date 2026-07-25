@@ -12,6 +12,9 @@ RUN corepack enable pnpm
 ARG NEXT_PUBLIC_API_URL=https://api.prosellweb.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+ARG NEXT_PUBLIC_SITE_URL=https://prosellweb.com
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
 COPY apps/web/package.json ./apps/web/
 COPY patches ./patches

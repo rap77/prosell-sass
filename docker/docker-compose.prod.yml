@@ -115,6 +115,7 @@ services:
       dockerfile: docker/web.prod.Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://api.prosellweb.com
+        - NEXT_PUBLIC_SITE_URL=https://prosellweb.com
     container_name: prosell-prod-web
     environment:
       - API_URL=http://api:8000

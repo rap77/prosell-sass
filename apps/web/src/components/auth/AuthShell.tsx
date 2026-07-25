@@ -34,6 +34,7 @@ function AuthBrandPanel() {
         display: "flex",
         flexDirection: "column",
         color: "#fff",
+        height: "100%",
       }}
     >
       {/* Radial glow */}
