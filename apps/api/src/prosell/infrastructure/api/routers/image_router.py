@@ -122,10 +122,12 @@ async def generate_image_upload_url(
 
     logger.info(f"Image upload URL requested: {file_path} (type={content_type})")
 
+    # ponytail: product images are shared publicly (WhatsApp preview needs direct access)
     result = await spaces.generate_presigned_url(
         file_path=file_path,
         content_type=content_type,
         max_size_bytes=10_000_000,  # 10MB
+        make_public=True,
     )
 
     return ImageUploadUrlResponse(

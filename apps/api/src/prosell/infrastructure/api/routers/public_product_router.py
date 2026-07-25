@@ -134,12 +134,13 @@ async def get_public_product_image_urls(
     images: list[ProductImageUrlResponse] = []
     for key in ordered_keys:
         if key:
-            signed_url = await spaces.generate_download_url(key, SIGNED_URL_EXPIRES_IN)
+            # ponytail: use direct public URL for WhatsApp/OG — simpler, no expiration
+            public_url = spaces.get_public_url(key)
             images.append(
                 ProductImageUrlResponse(
                     key=key,
-                    url=signed_url,
-                    expires_in=SIGNED_URL_EXPIRES_IN,
+                    url=public_url,
+                    expires_in=0,  # public URL never expires
                 )
             )
 

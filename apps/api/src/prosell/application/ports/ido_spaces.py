@@ -16,6 +16,7 @@ class IDOSpacesService(ABC):
         file_path: str,
         content_type: str,
         max_size_bytes: int = 2_000_000,
+        make_public: bool = False,
     ) -> dict[str, str | int]:
         """
         Generate a presigned URL for direct upload from browser.
@@ -24,6 +25,7 @@ class IDOSpacesService(ABC):
             file_path: Path where file will be stored (e.g., "orgs/{org_id}/logo/file.jpg")
             content_type: MIME type of the file (e.g., "image/jpeg")
             max_size_bytes: Maximum file size in bytes (default 2MB)
+            make_public: If True, require public-read ACL in upload
 
         Returns:
             Dict with keys:
@@ -66,6 +68,7 @@ class IDOSpacesService(ABC):
         file_path: str,
         file_bytes: bytes,
         content_type: str = "image/jpeg",
+        make_public: bool = False,
     ) -> str:
         """
         Upload a file directly to Spaces (server-side upload).
@@ -74,6 +77,7 @@ class IDOSpacesService(ABC):
             file_path: Path where file will be stored (e.g., "orgs/{org_id}/vehicles/file.jpg")
             file_bytes: File content as bytes
             content_type: MIME type of the file (default: "image/jpeg")
+            make_public: If True, set ACL to public-read for WhatsApp/OG sharing
 
         Returns:
             Public URL of the uploaded file
@@ -91,5 +95,21 @@ class IDOSpacesService(ABC):
 
         Returns:
             Presigned URL valid for downloading the file
+        """
+        pass
+
+    @abstractmethod
+    def get_public_url(self, key: str) -> str:
+        """
+        Generate direct public URL for a file (no signed params).
+
+        Use this for Open Graph meta tags where simple URLs work better
+        than signed URLs with WhatsApp/Facebook scrapers.
+
+        Args:
+            key: Storage key (e.g., "orgs/{org_id}/products/{id}/image.jpg")
+
+        Returns:
+            Direct public URL (e.g., "https://region.digitaloceanspaces.com/bucket/key")
         """
         pass

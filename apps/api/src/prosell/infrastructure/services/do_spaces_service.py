@@ -81,6 +81,7 @@ class DOSpacesService(IDOSpacesService):
         file_path: str,
         content_type: str,
         max_size_bytes: int = 2_000_000,
+        make_public: bool = False,
     ) -> dict[str, str | int]:
         """
         Generate presigned URL for direct upload from browser.
@@ -89,6 +90,7 @@ class DOSpacesService(IDOSpacesService):
             file_path: Path where file will be stored
             content_type: MIME type of the file
             max_size_bytes: Maximum file size (default 2MB)
+            make_public: If True, require public-read ACL in upload
 
         Returns:
             Dict with upload_url, public_url, key (str) and max_size_bytes (int)
@@ -106,15 +108,21 @@ class DOSpacesService(IDOSpacesService):
 
         key = file_path
 
+        params = {
+            "Bucket": self.bucket,
+            "Key": key,
+            "ContentType": content_type,
+        }
+
+        # ponytail: public ACL for shareable product images (WhatsApp needs direct access)
+        if make_public:
+            params["ACL"] = "public-read"
+
         # Generate presigned URL for PUT operation (run sync boto3 call in thread pool)
         url = await asyncio.to_thread(
             lambda: self.s3_signer.generate_presigned_url(
                 "put_object",
-                Params={
-                    "Bucket": self.bucket,
-                    "Key": key,
-                    "ContentType": content_type,
-                },
+                Params=params,
                 ExpiresIn=3600,  # 1 hour
                 HttpMethod="PUT",
             )
@@ -174,6 +182,7 @@ class DOSpacesService(IDOSpacesService):
         file_path: str,
         file_bytes: bytes,
         content_type: str = "image/jpeg",
+        make_public: bool = False,
     ) -> str:
         """
         Upload a file directly to Spaces (server-side upload).
@@ -182,21 +191,26 @@ class DOSpacesService(IDOSpacesService):
             file_path: Path where file will be stored
             file_bytes: File content as bytes
             content_type: MIME type of the file
+            make_public: If True, set ACL to public-read for WhatsApp/OG sharing
 
         Returns:
             Public URL of the uploaded file
         """
         key = file_path
 
+        put_params = {
+            "Bucket": self.bucket,
+            "Key": key,
+            "Body": file_bytes,
+            "ContentType": content_type,
+        }
+
+        # ponytail: public ACL for shareable product images (WhatsApp needs direct access)
+        if make_public:
+            put_params["ACL"] = "public-read"
+
         # Upload file to Spaces (run sync boto3 call in thread pool)
-        await asyncio.to_thread(
-            lambda: self.s3_client.put_object(
-                Bucket=self.bucket,
-                Key=key,
-                Body=file_bytes,
-                ContentType=content_type,
-            )
-        )
+        await asyncio.to_thread(lambda: self.s3_client.put_object(**put_params))
 
         # Return public URL
         public_url = f"{self.endpoint}/{self.bucket}/{key}"
@@ -224,6 +238,22 @@ class DOSpacesService(IDOSpacesService):
             )
         )
         return url
+
+    def get_public_url(self, key: str) -> str:
+        """
+        Generate direct public URL for a file (no signed params).
+
+        Use this for Open Graph meta tags where simple URLs work better
+        than signed URLs with WhatsApp/Facebook scrapers.
+
+        Args:
+            key: Storage key (e.g., "orgs/{org_id}/products/{id}/image.jpg")
+
+        Returns:
+            Direct public URL (e.g., "https://region.digitaloceanspaces.com/bucket/key")
+        """
+        # ponytail: simple URL construction - works if file has public-read ACL
+        return f"{self.endpoint}/{self.bucket}/{key}"
 
 
 # =============================================================================
