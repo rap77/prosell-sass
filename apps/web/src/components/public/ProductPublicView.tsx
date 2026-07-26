@@ -11,9 +11,16 @@
  *   - Sticky "Share on WhatsApp" button
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
-import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  ImageIcon,
+  Check,
+} from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +77,8 @@ export function ProductPublicView({
   coverImageUrl,
 }: ProductPublicViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [copiedText, setCopiedText] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
 
   // Build image list: cover first if available, then rest
   const images = coverImageUrl
@@ -110,6 +119,73 @@ ${shareUrl}`.trim();
   const displayAttrs = VEHICLE_ATTRS.filter(
     (attr) => product.attributes?.[attr.key] != null,
   );
+
+  // Build structured text for clipboard
+  const buildClipboardText = useCallback(() => {
+    let text = `${vehicleName}\n${price}`;
+    if (location) text += `\n${location}`;
+    text += "\n";
+    displayAttrs.forEach((attr) => {
+      const value = product.attributes?.[attr.key];
+      const displayValue =
+        "format" in attr && typeof value === "number"
+          ? attr.format(value)
+          : String(value);
+      text += `\n${attr.label}: ${displayValue}`;
+    });
+    if (product.description) {
+      text += `\n\n${product.description}`;
+    }
+    text += `\n\n${shareUrl}`;
+    return text;
+  }, [vehicleName, price, location, displayAttrs, product, shareUrl]);
+
+  const copyText = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(buildClipboardText());
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2000);
+    } catch {
+      // ponytail: fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = buildClipboardText();
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2000);
+    }
+  }, [buildClipboardText]);
+
+  const copyCurrentImage = useCallback(async () => {
+    if (!images[currentImageIndex]) return;
+    try {
+      const response = await fetch(images[currentImageIndex]);
+      const blob = await response.blob();
+      // Convert to PNG for clipboard compatibility (WebP not supported)
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(blob);
+      await new Promise((resolve) => (img.onload = resolve));
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0);
+      canvas.toBlob(async (pngBlob) => {
+        if (pngBlob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": pngBlob }),
+          ]);
+          setCopiedImage(true);
+          setTimeout(() => setCopiedImage(false), 2000);
+        }
+      }, "image/png");
+      URL.revokeObjectURL(img.src);
+    } catch {
+      // ponytail: clipboard API not supported or permission denied — silent fail
+    }
+  }, [images, currentImageIndex]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28">
@@ -260,17 +336,42 @@ ${shareUrl}`.trim();
         </div>
       )}
 
-      {/* Sticky WhatsApp Button */}
+      {/* Sticky Action Buttons */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-ps-border-subtle bg-ps-bg-base p-4 z-50">
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mx-auto flex w-full max-w-sm items-center justify-center gap-2.5 rounded-lg bg-ps-whatsapp px-6 py-3.5 text-center text-base font-semibold text-white no-underline"
-        >
-          <WhatsAppIcon className="h-5 w-5" />
-          Compartir por WhatsApp
-        </a>
+        <div className="mx-auto flex max-w-md gap-2">
+          {/* Copy Image */}
+          <button
+            onClick={copyCurrentImage}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-ps-bg-muted px-4 py-3.5 text-sm font-semibold text-ps-text-primary"
+            title="Copiar imagen actual"
+          >
+            {copiedImage ? <Check size={18} /> : <ImageIcon size={18} />}
+            <span className="hidden sm:inline">
+              {copiedImage ? "¡Copiada!" : "Imagen"}
+            </span>
+          </button>
+          {/* Copy Text */}
+          <button
+            onClick={copyText}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-ps-bg-muted px-4 py-3.5 text-sm font-semibold text-ps-text-primary"
+            title="Copiar texto"
+          >
+            {copiedText ? <Check size={18} /> : <Copy size={18} />}
+            <span className="hidden sm:inline">
+              {copiedText ? "¡Copiado!" : "Texto"}
+            </span>
+          </button>
+          {/* WhatsApp */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-[2] items-center justify-center gap-2 rounded-lg bg-ps-whatsapp px-4 py-3.5 text-sm font-semibold text-white no-underline"
+          >
+            <WhatsAppIcon className="h-5 w-5" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </a>
+        </div>
       </div>
     </div>
   );
