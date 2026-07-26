@@ -127,7 +127,7 @@ class TestGetProductImageUrlsFallbackToAttributes:
         attributes.image_urls MUST return a signed URL for each legacy entry.
         """
         client, _ = async_client_with_spaces
-        legacy_url = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/legacy1.jpg"
+        legacy_url = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/legacy1.jpg"
         product = _make_product_entity(
             image_urls=[],
             attributes={"image_urls": [legacy_url]},
@@ -147,7 +147,7 @@ class TestGetProductImageUrlsFallbackToAttributes:
             f"Expected 1 signed image from attributes.image_urls, got: {body['images']!r}"
         )
         signed = body["images"][0]
-        assert signed["key"] == f"orgs/{TEST_TENANT_ID}/vehicles/legacy1.jpg"
+        assert signed["key"] == f"orgs/{TEST_TENANT_ID}/products/legacy1.jpg"
         assert "X-Amz-Signature=" in signed["url"]
         assert "minio:9000" not in signed["url"], (
             f"Signed URL still leaks internal endpoint: {signed['url']!r}"
@@ -162,8 +162,8 @@ class TestGetProductImageUrlsFallbackToAttributes:
     ) -> None:
         """When both sources have URLs, every one is signed (deduped)."""
         client, _ = async_client_with_spaces
-        url_top = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/top.jpg"
-        url_attr = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/attr.jpg"
+        url_top = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/top.jpg"
+        url_attr = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/attr.jpg"
         product = _make_product_entity(
             image_urls=[url_top],
             attributes={"image_urls": [url_attr]},
@@ -180,8 +180,8 @@ class TestGetProductImageUrlsFallbackToAttributes:
         body = response.json()
         keys = [img["key"] for img in body["images"]]
         assert keys == [
-            f"orgs/{TEST_TENANT_ID}/vehicles/top.jpg",
-            f"orgs/{TEST_TENANT_ID}/vehicles/attr.jpg",
+            f"orgs/{TEST_TENANT_ID}/products/top.jpg",
+            f"orgs/{TEST_TENANT_ID}/products/attr.jpg",
         ], f"Expected 2 distinct signed keys, got: {keys!r}"
 
     @pytest.mark.asyncio
@@ -190,7 +190,7 @@ class TestGetProductImageUrlsFallbackToAttributes:
     ) -> None:
         """A URL present in BOTH the top-level column and attributes is signed once."""
         client, _ = async_client_with_spaces
-        shared_url = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/shared.jpg"
+        shared_url = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/shared.jpg"
         product = _make_product_entity(
             image_urls=[shared_url],
             attributes={"image_urls": [shared_url]},
@@ -228,8 +228,8 @@ class TestGetProductImageUrlsSecurityFilters:
         # Use a strict allowlist so any unauthorized call to generate_download_url raises.
         spaces = _make_spaces(
             sign_map={
-                f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg": (
-                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"
+                f"orgs/{TEST_TENANT_ID}/products/mine.jpg": (
+                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/mine.jpg"
                     "?X-Amz-Signature=ok"
                 )
             }
@@ -240,8 +240,8 @@ class TestGetProductImageUrlsSecurityFilters:
             image_urls=[],
             attributes={
                 "image_urls": [
-                    f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/mine.jpg",
-                    f"http://minio:9000/{BUCKET}/orgs/{TEST_OTHER_TENANT_ID}/vehicles/secret.jpg",
+                    f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/mine.jpg",
+                    f"http://minio:9000/{BUCKET}/orgs/{TEST_OTHER_TENANT_ID}/products/secret.jpg",
                 ]
             },
         )
@@ -261,7 +261,7 @@ class TestGetProductImageUrlsSecurityFilters:
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
         keys = [img["key"] for img in body["images"]]
-        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"], (
+        assert keys == [f"orgs/{TEST_TENANT_ID}/products/mine.jpg"], (
             f"Cross-tenant URL leaked through; got: {keys!r}"
         )
         # And the signer was called exactly once (only the caller-tenant key)
@@ -281,8 +281,8 @@ class TestGetProductImageUrlsSecurityFilters:
         _, _ = async_client_with_spaces
         spaces = _make_spaces(
             sign_map={
-                f"orgs/{TEST_TENANT_ID}/vehicles/ok.jpg": (
-                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/ok.jpg"
+                f"orgs/{TEST_TENANT_ID}/products/ok.jpg": (
+                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/ok.jpg"
                     "?X-Amz-Signature=ok"
                 )
             }
@@ -294,7 +294,7 @@ class TestGetProductImageUrlsSecurityFilters:
             attributes={
                 "image_urls": [
                     # Well-formed: should be signed
-                    f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/ok.jpg",
+                    f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/ok.jpg",
                     # Malformed: no bucket marker. Must be dropped, not echoed.
                     "https://attacker.example.com/sneaky.jpg",
                 ]
@@ -317,7 +317,7 @@ class TestGetProductImageUrlsSecurityFilters:
         keys = [img["key"] for img in body["images"]]
         urls = [img["url"] for img in body["images"]]
         # Only the well-formed entry is signed
-        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/ok.jpg"], (
+        assert keys == [f"orgs/{TEST_TENANT_ID}/products/ok.jpg"], (
             f"Malformed URL was not dropped; got: {keys!r}"
         )
         # No external URL is echoed
@@ -358,7 +358,7 @@ class TestGetProductImageUrlsStripsQueryString:
     a previous, expired presigned URL mistakenly stored in the DB column
     instead of the raw S3 key) MUST be normalized to the bare key before
     signing — otherwise the SIGN call receives a key like
-    `orgs/.../vehicles/x.jpg?X-Amz-Algorithm=...` and mints a new signature
+    `orgs/.../products/x.jpg?X-Amz-Algorithm=...` and mints a new signature
     against the wrong (compound) key, producing a URL the browser can't load.
 
     This is the data-corruption safety net: even if a buggy writer persists
@@ -372,7 +372,7 @@ class TestGetProductImageUrlsStripsQueryString:
     ) -> None:
         """A corrupted top-level URL with `?X-Amz-...` MUST be normalized."""
         client, spaces = async_client_with_spaces
-        key = f"orgs/{TEST_TENANT_ID}/vehicles/corrupted1.jpg"
+        key = f"orgs/{TEST_TENANT_ID}/products/corrupted1.jpg"
         corrupted_url = (
             f"http://minio:9000/{BUCKET}/{key}"
             "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
@@ -405,7 +405,7 @@ class TestGetProductImageUrlsStripsQueryString:
     ) -> None:
         """Same normalization for the legacy `attributes.image_urls` source."""
         client, spaces = async_client_with_spaces
-        key = f"orgs/{TEST_TENANT_ID}/vehicles/legacy-corrupted.jpg"
+        key = f"orgs/{TEST_TENANT_ID}/products/legacy-corrupted.jpg"
         corrupted_url = (
             f"http://minio:9000/{BUCKET}/{key}"
             "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
@@ -438,8 +438,8 @@ class TestGetProductImageUrlsStripsQueryString:
     ) -> None:
         """When the row mixes clean and corrupted URLs, both end up as bare keys."""
         client, spaces = async_client_with_spaces
-        clean_key = f"orgs/{TEST_TENANT_ID}/vehicles/clean.jpg"
-        corrupt_key = f"orgs/{TEST_TENANT_ID}/vehicles/corrupt.jpg"
+        clean_key = f"orgs/{TEST_TENANT_ID}/products/clean.jpg"
+        corrupt_key = f"orgs/{TEST_TENANT_ID}/products/corrupt.jpg"
         clean_url = f"http://minio:9000/{BUCKET}/{clean_key}"
         corrupt_url = (
             f"http://minio:9000/{BUCKET}/{corrupt_key}"
@@ -474,7 +474,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
 
     The previous implementation did `bare.split(f'{bucket}/', 1)[1]` which
     only works on URL form (where the bucket is a path segment). A bare key
-    like `orgs/<uuid>/vehicles/file.jpg` has NO bucket prefix, so the split
+    like `orgs/<uuid>/products/file.jpg` has NO bucket prefix, so the split
     raised IndexError and the entry was silently dropped — returning
     `images: []` for newly created products. The frontend then had no signed
     URL to display.
@@ -486,7 +486,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
     ) -> None:
         """A bare key in `image_urls` MUST be signed (post-migration flow)."""
         client, spaces = async_client_with_spaces
-        key = f"orgs/{TEST_TENANT_ID}/vehicles/bare-key.jpg"
+        key = f"orgs/{TEST_TENANT_ID}/products/bare-key.jpg"
         product = _make_product_entity(image_urls=[key], attributes={})
 
         with patch(
@@ -514,7 +514,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
     ) -> None:
         """Same for legacy data that uses bare keys in attributes.image_urls."""
         client, spaces = async_client_with_spaces
-        key = f"orgs/{TEST_TENANT_ID}/vehicles/legacy-bare.jpg"
+        key = f"orgs/{TEST_TENANT_ID}/products/legacy-bare.jpg"
         product = _make_product_entity(image_urls=[], attributes={"image_urls": [key]})
 
         with patch(
@@ -539,8 +539,8 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         _, _ = async_client_with_spaces
         spaces = _make_spaces(
             sign_map={
-                f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg": (
-                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"
+                f"orgs/{TEST_TENANT_ID}/products/mine.jpg": (
+                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/products/mine.jpg"
                     "?X-Amz-Signature=ok"
                 )
             }
@@ -549,8 +549,8 @@ class TestGetProductImageUrlsAcceptsBareKeys:
 
         product = _make_product_entity(
             image_urls=[
-                f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg",
-                f"orgs/{TEST_OTHER_TENANT_ID}/vehicles/secret.jpg",
+                f"orgs/{TEST_TENANT_ID}/products/mine.jpg",
+                f"orgs/{TEST_OTHER_TENANT_ID}/products/secret.jpg",
             ],
             attributes={},
         )
@@ -569,7 +569,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
         keys = [img["key"] for img in body["images"]]
-        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"], (
+        assert keys == [f"orgs/{TEST_TENANT_ID}/products/mine.jpg"], (
             f"Cross-tenant bare key leaked; got: {keys!r}"
         )
         # Signer called exactly once — only the caller's tenant key.

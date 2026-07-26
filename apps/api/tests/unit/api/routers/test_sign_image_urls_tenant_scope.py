@@ -52,13 +52,13 @@ class TestSignImageURLsTenantScope:
             side_effect=lambda key: f"http://localhost:9000/{BUCKET}/{key}?X-Amz-Signature=ok"
         )
 
-        urls = [f"http://minio:9000/{BUCKET}/orgs/{CALLER_TENANT}/vehicles/a.jpg"]
+        urls = [f"http://minio:9000/{BUCKET}/orgs/{CALLER_TENANT}/products/a.jpg"]
         signed = await sign_image_urls(urls, spaces, tenant_id=CALLER_TENANT)
 
         assert len(signed) == 1
         assert "X-Amz-Signature=" in signed[0]
         # And signer was called with the right key
-        spaces.generate_download_url.assert_called_once_with(f"orgs/{CALLER_TENANT}/vehicles/a.jpg")
+        spaces.generate_download_url.assert_called_once_with(f"orgs/{CALLER_TENANT}/products/a.jpg")
 
     @pytest.mark.asyncio
     async def test_keys_for_other_tenant_are_dropped(self) -> None:
@@ -69,7 +69,7 @@ class TestSignImageURLsTenantScope:
         any tenant's objects.
         """
         spaces = _spaces()  # raises if generate_download_url is called
-        foreign_url = f"http://minio:9000/{BUCKET}/orgs/{OTHER_TENANT}/vehicles/secret.jpg"
+        foreign_url = f"http://minio:9000/{BUCKET}/orgs/{OTHER_TENANT}/products/secret.jpg"
 
         signed = await sign_image_urls([foreign_url], spaces, tenant_id=CALLER_TENANT)
 
@@ -91,9 +91,9 @@ class TestSignImageURLsTenantScope:
         )
 
         urls = [
-            f"http://minio:9000/{BUCKET}/orgs/{CALLER_TENANT}/vehicles/mine.jpg",
-            f"http://minio:9000/{BUCKET}/orgs/{OTHER_TENANT}/vehicles/theirs.jpg",
-            f"http://minio:9000/{BUCKET}/orgs/{CALLER_TENANT}/vehicles/mine2.jpg",
+            f"http://minio:9000/{BUCKET}/orgs/{CALLER_TENANT}/products/mine.jpg",
+            f"http://minio:9000/{BUCKET}/orgs/{OTHER_TENANT}/products/theirs.jpg",
+            f"http://minio:9000/{BUCKET}/orgs/{CALLER_TENANT}/products/mine2.jpg",
         ]
 
         signed = await sign_image_urls(urls, spaces, tenant_id=CALLER_TENANT)

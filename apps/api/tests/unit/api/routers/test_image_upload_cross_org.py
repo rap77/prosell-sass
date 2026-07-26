@@ -124,7 +124,7 @@ class TestImageUploadCrossOrg:
 
             assert response.status_code == status.HTTP_200_OK
             file_path = mock_spaces.upload_file.call_args.kwargs["file_path"]
-            assert f"orgs/{target_org_id}/vehicles/" in file_path
+            assert f"orgs/{target_org_id}/products/" in file_path
             assert f"orgs/{super_admin.tenant_id}" not in file_path
         finally:
             app.dependency_overrides.clear()
@@ -162,7 +162,7 @@ class TestImageUploadCrossOrg:
 
             assert response.status_code == status.HTTP_200_OK
             file_path = mock_spaces.upload_file.call_args.kwargs["file_path"]
-            assert f"orgs/{regular_admin.tenant_id}/vehicles/" in file_path
+            assert f"orgs/{regular_admin.tenant_id}/products/" in file_path
             assert f"orgs/{target_org_id}" not in file_path
         finally:
             app.dependency_overrides.clear()
@@ -198,7 +198,7 @@ class TestImageUploadCrossOrg:
 
             assert response.status_code == status.HTTP_200_OK
             file_path = mock_spaces.upload_file.call_args.kwargs["file_path"]
-            assert f"orgs/{super_admin.tenant_id}/vehicles/" in file_path
+            assert f"orgs/{super_admin.tenant_id}/products/" in file_path
         finally:
             app.dependency_overrides.clear()
 

@@ -43,12 +43,12 @@ def mock_spaces() -> MagicMock:
     global _mock_spaces
     spaces = MagicMock()
     spaces.upload_file = AsyncMock(
-        return_value="https://region.digitaloceanspaces.com/bucket/orgs/123/vehicles/uuid.jpg"
+        return_value="https://region.digitaloceanspaces.com/bucket/orgs/{tenant}/products/uuid.jpg"
     )
     # The router signs a download URL after upload (await spaces.generate_download_url).
     # Must be an AsyncMock or `await` on it fails with "MagicMock can't be awaited".
     spaces.generate_download_url = AsyncMock(
-        return_value="https://region.digitaloceanspaces.com/bucket/orgs/123/vehicles/uuid.jpg?signed=1"
+        return_value="https://region.digitaloceanspaces.com/bucket/orgs/{tenant}/products/uuid.jpg?signed=1"
     )
     spaces.endpoint = "https://region.digitaloceanspaces.com"
     spaces.bucket = "test-bucket"
@@ -122,9 +122,9 @@ class TestImageUpload:
         assert len(uploaded_bytes) < len(sample_image_bytes)
 
     async def test_upload_image_generates_correct_path(
-        self, sample_image_bytes: bytes, mock_spaces: MagicMock, mock_auth_user: User
+        self, sample_image_bytes: bytes, mock_spaces: MagicMock
     ) -> None:
-        """Generates correct orgs/{tenant_id}/vehicles/ path."""
+        """Generates correct orgs/{tenant}/products/ path."""
         from io import BytesIO
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -133,10 +133,11 @@ class TestImageUpload:
                 files={"file": ("test.jpg", BytesIO(sample_image_bytes), "image/jpeg")},
             )
 
-        # Verify the path includes tenant_id
+        # Verify the path structure
         call_args = mock_spaces.upload_file.call_args
         file_path = call_args.kwargs["file_path"]
-        assert f"orgs/{mock_auth_user.tenant_id}/vehicles/" in file_path
+        assert "/products/" in file_path
+        assert file_path.startswith("orgs/")
 
     async def test_upload_stores_webp(
         self, sample_image_bytes: bytes, mock_spaces: MagicMock

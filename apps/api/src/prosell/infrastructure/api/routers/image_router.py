@@ -319,7 +319,7 @@ async def upload_image(
         target_tenant = organization_id
     file_id = str(uuid4())
     ext = ".webp"  # Storage path outputs WebP (see get_storage_optimizer)
-    file_path = f"orgs/{target_tenant}/vehicles/{file_id}{ext}"
+    file_path = f"orgs/{target_tenant}/products/{file_id}{ext}"
 
     # Generate OG image (JPEG for WhatsApp/Facebook compatibility)
     # ponytail: OG image is derived from key convention, no DB field needed

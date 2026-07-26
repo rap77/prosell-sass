@@ -30,7 +30,7 @@ from prosell.infrastructure.api.main import app
 
 # Sample signed URL with X-Amz-Signature (what the browser will receive)
 SIGNED_URL = (
-    "http://localhost:9000/prosell-assets/orgs/tenant-1/vehicles/abc.jpg"
+    "http://localhost:9000/prosell-assets/orgs/tenant-1/products/abc.jpg"
     "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef"
 )
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
@@ -57,7 +57,7 @@ def _make_spaces() -> MagicMock:
     """
     spaces = MagicMock()
     spaces.upload_file = AsyncMock(
-        return_value="orgs/tenant-1/vehicles/abc.jpg",  # key, not URL
+        return_value="orgs/tenant-1/products/abc.jpg",  # key, not URL
     )
     spaces.generate_download_url = AsyncMock(return_value=SIGNED_URL)
     spaces.check_file_exists = AsyncMock(return_value=True)
@@ -150,7 +150,7 @@ class TestImageUploadReturnsStorageKey:
       - `url`  : a presigned URL (signed against the public endpoint so the
                  browser can fetch the just-uploaded object from the private
                  bucket during the current session)
-      - `key`  : the raw S3 storage path, e.g. `orgs/{tenant}/vehicles/{uuid}.jpg`
+      - `key`  : the raw S3 storage path, e.g. `orgs/{tenant}/products/{uuid}.jpg`
 
     The frontend MUST persist the `key` into `product.image_urls` (the storage
     layer is opaque to the rest of the system). If the create form persists
@@ -175,7 +175,7 @@ class TestImageUploadReturnsStorageKey:
         # The key MUST be the raw S3 path — no signature query string.
         assert "?" not in key, f"key contains a query string (signed URL leaked): {key!r}"
         # And it MUST start with the tenant prefix.
-        assert key.startswith(f"orgs/{TEST_TENANT_ID}/vehicles/"), (
+        assert key.startswith(f"orgs/{TEST_TENANT_ID}/products/"), (
             f"key does not match expected tenant prefix: {key!r}"
         )
         # The signed `url` should still be returned (for browser preview).
