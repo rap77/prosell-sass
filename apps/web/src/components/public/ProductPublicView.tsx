@@ -11,7 +11,7 @@
  *   - Sticky "Share on WhatsApp" button
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import JSZip from "jszip";
 import {
@@ -83,9 +83,13 @@ export function ProductPublicView({
   const [sharing, setSharing] = useState(false);
 
   // Build image list: cover first if available, then rest
-  const images = coverImageUrl
-    ? [coverImageUrl, ...imageUrls.filter((u) => u !== coverImageUrl)]
-    : imageUrls;
+  const images = useMemo(
+    () =>
+      coverImageUrl
+        ? [coverImageUrl, ...imageUrls.filter((u) => u !== coverImageUrl)]
+        : imageUrls,
+    [coverImageUrl, imageUrls],
+  );
 
   const hasPrevious = currentImageIndex > 0;
   const hasNext = currentImageIndex < images.length - 1;

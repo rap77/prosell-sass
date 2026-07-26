@@ -45,6 +45,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -720,7 +721,7 @@ export function UnifiedProductForm({
               {isOrgRequired && <span className="text-destructive">*</span>}
             </Label>
             <Select
-              value={selectedOrgId ?? undefined}
+              value={selectedOrgId ?? ""}
               onValueChange={handleOrganizationChange}
               aria-required={isOrgRequired}
               aria-invalid={orgMissing}
@@ -728,40 +729,35 @@ export function UnifiedProductForm({
               <SelectTrigger
                 className={cn("w-full", orgMissing && "border-destructive")}
               >
-                {selectedOrgId ? (
-                  <span className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    {selectedOrg?.name}
-                    {hasBrokers && (
-                      <span className="text-xs text-muted-foreground">
-                        ({selectedOrg?.broker_count} brokers)
-                      </span>
-                    )}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">
-                    Elegí una organización
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {selectedOrgId && <Building2 className="h-4 w-4 shrink-0" />}
+                  <SelectValue placeholder="Elegí una organización" />
+                </div>
               </SelectTrigger>
               <SelectContent>
-                {organizations.map((organization) => (
-                  <SelectItem
-                    key={organization.id}
-                    value={organization.id}
-                    textValue={organization.name}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      {organization.name}
-                      {(organization.broker_count ?? 0) > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          ({organization.broker_count} brokers)
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
+                {organizations.map((organization) => {
+                  const brokerInfo =
+                    (organization.broker_count ?? 0) > 0
+                      ? ` (${organization.broker_count} brokers)`
+                      : "";
+                  return (
+                    <SelectItem
+                      key={organization.id}
+                      value={organization.id}
+                      textValue={`${organization.name}${brokerInfo}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        {organization.name}
+                        {brokerInfo && (
+                          <span className="text-xs text-muted-foreground">
+                            {brokerInfo}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {orgMissing && (
@@ -891,7 +887,7 @@ export function UnifiedProductForm({
                   return (
                     <div key={broker.id} className="flex items-center gap-2">
                       <Select
-                        value={broker.owner_id || undefined}
+                        value={broker.owner_id || ""}
                         onValueChange={(v) => {
                           const updated = [...pendingBrokers];
                           updated[index] = {
@@ -902,17 +898,12 @@ export function UnifiedProductForm({
                         }}
                       >
                         <SelectTrigger className="flex-1">
-                          {broker.owner_id ? (
-                            <span className="flex items-center gap-2 truncate">
-                              <User className="h-4 w-4" />
-                              {brokers.find((b) => b.id === broker.owner_id)
-                                ?.name ?? broker.owner_id}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Seleccionar broker
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 truncate">
+                            {broker.owner_id && (
+                              <User className="h-4 w-4 shrink-0" />
+                            )}
+                            <SelectValue placeholder="Seleccionar broker" />
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
                           {brokers
