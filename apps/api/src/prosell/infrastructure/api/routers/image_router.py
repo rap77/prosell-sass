@@ -321,19 +321,30 @@ async def upload_image(
     ext = ".webp"  # Storage path outputs WebP (see get_storage_optimizer)
     file_path = f"orgs/{target_tenant}/vehicles/{file_id}{ext}"
 
+    # Generate OG image (JPEG for WhatsApp/Facebook compatibility)
+    # ponytail: OG image is derived from key convention, no DB field needed
+    og_bytes = await optimizer.process_og(file_bytes)
+    og_path = file_path.replace(".webp", "-og.jpg")
+
     logger.info(
-        "Uploading optimized image: %s (original: %d bytes, optimized: %d bytes)",
+        "Uploading images: %s (webp: %d bytes) + OG jpg (%d bytes), original: %d bytes",
         file_path,
-        len(file_bytes),
         len(optimized_bytes),
+        len(og_bytes),
+        len(file_bytes),
     )
 
-    # Upload to DO Spaces
+    # Upload both to DO Spaces
     try:
         await spaces.upload_file(
             file_path=file_path,
             file_bytes=optimized_bytes,
             content_type="image/webp",
+        )
+        await spaces.upload_file(
+            file_path=og_path,
+            file_bytes=og_bytes,
+            content_type="image/jpeg",
         )
     except Exception as e:
         raise HTTPException(

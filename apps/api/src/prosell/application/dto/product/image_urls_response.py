@@ -10,6 +10,7 @@ class ProductImageUrlResponse(BaseModel):
 
     key: str  # relative path like orgs/tenant/products/uuid/img1.jpg
     url: str  # signed URL
+    og_url: str | None = None  # ponytail: JPEG version for WhatsApp/Facebook
     expires_in: int = 3600
 
 

@@ -47,6 +47,29 @@ class ImageOptimizer(IImagePipeline):
         self.output_format = output_format
         self.webp_quality = webp_quality
 
+    def _prepare_image(self, image_bytes: bytes) -> Image.Image:
+        """Load and convert image to RGB."""
+        img: Image.Image = Image.open(BytesIO(image_bytes))
+        if img.mode == "RGBA":
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])
+            return background
+        if img.mode not in ("RGB", "L"):
+            return img.convert("RGB")
+        return img
+
+    def _resize_to_fit(self, img: Image.Image, max_width: int, max_height: int) -> Image.Image:
+        """Resize to fit within max dimensions, maintaining aspect ratio."""
+        width, height = img.size
+        if width <= max_width and height <= max_height:
+            return img
+        aspect = width / height
+        if width > height:
+            new_width, new_height = max_width, int(max_width / aspect)
+        else:
+            new_height, new_width = max_height, int(max_height * aspect)
+        return img.resize((new_width, new_height), self.RESAMPLING)
+
     async def process(self, image_bytes: bytes) -> bytes:
         """
         Compress, resize to max dimensions, convert to configured format, strip EXIF.
@@ -58,44 +81,40 @@ class ImageOptimizer(IImagePipeline):
             Processed image bytes in the configured output format (default JPEG,
             or WebP when output_format="WEBP" — used by the storage upload path).
         """
-        # Load image from bytes
-        img: Image.Image = Image.open(BytesIO(image_bytes))
-
-        # Convert RGBA to RGB if necessary (removes alpha channel)
-        if img.mode == "RGBA":
-            # Create white background for transparent images
-            background = Image.new("RGB", img.size, (255, 255, 255))
-            background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
-            img = background
-        elif img.mode not in ("RGB", "L"):
-            img = img.convert("RGB")
-
-        # Get original dimensions
-        width, height = img.size
-
-        # Check if resizing is needed
-        if width > self.max_width or height > self.max_height:
-            # Calculate aspect ratio
-            aspect_ratio = width / height
-
-            # Determine new dimensions maintaining aspect ratio
-            if width > height:
-                # Width is the limiting factor
-                new_width = self.max_width
-                new_height = int(self.max_width / aspect_ratio)
-            else:
-                # Height is the limiting factor
-                new_height = self.max_height
-                new_width = int(self.max_height * aspect_ratio)
-
-            # Resize using LANCZOS resampling for high quality
-            img = img.resize((new_width, new_height), self.RESAMPLING)
-
-        # Save to bytes in the configured format (strips EXIF automatically —
-        # Pillow does not copy metadata when saving fresh).
+        img = self._prepare_image(image_bytes)
+        img = self._resize_to_fit(img, self.max_width, self.max_height)
         buffer = BytesIO()
         if self.output_format == "WEBP":
             img.save(buffer, format="WEBP", quality=self.webp_quality, method=6)
         else:
             img.save(buffer, format="JPEG", quality=self.jpeg_quality, optimize=True)
+        return buffer.getvalue()
+
+    async def process_og(self, image_bytes: bytes) -> bytes:
+        """Generate Open Graph optimized JPEG (1200x630, Facebook/WhatsApp compatible).
+
+        ponytail: center-crop to 1200x630 aspect ratio, then resize.
+        """
+        img = self._prepare_image(image_bytes)
+        width, height = img.size
+        target_aspect = 1200 / 630  # ~1.9
+
+        # Crop to OG aspect ratio (center crop)
+        current_aspect = width / height
+        if current_aspect > target_aspect:
+            # Too wide: crop sides
+            new_width = int(height * target_aspect)
+            left = (width - new_width) // 2
+            img = img.crop((left, 0, left + new_width, height))
+        elif current_aspect < target_aspect:
+            # Too tall: crop top/bottom
+            new_height = int(width / target_aspect)
+            top = (height - new_height) // 2
+            img = img.crop((0, top, width, top + new_height))
+
+        # Resize to exactly 1200x630
+        img = img.resize((1200, 630), self.RESAMPLING)
+
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG", quality=85, optimize=True)
         return buffer.getvalue()

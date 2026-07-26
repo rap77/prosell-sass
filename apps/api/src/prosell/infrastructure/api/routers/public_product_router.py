@@ -134,14 +134,19 @@ async def get_public_product_image_urls(
         ordered_keys = list(raw_keys)
 
     images: list[ProductImageUrlResponse] = []
-    for key in ordered_keys:
+    for idx, key in enumerate(ordered_keys):
         if key:
-            # Revert to signed URLs - public URLs broke WhatsApp preview
             signed_url = await spaces.generate_download_url(key, SIGNED_URL_EXPIRES_IN)
+            # ponytail: OG URL only for cover (first image), derived from key convention
+            og_url = None
+            if idx == 0 and key.endswith(".webp"):
+                og_key = key.replace(".webp", "-og.jpg")
+                og_url = await spaces.generate_download_url(og_key, SIGNED_URL_EXPIRES_IN)
             images.append(
                 ProductImageUrlResponse(
                     key=key,
                     url=signed_url,
+                    og_url=og_url,
                     expires_in=SIGNED_URL_EXPIRES_IN,
                 )
             )

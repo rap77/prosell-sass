@@ -27,6 +27,7 @@ interface ProductData {
 interface ImageUrlItem {
   key: string;
   url: string;
+  og_url: string | null; // ponytail: JPEG for WhatsApp/Facebook
   expires_in: number;
 }
 
@@ -101,7 +102,9 @@ export async function generateMetadata({
     brand && model ? `${brand} ${model} ${year || ""}`.trim() : product.title;
 
   // Get first image URL for Open Graph
-  const coverImageUrl = imageData?.images?.[0]?.url;
+  // ponytail: prefer og_url (JPEG) over url (WebP) for Facebook/WhatsApp compatibility
+  const coverImage = imageData?.images?.[0];
+  const coverImageUrl = coverImage?.og_url ?? coverImage?.url;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://prosellweb.com";
   const productUrl = `${baseUrl}/p/${slug}`;
