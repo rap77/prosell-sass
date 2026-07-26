@@ -206,7 +206,11 @@ export function UnifiedProductForm({
 
   // In EDIT mode, org changes require confirmation because brokers get deleted
   const handleOrganizationChange = (organizationId: string) => {
-    if (mode === "edit" && selectedOrgId && organizationId !== selectedOrgId) {
+    // Guard: Radix Select can fire onValueChange with empty string during
+    // controlled/uncontrolled transitions. Ignore empty or same value.
+    if (!organizationId || organizationId === selectedOrgId) return;
+
+    if (mode === "edit" && selectedOrgId) {
       // Show confirmation dialog before applying
       setPendingTransferOrgId(organizationId);
       setTransferDialogOpen(true);
@@ -721,7 +725,7 @@ export function UnifiedProductForm({
               {isOrgRequired && <span className="text-destructive">*</span>}
             </Label>
             <Select
-              value={selectedOrgId ?? ""}
+              value={selectedOrgId || undefined}
               onValueChange={handleOrganizationChange}
               aria-required={isOrgRequired}
               aria-invalid={orgMissing}
@@ -887,7 +891,7 @@ export function UnifiedProductForm({
                   return (
                     <div key={broker.id} className="flex items-center gap-2">
                       <Select
-                        value={broker.owner_id || ""}
+                        value={broker.owner_id || undefined}
                         onValueChange={(v) => {
                           const updated = [...pendingBrokers];
                           updated[index] = {
