@@ -137,10 +137,11 @@ async def get_public_product_image_urls(
         if key:
             signed_url = await spaces.generate_download_url(key, SIGNED_URL_EXPIRES_IN)
             # ponytail: OG URL only for cover (first image), derived from key convention
+            # OG images are public (no signed URL) for WhatsApp/Facebook compatibility
             og_url = None
             if idx == 0 and key.endswith(".webp"):
                 og_key = key.replace(".webp", "-og.jpg")
-                og_url = await spaces.generate_download_url(og_key, SIGNED_URL_EXPIRES_IN)
+                og_url = spaces.get_public_url(og_key)
             images.append(
                 ProductImageUrlResponse(
                     key=key,

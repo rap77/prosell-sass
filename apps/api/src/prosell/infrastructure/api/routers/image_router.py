@@ -345,6 +345,7 @@ async def upload_image(
             file_path=og_path,
             file_bytes=og_bytes,
             content_type="image/jpeg",
+            make_public=True,  # OG images must be public for WhatsApp/Facebook
         )
     except Exception as e:
         raise HTTPException(
