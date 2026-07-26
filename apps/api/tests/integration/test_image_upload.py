@@ -141,7 +141,7 @@ class TestImageUpload:
     async def test_upload_stores_webp(
         self, sample_image_bytes: bytes, mock_spaces: MagicMock
     ) -> None:
-        """Storage path stores WebP: .webp key, image/webp content-type, WebP bytes."""
+        """Storage path stores WebP + OG JPEG (two uploads)."""
         from io import BytesIO
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -151,13 +151,20 @@ class TestImageUpload:
             )
 
         assert response.status_code == status.HTTP_200_OK
-        call = mock_spaces.upload_file.call_args
-        assert call.kwargs["content_type"] == "image/webp"
-        assert call.kwargs["file_path"].endswith(".webp")
-        uploaded = call.kwargs["file_bytes"]
-        # WebP container: 'RIFF' .... 'WEBP'
-        assert uploaded[:4] == b"RIFF"
-        assert uploaded[8:12] == b"WEBP"
+        # Now uploads TWO files: WebP (gallery) + OG JPEG (WhatsApp/Facebook)
+        assert mock_spaces.upload_file.call_count == 2
+        calls = mock_spaces.upload_file.call_args_list
+        # First call: WebP
+        webp_call = calls[0]
+        assert webp_call.kwargs["content_type"] == "image/webp"
+        assert webp_call.kwargs["file_path"].endswith(".webp")
+        webp_bytes = webp_call.kwargs["file_bytes"]
+        assert webp_bytes[:4] == b"RIFF"
+        assert webp_bytes[8:12] == b"WEBP"
+        # Second call: OG JPEG
+        og_call = calls[1]
+        assert og_call.kwargs["content_type"] == "image/jpeg"
+        assert og_call.kwargs["file_path"].endswith("-og.jpg")
 
     async def test_upload_image_rejects_non_image(self) -> None:
         """Returns 400 for non-image files."""
@@ -184,7 +191,7 @@ class TestImageUpload:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_upload_image_handles_png_with_alpha(self) -> None:
-        """Flattens PNG alpha and stores it as WebP (storage path)."""
+        """Flattens PNG alpha and stores it as WebP + OG JPEG."""
         # Create a PNG with alpha channel
         img = Image.new("RGBA", (1000, 1000), color=(255, 0, 0, 128))
         buffer = BytesIO()
@@ -198,13 +205,13 @@ class TestImageUpload:
             )
 
         assert response.status_code == status.HTTP_200_OK
-        # Verify upload was called with optimized WebP bytes
         assert _mock_spaces is not None
-        assert _mock_spaces.upload_file.called
-        uploaded_bytes = _mock_spaces.upload_file.call_args.kwargs["file_bytes"]
-        # Verify it's WebP format (RIFF .... WEBP)
-        assert uploaded_bytes[:4] == b"RIFF"
-        assert uploaded_bytes[8:12] == b"WEBP"
+        # Uploads TWO files: WebP + OG JPEG
+        assert _mock_spaces.upload_file.call_count == 2
+        webp_call = _mock_spaces.upload_file.call_args_list[0]
+        webp_bytes = webp_call.kwargs["file_bytes"]
+        assert webp_bytes[:4] == b"RIFF"
+        assert webp_bytes[8:12] == b"WEBP"
 
     async def test_upload_image_handles_large_image(self, sample_image_bytes: bytes) -> None:
         """Resizes images larger than 1920x1080."""
@@ -217,14 +224,15 @@ class TestImageUpload:
             )
 
         assert response.status_code == status.HTTP_200_OK
-        # Verify the file was optimized (should be smaller than original)
         assert _mock_spaces is not None
-        uploaded_bytes = _mock_spaces.upload_file.call_args.kwargs["file_bytes"]
-        # Original 2000x2000 JPEG is ~63KB, optimized should be smaller
-        assert len(uploaded_bytes) < len(sample_image_bytes)
-        # Verify it's a valid WebP (RIFF .... WEBP)
-        assert uploaded_bytes[:4] == b"RIFF"
-        assert uploaded_bytes[8:12] == b"WEBP"
+        # Uploads TWO files: WebP + OG JPEG
+        assert _mock_spaces.upload_file.call_count == 2
+        webp_call = _mock_spaces.upload_file.call_args_list[0]
+        webp_bytes = webp_call.kwargs["file_bytes"]
+        # Original 2000x2000 JPEG is ~63KB, optimized WebP should be smaller
+        assert len(webp_bytes) < len(sample_image_bytes)
+        assert webp_bytes[:4] == b"RIFF"
+        assert webp_bytes[8:12] == b"WEBP"
 
     async def test_upload_without_tenant_id_returns_400(self, sample_image_bytes: bytes) -> None:
         """Returns 400 when user has no tenant_id."""
