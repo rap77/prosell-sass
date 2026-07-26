@@ -282,9 +282,9 @@ class TestPublicProductRouter:
         data = response.json()
         assert len(data["images"]) == 2
         assert data["images"][0]["key"] == "car-front.jpg"
-        # Signed URLs for WhatsApp - 30 days expiration
+        # Signed URLs for WhatsApp - 7 days expiration (S3 SigV4 max)
         assert "X-Amz-Signature=" in data["images"][0]["url"]
-        assert data["images"][0]["expires_in"] == 2592000  # 30 days
+        assert data["images"][0]["expires_in"] == 604800  # 7 days
         assert data["images"][1]["key"] == "car-side.jpg"
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
