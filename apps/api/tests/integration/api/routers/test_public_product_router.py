@@ -242,14 +242,15 @@ class TestPublicProductRouter:
         assert response.json()["view_count"] == initial_view_count + 3
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
-    async def test_get_product_image_urls_returns_public_urls(
+    async def test_get_product_image_urls_returns_signed_urls(
         self, mock_spaces_dep, shared_session: AsyncSession
     ):
-        """GET /{slug}/image-urls returns public URLs for WhatsApp/OG sharing."""
+        """GET /{slug}/image-urls returns signed URLs for WhatsApp/OG sharing."""
         mock_spaces = AsyncMock()
-        mock_spaces.get_public_url.side_effect = [
-            "https://nyc3.digitaloceanspaces.com/prosell-assets/car-front.jpg",
-            "https://nyc3.digitaloceanspaces.com/prosell-assets/car-side.jpg",
+        # Signed URLs have expiration params
+        mock_spaces.generate_download_url.side_effect = [
+            "https://nyc3.digitaloceanspaces.com/prosell-assets/car-front.jpg?X-Amz-Signature=abc123",
+            "https://nyc3.digitaloceanspaces.com/prosell-assets/car-side.jpg?X-Amz-Signature=def456",
         ]
         mock_spaces_dep.return_value = mock_spaces
 
@@ -281,9 +282,9 @@ class TestPublicProductRouter:
         data = response.json()
         assert len(data["images"]) == 2
         assert data["images"][0]["key"] == "car-front.jpg"
-        # ponytail: public URLs for WhatsApp/OG - no signed params
-        assert "X-Amz-Signature=" not in data["images"][0]["url"]
-        assert data["images"][0]["expires_in"] == 0  # public URL never expires
+        # Signed URLs for WhatsApp - 30 days expiration
+        assert "X-Amz-Signature=" in data["images"][0]["url"]
+        assert data["images"][0]["expires_in"] == 2592000  # 30 days
         assert data["images"][1]["key"] == "car-side.jpg"
 
     @patch("prosell.infrastructure.api.routers.public_product_router.get_spaces_service")
