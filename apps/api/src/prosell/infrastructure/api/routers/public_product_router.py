@@ -24,7 +24,9 @@ DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
 
 # Default expiration for signed URLs (1 hour)
-SIGNED_URL_EXPIRES_IN = 3600
+# 30 days expiration for OG images - WhatsApp caches these URLs
+# URLs renew automatically when page is re-scraped (share again in WhatsApp)
+SIGNED_URL_EXPIRES_IN = 2592000
 
 
 async def _increment_view_count(product_id: UUID, db: AsyncSession) -> None:
