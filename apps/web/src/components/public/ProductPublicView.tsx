@@ -13,13 +13,15 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
+import JSZip from "jszip";
 import {
   MapPin,
   ChevronLeft,
   ChevronRight,
   Copy,
-  ImageIcon,
+  Download,
   Check,
+  Share2,
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { cn } from "@/lib/utils";
@@ -78,7 +80,7 @@ export function ProductPublicView({
 }: ProductPublicViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copiedText, setCopiedText] = useState(false);
-  const [copiedImage, setCopiedImage] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   // Build image list: cover first if available, then rest
   const images = coverImageUrl
@@ -158,34 +160,49 @@ ${shareUrl}`.trim();
     }
   }, [buildClipboardText]);
 
-  const copyCurrentImage = useCallback(async () => {
-    if (!images[currentImageIndex]) return;
-    try {
-      const response = await fetch(images[currentImageIndex]);
+  // Fetch all images as blobs
+  const fetchAllImages = useCallback(async (): Promise<File[]> => {
+    const files: File[] = [];
+    for (let i = 0; i < images.length; i++) {
+      const response = await fetch(images[i]);
       const blob = await response.blob();
-      // Convert to PNG for clipboard compatibility (WebP not supported)
-      const img = document.createElement("img");
-      img.src = URL.createObjectURL(blob);
-      await new Promise((resolve) => (img.onload = resolve));
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(img, 0, 0);
-      canvas.toBlob(async (pngBlob) => {
-        if (pngBlob) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": pngBlob }),
-          ]);
-          setCopiedImage(true);
-          setTimeout(() => setCopiedImage(false), 2000);
-        }
-      }, "image/png");
-      URL.revokeObjectURL(img.src);
-    } catch {
-      // ponytail: clipboard API not supported or permission denied — silent fail
+      const ext = blob.type.includes("webp") ? "webp" : "jpg";
+      files.push(
+        new File([blob], `imagen-${i + 1}.${ext}`, { type: blob.type }),
+      );
     }
-  }, [images, currentImageIndex]);
+    return files;
+  }, [images]);
+
+  // Share all images + text (mobile) or download ZIP (desktop)
+  const shareOrDownloadAll = useCallback(async () => {
+    if (images.length === 0) return;
+    setSharing(true);
+    try {
+      const files = await fetchAllImages();
+      const text = buildClipboardText();
+
+      // Try Web Share API first (mobile)
+      if (navigator.share && navigator.canShare?.({ files })) {
+        await navigator.share({ files, text });
+      } else {
+        // Fallback: download as ZIP
+        const zip = new JSZip();
+        files.forEach((file) => zip.file(file.name, file));
+        zip.file("descripcion.txt", text);
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${vehicleName.replace(/\s+/g, "-")}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      // ponytail: user cancelled share or download failed — silent fail
+    }
+    setSharing(false);
+  }, [images, fetchAllImages, buildClipboardText, vehicleName]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28">
@@ -339,16 +356,23 @@ ${shareUrl}`.trim();
       {/* Sticky Action Buttons */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-ps-border-subtle bg-ps-bg-base p-4 z-50">
         <div className="mx-auto flex max-w-md gap-2">
-          {/* Copy Image */}
+          {/* Share/Download All */}
           <button
-            onClick={copyCurrentImage}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-ps-bg-muted px-4 py-3.5 text-sm font-semibold text-ps-text-primary"
-            title="Copiar imagen actual"
+            onClick={shareOrDownloadAll}
+            disabled={sharing}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-ps-bg-muted px-4 py-3.5 text-sm font-semibold text-ps-text-primary disabled:opacity-50"
+            title="Compartir o descargar todo"
           >
-            {copiedImage ? <Check size={18} /> : <ImageIcon size={18} />}
-            <span className="hidden sm:inline">
-              {copiedImage ? "¡Copiada!" : "Imagen"}
-            </span>
+            {sharing ? (
+              <span className="animate-pulse">...</span>
+            ) : (
+              <>
+                <Download size={18} className="hidden sm:block" />
+                <Share2 size={18} className="sm:hidden" />
+              </>
+            )}
+            <span className="hidden sm:inline">Descargar</span>
+            <span className="sm:hidden">Todo</span>
           </button>
           {/* Copy Text */}
           <button
