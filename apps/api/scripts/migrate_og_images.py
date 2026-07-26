@@ -94,7 +94,7 @@ async def update_db_keys(old_to_new: dict[str, str], dry_run: bool) -> int:
     """Update image_urls and cover_image_key in products table."""
     from sqlalchemy import text
 
-    from prosell.infrastructure.database.session import async_engine
+    from prosell.infrastructure.database.session import engine as async_engine
 
     updated = 0
     async with async_engine.begin() as conn:
