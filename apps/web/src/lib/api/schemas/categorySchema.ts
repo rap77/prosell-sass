@@ -22,6 +22,8 @@ export const AttributeGroupSchema = z.object({
   key: z.string(),
   label: z.string(),
   order: z.number().default(0),
+  /** Optional explicit field ordering for this group. Backend persists as JSONB. */
+  fields: z.array(z.string()).optional(),
 });
 
 /**
@@ -34,6 +36,7 @@ export const AttributeFieldSchema = z.object({
   label: z.string().optional(),
   description: z.string().optional(),
   group: z.string().optional(),
+  /** Optional per-attribute constraints (e.g. Slider bounds for `range`). */
 });
 
 /**

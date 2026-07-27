@@ -73,22 +73,34 @@ export function SchemaFormSection({
 /**
  * Groups schema fields by their group key.
  * Returns a map of group key -> field keys, plus an "_ungrouped" bucket.
+ * If a group has an explicit `fields: string[]` ordering, it's honored as the
+ * primary key list; fields in the schema that aren't listed are appended at
+ * the end so they don't disappear.
  */
 export function groupFieldsByGroup(
   schema: Record<string, AttributeSchemaEntry>,
   groups: AttributeGroup[],
 ): Record<string, string[]> {
   const groupKeys = new Set(groups.map((g) => g.key));
+  const schemaKeys = new Set(Object.keys(schema));
   const result: Record<string, string[]> = { _ungrouped: [] };
 
   for (const group of groups) {
-    result[group.key] = [];
+    const orderedFields = group.fields?.filter((key) => schemaKeys.has(key));
+    const seen = new Set(orderedFields ?? []);
+    const remaining = Object.entries(schema)
+      .filter(
+        ([key, entry]) =>
+          entry.group === group.key && !seen.has(key) && schemaKeys.has(key),
+      )
+      .map(([key]) => key);
+    result[group.key] = [...(orderedFields ?? []), ...remaining];
   }
 
   for (const [key, entry] of Object.entries(schema)) {
     const gk =
       entry.group && groupKeys.has(entry.group) ? entry.group : "_ungrouped";
-    result[gk].push(key);
+    if (!result[gk].includes(key)) result[gk].push(key);
   }
 
   return result;

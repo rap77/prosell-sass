@@ -62,6 +62,7 @@ interface FieldRow extends AttributeField {
 
 interface GroupRow extends AttributeGroup {
   _id: string; // local stable id
+  fields?: string[];
 }
 
 interface CategorySchemaEditorProps {
@@ -307,20 +308,33 @@ export function CategorySchemaEditor({
   const patchSchema = usePatchCategorySchema();
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const toSchemaMap = (fields: FieldRow[]): Record<string, AttributeField> =>
+  const toSchemaMap = (
+    fields: FieldRow[],
+    validGroupKeys: ReadonlySet<string>,
+  ): Record<string, AttributeField> =>
     Object.fromEntries(
       fields
         .filter((r) => r.key.trim())
-        .map(({ key, type, required, label, description, group }) => [
-          key.trim(),
-          { type, required, label, description, group },
-        ]),
+        .map(({ key, type, required, label, description, group }) => {
+          const trimmedKey = key.trim();
+          const normalizedGroup =
+            group && validGroupKeys.has(group) ? group : undefined;
+          return [
+            trimmedKey,
+            { type, required, label, description, group: normalizedGroup },
+          ];
+        }),
     );
 
   const toGroupList = (gs: GroupRow[]): AttributeGroup[] =>
     gs
       .filter((g) => g.key.trim() && g.label.trim())
-      .map(({ key, label, order }) => ({ key: key.trim(), label, order }));
+      .map(({ key, label, order, fields }) => ({
+        key: key.trim(),
+        label,
+        order,
+        ...(fields && fields.length > 0 ? { fields } : {}),
+      }));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -386,15 +400,46 @@ export function CategorySchemaEditor({
   };
 
   const handleSave = async (force = false) => {
-    const schemaMap = toSchemaMap(rows);
+    const groupKeySet = new Set(
+      groups.map((g) => g.key.trim()).filter((key) => key.length > 0),
+    );
+    const schemaMap = toSchemaMap(rows, groupKeySet);
     const groupList = toGroupList(groups);
     try {
-      await patchSchema.mutateAsync({
+      const updated = await patchSchema.mutateAsync({
         categoryId,
         schema: schemaMap,
         groups: groupList,
         force: force || undefined,
       });
+      const updatedGroupMap = new Map(
+        (updated.attribute_groups ?? []).map((g) => {
+          const merged: GroupRow = {
+            _id: newId(),
+            key: g.key.trim(),
+            label: g.label,
+            order: g.order ?? 0,
+            ...(g.fields ? { fields: [...g.fields] } : {}),
+          };
+          return [merged.key, merged];
+        }),
+      );
+      setGroups((prev) =>
+        prev
+          .filter((g) => updatedGroupMap.has(g.key.trim()))
+          .map((g) => {
+            const fresh = updatedGroupMap.get(g.key.trim());
+            return fresh ? { ...g, ...fresh } : g;
+          }),
+      );
+      setRows((prev) =>
+        prev.map((r) => {
+          if (!r.group) return r;
+          return updatedGroupMap.has(r.group.trim())
+            ? r
+            : { ...r, group: undefined };
+        }),
+      );
       setMigrationWarnings([]);
       setShowMigrationModal(false);
     } catch (err) {

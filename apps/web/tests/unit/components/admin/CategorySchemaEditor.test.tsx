@@ -227,4 +227,94 @@ describe("CategorySchemaEditor", () => {
       );
     });
   });
+
+  it("removes the deleted group row from the panel after save", async () => {
+    mockMutate.mockResolvedValue({
+      ...mockSchema,
+      attribute_groups: mockSchema.attribute_groups.filter(
+        (g) => g.key !== "details",
+      ),
+    });
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    const detailsDelete = screen.getByRole("button", {
+      name: /delete group details/i,
+    });
+    await userEvent.click(detailsDelete);
+
+    expect(screen.queryByDisplayValue("Details")).toBeNull();
+    expect(screen.queryByDisplayValue("details")).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groups: expect.not.arrayContaining([
+            expect.objectContaining({ key: "details" }),
+          ]),
+        }),
+      );
+    });
+  });
+
+  it("reassigns a field's group to no-group when the parent group is deleted on save", async () => {
+    mockMutate.mockResolvedValue({
+      ...mockSchema,
+      attribute_groups: mockSchema.attribute_groups.filter(
+        (g) => g.key !== "basic",
+      ),
+    });
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /delete group basic/i }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+      const lastCallArgs = mockMutate.mock.calls.at(-1)?.[0];
+      expect(lastCallArgs?.schema?.year?.group).toBeUndefined();
+      expect(lastCallArgs?.schema?.vin?.group).toBeUndefined();
+    });
+  });
+
+  it("sends groups with a fields[] ordering when a group has explicit field ordering", async () => {
+    mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
+    const schemaWithOrderedGroup: CategorySchemaResponse = {
+      ...mockSchema,
+      attribute_groups: [
+        {
+          key: "basic",
+          label: "Basic Info",
+          order: 0,
+          fields: ["year", "vin"],
+        },
+        ...mockSchema.attribute_groups.filter((g) => g.key !== "basic"),
+      ],
+    };
+    render(
+      <CategorySchemaEditor
+        categoryId="cat-1"
+        schema={schemaWithOrderedGroup}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groups: expect.arrayContaining([
+            expect.objectContaining({
+              key: "basic",
+              fields: ["year", "vin"],
+            }),
+          ]),
+        }),
+      );
+    });
+  });
 });
