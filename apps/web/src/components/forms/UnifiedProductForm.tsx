@@ -45,7 +45,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -733,10 +732,21 @@ export function UnifiedProductForm({
               <SelectTrigger
                 className={cn("w-full", orgMissing && "border-destructive")}
               >
-                <div className="flex items-center gap-2">
-                  {selectedOrgId && <Building2 className="h-4 w-4 shrink-0" />}
-                  <SelectValue placeholder="Elegí una organización" />
-                </div>
+                {selectedOrgId ? (
+                  <span className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    {selectedOrg?.name}
+                    {hasBrokers && (
+                      <span className="text-xs text-muted-foreground">
+                        ({selectedOrg?.broker_count} brokers)
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    Elegí una organización
+                  </span>
+                )}
               </SelectTrigger>
               <SelectContent>
                 {organizations.map((organization) => {
@@ -904,12 +914,17 @@ export function UnifiedProductForm({
                         }}
                       >
                         <SelectTrigger className="flex-1">
-                          <div className="flex items-center gap-2 truncate">
-                            {broker.owner_id && (
-                              <User className="h-4 w-4 shrink-0" />
-                            )}
-                            <SelectValue placeholder="Seleccionar broker" />
-                          </div>
+                          {broker.owner_id ? (
+                            <span className="flex items-center gap-2 truncate">
+                              <User className="h-4 w-4" />
+                              {brokers.find((b) => b.id === broker.owner_id)
+                                ?.name ?? broker.owner_id}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Seleccionar broker
+                            </span>
+                          )}
                         </SelectTrigger>
                         <SelectContent>
                           {brokers
