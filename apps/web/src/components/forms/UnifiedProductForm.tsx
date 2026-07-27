@@ -725,7 +725,7 @@ export function UnifiedProductForm({
               {isOrgRequired && <span className="text-destructive">*</span>}
             </Label>
             <Select
-              value={selectedOrgId || undefined}
+              value={selectedOrgId ?? ""}
               onValueChange={handleOrganizationChange}
               aria-required={isOrgRequired}
               aria-invalid={orgMissing}
@@ -891,8 +891,10 @@ export function UnifiedProductForm({
                   return (
                     <div key={broker.id} className="flex items-center gap-2">
                       <Select
-                        value={broker.owner_id || undefined}
+                        value={broker.owner_id ?? ""}
                         onValueChange={(v) => {
+                          // Guard: ignore empty or same value
+                          if (!v || v === broker.owner_id) return;
                           const updated = [...pendingBrokers];
                           updated[index] = {
                             ...updated[index],
