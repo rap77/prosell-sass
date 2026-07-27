@@ -825,6 +825,10 @@ type PatchSchemaVars = {
   schema: Record<string, AttributeField>;
   groups?: AttributeGroup[];
   force?: boolean;
+  /** Count of fields left without a group, for the post-save toast */
+  orphanedFieldCount?: number;
+  /** Name of the group that was deleted (if any), used in toast copy */
+  removedGroupLabel?: string | null;
 };
 
 type CloneSchemaVars = {
@@ -876,14 +880,22 @@ export function usePatchCategorySchema() {
       return CategorySchemaResponseSchema.parse(await res.json());
     },
 
-    onSuccess: (_, { categoryId }) => {
+    onSuccess: (_, { categoryId, orphanedFieldCount, removedGroupLabel }) => {
       queryClient.invalidateQueries({
         queryKey: ["category-schema", categoryId],
       });
       queryClient.invalidateQueries({
         queryKey: ["category-schema-history", categoryId],
       });
-      toast.success("Schema updated");
+      if (orphanedFieldCount && orphanedFieldCount > 0) {
+        toast.success(
+          `Group "${removedGroupLabel ?? "removed"}" deleted — ${orphanedFieldCount} field${orphanedFieldCount === 1 ? "" : "s"} reassigned to No group`,
+        );
+      } else if (removedGroupLabel) {
+        toast.success(`Group "${removedGroupLabel}" deleted`);
+      } else {
+        toast.success("Schema updated");
+      }
     },
 
     onError: () => {

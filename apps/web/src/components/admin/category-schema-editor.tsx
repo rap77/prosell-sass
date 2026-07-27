@@ -41,6 +41,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -304,6 +314,12 @@ export function CategorySchemaEditor({
 
   const [migrationWarnings, setMigrationWarnings] = useState<string[]>([]);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
+  const [pendingGroupDeletion, setPendingGroupDeletion] = useState<{
+    _id: string;
+    key: string;
+    label: string;
+    fieldCount: number;
+  } | null>(null);
 
   const patchSchema = usePatchCategorySchema();
   const sensors = useSensors(useSensor(PointerSensor));
@@ -396,7 +412,24 @@ export function CategorySchemaEditor({
   };
 
   const handleDeleteGroup = (id: string) => {
-    setGroups((prev) => prev.filter((g) => g._id !== id));
+    const group = groups.find((g) => g._id === id);
+    if (!group) return;
+    const trimmedKey = group.key.trim();
+    const fieldCount = trimmedKey
+      ? rows.filter((row) => row.group === trimmedKey).length
+      : 0;
+    setPendingGroupDeletion({
+      _id: id,
+      key: trimmedKey,
+      label: group.label || trimmedKey || "this group",
+      fieldCount,
+    });
+  };
+
+  const confirmDeleteGroup = () => {
+    if (!pendingGroupDeletion) return;
+    setGroups((prev) => prev.filter((g) => g._id !== pendingGroupDeletion._id));
+    setPendingGroupDeletion(null);
   };
 
   const handleSave = async (force = false) => {
@@ -405,12 +438,26 @@ export function CategorySchemaEditor({
     );
     const schemaMap = toSchemaMap(rows, groupKeySet);
     const groupList = toGroupList(groups);
+    const removedGroups = groupList.filter(
+      (g) =>
+        !groupKeySet.has(g.key) ||
+        !groups.some((local) => local.key.trim() === g.key && local._id !== ""),
+    );
+    const orphanedFieldCount = Array.from(rows).filter(
+      (row) =>
+        row.group &&
+        row.group.trim().length > 0 &&
+        !groupKeySet.has(row.group.trim()),
+    ).length;
     try {
       const updated = await patchSchema.mutateAsync({
         categoryId,
         schema: schemaMap,
         groups: groupList,
         force: force || undefined,
+        orphanedFieldCount,
+        removedGroupLabel:
+          removedGroups.length > 0 ? removedGroups[0].label : null,
       });
       const updatedGroupMap = new Map(
         (updated.attribute_groups ?? []).map((g) => {
@@ -504,6 +551,46 @@ export function CategorySchemaEditor({
                 />
               ))}
             </div>
+
+            {/* Confirm group deletion */}
+            <AlertDialog
+              open={pendingGroupDeletion !== null}
+              onOpenChange={(open) => !open && setPendingGroupDeletion(null)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete attribute group</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {pendingGroupDeletion?.fieldCount ? (
+                      <>
+                        The group <strong>{pendingGroupDeletion.label}</strong>{" "}
+                        has {pendingGroupDeletion.fieldCount} field
+                        {pendingGroupDeletion.fieldCount === 1 ? "" : "s"}{" "}
+                        assigned. On save those fields will be reassigned to{" "}
+                        <strong>No group</strong>. You can pick another group
+                        for them from the Group column before saving.
+                      </>
+                    ) : (
+                      <>
+                        Delete the group{" "}
+                        <strong>{pendingGroupDeletion?.label}</strong>? This
+                        will not affect any field.
+                      </>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => setPendingGroupDeletion(null)}
+                  >
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDeleteGroup}>
+                    Delete group
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </SortableContext>
         </DndContext>
       </div>

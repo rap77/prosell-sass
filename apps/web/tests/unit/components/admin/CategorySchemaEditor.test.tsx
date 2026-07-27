@@ -228,6 +228,42 @@ describe("CategorySchemaEditor", () => {
     });
   });
 
+  it("prompts for confirmation before deleting a group with assigned fields", async () => {
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /delete group basic/i }),
+    );
+
+    expect(
+      await screen.findByText(/delete attribute group/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1 field/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/delete attribute group/i)).toBeNull();
+    });
+    expect(screen.getByDisplayValue("Basic Info")).toBeInTheDocument();
+  });
+
+  it("removes the group from state when the confirmation is accepted", async () => {
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /delete group basic/i }),
+    );
+
+    await screen.findByText(/delete attribute group/i);
+    await userEvent.click(
+      screen.getByRole("button", { name: /^delete group$/i }),
+    );
+
+    expect(screen.queryByDisplayValue("basic")).toBeNull();
+    expect(screen.queryByDisplayValue("Basic Info")).toBeNull();
+  });
+
   it("removes the deleted group row from the panel after save", async () => {
     mockMutate.mockResolvedValue({
       ...mockSchema,
@@ -241,6 +277,10 @@ describe("CategorySchemaEditor", () => {
       name: /delete group details/i,
     });
     await userEvent.click(detailsDelete);
+    await screen.findByText(/delete attribute group/i);
+    await userEvent.click(
+      screen.getByRole("button", { name: /^delete group$/i }),
+    );
 
     expect(screen.queryByDisplayValue("Details")).toBeNull();
     expect(screen.queryByDisplayValue("details")).toBeNull();
@@ -269,6 +309,10 @@ describe("CategorySchemaEditor", () => {
 
     await userEvent.click(
       screen.getByRole("button", { name: /delete group basic/i }),
+    );
+    await screen.findByText(/delete attribute group/i);
+    await userEvent.click(
+      screen.getByRole("button", { name: /^delete group$/i }),
     );
 
     await userEvent.click(screen.getByRole("button", { name: /save/i }));
