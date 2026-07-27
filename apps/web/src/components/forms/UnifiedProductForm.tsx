@@ -63,6 +63,7 @@ import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
+import type { Broker } from "@/lib/api/schemas/organizations";
 import type { CategoryNode } from "@/types/category";
 import type { ProductAttributes } from "@/types/vehicle";
 
@@ -143,6 +144,24 @@ interface BrokerEntry {
   id: string;
   owner_id: string;
   percentage: string;
+}
+
+export function findBrokerByOwnerId(
+  brokers: Broker[],
+  ownerId: string,
+): Broker | undefined {
+  return brokers.find((broker) => broker.user_id === ownerId);
+}
+
+export function getSelectableBrokers(
+  brokers: Broker[],
+  selectedOwnerIds: ReadonlySet<string>,
+  currentOwnerId: string,
+): Broker[] {
+  return brokers.filter(
+    (broker) =>
+      broker.id === currentOwnerId || !selectedOwnerIds.has(broker.id),
+  );
 }
 
 export function UnifiedProductForm({
@@ -812,8 +831,9 @@ export function UnifiedProductForm({
                     {brokers.length > 0 && (
                       <ul className="mt-2 list-inside list-disc text-sm">
                         {pendingBrokers.map((b) => {
-                          const brokerInfo = brokers.find(
-                            (br) => br.id === b.owner_id,
+                          const brokerInfo = findBrokerByOwnerId(
+                            brokers,
+                            b.owner_id,
                           );
                           // Skip if broker not found (stale data)
                           if (!brokerInfo) return null;
@@ -917,7 +937,7 @@ export function UnifiedProductForm({
                           {broker.owner_id ? (
                             <span className="flex items-center gap-2 truncate">
                               <User className="h-4 w-4" />
-                              {brokers.find((b) => b.id === broker.owner_id)
+                              {findBrokerByOwnerId(brokers, broker.owner_id)
                                 ?.name ?? broker.owner_id}
                             </span>
                           ) : (
@@ -927,32 +947,30 @@ export function UnifiedProductForm({
                           )}
                         </SelectTrigger>
                         <SelectContent>
-                          {brokers
-                            .filter(
-                              (b) =>
-                                b.id === broker.owner_id ||
-                                !selectedBrokerIds.has(b.id),
-                            )
-                            .map((brokerOption) => (
-                              <SelectItem
-                                key={brokerOption.id}
-                                value={brokerOption.id}
-                                textValue={brokerOption.name}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4" />
-                                  {brokerOption.name}
-                                  <span className="text-xs text-muted-foreground">
-                                    ({brokerOption.email})
+                          {getSelectableBrokers(
+                            brokers,
+                            selectedBrokerIds,
+                            broker.owner_id,
+                          ).map((brokerOption) => (
+                            <SelectItem
+                              key={brokerOption.id}
+                              value={brokerOption.user_id ?? brokerOption.id}
+                              textValue={brokerOption.name}
+                            >
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                {brokerOption.name}
+                                <span className="text-xs text-muted-foreground">
+                                  ({brokerOption.email})
+                                </span>
+                                {brokerOption.status === "pending" && (
+                                  <span className="text-[10px] text-orange-500">
+                                    (pendiente)
                                   </span>
-                                  {brokerOption.status === "pending" && (
-                                    <span className="text-[10px] text-orange-500">
-                                      (pendiente)
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))}
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
 

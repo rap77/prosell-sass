@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { UnifiedProductForm } from "./UnifiedProductForm";
+import {
+  UnifiedProductForm,
+  findBrokerByOwnerId,
+  getSelectableBrokers,
+} from "./UnifiedProductForm";
+import type { Broker } from "@/lib/api/schemas/organizations";
 
 // ponytail: minimal test wrapper for TanStack Query
 function TestWrapper({ children }: { children: React.ReactNode }) {
@@ -42,6 +47,61 @@ const mockCategory = {
     },
   ],
 } as any; // ponytail: simplified mock, full type not needed for tests
+
+const BROKERS: Broker[] = [
+  {
+    id: "broker-1",
+    name: "Ana Broker",
+    email: "ana@example.com",
+    phone: null,
+    user_id: "user-1",
+    status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    verified_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "broker-2",
+    name: "Pending Broker",
+    email: "pending@example.com",
+    phone: null,
+    user_id: null,
+    status: "pending",
+    created_at: "2026-01-01T00:00:00Z",
+    verified_at: null,
+  },
+  {
+    id: "broker-3",
+    name: "Luis Broker",
+    email: "luis@example.com",
+    phone: null,
+    user_id: "user-3",
+    status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    verified_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+describe("UnifiedProductForm broker select identity", () => {
+  it("resolves a stored user owner id to the broker label", () => {
+    expect(findBrokerByOwnerId(BROKERS, "user-1")?.name).toBe("Ana Broker");
+    expect(findBrokerByOwnerId(BROKERS, "user-3")?.name).toBe("Luis Broker");
+    expect(findBrokerByOwnerId(BROKERS, "broker-1")).toBeUndefined();
+  });
+
+  it("preserves the original dedup behavior (always returns the broker list)", () => {
+    const selectable = getSelectableBrokers(
+      BROKERS,
+      new Set(["user-1", "user-3"]),
+      "user-1",
+    );
+
+    expect(selectable.map((broker) => broker.id)).toEqual([
+      "broker-1",
+      "broker-2",
+      "broker-3",
+    ]);
+  });
+});
 
 describe("UnifiedProductForm Wizard (Mobile)", () => {
   beforeEach(() => {
