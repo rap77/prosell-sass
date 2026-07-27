@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -14,7 +14,7 @@ vi.mock("@dnd-kit/core", async () => {
   return {
     ...actual,
     DndContext: ({ children }: { children: ReactNode }) => (
-      <div>{children}</div>
+      <div data-testid="dnd-context">{children}</div>
     ),
   };
 });
@@ -23,11 +23,11 @@ vi.mock("@dnd-kit/sortable", async () => {
   return {
     ...actual,
     SortableContext: ({ children }: { children: ReactNode }) => (
-      <div>{children}</div>
+      <div data-testid="sortable-context">{children}</div>
     ),
-    useSortable: () => ({
-      attributes: {},
-      listeners: {},
+    useSortable: ({ id }: { id: string }) => ({
+      attributes: { "data-sortable-id": id },
+      listeners: { "data-listener-id": id },
       setNodeRef: vi.fn(),
       transform: null,
       transition: null,
@@ -45,7 +45,11 @@ const mockSchema: CategorySchemaResponse = {
     vin: { type: "string", required: true },
     year: { type: "number", required: false, group: "basic" },
   },
-  attribute_groups: [{ key: "basic", label: "Basic Info", order: 0 }],
+  attribute_groups: [
+    { key: "basic", label: "Basic Info", order: 0 },
+    { key: "details", label: "Details", order: 1 },
+    { key: "pricing", label: "Pricing", order: 2 },
+  ],
   schema_version: "2026-06-25T12:00:00Z",
   updated_at: "2026-06-25T12:00:00Z",
   migration_warnings: [],
@@ -174,6 +178,53 @@ describe("CategorySchemaEditor", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Schema migration required")).toBeDefined();
+    });
+  });
+
+  it("renders a drag handle for each attribute group", () => {
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+    const handles = screen.getAllByLabelText(/reorder attribute group/i);
+    expect(handles.length).toBe(mockSchema.attribute_groups.length);
+  });
+
+  it("hides group drag handles in read-only mode", () => {
+    render(
+      <CategorySchemaEditor
+        categoryId="cat-1"
+        schema={mockSchema}
+        isReadOnly
+      />,
+    );
+    expect(screen.queryByLabelText(/reorder attribute group/i)).toBeNull();
+  });
+
+  it("sends groups in the reordered order after a drag in the attribute groups panel", async () => {
+    mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    const sortableContexts = screen.getAllByTestId("sortable-context");
+    const groupsPanel = sortableContexts[0];
+    expect(groupsPanel).toBeDefined();
+
+    const handles = screen.getAllByLabelText(/reorder attribute group/i);
+    const firstHandle = handles[0];
+    const lastHandle = handles[handles.length - 1];
+
+    fireEvent.keyDown(firstHandle, { key: " ", code: "Space" });
+    fireEvent.keyDown(lastHandle, { key: " ", code: "Space" });
+
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groups: expect.arrayContaining([
+            expect.objectContaining({ key: "pricing" }),
+            expect.objectContaining({ key: "basic" }),
+            expect.objectContaining({ key: "details" }),
+          ]),
+        }),
+      );
     });
   });
 });

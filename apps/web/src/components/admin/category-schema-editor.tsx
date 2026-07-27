@@ -134,7 +134,7 @@ function SortableRow({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {FIELD_TYPES.map((t) => (
+              {FIELD_TYPE_ORDER.map((t) => (
                 <SelectItem key={t} value={t}>
                   {t}
                 </SelectItem>
@@ -198,10 +198,91 @@ function SortableRow({
 const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `field-${Date.now()}-${Math.random()}`;
 
-const FIELD_TYPES = ["string", "number", "boolean", "array", "object"] as const;
-type FieldType = (typeof FIELD_TYPES)[number];
-const isFieldType = (v: string): v is FieldType =>
-  (FIELD_TYPES as readonly string[]).includes(v);
+const FIELD_TYPES = {
+  string: "string",
+  number: "number",
+  boolean: "boolean",
+  array: "array",
+  object: "object",
+} as const;
+type FieldType = keyof typeof FIELD_TYPES;
+const FIELD_TYPE_ORDER: readonly FieldType[] = [
+  "string",
+  "number",
+  "boolean",
+  "array",
+  "object",
+];
+function isFieldType(v: string): v is FieldType {
+  return Object.prototype.hasOwnProperty.call(FIELD_TYPES, v);
+}
+
+function SortableGroupRow({
+  group,
+  isReadOnly,
+  onUpdate,
+  onDelete,
+}: {
+  group: GroupRow;
+  isReadOnly: boolean;
+  onUpdate: (id: string, patch: Partial<GroupRow>) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: group._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  if (isReadOnly) {
+    return (
+      <div ref={setNodeRef} style={style} className="flex items-center gap-2">
+        <span className="text-sm">{group.label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2"
+      data-sortable-group-id={group._id}
+    >
+      <button
+        type="button"
+        aria-label="Reorder attribute group"
+        className="cursor-grab text-muted-foreground"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <Input
+        placeholder="group key"
+        value={group.key}
+        onChange={(e) => onUpdate(group._id, { key: e.target.value })}
+        className="h-7 w-28 font-mono text-xs"
+      />
+      <Input
+        placeholder="group label"
+        value={group.label}
+        onChange={(e) => onUpdate(group._id, { label: e.target.value })}
+        className="h-7 flex-1 text-sm"
+      />
+      <button
+        type="button"
+        onClick={() => onDelete(group._id)}
+        aria-label={`Delete group ${group.label || group.key}`}
+        className="text-destructive hover:text-destructive/80"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 export function CategorySchemaEditor({
   categoryId,
@@ -243,13 +324,33 @@ export function CategorySchemaEditor({
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setRows((prev) => {
+    if (!over || active.id === over.id) return;
+
+    setRows((prev) => {
+      if (
+        prev.some((r) => r._id === active.id) &&
+        prev.some((r) => r._id === over.id)
+      ) {
         const oldIndex = prev.findIndex((r) => r._id === active.id);
         const newIndex = prev.findIndex((r) => r._id === over.id);
         return arrayMove(prev, oldIndex, newIndex);
-      });
-    }
+      }
+      return prev;
+    });
+    setGroups((prev) => {
+      if (
+        prev.some((g) => g._id === active.id) &&
+        prev.some((g) => g._id === over.id)
+      ) {
+        const oldIndex = prev.findIndex((g) => g._id === active.id);
+        const newIndex = prev.findIndex((g) => g._id === over.id);
+        return arrayMove(prev, oldIndex, newIndex).map((g, index) => ({
+          ...g,
+          order: index,
+        }));
+      }
+      return prev;
+    });
   };
 
   const handleAdd = () => {
@@ -338,42 +439,28 @@ export function CategorySchemaEditor({
             No groups defined. Add one to organize fields into sections.
           </p>
         )}
-        <div className="space-y-1">
-          {groups.map((g) => (
-            <div key={g._id} className="flex items-center gap-2">
-              {isReadOnly ? (
-                <span className="text-sm">{g.label}</span>
-              ) : (
-                <>
-                  <Input
-                    placeholder="group key"
-                    value={g.key}
-                    onChange={(e) =>
-                      handleUpdateGroup(g._id, { key: e.target.value })
-                    }
-                    className="h-7 w-28 font-mono text-xs"
-                  />
-                  <Input
-                    placeholder="group label"
-                    value={g.label}
-                    onChange={(e) =>
-                      handleUpdateGroup(g._id, { label: e.target.value })
-                    }
-                    className="h-7 flex-1 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteGroup(g._id)}
-                    aria-label={`Delete group ${g.label || g.key}`}
-                    className="text-destructive hover:text-destructive/80"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </>
-              )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={groups.map((g) => g._id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-1">
+              {groups.map((g) => (
+                <SortableGroupRow
+                  key={g._id}
+                  group={g}
+                  isReadOnly={isReadOnly}
+                  onUpdate={handleUpdateGroup}
+                  onDelete={handleDeleteGroup}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Fields table */}
