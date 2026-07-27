@@ -9,12 +9,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
+import { SelectControlled } from "@/components/ui/select-controlled";
 import type { DecodedVehicle } from "@/lib/api/vehicles";
 import type { AttributeSchemaEntry } from "@/types/category";
 
@@ -110,10 +105,11 @@ export function SchemaFieldRenderer({
           const optionStrings = options.map((o) => String(o));
           const hasCurrentValue =
             currentValue && optionStrings.includes(currentValue);
-          const displayOptions =
+          const displayOptions = (
             hasCurrentValue || !currentValue
               ? options
-              : [field.value, ...options];
+              : [field.value, ...options]
+          ).map((opt) => ({ value: String(opt), label: String(opt) }));
 
           return (
             <div className="flex flex-col gap-2">
@@ -121,33 +117,15 @@ export function SchemaFieldRenderer({
                 {label}
                 {entry.required && <span className="text-destructive"> *</span>}
               </Label>
-              <Select
+              <SelectControlled
+                id={inputId}
                 value={currentValue}
-                onValueChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
+                onChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
+                options={displayOptions}
+                placeholder={`Select ${label}`}
                 disabled={disabled}
-              >
-                <SelectTrigger id={inputId}>
-                  {/* ponytail: render value manually — SelectValue loses ref when SelectContent unmounts */}
-                  {currentValue ? (
-                    <span>{currentValue}</span>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      Select {label}
-                    </span>
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  {displayOptions.map((opt) => (
-                    <SelectItem
-                      key={String(opt)}
-                      value={String(opt)}
-                      textValue={String(opt)}
-                    >
-                      {String(opt)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                aria-label={label}
+              />
               {fieldState.error && (
                 <p className="text-sm text-destructive">
                   {fieldState.error.message}
