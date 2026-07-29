@@ -29,6 +29,7 @@ from prosell.infrastructure.api.routers import (
     category_inference_router,
     category_router,
     facebook_router,
+    fb_sync_router,
     filter_values_router,
     health_router,
     image_router,
@@ -326,6 +327,12 @@ app.include_router(
     facebook_router,
     prefix="/api/v1",
     tags=["Facebook Marketplace"],
+)
+
+app.include_router(
+    fb_sync_router,
+    prefix="/api/v1",
+    tags=["FB Sync"],
 )
 
 app.include_router(
