@@ -29,35 +29,40 @@ SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
 # ponytail: DTOs inline, single use
 SIGNED_URL_TTL = 3600  # 1 hour
 
+# ponytail: map body_type to FB vehicle_type, default "Car"
+BODY_TYPE_TO_VEHICLE_TYPE: dict[str, str] = {
+    "Pickup": "Truck",
+    "Truck": "Truck",
+    "SUV": "SUV/Crossover",
+    "Crossover": "SUV/Crossover",
+    "Van": "Van/Minivan",
+    "Minivan": "Van/Minivan",
+}
 
-class ProductAttributes(BaseModel):
-    """Attributes subset for FB posting."""
 
+class PendingProduct(BaseModel):
+    """Product ready for FB publication - flat structure matching fb-auto-post."""
+
+    id: UUID
+    title: str
+    price: int  # dollars (not cents)
+    type: str  # Vehicle Type: Car, Truck, SUV/Crossover, Van/Minivan
+    location: str  # "City, State"
     year: int | None = None
     make: str | None = None
     model: str | None = None
     mileage: int | None = None
-    body_type: str | None = None
+    body_style: str | None = None  # FB calls it body_style
     exterior_color: str | None = None
     interior_color: str | None = None
+    clean_title: bool = False
+    state: str = "Usado"  # Vehicle Condition: Nuevo, Usado
     fuel_type: str | None = None
     transmission: str | None = None
-    clean_title: bool | None = None
+    description: str | None = None
     vin: str | None = None
-
-
-class PendingProduct(BaseModel):
-    """Product ready for FB publication."""
-
-    id: UUID
-    title: str
-    price: int  # cents
-    currency: str
-    description: str | None
-    location_city: str | None
-    location_state: str | None
-    attributes: ProductAttributes
-    image_urls: list[str]  # signed URLs
+    option: str = ""  # ponytail: features not in ProSell yet
+    image_urls: list[str]  # signed URLs for download
 
 
 class PendingProductsResponse(BaseModel):
@@ -134,28 +139,44 @@ async def get_pending_products(
 
         # Extract attributes for FB (cast to Any to satisfy pyright)
         attrs = cast(dict[str, Any], p.attributes or {})
+
+        # Derive vehicle_type from body_type
+        body_type = attrs.get("body_type") or ""
+        vehicle_type = BODY_TYPE_TO_VEHICLE_TYPE.get(body_type, "Car")
+
+        # Combine location
+        city = p.location_city or ""
+        state = p.location_state or ""
+        location = f"{city}, {state}".strip(", ") if city or state else "Florida"
+
+        # Map condition to FB state
+        condition_map = {"new": "Nuevo", "used": "Usado", "certified_pre_owned": "Usado"}
+        fb_state = condition_map.get(p.condition, "Usado")
+
+        # Clean title: 1 = has clean title, 0 = no
+        clean_title = bool(attrs.get("clean_title"))
+
         pending.append(
             PendingProduct(
                 id=p.id,
                 title=p.title,
-                price=p.price_cents,
-                currency=p.currency,
+                price=p.price_cents // 100,  # cents → dollars
+                type=vehicle_type,
+                location=location,
+                year=attrs.get("year"),
+                make=attrs.get("make"),
+                model=attrs.get("model"),
+                mileage=attrs.get("mileage"),
+                body_style=body_type,
+                exterior_color=attrs.get("exterior_color"),
+                interior_color=attrs.get("interior_color"),
+                clean_title=clean_title,
+                state=fb_state,
+                fuel_type=attrs.get("fuel_type"),
+                transmission=attrs.get("transmission"),
                 description=p.description,
-                location_city=p.location_city,
-                location_state=p.location_state,
-                attributes=ProductAttributes(
-                    year=attrs.get("year"),
-                    make=attrs.get("make"),
-                    model=attrs.get("model"),
-                    mileage=attrs.get("mileage"),
-                    body_type=attrs.get("body_type"),
-                    exterior_color=attrs.get("exterior_color"),
-                    interior_color=attrs.get("interior_color"),
-                    fuel_type=attrs.get("fuel_type"),
-                    transmission=attrs.get("transmission"),
-                    clean_title=attrs.get("clean_title"),
-                    vin=attrs.get("vin"),
-                ),
+                vin=attrs.get("vin"),
+                option="",  # ponytail: not in ProSell yet
                 image_urls=signed_urls,
             )
         )
