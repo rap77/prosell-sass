@@ -8,6 +8,7 @@ from prosell.infrastructure.api.routers.auth_router import router as auth_router
 from prosell.infrastructure.api.routers.branch_router import router as branch_router
 from prosell.infrastructure.api.routers.category_router import router as category_router
 from prosell.infrastructure.api.routers.facebook_router import router as facebook_router
+from prosell.infrastructure.api.routers.fb_account_router import router as fb_account_router
 from prosell.infrastructure.api.routers.fb_sync_router import router as fb_sync_router
 from prosell.infrastructure.api.routers.health_router import router as health_router
 from prosell.infrastructure.api.routers.image_router import router as image_router
@@ -33,6 +34,7 @@ __all__ = [
     "branch_router",
     "category_router",
     "facebook_router",
+    "fb_account_router",
     "fb_sync_router",
     "filter_values_router",
     "health_router",

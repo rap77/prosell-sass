@@ -9,6 +9,11 @@ from prosell.infrastructure.models.facebook_account_model import (
     FacebookAccountModel,
     FacebookPageModel,
 )
+from prosell.infrastructure.models.fb_account_model import (
+    FBAccountGroupModel,
+    FBAccountModel,
+    FBGroupCategory,
+)
 from prosell.infrastructure.models.lead_model import LeadAuditLogModel, LeadModel
 from prosell.infrastructure.models.marketplace_publication_model import (
     MarketplacePublicationModel,
@@ -45,6 +50,9 @@ __all__ = [
     "BulkUploadErrorModel",
     "CategoryModel",
     "CategorySchemaChangeModel",
+    "FBAccountGroupModel",
+    "FBAccountModel",
+    "FBGroupCategory",
     "FacebookAccountModel",
     "FacebookPageModel",
     "LeadAuditLogModel",

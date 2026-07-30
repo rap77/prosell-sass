@@ -4,6 +4,7 @@ Endpoints for fb-auto-post bot to sync product publications.
 """
 
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Annotated, Any, Literal, cast
 from uuid import UUID, uuid4
 
@@ -11,15 +12,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import get_spaces_service
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.fb_account_model import FBAccountModel
 from prosell.infrastructure.models.marketplace_publication_model import (
     MarketplacePublicationModel,
 )
 from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.services.fb_encryption_service import get_fb_encryption_service
 
 router = APIRouter(prefix="/fb-sync", tags=["fb-sync"])
 
@@ -235,6 +239,161 @@ async def sync_callback(
         publication_id=publication_id,
         status=pub_status,
     )
+
+
+# =============================================================================
+# FB ACCOUNTS ENDPOINTS (for bot to fetch credentials)
+# =============================================================================
+
+
+class FBAccountSummary(BaseModel):
+    """Account summary for bot listing."""
+
+    id: UUID
+    email: str
+    alias: str | None
+    status: str
+    groups_count: int
+
+
+class FBAccountsResponse(BaseModel):
+    """Response for GET /accounts."""
+
+    accounts: list[FBAccountSummary]
+
+
+class FBGroupConfig(BaseModel):
+    """Group config for bot."""
+
+    position: int
+    fb_group_id: str | None
+    name: str | None
+    category: str
+
+
+class FBAccountConfig(BaseModel):
+    """Full account config with decrypted password for bot."""
+
+    id: UUID
+    email: str
+    password: str  # decrypted
+    browser: str
+    language: str
+    time_to_sleep: Decimal
+    groups: list[FBGroupConfig]
+
+
+@router.get("/accounts", response_model=FBAccountsResponse)
+async def get_accounts(db: DbSession) -> FBAccountsResponse:
+    """List active FB accounts for bot to iterate.
+
+    ponytail: no auth for now, bot uses internal network.
+    Add X-Bot-Token header auth when exposed externally.
+    """
+    query = (
+        select(FBAccountModel)
+        .where(FBAccountModel.status == "active")
+        .options(selectinload(FBAccountModel.groups))
+    )
+    result = await db.execute(query)
+    accounts = result.scalars().all()
+
+    return FBAccountsResponse(
+        accounts=[
+            FBAccountSummary(
+                id=a.id,
+                email=a.email,
+                alias=a.alias,
+                status=a.status,
+                groups_count=len([g for g in a.groups if g.is_active]),
+            )
+            for a in accounts
+        ]
+    )
+
+
+@router.get("/account-config", response_model=FBAccountConfig)
+async def get_account_config(
+    db: DbSession,
+    email: EmailStr = Query(..., description="FB account email"),
+) -> FBAccountConfig:
+    """Get full account config with decrypted password.
+
+    Bot calls this to login to FB with stored credentials.
+    """
+    query = (
+        select(FBAccountModel)
+        .where(FBAccountModel.email == email)
+        .where(FBAccountModel.status == "active")
+        .options(selectinload(FBAccountModel.groups))
+    )
+    result = await db.execute(query)
+    account = result.scalar_one_or_none()
+
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Active account with email {email} not found",
+        )
+
+    # Decrypt password
+    encryption = get_fb_encryption_service()
+    password = encryption.decrypt(account.password_encrypted, str(account.tenant_id))
+
+    return FBAccountConfig(
+        id=account.id,
+        email=account.email,
+        password=password,
+        browser=account.browser,
+        language=account.language,
+        time_to_sleep=account.time_to_sleep,
+        groups=[
+            FBGroupConfig(
+                position=g.position,
+                fb_group_id=g.fb_group_id,
+                name=g.name,
+                category=g.category.value,
+            )
+            for g in account.groups
+            if g.is_active
+        ],
+    )
+
+
+class AccountStatusRequest(BaseModel):
+    """Bot reports account health."""
+
+    account_email: EmailStr
+    status: Literal["active", "suspended", "restricted"]
+    error: str | None = None
+
+
+@router.post("/account-status", status_code=status.HTTP_200_OK)
+async def report_account_status(
+    request: AccountStatusRequest,
+    db: DbSession,
+) -> dict[str, str]:
+    """Bot reports account status (suspended, restricted, etc)."""
+    query = select(FBAccountModel).where(FBAccountModel.email == request.account_email)
+    result = await db.execute(query)
+    account = result.scalar_one_or_none()
+
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Account {request.account_email} not found",
+        )
+
+    now = datetime.now(UTC)
+    account.status = request.status
+    if request.error:
+        account.last_error = request.error
+        account.last_error_at = now
+    account.updated_at = now
+
+    await db.commit()
+
+    return {"status": "updated"}
 
 
 __all__ = ["router"]
