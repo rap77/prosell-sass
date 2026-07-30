@@ -10,24 +10,31 @@ the recipe below.
 
 ## What's installed where
 
-| Component                                 | Scope   | Path                                                                    |
-| ----------------------------------------- | ------- | ----------------------------------------------------------------------- |
-| graphify CLI (binary)                     | user    | `~/.local/bin/graphify` (via `uv tool install`)                         |
-| graphify MCP server                       | user    | `~/.local/bin/graphify-mcp`                                             |
-| Custom provider config (MiniMax)          | user    | `~/.graphify/providers.json`                                            |
-| API keys                                  | user    | `~/.config/mastermind/secrets.env`                                      |
-| Skills (Claude Code / Codex / OpenCode)   | user    | `~/.claude/skills/graphify/`, `~/.codex/...`, `~/.config/opencode/...`  |
-| Wrapper script (`graphify-extract-smart`) | user    | `~/.local/bin/graphify-extract-smart`                                   |
-| Project wrapper (mirror)                  | project | `.bin/graphify-extract-smart.sh`                                        |
-| Project template (`providers.json`)       | project | `.bin/templates/graphify-providers.json`                                |
-| Git hooks (post-commit / -checkout)       | project | `.git/hooks/post-{commit,checkout}`                                     |
-| IDE hooks (Claude/Codex/OpenCode)         | project | `.claude/settings.json`, `.codex/hooks.json`, `.opencode/opencode.json` |
-| `.graphifyignore`                         | project | `<project>/.graphifyignore`                                             |
-| `graphify-out/` output                    | project | `<project>/graphify-out/`                                               |
+| Component                               | Scope   | Path                                                                    |
+| --------------------------------------- | ------- | ----------------------------------------------------------------------- |
+| graphify CLI (binary)                   | user    | `~/.local/bin/graphify` (via `uv tool install`)                         |
+| graphify MCP server                     | user    | `~/.local/bin/graphify-mcp`                                             |
+| Custom provider config (MiniMax)        | user    | `~/.graphify/providers.json`                                            |
+| API keys                                | user    | `~/.config/mastermind/secrets.env`                                      |
+| Skills (Claude Code / Codex / OpenCode) | user    | `~/.claude/skills/graphify/`, `~/.codex/...`, `~/.config/opencode/...`  |
+| Project wrapper                         | project | `.bin/graphify-extract-smart.sh`                                        |
+| Project template (`providers.json`)     | project | `.bin/templates/graphify-providers.json`                                |
+| Git hooks (post-commit / -checkout)     | project | `.git/hooks/post-{commit,checkout}`                                     |
+| IDE hooks (Claude/Codex/OpenCode)       | project | `.claude/settings.json`, `.codex/hooks.json`, `.opencode/opencode.json` |
+| `.graphifyignore`                       | project | `<project>/.graphifyignore`                                             |
+| `graphify-out/` output                  | project | `<project>/graphify-out/`                                               |
 
-The pattern: **user-level state lives in HOME, project-level state
-lives in the repo.** API keys and the `minimax` custom provider are
-per-user. Hooks, ignores, and project wrapper mirror are per-project.
+**❌ Do NOT install the wrapper script into `~/.local/bin/` or anywhere
+shared between projects.** Each project must keep its own
+`.bin/graphify-extract-smart.sh` and be invoked from inside the project
+root. Sharing the wrapper globally would let one project's invocation
+silently read another project's `graphify-out/` or write to the wrong
+secrets file.
+
+The pattern: **only stateless identity/config lives in HOME
+(graphify CLI binary, custom provider config, API keys, skill
+definitions). Anything stateful or project-specific lives in the
+repo.**
 
 ## One-time per-machine setup (new dev, new machine)
 
@@ -50,13 +57,11 @@ mkdir -p ~/.graphify ~/.config/mastermind
 cp .bin/templates/graphify-providers.json ~/.graphify/providers.json
 # Edit ~/.graphify/providers.json to confirm MiniMax endpoint
 # Copy your secrets.env into ~/.config/mastermind/secrets.env (perm 0600)
-
-# 5. Install wrapper globally so it works across projects
-cp .bin/graphify-extract-smart.sh ~/.local/bin/graphify-extract-smart
-chmod +x ~/.local/bin/graphify-extract-smart
 ```
 
-After this, `graphify-extract-smart --check` works from any directory.
+The wrapper script `.bin/graphify-extract-smart.sh` is per-project and
+should NOT be installed globally. Invoke it from inside the project:
+`./.bin/graphify-extract-smart.sh --check`.
 
 ## One-time per-project setup (new repo, new clone)
 
@@ -77,10 +82,7 @@ graphify claude install
 graphify opencode install
 graphify codex install
 
-# 4. Manual: copy the project wrapper if you want
-cp .bin/graphify-extract-smart.sh ~/.local/bin/graphify-extract-smart
-
-# 5. Generate the initial graph
+# 4. Generate the initial graph
 graphify update .
 ```
 
@@ -149,16 +151,29 @@ Quoted savings (~25% completion tokens, 100% reasoning tokens):
 completion_tokens=51, reasoning_tokens=21 → completion_tokens=38, reasoning_tokens=0
 ```
 
-## Why the wrapper is global, not per-project
+## Why the wrapper is per-project, not global
 
-The wrapper has no hardcoded paths to anything project-specific. It
-takes the project directory as an argument (or `cd` and run without
-arg). It loads `~/.config/mastermind/secrets.env` and
-`~/.graphify/providers.json` from `$HOME` regardless of CWD.
+The wrapper **could** be installed globally — it has no hardcoded
+paths to anything project-specific, it takes the project directory as
+an argument (or `cd` and run without arg), it loads the API keys and
+provider config from `$HOME` regardless of CWD.
 
-A copy is mirrored in `.bin/graphify-extract-smart.sh` as a backup so
-the project stays self-contained for new contributors — but invoking
-`graphify-extract-smart` from anywhere on the system uses the HOME copy.
+But that would let one project's invocation silently read another
+project's `graphify-out/` or trigger writes to the wrong secrets
+file. Worse: an AI assistant running in project A might inherit
+global state that belongs to project B (e.g. a teammate's stale hook
+or temporary experimental provider). Keeping the wrapper inside each
+repo means:
+
+- `cd` into a project → only its own wrapper sees its own graph
+- AI sessions are project-scoped by construction (no global to leak
+  into other contexts)
+- Each project's behaviour can evolve independently
+- A new project's setup is reproducible just by copying
+  `.bin/graphify-extract-smart.sh` + `.bin/templates/`
+
+The per-project copy in `.bin/graphify-extract-smart.sh` is the only
+copy. Don't install it globally.
 
 ## Troubleshooting
 
