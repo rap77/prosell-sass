@@ -1,15 +1,21 @@
 #!/usr/bin/env zsh
 # graphify-extract-smart.sh - Smart fallback chain for graphify semantic extraction.
 #
-# Backends tried in order:
+# Two modes:
+#   --auto       (default in post-commit hook): CHEAP, local-only.
+#                Uses ollama + --no-cluster. No API cost, no reasoning tokens.
+#   --full       (default in this wrapper): full extraction with LLM clustering.
+#                Tries Gemini → MiniMax → Ollama in order.
+#
+# Backends tried in --full mode:
 #   1. Gemini     (cloud, fast, cheap) — requires GEMINI_API_KEY
 #   2. MiniMax    (OpenAI-compatible)  — requires MINIMAX_API_KEY + MINIMAX_BASE_URL
 #   3. Ollama     (local fallback)     — requires OLLAMA_BASE_URL + OLLAMA_MODEL
 #
 # MiniMax available models (from GET /v1/models on api.minimax.io):
-#   MiniMax-M3                  ← flagship, latest
+#   MiniMax-M3                  ← flagship, latest (jul 2026)
 #   MiniMax-M2.7-highspeed      ← Starter plan default (balance cost/speed)
-#   MiniMax-M2.7                ← Starter plan, sin optimization de velocidad
+#   MiniMax-M2.7                ← Starter plan (no highspeed)
 #   MiniMax-M2.5-highspeed      ← Older tiers only (NOT in Starter)
 #   MiniMax-M2.5                ← Older tiers only
 #   MiniMax-M2.1-highspeed      ← Older tiers only
@@ -17,18 +23,20 @@
 #   MiniMax-M2                  ← Legacy
 #
 # Starter plan quota: ~0.5B tokens/month for text/image/speech COMBINED.
-# Max concurrency: 1-2 agents. Default in this wrapper: 1 (safe).
-# Override with --concurrency=N if you have a higher tier.
+# --auto mode = ZERO tokens consumed (ollama local, no LLM call).
+# --full mode = up to 0.5B tokens consumed per full extract.
 #
 # IMPORTANT: this script is zsh (not bash) because the user's dotfiles are
 # zsh-only. Running this from bash requires sourcing the secrets.env first.
 #
 # Usage:
-#   .bin/graphify-extract-smart.sh [PROJECT_PATH]
-#   .bin/graphify-extract-smart.sh --check          # only probe which backends work
-#   .bin/graphify-extract-smart.sh --backend=X      # force a specific backend
-#   .bin/graphify-extract-smart.sh --list-models    # list available MiniMax models
-#   .bin/graphify-extract-smart.sh --model=X        # override MiniMax model
+#   .bin/graphify-extract-smart.sh [PROJECT_PATH]            # default: --full
+#   .bin/graphify-extract-smart.sh --auto [PROJECT_PATH]     # ollama + no-cluster, no tokens
+#   .bin/graphify-extract-smart.sh --full [PROJECT_PATH]     # full LLM extract with fallback
+#   .bin/graphify-extract-smart.sh --check                   # only probe which backends work
+#   .bin/graphify-extract-smart.sh --backend=X               # force a specific backend
+#   .bin/graphify-extract-smart.sh --list-models             # list available MiniMax models
+#   .bin/graphify-extract-smart.sh --model=X                 # override MiniMax model
 #   .bin/graphify-extract-smart.sh --help
 #
 # Exit codes:
@@ -47,8 +55,8 @@ MINIMAX_BASE_URL="${MINIMAX_BASE_URL:-https://api.minimax.io/v1}"
 MINIMAX_MODEL="${MINIMAX_MODEL:-MiniMax-M2.7-highspeed}"
 OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://127.0.0.1:11434/v1}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
-# Max concurrency for MiniMax extraction. Starter allows 1-2; default 1 is safe.
-# Override with MAX_CONCURRENCY=N for higher tiers or local ollama.
+# Max concurrency. Starter allows 1-2; default 1 is safe for cloud. Override
+# with MAX_CONCURRENCY=N for higher tiers or local ollama (4-12 is fine there).
 MAX_CONCURRENCY="${MAX_CONCURRENCY:-1}"
 
 # ---------- Args ----------
@@ -56,15 +64,18 @@ PROJECT_PATH="."
 SELF_CHECK=0
 LIST_MODELS=0
 FORCED_BACKEND=""
+MODE="full"   # 'auto' (ollama + no-cluster) or 'full' (Gemini→MiniMax→Ollama fallback)
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --auto) MODE="auto"; shift ;;
+        --full) MODE="full"; shift ;;
         --check) SELF_CHECK=1; shift ;;
         --list-models) LIST_MODELS=1; shift ;;
         --backend=*) FORCED_BACKEND="${1#*=}"; shift ;;
         --model=*) MINIMAX_MODEL="${1#*=}"; shift ;;
         --help|-h)
-            sed -n '2,30p' "$0"
+            sed -n '2,40p' "$0"
             exit 0
             ;;
         -*) echo "Unknown flag: $1" >&2; exit 3 ;;
@@ -119,7 +130,6 @@ probe_minimax() {
 probe_ollama() {
     [ -n "${OLLAMA_BASE_URL:-}" ] || { echo "    (OLLAMA_BASE_URL not set, skip)"; return 1; }
     echo "    probing ollama tags..."
-    # Ollama native API is on /api/tags (not OpenAI-compatible /v1)
     native_url="${OLLAMA_BASE_URL%/v1}/api/tags"
     code=$(timeout 8 curl -s -o /dev/null -w "%{http_code}" \
         "$native_url" 2>/dev/null || echo "000")
@@ -144,10 +154,24 @@ for m in sorted(data.get('data', []), key=lambda x: -x.get('created', 0)):
 "
 }
 
+# ---------- Runners ----------
+# --auto mode: local-only, zero tokens, no LLM thinking.
+# Used by post-commit hooks and watch daemons. Mirrors the pattern from
+# ~/proy/mastermind/.claude/hooks/refresh-graphify.sh.
+run_auto() {
+    echo ">> Running graphify in --auto mode (ollama + --no-cluster, 0 tokens consumed)"
+    OLLAMA_BASE_URL="$OLLAMA_BASE_URL" \
+    OLLAMA_MODEL="$OLLAMA_MODEL" \
+    GRAPHIFY_QUERY_LOG_DISABLE=1 \
+    GRAPHIFY_NO_BACKUP=1 \
+    GRAPHIFY_MAX_WORKERS=1 \
+    graphify update . --no-cluster
+}
+
 run_gemini() {
-    echo ">> Running graphify with backend=gemini (gemini-3-flash-preview)"
+    echo ">> Running graphify with backend=gemini (gemini-3-flash-preview, --full mode)"
     graphify extract . --backend gemini --model "gemini-3-flash-preview" \
-        --max-concurrency 1 --out .
+        --max-concurrency "$MAX_CONCURRENCY" --out .
 }
 
 run_minimax() {
@@ -183,6 +207,7 @@ if [ $SELF_CHECK -eq 1 ]; then
     echo "  MINIMAX_MODEL:    $MINIMAX_MODEL"
     echo "  OLLAMA_BASE_URL:  $OLLAMA_BASE_URL"
     echo "  OLLAMA_MODEL:     $OLLAMA_MODEL"
+    echo "  MAX_CONCURRENCY:  $MAX_CONCURRENCY"
     echo ""
     echo "Available env vars:"
     echo "  GEMINI_API_KEY:   ${GEMINI_API_KEY:+SET (${#GEMINI_API_KEY} chars)}"
@@ -197,7 +222,27 @@ if [ $SELF_CHECK -eq 1 ]; then
     echo "  gemini:  $([ $gemini_ok -eq 1 ] && echo "✅ READY" || echo "❌ NOT READY")"
     echo "  minimax: $([ $minimax_ok -eq 1 ] && echo "✅ READY" || echo "❌ NOT READY")"
     echo "  ollama:  $([ $ollama_ok -eq 1 ] && echo "✅ READY" || echo "❌ NOT READY")"
+    echo ""
+    echo "Modes:"
+    echo "  --auto  : ollama + --no-cluster, 0 tokens (use for post-commit)"
+    echo "  --full  : Gemini→MiniMax→Ollama fallback (default; consumes tokens)"
     exit 0
+fi
+
+# ---------- Auto mode (cheap, local-only) ----------
+if [ "$MODE" = "auto" ]; then
+    echo "═══════════════════════════════════════════════════════"
+    echo "  graphify --auto (ollama + --no-cluster, 0 tokens)"
+    echo "═══════════════════════════════════════════════════════"
+    echo ""
+    if probe_ollama && run_auto; then
+        exit 0
+    fi
+    echo ""
+    echo "═══════════════════════════════════════════════════════"
+    echo "  ❌ --auto failed (ollama unreachable)"
+    echo "═══════════════════════════════════════════════════════"
+    exit 1
 fi
 
 # ---------- Forced backend mode ----------
@@ -211,9 +256,9 @@ if [ -n "$FORCED_BACKEND" ]; then
     exit 0
 fi
 
-# ---------- Fallback chain ----------
+# ---------- Full mode: fallback chain ----------
 echo "═══════════════════════════════════════════════════════"
-echo "  graphify-extract-smart.sh: fallback chain"
+echo "  graphify --full (Gemini→MiniMax→Ollama fallback)"
 echo "═══════════════════════════════════════════════════════"
 echo ""
 
