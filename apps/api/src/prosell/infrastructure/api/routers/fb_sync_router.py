@@ -23,7 +23,11 @@ from prosell.infrastructure.api.dependencies import (
     verify_bot_token,
 )
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.models.fb_account_model import FBAccountModel
+from prosell.infrastructure.models.fb_account_model import (
+    FBAccountModel,
+    FBPublicationHistoryModel,
+    FBPublicationStatusModel,
+)
 from prosell.infrastructure.models.marketplace_publication_model import (
     MarketplacePublicationModel,
 )
@@ -114,6 +118,14 @@ class PendingProductsResponse(BaseModel):
     products: list[PendingProduct]
 
 
+class FBGroupPosted(BaseModel):
+    """Group info from bot callback."""
+
+    position: int
+    fb_group_id: str | None = None
+    name: str | None = None
+
+
 class SyncCallbackRequest(BaseModel):
     """Bot reports publication result."""
 
@@ -121,9 +133,13 @@ class SyncCallbackRequest(BaseModel):
     status: Literal["published", "failed"]
     account_email: EmailStr
     account_alias: str | None = None
-    fb_groups: list[int] = Field(default_factory=list)
+    # New: structured group info
+    fb_groups: list[FBGroupPosted] = Field(default_factory=list)
+    # Legacy: just positions (kept for backwards compat)
+    fb_group_positions: list[int] = Field(default_factory=list)
     fb_post_id: str | None = None  # if published
     error: str | None = None  # if failed
+    error_code: str | None = None  # rate_limit, suspended, post_limit, etc.
 
 
 class SyncCallbackResponse(BaseModel):
@@ -262,7 +278,10 @@ async def sync_callback(
 ) -> SyncCallbackResponse:
     """Bot reports publication result (success or failure).
 
-    Creates a marketplace_publications record tracking the result.
+    Creates records in:
+    - fb_publication_history (immutable event log)
+    - fb_publication_status (consolidated state)
+    - marketplace_publications (legacy, kept for backwards compat)
     """
     # Get product to fetch tenant_id
     product = await db.get(ProductModel, request.product_id)
@@ -291,16 +310,93 @@ async def sync_callback(
 
     now = datetime.now(UTC)
     publication_id = uuid4()
+    history_id = uuid4()
 
     if request.status == "published":
         pub_status = "active"
+        event_type = "published"
         expires_at = now + timedelta(days=7)
         error_msg = None
     else:
         pub_status = "failed"
-        expires_at = now  # doesn't matter for failed
+        event_type = "failed"
+        expires_at = now
         error_msg = request.error
 
+    # Build groups posted JSON
+    groups_posted = [g.model_dump() for g in request.fb_groups] if request.fb_groups else None
+    groups_count = len(request.fb_groups) if request.fb_groups else len(request.fb_group_positions)
+
+    # === NEW: Write to fb_publication_history ===
+    if fb_account:
+        history = FBPublicationHistoryModel(
+            id=history_id,
+            tenant_id=product.tenant_id,
+            product_id=request.product_id,
+            fb_account_id=fb_account.id,
+            event_type=event_type,
+            fb_post_id=request.fb_post_id,
+            fb_groups_posted=groups_posted,
+            groups_count=groups_count,
+            error_message=error_msg,
+            error_code=request.error_code,
+            event_at=now,
+            expires_at=expires_at if event_type == "published" else None,
+        )
+        db.add(history)
+
+        # === NEW: Upsert fb_publication_status ===
+        status_query = select(FBPublicationStatusModel).where(
+            FBPublicationStatusModel.product_id == request.product_id,
+            FBPublicationStatusModel.fb_account_id == fb_account.id,
+        )
+        status_result = await db.execute(status_query)
+        pub_status_row = status_result.scalar_one_or_none()
+
+        if pub_status_row:
+            # Update existing
+            pub_status_row.status = pub_status
+            pub_status_row.last_event_id = history_id
+            pub_status_row.last_event_at = now
+            if event_type == "published":
+                pub_status_row.publication_count += 1
+                pub_status_row.last_published_at = now
+                if not pub_status_row.first_published_at:
+                    pub_status_row.first_published_at = now
+            else:
+                pub_status_row.failure_count += 1
+        else:
+            # Create new
+            pub_status_row = FBPublicationStatusModel(
+                id=uuid4(),
+                tenant_id=product.tenant_id,
+                product_id=request.product_id,
+                fb_account_id=fb_account.id,
+                status=pub_status,
+                last_event_id=history_id,
+                last_event_at=now,
+                publication_count=1 if event_type == "published" else 0,
+                failure_count=0 if event_type == "published" else 1,
+                first_published_at=now if event_type == "published" else None,
+                last_published_at=now if event_type == "published" else None,
+            )
+            db.add(pub_status_row)
+
+        # Update account metrics
+        fb_account.last_used_at = now
+        if event_type == "published":
+            fb_account.total_publications += 1
+        else:
+            fb_account.total_failures += 1
+            fb_account.last_error = error_msg
+            fb_account.last_error_at = now
+
+    # === LEGACY: Write to marketplace_publications (backwards compat) ===
+    # ponytail: keep until dashboard migrates to new tables
+    if request.fb_groups:
+        legacy_groups = [g.position for g in request.fb_groups]
+    else:
+        legacy_groups = request.fb_group_positions
     publication = MarketplacePublicationModel(
         id=publication_id,
         product_id=request.product_id,
@@ -308,15 +404,15 @@ async def sync_callback(
         platform="facebook",
         account_email=request.account_email,
         account_alias=request.account_alias,
-        fb_groups=request.fb_groups,
+        fb_groups=legacy_groups,
         fb_post_id=request.fb_post_id,
         published_at=now,
         expires_at=expires_at,
         status=pub_status,
         error_message=error_msg,
     )
-
     db.add(publication)
+
     await db.commit()
 
     return SyncCallbackResponse(
