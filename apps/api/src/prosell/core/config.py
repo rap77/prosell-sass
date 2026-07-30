@@ -61,9 +61,12 @@ class Settings(BaseSettings):
     # =============================================================================
     # DATABASE
     # =============================================================================
+    # In dev, set DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/prosell_dev
+    # in .env (matches docker/docker-compose.yml). In staging/prod, ALWAYS provide
+    # DATABASE_URL via env — no credential defaults are committed to source.
     database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/prosell_dev",
-        description="PostgreSQL database URL (async)",
+        default="postgresql+asyncpg://localhost:5432/prosell_dev",
+        description="PostgreSQL database URL (async). Provide via DATABASE_URL env var.",
     )
     database_pool_size: int = Field(
         default=10,
@@ -307,13 +310,16 @@ class Settings(BaseSettings):
     # =============================================================================
     # STRIPE (Payments)
     # =============================================================================
-    stripe_secret_key: str = Field(
-        default="sk_test_...",
-        description="Stripe secret key (test or live)",
+    # Always provide via STRIPE_SECRET_KEY / STRIPE_PUBLISHABLE_KEY env vars.
+    # No defaults committed — placeholder values would look like real keys and
+    # risk leaking into logs / error messages.
+    stripe_secret_key: str | None = Field(
+        default=None,
+        description="Stripe secret key (test or live). Required for billing.",
     )
-    stripe_publishable_key: str = Field(
-        default="pk_test_...",
-        description="Stripe publishable key (test or live)",
+    stripe_publishable_key: str | None = Field(
+        default=None,
+        description="Stripe publishable key (test or live). Required for billing.",
     )
     stripe_webhook_secret: str | None = Field(
         default=None,
@@ -421,6 +427,18 @@ class Settings(BaseSettings):
     test_api_key: str | None = Field(
         default=None,
         description="API key for test exemption (set in test environment)",
+    )
+
+    # =============================================================================
+    # FB SYNC BOT
+    # =============================================================================
+    # Shared secret used by fb-auto-post bot to authenticate against
+    # /api/v1/fb-sync/* endpoints. Sent via X-Bot-Token header.
+    # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+    fb_bot_api_key: str | None = Field(
+        default=None,
+        description="Shared secret for fb-auto-post bot auth (X-Bot-Token header). "
+        "Required in staging/production; bot endpoints refuse requests without it.",
     )
 
     # =============================================================================

@@ -3,32 +3,71 @@
 Endpoints for fb-auto-post bot to sync product publications.
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Annotated, Any, Literal, cast
+from typing import Annotated, Literal, TypedDict, cast
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.value_objects.product_status import ProductStatus
-from prosell.infrastructure.api.dependencies import get_spaces_service
+from prosell.infrastructure.api.dependencies import (
+    FBEncryption,
+    get_spaces_service,
+    verify_bot_token,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.fb_account_model import FBAccountModel
 from prosell.infrastructure.models.marketplace_publication_model import (
     MarketplacePublicationModel,
 )
 from prosell.infrastructure.models.product_model import ProductModel
-from prosell.infrastructure.services.fb_encryption_service import get_fb_encryption_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/fb-sync", tags=["fb-sync"])
 
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
+
+
+class _VehicleAttributes(TypedDict, total=False):
+    """TypedDict for the subset of product attributes the bot needs.
+
+    JSONB-backed `products.attributes` is `dict[str, object]`; we narrow with
+    `cast` so the bot payload has type-safe access without `Any`.
+    """
+
+    year: int
+    make: str
+    model: str
+    mileage: int
+    body_type: str
+    exterior_color: str
+    interior_color: str
+    clean_title: bool
+    fuel_type: str
+    transmission: str
+    vin: str
+
+
+def _int_attr(attrs: _VehicleAttributes, key: str) -> int | None:
+    """Runtime-validated int getter for vehicle attributes."""
+    val = attrs.get(key)
+    return val if isinstance(val, int) and not isinstance(val, bool) else None
+
+
+def _str_attr(attrs: _VehicleAttributes, key: str) -> str | None:
+    """Runtime-validated str getter for vehicle attributes."""
+    val = attrs.get(key)
+    return val if isinstance(val, str) else None
+
 
 # ponytail: DTOs inline, single use
 SIGNED_URL_TTL = 3600  # 1 hour
@@ -82,7 +121,7 @@ class SyncCallbackRequest(BaseModel):
     status: Literal["published", "failed"]
     account_email: EmailStr
     account_alias: str | None = None
-    fb_groups: list[int] = []
+    fb_groups: list[int] = Field(default_factory=list)
     fb_post_id: str | None = None  # if published
     error: str | None = None  # if failed
 
@@ -94,7 +133,11 @@ class SyncCallbackResponse(BaseModel):
     status: str
 
 
-@router.get("/pending", response_model=PendingProductsResponse)
+@router.get(
+    "/pending",
+    response_model=PendingProductsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
 async def get_pending_products(
     db: DbSession,
     spaces: SpacesService,
@@ -107,7 +150,20 @@ async def get_pending_products(
     - Are published in ProSell (status=published)
     - Are marked for marketplace (published_to_marketplace=true)
     - Have NOT been published by this account yet
+    - Belong to the SAME tenant as the FB account (multi-tenant scoping)
     """
+    # Resolve FB account first to scope by tenant. Refuse if account is missing
+    # or inactive — a bot hitting an unknown email is a misconfiguration, not
+    # an empty result.
+    account_query = select(FBAccountModel).where(FBAccountModel.email == account_email)
+    account_result = await db.execute(account_query)
+    fb_account = account_result.scalar_one_or_none()
+    if not fb_account or fb_account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Active FB account {account_email} not found",
+        )
+
     # Subquery: products already published by this account
     published_subq = (
         select(MarketplacePublicationModel.product_id)
@@ -115,9 +171,10 @@ async def get_pending_products(
         .where(MarketplacePublicationModel.status.in_(["active", "pending"]))
     )
 
-    # Main query: published products not in subquery
+    # Main query: tenant-scoped published products not in subquery
     query = (
         select(ProductModel)
+        .where(ProductModel.tenant_id == fb_account.tenant_id)
         .where(ProductModel.status == ProductStatus.PUBLISHED)
         .where(ProductModel.published_to_marketplace.is_(True))
         .where(ProductModel.id.not_in(published_subq))
@@ -137,15 +194,19 @@ async def get_pending_products(
             try:
                 signed = await spaces.generate_download_url(url, expires_in=SIGNED_URL_TTL)
                 signed_urls.append(signed)
-            except Exception:
-                # Skip broken URLs
+            except (ValueError, OSError, KeyError) as exc:
+                # Storage client can fail in many ways (missing key, network,
+                # malformed URL). Skip but log so ops can investigate.
+                logger.warning("Skipping image URL for product %s: %s", p.id, exc)
                 continue
 
-        # Extract attributes for FB (cast to Any to satisfy pyright)
-        attrs = cast(dict[str, Any], p.attributes or {})
+        # Narrow product attributes JSONB to typed vehicle keys. We trust the
+        # static shape (TypedDict) for pyright but validate each value with
+        # isinstance at runtime since JSONB can hold anything.
+        attrs = cast(_VehicleAttributes, p.attributes or {})
 
         # Derive vehicle_type from body_type
-        body_type = attrs.get("body_type") or ""
+        body_type = _str_attr(attrs, "body_type") or ""
         vehicle_type = BODY_TYPE_TO_VEHICLE_TYPE.get(body_type, "Car")
 
         # Combine location
@@ -157,8 +218,9 @@ async def get_pending_products(
         condition_map = {"new": "Nuevo", "used": "Usado", "certified_pre_owned": "Usado"}
         fb_state = condition_map.get(p.condition, "Usado")
 
-        # Clean title: 1 = has clean title, 0 = no
-        clean_title = bool(attrs.get("clean_title"))
+        # Clean title: must be an actual bool (not "false" string from JSONB)
+        _clean_title = attrs.get("clean_title")
+        clean_title = isinstance(_clean_title, bool) and _clean_title
 
         pending.append(
             PendingProduct(
@@ -167,19 +229,19 @@ async def get_pending_products(
                 price=p.price_cents // 100,  # cents → dollars
                 type=vehicle_type,
                 location=location,
-                year=attrs.get("year"),
-                make=attrs.get("make"),
-                model=attrs.get("model"),
-                mileage=attrs.get("mileage"),
+                year=_int_attr(attrs, "year"),
+                make=_str_attr(attrs, "make"),
+                model=_str_attr(attrs, "model"),
+                mileage=_int_attr(attrs, "mileage"),
                 body_style=body_type,
-                exterior_color=attrs.get("exterior_color"),
-                interior_color=attrs.get("interior_color"),
+                exterior_color=_str_attr(attrs, "exterior_color"),
+                interior_color=_str_attr(attrs, "interior_color"),
                 clean_title=clean_title,
                 state=fb_state,
-                fuel_type=attrs.get("fuel_type"),
-                transmission=attrs.get("transmission"),
+                fuel_type=_str_attr(attrs, "fuel_type"),
+                transmission=_str_attr(attrs, "transmission"),
                 description=p.description,
-                vin=attrs.get("vin"),
+                vin=_str_attr(attrs, "vin"),
                 option="",  # ponytail: not in ProSell yet
                 image_urls=signed_urls,
             )
@@ -188,7 +250,12 @@ async def get_pending_products(
     return PendingProductsResponse(products=pending)
 
 
-@router.post("/callback", response_model=SyncCallbackResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/callback",
+    response_model=SyncCallbackResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_bot_token)],
+)
 async def sync_callback(
     request: SyncCallbackRequest,
     db: DbSession,
@@ -203,6 +270,23 @@ async def sync_callback(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product {request.product_id} not found",
+        )
+
+    # Verify the FB account exists, is active, AND belongs to the same
+    # tenant as the product. This prevents a bot token from being used to
+    # cross-post publications across tenants.
+    account_query = select(FBAccountModel).where(FBAccountModel.email == request.account_email)
+    account_result = await db.execute(account_query)
+    fb_account = account_result.scalar_one_or_none()
+    if fb_account is None or fb_account.tenant_id != product.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="FB account does not belong to the product's tenant",
+        )
+    if fb_account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"FB account is {fb_account.status}, cannot create publication",
         )
 
     now = datetime.now(UTC)
@@ -283,7 +367,11 @@ class FBAccountConfig(BaseModel):
     groups: list[FBGroupConfig]
 
 
-@router.get("/accounts", response_model=FBAccountsResponse)
+@router.get(
+    "/accounts",
+    response_model=FBAccountsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
 async def get_accounts(db: DbSession) -> FBAccountsResponse:
     """List active FB accounts for bot to iterate.
 
@@ -312,9 +400,14 @@ async def get_accounts(db: DbSession) -> FBAccountsResponse:
     )
 
 
-@router.get("/account-config", response_model=FBAccountConfig)
+@router.get(
+    "/account-config",
+    response_model=FBAccountConfig,
+    dependencies=[Depends(verify_bot_token)],
+)
 async def get_account_config(
     db: DbSession,
+    encryption: FBEncryption,
     email: EmailStr = Query(..., description="FB account email"),
 ) -> FBAccountConfig:
     """Get full account config with decrypted password.
@@ -336,8 +429,7 @@ async def get_account_config(
             detail=f"Active account with email {email} not found",
         )
 
-    # Decrypt password
-    encryption = get_fb_encryption_service()
+    # Decrypt password via injected service
     password = encryption.decrypt(account.password_encrypted, str(account.tenant_id))
 
     return FBAccountConfig(
@@ -361,19 +453,40 @@ async def get_account_config(
 
 
 class AccountStatusRequest(BaseModel):
-    """Bot reports account health."""
+    """Bot reports account health.
+
+    Tenant scope is derived server-side from the resolved FB account —
+    never trusted from the client (per project tenant-isolation rule).
+    """
 
     account_email: EmailStr
     status: Literal["active", "suspended", "restricted"]
     error: str | None = None
 
 
-@router.post("/account-status", status_code=status.HTTP_200_OK)
+class AccountStatusResponse(BaseModel):
+    """Response for POST /account-status."""
+
+    status: str
+    account_email: EmailStr
+    updated_at: datetime
+
+
+@router.post(
+    "/account-status",
+    response_model=AccountStatusResponse,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_bot_token)],
+)
 async def report_account_status(
     request: AccountStatusRequest,
     db: DbSession,
-) -> dict[str, str]:
-    """Bot reports account status (suspended, restricted, etc)."""
+) -> AccountStatusResponse:
+    """Bot reports account status (suspended, restricted, etc).
+
+    Resolves the account by email and uses its tenant_id for the scope —
+    the request body never carries a tenant_id.
+    """
     query = select(FBAccountModel).where(FBAccountModel.email == request.account_email)
     result = await db.execute(query)
     account = result.scalar_one_or_none()
@@ -393,7 +506,11 @@ async def report_account_status(
 
     await db.commit()
 
-    return {"status": "updated"}
+    return AccountStatusResponse(
+        status="updated",
+        account_email=account.email,
+        updated_at=now,
+    )
 
 
 __all__ = ["router"]

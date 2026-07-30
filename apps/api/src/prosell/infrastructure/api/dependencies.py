@@ -4,6 +4,7 @@ from __future__ import annotations
 
 __all__ = ["get_async_session"]
 
+import secrets
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from typing import TYPE_CHECKING, Annotated
@@ -57,7 +58,7 @@ if TYPE_CHECKING:
 # module's global namespace. The domain interface types are imported at module
 # level to ensure they are available for resolution.
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -127,6 +128,10 @@ from prosell.infrastructure.services.email import (
     EmailTemplateRenderer,
     LoggingSender,
     ResendSender,
+)
+from prosell.infrastructure.services.fb_encryption_service import (
+    FBEncryptionService,
+    get_fb_encryption_service,
 )
 from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 from prosell.infrastructure.services.password_service import PasswordService
@@ -274,6 +279,45 @@ def get_oauth_service() -> IOAuthService:
 # =============================================================================
 # AUTH DEPENDENCIES
 # =============================================================================
+
+
+async def verify_bot_token(
+    x_bot_token: Annotated[str | None, Header(alias="X-Bot-Token")] = None,
+) -> None:
+    """Authenticate requests from the fb-auto-post bot.
+
+    Validates the X-Bot-Token header against settings.fb_bot_api_key using
+    constant-time comparison. Raises 401 if the key is missing, misconfigured,
+    or doesn't match.
+
+    NOTE: this is a minimal shared-secret scheme for the internal bot only.
+    It does NOT scope by tenant — bot endpoints must additionally verify that
+    the requested product/account belongs to the expected tenant.
+    """
+    expected = settings.fb_bot_api_key
+    if not expected:
+        # Misconfiguration: secret not set. Fail closed.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Bot auth not configured on server",
+        )
+    if not x_bot_token or not secrets.compare_digest(x_bot_token, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing bot token",
+        )
+
+
+def get_fb_encryption_service_dep() -> FBEncryptionService:
+    """FastAPI DI alias for the FB encryption service.
+
+    Used by fb_sync_router so credentials decryption goes through proper
+    dependency injection (matching project patterns in auth/products).
+    """
+    return get_fb_encryption_service()
+
+
+FBEncryption = Annotated[FBEncryptionService, Depends(get_fb_encryption_service_dep)]
 
 
 _http_bearer = HTTPBearer(scheme_name="JWT", bearerFormat="JWT")
