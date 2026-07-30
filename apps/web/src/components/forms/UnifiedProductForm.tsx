@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertTriangle,
   Building2,
+  Facebook,
   Loader2,
   Plus,
   Trash2,
@@ -191,6 +192,8 @@ export function UnifiedProductForm({
   const [pendingTransferOrgId, setPendingTransferOrgId] = useState<
     string | null
   >(null);
+  // Facebook Marketplace toggle - use existing value as initial, track local override
+  const [fbOverride, setFbOverride] = useState<boolean | null>(null);
   const initializedOwnershipProductId = useRef<string | null>(null);
   const { data: organizations = [] } = useOrganizations();
   const { data: brokers = [], isLoading: isLoadingBrokers } =
@@ -267,6 +270,11 @@ export function UnifiedProductForm({
     mode === "edit" ? productId : undefined,
   );
 
+  // Derived FB state (must be after existingProduct declaration)
+  const publishToFB =
+    fbOverride ?? existingProduct?.published_to_marketplace ?? false;
+  const fbDirty = fbOverride !== null;
+
   // Build schema from category
   // React 19: useMemo JUSTIFIED - schema derivation walks attribute_schema (O(n) complexity),
   // expensive on large categories (100+ fields); memoization prevents re-running buildZodSchema
@@ -311,9 +319,11 @@ export function UnifiedProductForm({
   useEffect(() => {
     if (mode !== "edit") {
       initializedOwnershipProductId.current = null;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional reset on mode change
+      /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on mode change */
       setPendingBrokers([]);
       setSelectedOrgId(null);
+      setFbOverride(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [mode]);
 
@@ -327,6 +337,7 @@ export function UnifiedProductForm({
       setSelectedOrgId(null);
       setOrgDirty(false);
       setBrokersDirty(false);
+      setFbOverride(null);
     }
   }, [mode, productId]);
 
@@ -488,6 +499,8 @@ export function UnifiedProductForm({
       attributes,
       image_urls: imageKeys,
       ...(coverKey ? { cover_image_key: coverKey } : {}),
+      // ponytail: FB marketplace toggle only sent when dirty
+      ...(fbDirty ? { published_to_marketplace: publishToFB } : {}),
     };
   };
 
@@ -714,6 +727,31 @@ export function UnifiedProductForm({
             </div>
           )}
         />
+      </section>
+
+      {/* Facebook Marketplace */}
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Facebook className="h-5 w-5 text-blue-600" />
+          Facebook Marketplace
+        </h2>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={publishToFB}
+            onChange={(e) => setFbOverride(e.target.checked)}
+            disabled={isDisabled}
+            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div>
+            <span className="font-medium">
+              Publicar en Facebook Marketplace
+            </span>
+            <p className="text-sm text-muted-foreground">
+              El bot publicará este producto en los grupos de FB configurados
+            </p>
+          </div>
+        </label>
       </section>
 
       {/* Tenant cascade — two distinct blocks:

@@ -21,6 +21,7 @@ import {
   Building2,
   FileUp,
   Layers,
+  Facebook,
 } from "lucide-react";
 
 /**
@@ -103,6 +104,12 @@ const navigationItems: NavItem[] = [
     label: "Importar CSV cliente",
     href: "/admin/import-client-csv",
     icon: FileUp,
+    group: "concesionarios",
+  },
+  {
+    label: "Cuentas FB",
+    href: "/admin/fb-accounts",
+    icon: Facebook,
     group: "concesionarios",
   },
   // Configuración group (admin/branch only)

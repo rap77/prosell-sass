@@ -122,6 +122,11 @@ export interface CreateProductRequest {
    * cross-field invariant (cover must be in image_urls).
    */
   cover_image_key?: string | null;
+  /**
+   * Mark product for Facebook Marketplace publication.
+   * Gated behind Permission.MARKETPLACE_PUBLISH at the backend.
+   */
+  published_to_marketplace?: boolean;
 }
 
 /**
