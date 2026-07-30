@@ -9,13 +9,20 @@
 #
 # Backends tried in --full mode:
 #   1. Gemini     (cloud, fast, cheap) — requires GEMINI_API_KEY
-#   2. MiniMax    (OpenAI-compatible)  — requires MINIMAX_API_KEY + MINIMAX_BASE_URL
+#   2. MiniMax    (OpenAI-compatible)  — requires MINIMAX_API_KEY
+#                       Defined as custom provider in ~/.graphify/providers.json
+#                       with `extra_body: {thinking: {type: disabled}}` — this
+#                       DISABLES reasoning tokens (saves ~20-30% per call).
+#                       Critical for graph extraction: reasoning tokens are
+#                       wasted because the task is structured JSON, not open
+#                       reasoning. Only MiniMax-M3 supports this flag; the
+#                       M2.x family ignores it.
 #   3. Ollama     (local fallback)     — requires OLLAMA_BASE_URL + OLLAMA_MODEL
 #
 # MiniMax available models (from GET /v1/models on api.minimax.io):
-#   MiniMax-M3                  ← flagship, latest (jul 2026)
-#   MiniMax-M2.7-highspeed      ← Starter plan default (balance cost/speed)
-#   MiniMax-M2.7                ← Starter plan (no highspeed)
+#   MiniMax-M3                  ← flagship + SUPPORTS thinking.disabled (uses this)
+#   MiniMax-M2.7-highspeed      ← Starter plan (ignores thinking.disabled)
+#   MiniMax-M2.7                ← Starter plan (ignores thinking.disabled)
 #   MiniMax-M2.5-highspeed      ← Older tiers only (NOT in Starter)
 #   MiniMax-M2.5                ← Older tiers only
 #   MiniMax-M2.1-highspeed      ← Older tiers only
@@ -175,10 +182,11 @@ run_gemini() {
 }
 
 run_minimax() {
-    echo ">> Running graphify with backend=openai (MiniMax @ $MINIMAX_BASE_URL, model=$MINIMAX_MODEL, max-concurrency=$MAX_CONCURRENCY)"
-    OPENAI_BASE_URL="$MINIMAX_BASE_URL" \
-    OPENAI_API_KEY="$MINIMAX_API_KEY" \
-    graphify extract . --backend openai --model "$MINIMAX_MODEL" \
+    echo ">> Running graphify with backend=minimax (custom provider with thinking.disabled, model=$MINIMAX_MODEL, max-concurrency=$MAX_CONCURRENCY)"
+    # Custom provider "minimax" is defined in ~/.graphify/providers.json with
+    # base_url=https://api.minimax.io/v1 and extra_body={thinking:{type:disabled}}.
+    # That extra_body is what saves ~20-30% tokens per call.
+    graphify extract . --backend minimax --model "$MINIMAX_MODEL" \
         --max-concurrency "$MAX_CONCURRENCY" --out .
 }
 
@@ -225,7 +233,17 @@ if [ $SELF_CHECK -eq 1 ]; then
     echo ""
     echo "Modes:"
     echo "  --auto  : ollama + --no-cluster, 0 tokens (use for post-commit)"
-    echo "  --full  : Gemini→MiniMax→Ollama fallback (default; consumes tokens)"
+    echo "  --full  : Gemini→MiniMax (thinking.disabled)→Ollama (default; consumes tokens)"
+    echo ""
+    echo "Critical config:"
+    echo "  Custom provider file: ~/.graphify/providers.json"
+    if [ -f ~/.graphify/providers.json ]; then
+        echo "    ✅ EXISTS"
+        grep -q '"minimax"' ~/.graphify/providers.json && echo "    ✅ minimax provider defined" || echo "    ❌ minimax NOT defined"
+        grep -q '"disabled"' ~/.graphify/providers.json && echo "    ✅ thinking.disabled configured" || echo "    ⚠️  thinking.disabled not set (will waste reasoning tokens)"
+    else
+        echo "    ❌ MISSING — run: ~/.graphify/providers.json must exist with minimax provider"
+    fi
     exit 0
 fi
 

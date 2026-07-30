@@ -1,0 +1,17 @@
+{
+  "_comment": "Template for ~/.graphify/providers.json. Copy this to ~/.graphify/providers.json and edit API keys/base_url as needed. This file is per-user (lives in HOME), not per-project — do NOT commit the real ~/.graphify/providers.json.",
+  "_comment_2": "The 'minimax' provider defines MiniMax as a custom provider for graphify. The extra_body field disables reasoning tokens (saves ~20-30% per call). Only MiniMax-M3 supports this flag; the M2.x family ignores it.",
+  "minimax": {
+    "base_url": "https://api.minimax.io/v1",
+    "default_model": "MiniMax-M3",
+    "env_key": "MINIMAX_API_KEY",
+    "model_env_key": "GRAPHIFY_MINIMAX_MODEL",
+    "extra_body": {
+      "thinking": {
+        "type": "disabled"
+      }
+    },
+    "max_tokens": 16384,
+    "vision": true
+  }
+}
