@@ -59,6 +59,8 @@ class ProductResponse(BaseModel):
     location_zip: str | None = None
     is_featured: bool
     published_to_marketplace: bool
+    # FB accounts assigned to publish this product. Empty = any account.
+    fb_account_ids: list[UUID] = []
     view_count: int
     favorite_count: int
     submitted_for_approval_at: datetime | None = None

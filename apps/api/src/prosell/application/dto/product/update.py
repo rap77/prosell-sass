@@ -39,6 +39,8 @@ class UpdateProductRequest(BaseModel):
     # ORG_ADMIN_VIEW_ALL; the use case clears broker shares on change
     # because they belong to the previous organization, not the product.
     organization_id: UUID | None = None
+    # FB accounts to publish this product. None=no change, []=any account, [ids]=specific.
+    fb_account_ids: list[UUID] | None = None
 
     # Reuse the format validator from create.py. None means
     # "do not change this field" (PATCH semantics); an empty list means

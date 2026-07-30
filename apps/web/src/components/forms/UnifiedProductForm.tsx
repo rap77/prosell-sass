@@ -52,6 +52,7 @@ import {
   useOrganizations,
   useOrganizationBrokers,
 } from "@/lib/api/organizations";
+import { useFBAccounts } from "@/lib/api/fb-accounts";
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -194,6 +195,11 @@ export function UnifiedProductForm({
   >(null);
   // Facebook Marketplace toggle - use existing value as initial, track local override
   const [fbOverride, setFbOverride] = useState<boolean | null>(null);
+  // FB accounts multi-select: null=unchanged, []=any, [ids]=specific
+  const [fbAccountsOverride, setFbAccountsOverride] = useState<string[] | null>(
+    null,
+  );
+  const { data: fbAccounts = [] } = useFBAccounts();
   const initializedOwnershipProductId = useRef<string | null>(null);
   const { data: organizations = [] } = useOrganizations();
   const { data: brokers = [], isLoading: isLoadingBrokers } =
@@ -273,6 +279,10 @@ export function UnifiedProductForm({
   // Derived FB state (must be after existingProduct declaration)
   const publishToFB =
     fbOverride ?? existingProduct?.published_to_marketplace ?? false;
+  // Derived FB accounts: null=not dirty, []=any account, [ids]=specific
+  const selectedFbAccounts =
+    fbAccountsOverride ?? existingProduct?.fb_account_ids ?? [];
+  const fbAccountsDirty = fbAccountsOverride !== null;
   const fbDirty = fbOverride !== null;
 
   // Build schema from category
@@ -501,6 +511,8 @@ export function UnifiedProductForm({
       ...(coverKey ? { cover_image_key: coverKey } : {}),
       // ponytail: FB marketplace toggle only sent when dirty
       ...(fbDirty ? { published_to_marketplace: publishToFB } : {}),
+      // ponytail: FB account assignments only sent when dirty
+      ...(fbAccountsDirty ? { fb_account_ids: selectedFbAccounts } : {}),
     };
   };
 
@@ -752,6 +764,63 @@ export function UnifiedProductForm({
             </p>
           </div>
         </label>
+
+        {/* FB Account multi-select — only visible when publishing */}
+        {publishToFB && fbAccounts.length > 0 && (
+          <div className="ml-8 mt-2 space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Cuentas que publicarán este producto:
+            </p>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedFbAccounts.length === 0}
+                onChange={() => setFbAccountsOverride([])}
+                disabled={isDisabled}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+              />
+              <span className="text-sm">Todas las cuentas</span>
+            </label>
+            {fbAccounts
+              .filter((a) => a.status === "active")
+              .map((account) => (
+                <label
+                  key={account.id}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedFbAccounts.includes(account.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFbAccountsOverride([
+                          ...selectedFbAccounts.filter(
+                            (id) => id !== account.id,
+                          ),
+                          account.id,
+                        ]);
+                      } else {
+                        setFbAccountsOverride(
+                          selectedFbAccounts.filter((id) => id !== account.id),
+                        );
+                      }
+                    }}
+                    disabled={isDisabled || selectedFbAccounts.length === 0}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {account.alias || account.email}
+                    <span className="text-muted-foreground ml-1">
+                      ({account.groups_count} grupos)
+                    </span>
+                  </span>
+                </label>
+              ))}
+            <p className="text-xs text-muted-foreground">
+              Si no seleccionás ninguna, cualquier cuenta activa puede publicar.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Tenant cascade — two distinct blocks:

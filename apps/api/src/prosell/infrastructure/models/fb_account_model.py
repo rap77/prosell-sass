@@ -4,19 +4,27 @@ Separate from FacebookAccountModel which handles OAuth tokens.
 These store email/password for the scraping bot.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from prosell.infrastructure.models.product_model import ProductModel
 
 from sqlalchemy import (
     Boolean,
+    Column,
     DateTime,
     ForeignKey,
     Integer,
     LargeBinary,
     Numeric,
     String,
+    Table,
     Text,
     text,
 )
@@ -25,6 +33,25 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
+
+# Association table for product ↔ fb_account many-to-many
+product_fb_account_assignments = Table(
+    "product_fb_account_assignments",
+    Base.metadata,
+    Column(
+        "product_id",
+        PG_UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "fb_account_id",
+        PG_UUID(as_uuid=True),
+        ForeignKey("fb_accounts.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("assigned_at", DateTime(timezone=True), server_default=text("now()"), nullable=False),
+)
 
 
 class FBGroupCategory(str, Enum):
@@ -93,11 +120,18 @@ class FBAccountModel(Base):
     )
 
     # Relationships
-    groups: Mapped[list["FBAccountGroupModel"]] = relationship(
+    groups: Mapped[list[FBAccountGroupModel]] = relationship(
         "FBAccountGroupModel",
         back_populates="account",
         cascade="all, delete-orphan",
         lazy="selectin",
+    )
+    # Products assigned to this account (many-to-many)
+    assigned_products: Mapped[list[ProductModel]] = relationship(
+        "ProductModel",
+        secondary=product_fb_account_assignments,
+        back_populates="assigned_fb_accounts",
+        lazy="noload",
     )
 
 

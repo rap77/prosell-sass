@@ -20,7 +20,7 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -71,6 +71,7 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
+from prosell.infrastructure.models.fb_account_model import product_fb_account_assignments
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.repositories.category_repository_impl import (
@@ -723,7 +724,17 @@ async def get_product(
 
     # image_urls are returned as bare storage keys. The browser fetches
     # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
-    return ProductResponse.from_entity(product)
+    response = ProductResponse.from_entity(product)
+
+    # ponytail: load FB account assignments inline
+    result = await db.execute(
+        select(product_fb_account_assignments.c.fb_account_id).where(
+            product_fb_account_assignments.c.product_id == product_id
+        )
+    )
+    response.fb_account_ids = [row[0] for row in result.fetchall()]
+
+    return response
 
 
 @router.get("/{product_id}/image-urls", response_model=ProductImageUrlsResponse)
@@ -862,7 +873,7 @@ async def update_product(
 
     try:
         # ponytail: pass product's tenant, not caller's
-        return await use_case.execute(
+        result = await use_case.execute(
             product_id,
             product.tenant_id,
             request,
@@ -874,6 +885,25 @@ async def update_product(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
+
+    # ponytail: sync FB account assignments inline (no use case overhead)
+    if request.fb_account_ids is not None:
+        await db.execute(
+            delete(product_fb_account_assignments).where(
+                product_fb_account_assignments.c.product_id == product_id
+            )
+        )
+        if request.fb_account_ids:
+            await db.execute(
+                product_fb_account_assignments.insert(),
+                [
+                    {"product_id": product_id, "fb_account_id": aid}
+                    for aid in request.fb_account_ids
+                ],
+            )
+        await db.commit()
+
+    return result
 
 
 @router.post("/{product_id}/submit", response_model=ProductResponse)

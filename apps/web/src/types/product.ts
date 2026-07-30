@@ -64,6 +64,8 @@ export interface Product {
   // Visibility
   is_featured: boolean;
   published_to_marketplace?: boolean;
+  /** FB accounts assigned to publish this product. Empty = any account can publish. */
+  fb_account_ids?: string[];
   view_count: number;
   favorite_count: number;
 

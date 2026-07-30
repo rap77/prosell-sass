@@ -165,3 +165,10 @@ class ProductModel(Base):
         foreign_keys=[tenant_id],
         lazy="noload",
     )
+    # FB accounts assigned to publish this product (many-to-many)
+    assigned_fb_accounts = relationship(
+        "FBAccountModel",
+        secondary="product_fb_account_assignments",
+        back_populates="assigned_products",
+        lazy="noload",
+    )

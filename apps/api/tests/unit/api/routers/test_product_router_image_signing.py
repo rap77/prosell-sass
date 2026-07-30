@@ -83,7 +83,10 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
     """Async client with auth overridden (no spaces service needed post-fix)."""
     user = _make_user()
     db = AsyncMock(spec=AsyncSession)
-    db.execute = AsyncMock(return_value=[])
+    # Mock db.execute to return an object with fetchall() for FB account assignments
+    mock_result = AsyncMock()
+    mock_result.fetchall = lambda: []
+    db.execute = AsyncMock(return_value=mock_result)
 
     async def override_session() -> AsyncGenerator[AsyncSession]:
         yield db
