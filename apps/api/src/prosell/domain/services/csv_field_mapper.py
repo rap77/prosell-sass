@@ -285,6 +285,9 @@ class CSVFieldMapper:
         Returns:
             MappedCSVRow with all fields mapped
         """
+        # Normalize column names to lowercase for case-insensitive matching
+        row = {k.lower(): v for k, v in row.items()}
+
         # Parse individual fields
         location = CSVFieldMapper.parse_location(row.get("location"))
         title_status = CSVFieldMapper.parse_title_status(row.get("clean_title"))
@@ -303,7 +306,7 @@ class CSVFieldMapper:
 
         return MappedCSVRow(
             row_number=row_number,
-            vin=row.get("VIN", "").strip(),
+            vin=row.get("vin", "").strip(),
             cod_organization=_truncate(
                 row.get("title", "").strip(), MAX_SHORT_TEXT_LENGTH, "cod_organization", row_number
             )
