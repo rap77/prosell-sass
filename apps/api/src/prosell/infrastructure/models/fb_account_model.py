@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, TypedDict
 from uuid import UUID
 
@@ -67,7 +67,7 @@ product_fb_account_assignments = Table(
 )
 
 
-class FBGroupCategory(str, Enum):
+class FBGroupCategory(StrEnum):
     """Category for FB groups to filter product types."""
 
     VEHICLES = "vehicles"

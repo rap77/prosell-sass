@@ -21,19 +21,30 @@ from pathlib import Path
 # context), so sys.path injection is the lightest option.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from tests.integration._constants import TEST_DB_URL
 
 import prosell.infrastructure.models  # noqa: F401  registers all tables on Base.metadata
 from prosell.infrastructure.database.base import Base
 
+# ENUMs with create_type=False must be created manually before create_all()
+MANUAL_ENUMS = [
+    ("fb_group_category", ["vehicles", "general", "real_estate", "electronics", "other"]),
+]
+
 
 async def main() -> None:
     engine = create_async_engine(TEST_DB_URL)
     async with engine.begin() as conn:
+        # Create ENUMs that have create_type=False in models
+        for enum_name, values in MANUAL_ENUMS:
+            values_sql = ", ".join(f"'{v}'" for v in values)
+            await conn.execute(text(f"DROP TYPE IF EXISTS {enum_name} CASCADE"))
+            await conn.execute(text(f"CREATE TYPE {enum_name} AS ENUM ({values_sql})"))
         await conn.run_sync(Base.metadata.create_all)
     await engine.dispose()
-    print(f"Created {len(Base.metadata.tables)} tables in {TEST_DB_URL}")
+    print(f"Created {len(MANUAL_ENUMS)} ENUMs + {len(Base.metadata.tables)} tables")
 
 
 if __name__ == "__main__":
