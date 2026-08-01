@@ -430,6 +430,14 @@ async def sync_callback(
 # =============================================================================
 
 
+class FBGroupSummary(BaseModel):
+    """Group summary for bot."""
+
+    fb_group_id: str | None
+    name: str | None
+    category: str
+
+
 class FBAccountSummary(BaseModel):
     """Account summary for bot listing."""
 
@@ -438,6 +446,7 @@ class FBAccountSummary(BaseModel):
     alias: str | None
     status: str
     groups_count: int
+    fb_groups: list[FBGroupSummary]
 
 
 class FBAccountsResponse(BaseModel):
@@ -494,6 +503,15 @@ async def get_accounts(db: DbSession) -> FBAccountsResponse:
                 alias=a.alias,
                 status=a.status,
                 groups_count=len([g for g in a.groups if g.is_active]),
+                fb_groups=[
+                    FBGroupSummary(
+                        fb_group_id=g.fb_group_id,
+                        name=g.name,
+                        category=g.category.value if g.category else "general",
+                    )
+                    for g in a.groups
+                    if g.is_active
+                ],
             )
             for a in accounts
         ]
