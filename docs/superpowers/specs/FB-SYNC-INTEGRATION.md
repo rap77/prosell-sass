@@ -1,8 +1,8 @@
 # FB Sync Integration Spec
 
-**Status**: IN PROGRESS
+**Status**: IMPLEMENTED (PR #c6e79363, #5d17e952, #846a1a33, merged 2026-07-30)
 **Author**: Claude + rpadron
-**Date**: 2026-07-28
+**Date**: 2026-07-28 (updated 2026-08-01)
 
 ## Overview
 
@@ -29,65 +29,124 @@ Actualmente:
 │                                                                     │
 │  products ──────────────┐                                           │
 │                         │                                           │
-│  marketplace_publications ◄─── tracking de cada post FB            │
+│  fb_publication_history ◄─── immutable event log                   │
+│  fb_publication_status  ◄─── consolidated state per product/acct   │
+│  marketplace_publications ◄─── legacy (backwards compat)           │
 │                         │                                           │
-│  /api/v1/fb-sync/* ─────┼─── endpoints de sincronización            │
+│  /api/v1/fb-sync/* ─────┼─── endpoints (X-Bot-Token auth)           │
 └─────────────────────────┼───────────────────────────────────────────┘
                           │
-                          │ HTTP (signed URLs, callbacks)
+                          │ HTTP + X-Bot-Token header
                           │
 ┌─────────────────────────▼───────────────────────────────────────────┐
 │  fb-auto-post                                                       │
 │                                                                     │
-│  1. GET /fb-sync/pending ──► download images to /tmp/               │
-│  2. Convert WebP → JPEG                                             │
-│  3. Selenium publish to FB                                          │
-│  4. POST /fb-sync/published ──► report success                      │
-│  5. Cleanup /tmp/                                                   │
+│  1. GET /fb-sync/accounts ──► list active accounts                  │
+│  2. GET /fb-sync/account-config ──► get credentials                 │
+│  3. GET /fb-sync/pending ──► get products for account               │
+│  4. Download images, convert WebP → JPEG                            │
+│  5. Selenium publish to FB                                          │
+│  6. POST /fb-sync/callback ──► report success/failure               │
+│  7. POST /fb-sync/account-status ──► report account health          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Authentication
+
+**All endpoints require `X-Bot-Token` header.**
+
+```
+X-Bot-Token: <shared-secret>
+```
+
+Server validates against `FB_BOT_API_KEY` env var using constant-time comparison.
+
+| Status | Meaning                                         |
+| ------ | ----------------------------------------------- |
+| 401    | Missing or invalid token                        |
+| 403    | Cross-tenant access attempt                     |
+| 409    | Account suspended/restricted                    |
+| 503    | Server misconfigured (`FB_BOT_API_KEY` not set) |
+
+See `docs/BOT-MIGRATION-GUIDE.md` for bot migration details.
+
 ## Data Model
 
-### Table: `marketplace_publications`
+### Table: `fb_publication_history` (NEW)
 
-| Column            | Type         | Description                           |
-| ----------------- | ------------ | ------------------------------------- |
-| `id`              | UUID         | PK                                    |
-| `product_id`      | UUID         | FK → products                         |
-| `tenant_id`       | UUID         | FK → organizations                    |
-| `platform`        | VARCHAR(50)  | "facebook", future: "instagram"       |
-| `account_email`   | VARCHAR(255) | FB account used                       |
-| `account_alias`   | VARCHAR(100) | Friendly name (nullable)              |
-| `fb_groups`       | JSONB        | Array of group IDs [1,2,3,5]          |
-| `fb_post_id`      | VARCHAR(100) | FB's post ID if available             |
-| `published_at`    | TIMESTAMP    | When published                        |
-| `expires_at`      | TIMESTAMP    | published_at + 7 days                 |
-| `last_renewed_at` | TIMESTAMP    | Last renewal (nullable)               |
-| `deleted_at`      | TIMESTAMP    | When deleted (nullable)               |
-| `status`          | VARCHAR(20)  | pending/active/expired/deleted/failed |
-| `renewal_count`   | INTEGER      | Times renewed (default 0)             |
-| `error_message`   | TEXT         | Error details if failed               |
-| `created_at`      | TIMESTAMP    | Record creation                       |
-| `updated_at`      | TIMESTAMP    | Last update                           |
+Immutable event log for every publication attempt.
 
-### Indexes
+| Column             | Type         | Description                             |
+| ------------------ | ------------ | --------------------------------------- |
+| `id`               | UUID         | PK                                      |
+| `tenant_id`        | UUID         | FK → organizations                      |
+| `product_id`       | UUID         | FK → products                           |
+| `fb_account_id`    | UUID         | FK → fb_accounts                        |
+| `event_type`       | VARCHAR(20)  | published, failed, renewed, deleted     |
+| `fb_post_id`       | VARCHAR(100) | FB's post ID (nullable)                 |
+| `fb_groups_posted` | JSONB        | `[{position, fb_group_id, name}]`       |
+| `groups_count`     | INTEGER      | Number of groups posted to              |
+| `error_message`    | TEXT         | Error details (nullable)                |
+| `error_code`       | VARCHAR(50)  | rate_limit, suspended, post_limit, etc. |
+| `event_at`         | TIMESTAMP    | When event occurred                     |
+| `expires_at`       | TIMESTAMP    | event_at + 7 days (nullable)            |
+| `created_at`       | TIMESTAMP    | Record creation                         |
 
-- `ix_marketplace_publications_product_id`
-- `ix_marketplace_publications_status`
-- `ix_marketplace_publications_expires_at`
-- `ix_marketplace_publications_tenant_id`
+### Table: `fb_publication_status` (NEW)
+
+Consolidated state per product+account pair.
+
+| Column               | Type        | Description                 |
+| -------------------- | ----------- | --------------------------- |
+| `id`                 | UUID        | PK                          |
+| `tenant_id`          | UUID        | FK → organizations          |
+| `product_id`         | UUID        | FK → products               |
+| `fb_account_id`      | UUID        | FK → fb_accounts            |
+| `status`             | VARCHAR(20) | active, failed, expired     |
+| `last_event_id`      | UUID        | FK → fb_publication_history |
+| `last_event_at`      | TIMESTAMP   |                             |
+| `publication_count`  | INTEGER     | Total successful posts      |
+| `failure_count`      | INTEGER     | Total failures              |
+| `first_published_at` | TIMESTAMP   |                             |
+| `last_published_at`  | TIMESTAMP   |                             |
+| `created_at`         | TIMESTAMP   |                             |
+| `updated_at`         | TIMESTAMP   |                             |
+
+### Table: `marketplace_publications` (LEGACY)
+
+Kept for backwards compatibility with existing dashboard.
+
+| Column          | Type         | Description             |
+| --------------- | ------------ | ----------------------- |
+| `id`            | UUID         | PK                      |
+| `product_id`    | UUID         | FK → products           |
+| `tenant_id`     | UUID         | FK → organizations      |
+| `platform`      | VARCHAR(50)  | "facebook"              |
+| `account_email` | VARCHAR(255) | FB account used         |
+| `account_alias` | VARCHAR(100) | Friendly name           |
+| `fb_groups`     | JSONB        | `[1, 2, 3]` (positions) |
+| `fb_post_id`    | VARCHAR(100) |                         |
+| `published_at`  | TIMESTAMP    |                         |
+| `expires_at`    | TIMESTAMP    |                         |
+| `status`        | VARCHAR(20)  | active, failed, expired |
+| `error_message` | TEXT         |                         |
+| `created_at`    | TIMESTAMP    |                         |
+| `updated_at`    | TIMESTAMP    |                         |
 
 ## API Endpoints
 
 ### 1. GET `/api/v1/fb-sync/pending`
 
-Returns products approved for FB but without active publication.
+Returns products pending publication for a specific FB account.
+
+**Auth**: `X-Bot-Token` required
 
 **Query params:**
 
-- `account_email` (optional): Filter by specific account
-- `limit` (optional): Max products (default 10)
+- `account_email` (required): FB account email
+- `limit` (optional): Max products (default 10, max 50)
+
+**Tenant scoping**: Returns only products from the same tenant as the FB account.
 
 **Response:**
 
@@ -98,121 +157,160 @@ Returns products approved for FB but without active publication.
       "id": "uuid",
       "title": "2020 Ford Explorer XLT",
       "price": 17800,
-      "currency": "USD",
+      "type": "SUV/Crossover",
+      "location": "Orlando, Florida",
+      "year": 2020,
+      "make": "Ford",
+      "model": "Explorer",
+      "mileage": 70000,
+      "body_style": "SUV",
+      "exterior_color": "Gris",
+      "interior_color": "Negro",
+      "clean_title": false,
+      "state": "Usado",
+      "fuel_type": "Gasolina",
+      "transmission": "Transmisión automática",
       "description": "...",
-      "location_city": "Orlando",
-      "location_state": "Florida",
-      "attributes": {
-        "year": 2020,
-        "make": "Ford",
-        "model": "Explorer",
-        "mileage": 70000,
-        "body_type": "SUV",
-        "exterior_color": "Gris",
-        "interior_color": "Negro",
-        "fuel_type": "Gasolina",
-        "transmission": "Transmisión automática",
-        "clean_title": false,
-        "vin": "1FMSK7DH7LGA77418"
-      },
-      "image_urls": [
-        "https://prosell.nyc3.digitaloceanspaces.com/...?signature=..."
-      ],
-      "video_urls": []
+      "vin": "1FMSK7DH7LGA77418",
+      "option": "",
+      "image_urls": ["https://...?signature=..."]
     }
   ]
 }
 ```
 
-**Note:** URLs are signed with 1-hour TTL.
+**Notes:**
 
-### 2. POST `/api/v1/fb-sync/published`
+- URLs are signed with 1-hour TTL
+- Returns 404 if account not found or inactive
 
-Bot reports successful publication.
+### 2. POST `/api/v1/fb-sync/callback`
+
+Bot reports publication result (success or failure).
+
+**Auth**: `X-Bot-Token` required
 
 **Request:**
 
 ```json
 {
   "product_id": "uuid",
-  "account_email": "juanluisherrera26@hotmail.com",
+  "status": "published",
+  "account_email": "user@example.com",
   "account_alias": "Juan Luis",
-  "fb_groups": [1, 2, 3, 5, 8],
   "fb_post_id": "123456789",
-  "published_at": "2026-07-28T15:30:00Z"
+  "fb_groups": [
+    { "position": 1, "fb_group_id": "111", "name": "Cars Miami" },
+    { "position": 2, "fb_group_id": "222", "name": "Autos Florida" }
+  ],
+  "error": null,
+  "error_code": null
 }
 ```
 
-**Response:** `201 Created` with publication record.
+| Field                | Type   | Required | Notes                                                     |
+| -------------------- | ------ | -------- | --------------------------------------------------------- |
+| `product_id`         | UUID   | Yes      |                                                           |
+| `status`             | string | Yes      | `published` or `failed`                                   |
+| `account_email`      | email  | Yes      |                                                           |
+| `account_alias`      | string | No       |                                                           |
+| `fb_post_id`         | string | No       | Required if published                                     |
+| `fb_groups`          | array  | No       | Preferred (structured)                                    |
+| `fb_group_positions` | array  | No       | Deprecated (just positions)                               |
+| `error`              | string | No       | Error message if failed                                   |
+| `error_code`         | string | No       | `rate_limit`, `suspended`, `post_limit`, `login_required` |
 
-### 3. GET `/api/v1/fb-sync/expiring`
+**Tenant validation**: Server verifies FB account belongs to same tenant as product. Returns 403 if mismatch.
 
-Returns publications expiring soon.
+**Response:** `201 Created`
 
-**Query params:**
+```json
+{
+  "publication_id": "uuid",
+  "status": "active"
+}
+```
 
-- `days` (optional): Days until expiration (default 2)
+### 3. GET `/api/v1/fb-sync/accounts`
+
+List active FB accounts for bot to iterate.
+
+**Auth**: `X-Bot-Token` required
 
 **Response:**
 
 ```json
 {
-  "publications": [
+  "accounts": [
     {
       "id": "uuid",
-      "product_id": "uuid",
-      "product_title": "2020 Ford Explorer",
-      "account_email": "...",
-      "expires_at": "2026-07-30T15:30:00Z",
-      "days_remaining": 2
+      "email": "user@example.com",
+      "alias": "Juan Luis",
+      "status": "active",
+      "groups_count": 5
     }
   ]
 }
 ```
 
-### 4. POST `/api/v1/fb-sync/renewed`
+### 4. GET `/api/v1/fb-sync/account-config`
 
-Bot reports successful renewal (delete + re-publish).
+Get full account config with decrypted password.
+
+**Auth**: `X-Bot-Token` required
+
+**Query params:**
+
+- `email` (required): FB account email
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "password": "decrypted-password",
+  "browser": "firefox",
+  "language": "es",
+  "time_to_sleep": 2.5,
+  "groups": [
+    {
+      "position": 1,
+      "fb_group_id": "111",
+      "name": "Cars Miami",
+      "category": "vehicles"
+    }
+  ]
+}
+```
+
+### 5. POST `/api/v1/fb-sync/account-status`
+
+Bot reports account health (suspended, restricted, etc.).
+
+**Auth**: `X-Bot-Token` required
 
 **Request:**
 
 ```json
 {
-  "publication_id": "uuid",
-  "renewed_at": "2026-07-28T15:30:00Z",
-  "new_fb_post_id": "987654321"
+  "account_email": "user@example.com",
+  "status": "suspended",
+  "error": "Account restricted by Facebook"
 }
 ```
 
-### 5. POST `/api/v1/fb-sync/deleted`
-
-Bot reports deletion.
-
-**Request:**
+**Response:** `200 OK`
 
 ```json
 {
-  "publication_id": "uuid",
-  "deleted_at": "2026-07-28T15:30:00Z"
+  "status": "updated",
+  "account_email": "user@example.com",
+  "updated_at": "2026-07-30T15:30:00Z"
 }
 ```
 
-### 6. POST `/api/v1/fb-sync/failed`
-
-Bot reports failure.
-
-**Request:**
-
-```json
-{
-  "product_id": "uuid",
-  "account_email": "...",
-  "error": "Account temporarily locked",
-  "failed_at": "2026-07-28T15:30:00Z"
-}
-```
-
-## Image/Video Handling
+## Image Handling
 
 ### Flow
 
@@ -241,11 +339,6 @@ def download_product_media(product: dict) -> Path:
         dest = temp_dir / f"img_{i:02d}.jpg"
         img.convert("RGB").save(dest, "JPEG", quality=90)
 
-    for i, url in enumerate(product.get("video_urls", [])):
-        response = requests.get(url, timeout=120)
-        dest = temp_dir / f"video_{i:02d}.mp4"
-        dest.write_bytes(response.content)
-
     return temp_dir
 
 def cleanup_media(temp_dir: Path):
@@ -263,55 +356,16 @@ def cleanup_media(temp_dir: Path):
 
 ## Gaps / Future Work
 
-1. **video_urls**: ProductModel doesn't have video support yet (Sprint A)
-2. **Multi-account rotation**: Distribute posts across accounts
-3. **Rate limiting**: Prevent FB account lockouts
-4. **Scheduling**: Post at optimal times
-5. **Analytics**: Views, engagement from FB (requires scraping)
-
-## Migration
-
-```sql
--- Alembic migration
-CREATE TABLE marketplace_publications (
-    id UUID PRIMARY KEY,
-    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    platform VARCHAR(50) NOT NULL DEFAULT 'facebook',
-    account_email VARCHAR(255) NOT NULL,
-    account_alias VARCHAR(100),
-    fb_groups JSONB DEFAULT '[]',
-    fb_post_id VARCHAR(100),
-    published_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    last_renewed_at TIMESTAMP WITH TIME ZONE,
-    deleted_at TIMESTAMP WITH TIME ZONE,
-    status VARCHAR(20) NOT NULL DEFAULT 'active',
-    renewal_count INTEGER NOT NULL DEFAULT 0,
-    error_message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX ix_marketplace_publications_product_id ON marketplace_publications(product_id);
-CREATE INDEX ix_marketplace_publications_status ON marketplace_publications(status);
-CREATE INDEX ix_marketplace_publications_expires_at ON marketplace_publications(expires_at);
-CREATE INDEX ix_marketplace_publications_tenant_id ON marketplace_publications(tenant_id);
-```
-
-## Effort Estimate
-
-| Task                      | Hours              |
-| ------------------------- | ------------------ |
-| Alembic migration + model | 2                  |
-| DTOs (request/response)   | 1                  |
-| Endpoints (6)             | 4                  |
-| Modify fb-auto-post       | 3                  |
-| Tests                     | 2                  |
-| **Total**                 | **12 (~1.5 days)** |
+1. **Tests**: Unit tests for `verify_bot_token`, tenant scoping
+2. **UI Dashboard**: `/admin/fb-publications` consuming new history/status tables
+3. **Product Detail Tab**: FB History in product detail view
+4. **Renewal endpoints**: `/expiring`, `/renewed` not yet implemented
+5. **Multi-account rotation**: Distribute posts across accounts
+6. **Rate limiting**: Prevent FB account lockouts
+7. **Scheduling**: Post at optimal times
 
 ## Related Documents
 
-- `architecture/fb-prosell-field-mapping` (engram)
-- `architecture/fb-marketplace-masters` (engram)
-- `apps/api/src/prosell/infrastructure/integrations/fb_marketplace_options.json`
+- `docs/BOT-MIGRATION-GUIDE.md` — Bot migration instructions
+- `apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py` — Router implementation
+- `apps/api/src/prosell/infrastructure/api/dependencies.py:verify_bot_token` — Auth dependency
