@@ -169,7 +169,16 @@ class FBAccountGroupModel(Base):
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     category: Mapped[FBGroupCategory] = mapped_column(
-        PG_ENUM(FBGroupCategory, name="fb_group_category", create_type=False),
+        PG_ENUM(
+            FBGroupCategory,
+            name="fb_group_category",
+            create_type=False,
+            # Match the DB enum labels (`vehicles`, `general`, ...), not the
+            # StrEnum `.name`. Without this, SQLAlchemy defaults to `.name`
+            # (uppercase) on read, causing `LookupError` even though the
+            # lowercase value was written successfully.
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         nullable=False,
         server_default="general",
     )
