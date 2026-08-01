@@ -122,6 +122,7 @@ async def init_data() -> None:
 
         if existing_admin:
             print(f"Admin user {admin_email} already exists — skipping (idempotent)")
+            admin_user = existing_admin
         else:
             admin_pass = os.environ["ADMIN_PASSWORD"]
             password_hash = bcrypt.hashpw(admin_pass.encode("utf-8"), bcrypt.gensalt()).decode(
@@ -129,7 +130,7 @@ async def init_data() -> None:
             )
 
             user_id = uuid4()
-            user = UserModel(
+            admin_user = UserModel(
                 id=user_id,
                 email=admin_email,
                 password_hash=password_hash,
@@ -140,18 +141,34 @@ async def init_data() -> None:
                 tenant_id=org.id,
                 failed_login_attempts=0,
             )
-            session.add(user)
+            session.add(admin_user)
             await session.flush()
-
-            stmt = select(RoleModel).where(RoleModel.role_type == "super_admin")
-            result = await session.execute(stmt)
-            role = result.scalar_one_or_none()
-
-            if role:
-                user_role = UserRoleModel(id=uuid4(), user_id=user.id, role_id=role.id)
-                session.add(user_role)
-
             print(f"Created Admin User: {admin_email}")
+
+        # The startup script is also a repair path for existing deployments.
+        # A user without this row silently falls back to the frontend seller role.
+        role_result = await session.execute(
+            select(RoleModel).where(RoleModel.role_type == "super_admin")
+        )
+        super_admin_role = role_result.scalar_one_or_none()
+        if super_admin_role is None:
+            raise RuntimeError("System role super_admin was not seeded")
+
+        assignment_result = await session.execute(
+            select(UserRoleModel).where(
+                UserRoleModel.user_id == admin_user.id,
+                UserRoleModel.role_id == super_admin_role.id,
+            )
+        )
+        if assignment_result.scalar_one_or_none() is None:
+            session.add(
+                UserRoleModel(
+                    id=uuid4(),
+                    user_id=admin_user.id,
+                    role_id=super_admin_role.id,
+                )
+            )
+            print(f"Assigned super_admin role to {admin_email}")
 
         await session.commit()
 
