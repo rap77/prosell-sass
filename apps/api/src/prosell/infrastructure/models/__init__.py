@@ -21,6 +21,9 @@ from prosell.infrastructure.models.marketplace_publication_model import (
 from prosell.infrastructure.models.notification_model import NotificationModel
 from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
 from prosell.infrastructure.models.organization_broker_model import OrganizationBrokerModel
+from prosell.infrastructure.models.organization_marketplace_access_model import (
+    OrganizationMarketplaceAccessModel,
+)
 from prosell.infrastructure.models.organization_model import (
     OrganizationInvitationModel,
     OrganizationModel,
@@ -62,6 +65,7 @@ __all__ = [
     "OAuthAccountModel",
     "OrganizationBrokerModel",
     "OrganizationInvitationModel",
+    "OrganizationMarketplaceAccessModel",
     "OrganizationModel",
     "OrganizationVerticalModel",
     "ProductImageModel",

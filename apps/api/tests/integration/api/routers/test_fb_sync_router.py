@@ -20,7 +20,13 @@ from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.category_model import CategoryModel
-from prosell.infrastructure.models.fb_account_model import FBAccountModel
+from prosell.infrastructure.models.fb_account_model import (
+    FBAccountModel,
+    product_fb_account_assignments,
+)
+from prosell.infrastructure.models.organization_marketplace_access_model import (
+    OrganizationMarketplaceAccessModel,
+)
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 
@@ -84,7 +90,6 @@ async def _create_category(session: AsyncSession, tenant_id: UUID) -> CategoryMo
         tenant_id=tenant_id,
         name=f"Test Category {uuid4().hex[:6]}",
         slug=f"test-cat-{uuid4().hex[:8]}",
-        status="active",
         level=0,
     )
     session.add(cat)
@@ -94,11 +99,12 @@ async def _create_category(session: AsyncSession, tenant_id: UUID) -> CategoryMo
 
 async def _create_fb_account(session: AsyncSession, tenant_id: UUID, email: str) -> FBAccountModel:
     """Create a test FB account."""
+    local_part, domain = email.split("@", maxsplit=1)
     account = FBAccountModel(
         id=uuid4(),
         tenant_id=tenant_id,
-        email=email,
-        password_encrypted="encrypted-password",
+        email=f"{local_part}+{uuid4().hex[:8]}@{domain}",
+        password_encrypted=b"encrypted-password",
         status="active",
         browser="firefox",
         language="es",
@@ -113,12 +119,14 @@ async def _create_product(
     tenant_id: UUID,
     category_id: UUID,
     *,
+    organization_id: UUID | None = None,
     published_to_marketplace: bool = True,
 ) -> ProductModel:
     """Create a test product."""
     product = ProductModel(
         id=uuid4(),
         tenant_id=tenant_id,
+        organization_id=organization_id or tenant_id,
         category_id=category_id,
         title=f"Test Vehicle {uuid4().hex[:6]}",
         slug=f"test-vehicle-{uuid4().hex[:8]}",
@@ -169,9 +177,9 @@ class TestFbSyncAuth:
                 headers={"X-Bot-Token": BOT_TOKEN},
             )
 
-        # 200 = auth passed (empty list is fine)
+        # 200 = auth passed. The shared integration DB can contain seed accounts.
         assert response.status_code == 200
-        assert response.json() == {"accounts": []}
+        assert "accounts" in response.json()
 
 
 class TestPendingEndpointTenantScoping:
@@ -195,6 +203,10 @@ class TestPendingEndpointTenantScoping:
         # Create products: 1 in tenant A, 1 in tenant B
         product_a = await _create_product(shared_session, tenant_a.tenant_id, cat_a.id)
         await _create_product(shared_session, tenant_b.tenant_id, cat_b.id)
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [{"product_id": product_a.id, "fb_account_id": fb_account.id}],
+        )
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -223,6 +235,61 @@ class TestPendingEndpointTenantScoping:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+    async def test_pending_returns_only_assigned_authorized_dealer_inventory(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """A ProSell account only receives assigned products from authorized dealers."""
+        prosell = await _create_tenant(shared_session)
+        authorized_dealer = await _create_tenant(shared_session)
+        unauthorized_dealer = await _create_tenant(shared_session)
+        account = await _create_fb_account(shared_session, prosell.tenant_id, "seller@prosell.com")
+
+        authorized_category = await _create_category(shared_session, authorized_dealer.tenant_id)
+        unauthorized_category = await _create_category(
+            shared_session, unauthorized_dealer.tenant_id
+        )
+        authorized_product = await _create_product(
+            shared_session,
+            authorized_dealer.tenant_id,
+            authorized_category.id,
+            organization_id=authorized_dealer.id,
+        )
+        unauthorized_product = await _create_product(
+            shared_session,
+            unauthorized_dealer.tenant_id,
+            unauthorized_category.id,
+            organization_id=unauthorized_dealer.id,
+        )
+        shared_session.add(
+            OrganizationMarketplaceAccessModel(
+                inventory_owner_organization_id=authorized_dealer.id,
+                operator_organization_id=prosell.id,
+                can_manage_inventory=True,
+                can_publish_marketplace=True,
+                status="active",
+            )
+        )
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [
+                {"product_id": authorized_product.id, "fb_account_id": account.id},
+                {"product_id": unauthorized_product.id, "fb_account_id": account.id},
+            ],
+        )
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/pending",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        assert [product["id"] for product in response.json()["products"]] == [
+            str(authorized_product.id)
+        ]
 
 
 class TestCallbackEndpointTenantScoping:
@@ -256,7 +323,7 @@ class TestCallbackEndpointTenantScoping:
             )
 
         assert response.status_code == 403
-        assert "tenant" in response.json()["detail"].lower()
+        assert "not authorized" in response.json()["detail"].lower()
 
     async def test_callback_accepts_same_tenant_publication(
         self, shared_session: AsyncSession, _setup_override: None
@@ -266,6 +333,10 @@ class TestCallbackEndpointTenantScoping:
         fb_account = await _create_fb_account(shared_session, tenant.tenant_id, "bot@tenant.com")
         category = await _create_category(shared_session, tenant.tenant_id)
         product = await _create_product(shared_session, tenant.tenant_id, category.id)
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [{"product_id": product.id, "fb_account_id": fb_account.id}],
+        )
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(

@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,16 +25,22 @@ from prosell.infrastructure.api.dependencies import (
     verify_bot_token,
 )
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.fb_account_model import (
     FBAccountGroupModel,
     FBAccountModel,
     FBGroupCategory,
     FBPublicationHistoryModel,
     FBPublicationStatusModel,
+    product_fb_account_assignments,
 )
 from prosell.infrastructure.models.marketplace_publication_model import (
     MarketplacePublicationModel,
 )
+from prosell.infrastructure.models.organization_marketplace_access_model import (
+    OrganizationMarketplaceAccessModel,
+)
+from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 
 logger = logging.getLogger(__name__)
@@ -153,6 +159,36 @@ class SyncCallbackResponse(BaseModel):
     status: str
 
 
+async def _account_can_publish_product(
+    db: AsyncSession,
+    account: FBAccountModel,
+    product: ProductModel,
+) -> bool:
+    """Return whether an account has an explicit, active right to publish a product."""
+    assignment = await db.execute(
+        select(product_fb_account_assignments.c.product_id).where(
+            product_fb_account_assignments.c.product_id == product.id,
+            product_fb_account_assignments.c.fb_account_id == account.id,
+        )
+    )
+    if assignment.scalar_one_or_none() is None:
+        return False
+
+    if product.tenant_id == account.tenant_id:
+        return True
+
+    access = await db.execute(
+        select(OrganizationMarketplaceAccessModel.id).where(
+            OrganizationMarketplaceAccessModel.inventory_owner_organization_id
+            == product.organization_id,
+            OrganizationMarketplaceAccessModel.operator_organization_id == account.tenant_id,
+            OrganizationMarketplaceAccessModel.status == "active",
+            OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True),
+        )
+    )
+    return access.scalar_one_or_none() is not None
+
+
 @router.get(
     "/pending",
     response_model=PendingProductsResponse,
@@ -161,20 +197,33 @@ class SyncCallbackResponse(BaseModel):
 async def get_pending_products(
     db: DbSession,
     spaces: SpacesService,
-    account_email: EmailStr = Query(..., description="FB account email"),
-    limit: int = Query(10, ge=1, le=50),
+    account_email: EmailStr | None = Query(
+        None,
+        description="FB account email used to resolve publication authorization.",
+    ),
+    organization_id: UUID | None = Query(None, description="Filter by organization"),
+    category: str | None = Query(
+        None, description="Filter by vertical/category (vehicles, real_estate, general)"
+    ),
+    limit: int = Query(50, ge=1, le=200),
 ) -> PendingProductsResponse:
-    """Get products pending publication for a specific FB account.
+    """Get products pending publication.
 
     Returns products that:
     - Are published in ProSell (status=published)
     - Are marked for marketplace (published_to_marketplace=true)
-    - Have NOT been published by this account yet
-    - Belong to the SAME tenant as the FB account (multi-tenant scoping)
+    - Are explicitly assigned to the selected FB account
+    - Belong to its tenant or a dealer that authorized its organization
+    - Have NOT been published by account_email yet
+    - Optionally: belong to organization_id
+    - Optionally: match category vertical
     """
-    # Resolve FB account first to scope by tenant. Refuse if account is missing
-    # or inactive — a bot hitting an unknown email is a misconfiguration, not
-    # an empty result.
+    if account_email is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="account_email is required to resolve publication authorization",
+        )
+
     account_query = select(FBAccountModel).where(FBAccountModel.email == account_email)
     account_result = await db.execute(account_query)
     fb_account = account_result.scalar_one_or_none()
@@ -184,22 +233,49 @@ async def get_pending_products(
             detail=f"Active FB account {account_email} not found",
         )
 
-    # Subquery: products already published by this account
+    authorized_dealer_orgs = select(
+        OrganizationMarketplaceAccessModel.inventory_owner_organization_id
+    ).where(
+        OrganizationMarketplaceAccessModel.operator_organization_id == fb_account.tenant_id,
+        OrganizationMarketplaceAccessModel.status == "active",
+        OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True),
+    )
+
+    # Build query
+    query = (
+        select(ProductModel)
+        .join(
+            product_fb_account_assignments,
+            ProductModel.id == product_fb_account_assignments.c.product_id,
+        )
+        .where(product_fb_account_assignments.c.fb_account_id == fb_account.id)
+        .where(
+            or_(
+                ProductModel.tenant_id == fb_account.tenant_id,
+                ProductModel.organization_id.in_(authorized_dealer_orgs),
+            )
+        )
+        .where(ProductModel.status == ProductStatus.PUBLISHED)
+        .where(ProductModel.published_to_marketplace.is_(True))
+    )
+
+    # Filter by organization if provided
+    if organization_id:
+        query = query.where(ProductModel.organization_id == organization_id)
+
+    # Filter by category slug. Product categories in the current taxonomy are
+    # the selected vertical roots, so the slug is the stable API contract.
+    if category:
+        query = query.join(CategoryModel).where(CategoryModel.slug == category)
+
     published_subq = (
         select(MarketplacePublicationModel.product_id)
         .where(MarketplacePublicationModel.account_email == account_email)
         .where(MarketplacePublicationModel.status.in_(["active", "pending"]))
     )
+    query = query.where(ProductModel.id.not_in(published_subq))
 
-    # Main query: tenant-scoped published products not in subquery
-    query = (
-        select(ProductModel)
-        .where(ProductModel.tenant_id == fb_account.tenant_id)
-        .where(ProductModel.status == ProductStatus.PUBLISHED)
-        .where(ProductModel.published_to_marketplace.is_(True))
-        .where(ProductModel.id.not_in(published_subq))
-        .limit(limit)
-    )
+    query = query.limit(limit)
 
     result = await db.execute(query)
     products = result.scalars().all()
@@ -295,21 +371,25 @@ async def sync_callback(
             detail=f"Product {request.product_id} not found",
         )
 
-    # Verify the FB account exists, is active, AND belongs to the same
-    # tenant as the product. This prevents a bot token from being used to
-    # cross-post publications across tenants.
+    # Resolve the account, then require an explicit product assignment and an
+    # active marketplace agreement for cross-tenant dealer inventory.
     account_query = select(FBAccountModel).where(FBAccountModel.email == request.account_email)
     account_result = await db.execute(account_query)
     fb_account = account_result.scalar_one_or_none()
-    if fb_account is None or fb_account.tenant_id != product.tenant_id:
+    if fb_account is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="FB account does not belong to the product's tenant",
+            detail="FB account not found",
         )
     if fb_account.status != "active":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"FB account is {fb_account.status}, cannot create publication",
+        )
+    if not await _account_can_publish_product(db, fb_account, product):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="FB account is not authorized to publish this product",
         )
 
     now = datetime.now(UTC)
@@ -442,6 +522,7 @@ class FBAccountSummary(BaseModel):
     """Account summary for bot listing."""
 
     id: UUID
+    tenant_id: UUID  # for scoping /pending calls without account_email
     email: str
     alias: str | None
     status: str
@@ -499,6 +580,7 @@ async def get_accounts(db: DbSession) -> FBAccountsResponse:
         accounts=[
             FBAccountSummary(
                 id=a.id,
+                tenant_id=a.tenant_id,
                 email=a.email,
                 alias=a.alias,
                 status=a.status,
@@ -515,6 +597,64 @@ async def get_accounts(db: DbSession) -> FBAccountsResponse:
             )
             for a in accounts
         ]
+    )
+
+
+class OrganizationSummary(BaseModel):
+    """Organization summary for bot filtering."""
+
+    id: UUID
+    name: str
+    code: str | None
+
+
+class OrganizationsResponse(BaseModel):
+    """Response for GET /organizations."""
+
+    organizations: list[OrganizationSummary]
+
+
+@router.get(
+    "/organizations",
+    response_model=OrganizationsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
+async def get_organizations(
+    db: DbSession,
+    account_email: EmailStr = Query(..., description="FB account used to resolve inventory access"),
+) -> OrganizationsResponse:
+    """List dealer organizations whose inventory an account may publish.
+
+    The account's operator organization is resolved server-side; callers
+    cannot enumerate arbitrary tenants by providing an organization ID.
+    """
+    account_result = await db.execute(
+        select(FBAccountModel).where(FBAccountModel.email == account_email)
+    )
+    account = account_result.scalar_one_or_none()
+    if account is None or account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Active FB account {account_email} not found",
+        )
+
+    query = (
+        select(OrganizationModel)
+        .join(
+            OrganizationMarketplaceAccessModel,
+            OrganizationMarketplaceAccessModel.inventory_owner_organization_id
+            == OrganizationModel.id,
+        )
+        .where(OrganizationMarketplaceAccessModel.operator_organization_id == account.tenant_id)
+        .where(OrganizationMarketplaceAccessModel.status == "active")
+        .where(OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True))
+        .order_by(OrganizationModel.name)
+    )
+    result = await db.execute(query)
+    orgs = result.scalars().all()
+
+    return OrganizationsResponse(
+        organizations=[OrganizationSummary(id=o.id, name=o.name, code=o.code) for o in orgs]
     )
 
 
