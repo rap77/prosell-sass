@@ -26,7 +26,9 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.fb_account_model import (
+    FBAccountGroupModel,
     FBAccountModel,
+    FBGroupCategory,
     FBPublicationHistoryModel,
     FBPublicationStatusModel,
 )
@@ -507,10 +509,18 @@ async def get_account_config(
     db: DbSession,
     encryption: FBEncryption,
     email: EmailStr = Query(..., description="FB account email"),
+    category: str | None = Query(
+        None,
+        description="Filter groups by vertical/category (vehicles, real_estate, etc). "
+        "If omitted, returns all active groups.",
+    ),
 ) -> FBAccountConfig:
-    """Get full account config with decrypted password.
+    """Get full account config with decrypted password for bot.
 
-    Bot calls this to login to FB with stored credentials.
+    Bot calls this to login to FB with stored credentials. The optional
+    `category` filter lets the bot request only the groups relevant to the
+    vertical of the product being published (e.g. `vehicles` for a car),
+    so the bot doesn't try to post a vehicle into a real-estate group.
     """
     query = (
         select(FBAccountModel)
@@ -526,6 +536,18 @@ async def get_account_config(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Active account with email {email} not found",
         )
+
+    # Validate the category filter so a typo doesn't silently return nothing.
+    valid_category: str | None = None
+    if category:
+        try:
+            valid_category = FBGroupCategory(category).value
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown category {category!r}. "
+                f"Valid: {[c.value for c in FBGroupCategory]}",
+            ) from exc
 
     # Decrypt password via injected service
     password = encryption.decrypt(account.password_encrypted, str(account.tenant_id))
@@ -545,7 +567,7 @@ async def get_account_config(
                 category=g.category.value,
             )
             for g in account.groups
-            if g.is_active
+            if g.is_active and (valid_category is None or g.category.value == valid_category)
         ],
     )
 
@@ -608,6 +630,164 @@ async def report_account_status(
         status="updated",
         account_email=account.email,
         updated_at=now,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Group Sync — bot reports the groups it discovered from FB
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class SyncGroupItem(BaseModel):
+    """Single group reported by the bot after scraping FB."""
+
+    fb_group_id: str = Field(..., min_length=1, max_length=50)
+    name: str | None = Field(default=None, max_length=255)
+    # Bot pre-classifies by name heuristic (`vehicles`, `real_estate`, etc).
+    # If it sends a bogus value we fall back to `general` so the row still
+    # lands — the admin can override later from the UI.
+    category: str = "general"
+
+
+class SyncGroupsRequest(BaseModel):
+    """Bot reports the groups it found while logged in to FB."""
+
+    account_email: EmailStr
+    groups: list[SyncGroupItem] = Field(default_factory=list)
+
+
+class SyncGroupsResponse(BaseModel):
+    """Summary of changes applied by the sync."""
+
+    account_email: EmailStr
+    groups_seen: int
+    groups_created: int
+    groups_updated: int
+    groups_deactivated: int
+    total_active: int
+
+
+def _normalize_category(raw: str) -> FBGroupCategory:
+    """Map a bot-supplied category to the enum, with a safe fallback.
+
+    The bot infers categories from group names via heuristics. Real-world
+    group names can be noisy ("Cars & Trucks 🚗 Florida") so we never raise
+    — an unknown category just becomes `general`. The admin can override.
+    """
+    try:
+        return FBGroupCategory(raw)
+    except ValueError:
+        return FBGroupCategory.GENERAL
+
+
+@router.post(
+    "/sync-groups",
+    response_model=SyncGroupsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
+async def sync_groups(
+    request: SyncGroupsRequest,
+    db: DbSession,
+) -> SyncGroupsResponse:
+    """Sync the groups a FB account is subscribed to.
+
+    The bot logs into FB, scrapes the list of groups the account has joined,
+    and POSTs them here. We UPSERT by `fb_group_id`:
+
+    - **New** `fb_group_id` → INSERT with the next free position.
+    - **Existing** `fb_group_id` → UPDATE name + category, force `is_active=true`.
+    - **Existing but absent from this batch** → soft-delete (`is_active=false`)
+      so historical `total_posts` and `last_post_at` are kept. If the
+      operator wants a hard delete, they can do it from the admin UI.
+
+    Tenant scope is derived server-side from the resolved account — never
+    trusted from the client (per project tenant-isolation rule).
+    """
+    # Resolve account by email, scoped tenant is implicit on the row.
+    account_query = select(FBAccountModel).where(
+        FBAccountModel.email == request.account_email,
+    )
+    account_result = await db.execute(account_query)
+    account = account_result.scalar_one_or_none()
+    if account is None or account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Active FB account {request.account_email} not found",
+        )
+
+    # Load current groups for diffing.
+    groups_query = select(FBAccountGroupModel).where(
+        FBAccountGroupModel.fb_account_id == account.id,
+    )
+    groups_result = await db.execute(groups_query)
+    existing: dict[str, FBAccountGroupModel] = {
+        g.fb_group_id: g for g in groups_result.scalars().all() if g.fb_group_id
+    }
+
+    # Index reported groups by fb_group_id so duplicates in the payload collapse
+    # to the last occurrence — same behavior as Sets in most sync APIs.
+    reported: dict[str, SyncGroupItem] = {}
+    for item in request.groups:
+        reported[item.fb_group_id] = item
+
+    # Determine next free position for new groups.
+    next_position = max((g.position for g in existing.values()), default=0) + 1
+
+    created = updated = deactivated = 0
+
+    # UPSERT reported groups.
+    for fb_group_id, item in reported.items():
+        category = _normalize_category(item.category)
+        if fb_group_id in existing:
+            row = existing[fb_group_id]
+            row.name = item.name
+            row.category = category
+            row.is_active = True
+            updated += 1
+        else:
+            db.add(
+                FBAccountGroupModel(
+                    fb_account_id=account.id,
+                    position=next_position,
+                    fb_group_id=fb_group_id,
+                    name=item.name,
+                    category=category,
+                    is_active=True,
+                    total_posts=0,
+                ),
+            )
+            next_position += 1
+            created += 1
+
+    # Soft-delete the ones missing from this batch.
+    for fb_group_id, row in existing.items():
+        if fb_group_id not in reported and row.is_active:
+            row.is_active = False
+            deactivated += 1
+
+    await db.commit()
+
+    # Recount active groups for the response — cheap, and avoids a race with
+    # the caller reading right after.
+    active_count = sum(1 for g in existing.values() if g.is_active)
+    active_count += created  # new rows are active by default
+
+    logger.info(
+        "sync-groups for %s: seen=%d created=%d updated=%d deactivated=%d",
+        request.account_email,
+        len(reported),
+        created,
+        updated,
+        deactivated,
+    )
+
+    return SyncGroupsResponse(
+        account_email=request.account_email,
+        groups_seen=len(reported),
+        groups_created=created,
+        groups_updated=updated,
+        groups_deactivated=deactivated,
+        total_active=active_count,
     )
 
 
