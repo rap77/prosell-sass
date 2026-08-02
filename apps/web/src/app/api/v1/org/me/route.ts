@@ -58,14 +58,20 @@ export async function GET(request: NextRequest) {
       headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     });
 
-    return NextResponse.json(await response.json(), {
+    // ponytail: parse JSON safely, preserve backend status on error
+    const body = await response.json().catch(() => ({
+      detail: response.ok ? "Invalid response" : "Not authenticated",
+    }));
+
+    return NextResponse.json(body, {
       status: response.status,
       statusText: response.statusText,
     });
   } catch {
+    // Network error — backend unreachable
     return NextResponse.json(
-      { detail: "Organization not found" },
-      { status: 404 },
+      { detail: "Backend unreachable" },
+      { status: 502 },
     );
   }
 }
