@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { type Control, type UseFormSetValue, useWatch } from "react-hook-form";
 
 import type { AttributeGroup, AttributeSchemaEntry } from "@/types/category";
@@ -26,8 +25,8 @@ function isFilled(value: unknown): boolean {
 }
 
 /**
- * Renders a collapsible form section with a heading and 2-column grid of fields.
- * Uses native <details> for zero-dependency accordion behavior.
+ * Renders a form section with a heading and 2-column grid of fields.
+ * Uses <section> + <h2> so WizardContainer can extract titles for navigation tabs.
  */
 export function SchemaFormSection({
   group,
@@ -44,16 +43,16 @@ export function SchemaFormSection({
 
   if (fieldKeys.length === 0) return null;
 
+  // ponytail: use <section> + <h2> so WizardContainer picks up group titles for nav tabs
   return (
-    <details open={defaultOpen} className="group border rounded-lg">
-      <summary className="flex cursor-pointer items-center gap-2 p-4 font-semibold select-none list-none">
-        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+    <section className="flex flex-col gap-4">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
         {group.label}
-        <span className="ml-auto text-sm font-normal text-muted-foreground">
+        <span className="text-sm font-normal text-muted-foreground">
           {filledCount}/{fieldKeys.length}
         </span>
-      </summary>
-      <div className="grid grid-cols-1 gap-4 p-4 pt-0 sm:grid-cols-2">
+      </h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {fieldKeys.map((key) => (
           <SchemaFieldRenderer
             key={key}
@@ -66,7 +65,7 @@ export function SchemaFormSection({
           />
         ))}
       </div>
-    </details>
+    </section>
   );
 }
 
