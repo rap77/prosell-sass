@@ -197,14 +197,30 @@ export function useDeleteCategory() {
         const body = await res.json().catch(() => ({}));
         throw new Error(extractErrorMessage(body, "Failed to delete category"));
       }
+      return id;
+    },
+    // ponytail: optimistic update — remove from cache immediately
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["categories"] });
+      const previous = queryClient.getQueryData<Category[]>(["categories"]);
+      queryClient.setQueryData<Category[]>(["categories"], (old) =>
+        old?.filter((c) => c.id !== id),
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(["categories"], context.previous);
+      }
+      toast.error(_err.message || "Failed to delete category");
+    },
+    onSettled: () => {
+      // Refetch to ensure sync with server
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
     onSuccess: () => {
-      // ponytail: refetch immediately, don't wait for staleTime
-      queryClient.refetchQueries({ queryKey: ["categories"] });
       toast.success("Category deleted");
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to delete category");
     },
   });
 }
