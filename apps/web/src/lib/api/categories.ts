@@ -199,7 +199,8 @@ export function useDeleteCategory() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      // ponytail: refetch immediately, don't wait for staleTime
+      queryClient.refetchQueries({ queryKey: ["categories"] });
       toast.success("Category deleted");
     },
     onError: (err) => {
