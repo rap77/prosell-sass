@@ -1,6 +1,5 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { z } from "zod";
-import type { OrgVerticalsResponse } from "@/types/category";
 
 /**
  * Schemas for `GET /api/v1/organizations/{organization_id}/verticals`
