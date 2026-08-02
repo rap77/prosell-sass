@@ -119,15 +119,23 @@ export function isRealEstateAttributes(
 }
 
 /**
- * Type guard to check if attributes are generic attributes
+ * Type guard to check if attributes are generic attributes.
+ * Also serves as fallback when category is missing or unrecognized.
  */
 export function isGenericAttributes(
   attrs: unknown,
 ): attrs is GenericProductAttributes {
-  return (
-    typeof attrs === "object" &&
-    attrs !== null &&
+  if (typeof attrs !== "object" || attrs === null) return false;
+  // Explicit generic
+  if (
     "category" in attrs &&
     (attrs as GenericProductAttributes).category === "generic"
-  );
+  ) {
+    return true;
+  }
+  // Fallback: no category field or unrecognized category → treat as generic
+  // ponytail: legacy products may lack category discriminator
+  if (!("category" in attrs)) return true;
+  const cat = (attrs as { category: unknown }).category;
+  return cat !== "vehicle" && cat !== "real_estate";
 }
