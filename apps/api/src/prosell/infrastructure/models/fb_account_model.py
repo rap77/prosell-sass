@@ -100,6 +100,11 @@ class FBAccountModel(Base):
         nullable=True,
         index=True,
     )
+    migration_token_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("fb_credential_migration_tokens.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     alias: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -121,6 +126,9 @@ class FBAccountModel(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    credential_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     total_publications: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     total_failures: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
 

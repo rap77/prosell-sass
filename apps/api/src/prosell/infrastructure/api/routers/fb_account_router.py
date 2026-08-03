@@ -11,20 +11,20 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from prosell.infrastructure.api.dependencies import get_current_auth_user
+from prosell.domain.entities.user import User
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.fb_account_model import (
     FBAccountGroupModel,
     FBAccountModel,
     FBGroupCategory,
 )
-from prosell.infrastructure.models.user_model import UserModel
 from prosell.infrastructure.services.fb_encryption_service import get_fb_encryption_service
 
 router = APIRouter(prefix="/fb-accounts", tags=["fb-accounts"])
 
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
-CurrentUser = Annotated[UserModel, Depends(get_current_auth_user)]
+CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 
 
 # =============================================================================
