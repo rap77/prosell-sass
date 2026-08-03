@@ -83,14 +83,17 @@ interface UpdateFBAccountInput {
 // Query hooks
 // -----------------------------------------------------------------------------
 
-/** List all FB accounts. */
-export function useFBAccounts(): UseQueryResult<FBAccount[], Error> {
+/** List all FB accounts when Facebook publishing is enabled. */
+export function useFBAccounts(
+  enabled = true,
+): UseQueryResult<FBAccount[], Error> {
   return useQuery({
     queryKey: ["fb-accounts"],
     queryFn: async () => {
       const raw = await getJson("/api/v1/fb-accounts");
       return FBAccountListResponseSchema.parse(raw);
     },
+    enabled,
   });
 }
 
@@ -227,6 +230,29 @@ export function useAddFBGroup() {
     onSuccess: (_, { accountId }) => {
       queryClient.invalidateQueries({ queryKey: ["fb-accounts", accountId] });
       queryClient.invalidateQueries({ queryKey: ["fb-accounts"] });
+    },
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Migration token
+// -----------------------------------------------------------------------------
+
+interface MigrationTokenResponse {
+  token: string;
+  expires_at: string;
+}
+
+/** Generate a one-time migration token for importing legacy FB accounts. */
+export function useCreateMigrationToken() {
+  return useMutation({
+    mutationFn: async (
+      expiresInMinutes = 15,
+    ): Promise<MigrationTokenResponse> => {
+      const raw = await postJson("/api/v1/fb-sync/migrations/tokens", {
+        expires_in_minutes: expiresInMinutes,
+      });
+      return raw as MigrationTokenResponse;
     },
   });
 }

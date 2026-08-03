@@ -106,7 +106,7 @@ export default function NewFBAccountPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Credentials */}
-        <section className="bg-white border border-ps-border-default rounded-lg p-4 space-y-4">
+        <section className="space-y-4 rounded-lg border border-ps-border-default bg-ps-surface p-4">
           <h2 className="font-medium text-ps-text-primary">Credenciales</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -122,7 +122,7 @@ export default function NewFBAccountPage() {
                 placeholder="cuenta@gmail.com"
               />
               {emailError && (
-                <span className="text-xs text-red-600">Email inválido</span>
+                <span className="text-xs text-ps-error">Email inválido</span>
               )}
             </div>
 
@@ -151,7 +151,7 @@ export default function NewFBAccountPage() {
                 </button>
               </div>
               {passwordError && (
-                <span className="text-xs text-red-600">
+                <span className="text-xs text-ps-error">
                   Mínimo 4 caracteres
                 </span>
               )}
@@ -174,7 +174,7 @@ export default function NewFBAccountPage() {
         </section>
 
         {/* Bot config */}
-        <section className="bg-white border border-ps-border-default rounded-lg p-4 space-y-4">
+        <section className="space-y-4 rounded-lg border border-ps-border-default bg-ps-surface p-4">
           <h2 className="font-medium text-ps-text-primary">
             Configuración del bot
           </h2>
@@ -187,7 +187,7 @@ export default function NewFBAccountPage() {
               <select
                 value={browser}
                 onChange={(e) => setBrowser(e.target.value)}
-                className="w-full border border-ps-border-default rounded px-3 py-2 text-sm"
+                className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
               >
                 <option value="chrome">Chrome</option>
                 <option value="firefox">Firefox</option>
@@ -201,7 +201,7 @@ export default function NewFBAccountPage() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full border border-ps-border-default rounded px-3 py-2 text-sm"
+                className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
               >
                 <option value="es">Español</option>
                 <option value="en">English</option>
@@ -225,7 +225,7 @@ export default function NewFBAccountPage() {
         </section>
 
         {/* Groups */}
-        <section className="bg-white border border-ps-border-default rounded-lg p-4 space-y-4">
+        <section className="space-y-4 rounded-lg border border-ps-border-default bg-ps-surface p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-medium text-ps-text-primary">
               Grupos de Facebook
@@ -251,7 +251,7 @@ export default function NewFBAccountPage() {
               {groups.map((group, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                  className="flex items-center gap-2 rounded bg-ps-elevated p-2"
                 >
                   <span className="text-sm font-medium w-6">
                     #{group.position}
@@ -267,7 +267,7 @@ export default function NewFBAccountPage() {
                     onChange={(e) =>
                       updateGroup(index, "category", e.target.value)
                     }
-                    className="border border-ps-border-default rounded px-2 py-1 text-sm"
+                    className="rounded border border-ps-border-default bg-ps-input-bg px-2 py-1 text-sm text-ps-text-primary"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.value} value={c.value}>
@@ -278,7 +278,7 @@ export default function NewFBAccountPage() {
                   <button
                     type="button"
                     onClick={() => removeGroup(index)}
-                    className="text-ps-text-secondary hover:text-red-600"
+                    className="text-ps-text-secondary hover:text-ps-error"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -304,7 +304,7 @@ export default function NewFBAccountPage() {
         </div>
 
         {createAccount.isError && (
-          <p className="text-sm text-red-600">{createAccount.error.message}</p>
+          <p className="text-sm text-ps-error">{createAccount.error.message}</p>
         )}
       </form>
     </div>

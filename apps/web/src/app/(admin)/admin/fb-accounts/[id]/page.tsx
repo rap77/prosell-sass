@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { FBGroupCategory, FBGroup } from "@/lib/api/schemas/fb-accounts";
+import { toast } from "sonner";
 
 const CATEGORIES: { value: FBGroupCategory; label: string }[] = [
   { value: "vehicles", label: "Vehículos" },
@@ -27,6 +28,19 @@ const STATUS_OPTIONS = [
   { value: "active", label: "Activa" },
   { value: "disabled", label: "Deshabilitada" },
 ];
+
+function showMutationError(error: unknown, fallback: string): void {
+  const message = error instanceof Error ? error.message : fallback;
+
+  if (message.includes("Not authenticated")) {
+    toast.error("Tu sesión expiró", {
+      description: "Iniciá sesión nuevamente para guardar cambios.",
+    });
+    return;
+  }
+
+  toast.error(fallback, { description: message });
+}
 
 export default function EditFBAccountPage() {
   const params = useParams();
@@ -75,59 +89,75 @@ export default function EditFBAccountPage() {
 
   if (error || !account) {
     return (
-      <div className="p-6 text-red-600">
+      <div className="p-6 text-ps-error">
         Error: {error?.message ?? "Cuenta no encontrada"}
       </div>
     );
   }
 
   async function handleSave() {
-    await updateAccount.mutateAsync({
-      accountId,
-      data: {
-        alias: currentAlias || undefined,
-        browser: currentBrowser,
-        language: currentLanguage,
-        time_to_sleep: parseFloat(currentTimeToSleep),
-        status: currentStatus,
-      },
-    });
-    router.push("/admin/fb-accounts");
+    try {
+      await updateAccount.mutateAsync({
+        accountId,
+        data: {
+          alias: currentAlias || undefined,
+          browser: currentBrowser,
+          language: currentLanguage,
+          time_to_sleep: parseFloat(currentTimeToSleep),
+          status: currentStatus,
+        },
+      });
+      router.push("/admin/fb-accounts");
+    } catch (error) {
+      showMutationError(error, "No se pudo guardar la cuenta");
+    }
   }
 
   async function handleChangePassword() {
     if (newPassword.length < 4) return;
-    await changePassword.mutateAsync({ accountId, newPassword });
-    setShowPasswordForm(false);
-    setNewPassword("");
+    try {
+      await changePassword.mutateAsync({ accountId, newPassword });
+      setShowPasswordForm(false);
+      setNewPassword("");
+    } catch (error) {
+      showMutationError(error, "No se pudo cambiar la contraseña");
+    }
   }
 
   async function handleAddGroup() {
     const nextPosition = (account?.groups?.length ?? 0) + 1;
-    await addGroup.mutateAsync({
-      accountId,
-      group: {
-        position: nextPosition,
-        name: newGroupName || null,
-        category: newGroupCategory,
-        is_active: true,
-      },
-    });
-    setShowNewGroup(false);
-    setNewGroupName("");
+    try {
+      await addGroup.mutateAsync({
+        accountId,
+        group: {
+          position: nextPosition,
+          name: newGroupName || null,
+          category: newGroupCategory,
+          is_active: true,
+        },
+      });
+      setShowNewGroup(false);
+      setNewGroupName("");
+    } catch (error) {
+      showMutationError(error, "No se pudo agregar el grupo");
+    }
   }
 
   async function handleToggleGroup(group: FBGroup) {
-    await updateGroup.mutateAsync({
-      accountId,
-      groupId: group.id,
-      group: {
-        position: group.position,
-        name: group.name,
-        category: group.category,
-        is_active: !group.is_active,
-      },
-    });
+    try {
+      await updateGroup.mutateAsync({
+        accountId,
+        groupId: group.id,
+        group: {
+          position: group.position,
+          name: group.name,
+          category: group.category,
+          is_active: !group.is_active,
+        },
+      });
+    } catch (error) {
+      showMutationError(error, "No se pudo actualizar el grupo");
+    }
   }
 
   return (
@@ -152,7 +182,7 @@ export default function EditFBAccountPage() {
 
       <div className="space-y-6">
         {/* Basic info */}
-        <section className="bg-white border border-ps-border-default rounded-lg p-4 space-y-4">
+        <section className="space-y-4 rounded-lg border border-ps-border-default bg-ps-surface p-4">
           <h2 className="font-medium text-ps-text-primary">
             Información básica
           </h2>
@@ -162,7 +192,11 @@ export default function EditFBAccountPage() {
               <label className="block text-sm font-medium text-ps-text-secondary mb-1">
                 Email
               </label>
-              <Input value={account.email} disabled className="bg-gray-50" />
+              <Input
+                value={account.email}
+                disabled
+                className="bg-ps-elevated text-ps-text-secondary"
+              />
               <p className="text-xs text-ps-text-secondary mt-1">
                 El email no se puede cambiar
               </p>
@@ -176,6 +210,7 @@ export default function EditFBAccountPage() {
                 value={currentAlias}
                 onChange={(e) => setAlias(e.target.value)}
                 placeholder="Cuenta Principal, etc."
+                className="bg-ps-input-bg text-ps-text-primary"
               />
             </div>
 
@@ -186,7 +221,7 @@ export default function EditFBAccountPage() {
               <select
                 value={currentStatus}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full border border-ps-border-default rounded px-3 py-2 text-sm"
+                className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -207,7 +242,7 @@ export default function EditFBAccountPage() {
                 <Input
                   value="••••••••••••"
                   disabled
-                  className="bg-gray-50 flex-1"
+                  className="flex-1 bg-ps-elevated text-ps-text-secondary"
                 />
                 <Button
                   type="button"
@@ -226,6 +261,7 @@ export default function EditFBAccountPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Nueva contraseña"
+                    className="bg-ps-input-bg text-ps-text-primary"
                   />
                   <button
                     type="button"
@@ -266,7 +302,7 @@ export default function EditFBAccountPage() {
         </section>
 
         {/* Bot config */}
-        <section className="bg-white border border-ps-border-default rounded-lg p-4 space-y-4">
+        <section className="space-y-4 rounded-lg border border-ps-border-default bg-ps-surface p-4">
           <h2 className="font-medium text-ps-text-primary">
             Configuración del bot
           </h2>
@@ -279,7 +315,7 @@ export default function EditFBAccountPage() {
               <select
                 value={currentBrowser}
                 onChange={(e) => setBrowser(e.target.value)}
-                className="w-full border border-ps-border-default rounded px-3 py-2 text-sm"
+                className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
               >
                 <option value="chrome">Chrome</option>
                 <option value="firefox">Firefox</option>
@@ -293,7 +329,7 @@ export default function EditFBAccountPage() {
               <select
                 value={currentLanguage}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full border border-ps-border-default rounded px-3 py-2 text-sm"
+                className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
               >
                 <option value="es">Español</option>
                 <option value="en">English</option>
@@ -311,13 +347,14 @@ export default function EditFBAccountPage() {
                 max="5"
                 value={currentTimeToSleep}
                 onChange={(e) => setTimeToSleep(e.target.value)}
+                className="bg-ps-input-bg text-ps-text-primary"
               />
             </div>
           </div>
         </section>
 
         {/* Groups */}
-        <section className="bg-white border border-ps-border-default rounded-lg p-4 space-y-4">
+        <section className="space-y-4 rounded-lg border border-ps-border-default bg-ps-surface p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-medium text-ps-text-primary">
               Grupos de Facebook ({account.groups?.length ?? 0})
@@ -334,19 +371,19 @@ export default function EditFBAccountPage() {
           </div>
 
           {showNewGroup && (
-            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
+            <div className="flex items-center gap-2 rounded border border-ps-border-medium bg-ps-info-bg p-2">
               <Input
                 placeholder="Nombre del grupo"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
-                className="flex-1"
+                className="flex-1 bg-ps-input-bg text-ps-text-primary"
               />
               <select
                 value={newGroupCategory}
                 onChange={(e) =>
                   setNewGroupCategory(e.target.value as FBGroupCategory)
                 }
-                className="border border-ps-border-default rounded px-2 py-1 text-sm"
+                className="rounded border border-ps-border-default bg-ps-input-bg px-2 py-1 text-sm text-ps-text-primary"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -414,7 +451,7 @@ export default function EditFBAccountPage() {
                         type="checkbox"
                         checked={group.is_active}
                         onChange={() => handleToggleGroup(group)}
-                        className="w-4 h-4"
+                        className="h-4 w-4 accent-ps-cyan"
                       />
                     </label>
                   </div>
@@ -447,7 +484,7 @@ export default function EditFBAccountPage() {
         </div>
 
         {updateAccount.isError && (
-          <p className="text-sm text-red-600">{updateAccount.error.message}</p>
+          <p className="text-sm text-ps-error">{updateAccount.error.message}</p>
         )}
       </div>
     </div>
