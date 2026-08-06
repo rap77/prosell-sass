@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Link from "next/link";
 import {
   GripVertical,
   ChevronRight,
@@ -17,6 +18,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -149,6 +151,15 @@ export function CategoryRow({
               {node.children.length} hijos
             </span>
           )}
+          {/* ponytail: show field count as visual indicator of schema config */}
+          {Object.keys(node.attribute_schema).length > 0 && (
+            <Link
+              href={`/categories/${node.id}/schema`}
+              className="rounded bg-primary/10 px-2 py-0.5 text-xs text-primary hover:bg-primary/20 transition-colors"
+            >
+              {Object.keys(node.attribute_schema).length} campos
+            </Link>
+          )}
         </div>
 
         {/* Actions menu */}
@@ -163,6 +174,12 @@ export function CategoryRow({
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/categories/${node.id}/schema`}>
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Configurar campos
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAddChild}>
                 <Plus className="mr-2 h-4 w-4" />

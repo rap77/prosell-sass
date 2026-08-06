@@ -27,30 +27,31 @@ const pauseMutateAsync = vi.fn();
 const resumeMutateAsync = vi.fn();
 const soldMutateAsync = vi.fn();
 
+// ponytail: partial mocks — only fields the component actually uses
 function mockHooks(hasPermission: boolean): void {
   vi.mocked(authHooks.useAuth).mockReturnValue({
     hasPermission: () => hasPermission,
-  } as ReturnType<typeof authHooks.useAuth>);
+  } as unknown as ReturnType<typeof authHooks.useAuth>);
   vi.mocked(productsApi.useReserveProduct).mockReturnValue({
     mutateAsync: reserveMutateAsync,
     isPending: false,
     error: null,
-  } as ReturnType<typeof productsApi.useReserveProduct>);
+  } as unknown as ReturnType<typeof productsApi.useReserveProduct>);
   vi.mocked(productsApi.usePauseProduct).mockReturnValue({
     mutateAsync: pauseMutateAsync,
     isPending: false,
     error: null,
-  } as ReturnType<typeof productsApi.usePauseProduct>);
+  } as unknown as ReturnType<typeof productsApi.usePauseProduct>);
   vi.mocked(productsApi.useResumeProduct).mockReturnValue({
     mutateAsync: resumeMutateAsync,
     isPending: false,
     error: null,
-  } as ReturnType<typeof productsApi.useResumeProduct>);
+  } as unknown as ReturnType<typeof productsApi.useResumeProduct>);
   vi.mocked(productsApi.useMarkProductSold).mockReturnValue({
     mutateAsync: soldMutateAsync,
     isPending: false,
     error: null,
-  } as ReturnType<typeof productsApi.useMarkProductSold>);
+  } as unknown as ReturnType<typeof productsApi.useMarkProductSold>);
 }
 
 describe("AvailabilityActions", () => {
