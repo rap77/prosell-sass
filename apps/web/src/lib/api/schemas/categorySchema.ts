@@ -14,6 +14,21 @@ const AttributeTypeSchema = z.enum([
 ]);
 
 /**
+ * How the field should be rendered in the product form.
+ * Drives the generic form builder's input selection.
+ */
+export const RenderAsSchema = z.enum([
+  "text",
+  "textarea",
+  "select",
+  "number",
+  "checkbox",
+  "vin_decode",
+  "date",
+]);
+export type RenderAs = z.infer<typeof RenderAsSchema>;
+
+/**
  * One attribute group definition stored in `category.attribute_groups`.
  * Each entry in `attribute_schema` may carry a `group` key referencing
  * one of these by `key`.
@@ -36,7 +51,10 @@ export const AttributeFieldSchema = z.object({
   label: z.string().optional(),
   description: z.string().optional(),
   group: z.string().optional(),
-  /** Optional per-attribute constraints (e.g. Slider bounds for `range`). */
+  /** How to render in product form (default: inferred from type) */
+  render_as: RenderAsSchema.optional(),
+  /** For render_as="vin_decode": which decoded field to map to */
+  vin_decode_key: z.string().optional(),
 });
 
 /**
