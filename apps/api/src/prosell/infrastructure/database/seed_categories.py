@@ -704,17 +704,8 @@ VEHICLES_VERTICAL: _Node = {
             "name": "Vehículos Terrestres",
             "slug": "vehiculos-terrestres",
             "children": [
-                {
-                    "name": "Carros y Camionetas",
-                    "slug": "carros-y-camionetas",
-                    "children": [
-                        _car_leaf("Sedán", "sedan"),
-                        _car_leaf("Hatchback", "hatchback"),
-                        _car_leaf("SUVs", "suvs"),
-                        _car_leaf("Pick-ups", "pick-ups"),
-                        _car_leaf("Coupé", "coupe"),
-                    ],
-                },
+                # ponytail: body_type is an attribute, not a subcategory
+                _car_leaf("Carros y Camionetas", "carros-y-camionetas"),
                 {
                     "name": "Motos",
                     "slug": "motos",
