@@ -64,9 +64,9 @@ class BulkUploadPreviewUseCase:
         csv_file = StringIO(csv_content)
         reader = csv.DictReader(csv_file, delimiter=";")
 
-        for row_dict in reader:
+        for idx, row_dict in enumerate(reader, start=2):  # start=2: header is row 1
             try:
-                preview_row = self._analyze_row(row_dict)
+                preview_row = self._analyze_row(row_dict, idx)
                 rows.append(preview_row)
 
                 if preview_row.importable:
@@ -88,7 +88,7 @@ class BulkUploadPreviewUseCase:
                 error_count += 1
                 rows.append(
                     PreviewRowResponse(
-                        row_number=0,
+                        row_number=idx,
                         vin="",
                         title="",
                         importable=False,
@@ -106,17 +106,16 @@ class BulkUploadPreviewUseCase:
 
         return PreviewUseCaseResult(total_rows=total, rows=rows, summary=summary)
 
-    def _analyze_row(self, row: dict[str, str]) -> PreviewRowResponse:
+    def _analyze_row(self, row: dict[str, str], row_number: int) -> PreviewRowResponse:
         """Analyze a single CSV row.
 
         Args:
             row: Dictionary of column values
+            row_number: 1-indexed row number (header is row 1)
 
         Returns:
             PreviewRowResponse for this row
         """
-        row_number = int(row.get("row_number", 0)) if "row_number" in row else 1
-
         # Map the row using CSVFieldMapper
         mapped: MappedCSVRow = CSVFieldMapper.map_row(row, row_number)
 
