@@ -891,11 +891,18 @@ export function CategorySchemaEditor({
 
             return (
               <div key={group._id} className="rounded border">
-                {/* Group header */}
-                <button
-                  type="button"
+                {/* Group header — use div to allow nested buttons */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleGroupCollapse(groupKey)}
-                  className="flex w-full items-center gap-2 bg-muted/50 px-3 py-2 text-left text-sm font-medium hover:bg-muted/70"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleGroupCollapse(groupKey);
+                    }
+                  }}
+                  className="flex w-full cursor-pointer items-center gap-2 bg-muted/50 px-3 py-2 text-left text-sm font-medium hover:bg-muted/70"
                 >
                   {isCollapsed ? (
                     <ChevronRight className="h-4 w-4" />
@@ -934,7 +941,7 @@ export function CategorySchemaEditor({
                       <Plus className="h-3 w-3" />
                     </Button>
                   )}
-                </button>
+                </div>
 
                 {/* Group fields */}
                 {!isCollapsed && groupFields.length > 0 && (
