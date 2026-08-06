@@ -40,6 +40,10 @@ class PreviewSummaryResponse(BaseModel):
     importable_count: int = Field(description="Number of rows that can be imported")
     error_count: int = Field(description="Number of rows with errors")
     images_count: int = Field(description="Total number of images found across all rows")
+    detected_org_codes: list[str] = Field(
+        default_factory=list,
+        description="Unique org codes found in CSV (empty if none)",
+    )
 
 
 class BulkUploadPreviewResponse(BaseModel):

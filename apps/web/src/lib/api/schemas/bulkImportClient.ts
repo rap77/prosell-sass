@@ -42,6 +42,7 @@ export const PreviewSummarySchema = z.object({
   importable_count: z.number().int(),
   error_count: z.number().int(),
   images_count: z.number().int(),
+  detected_org_codes: z.array(z.string()).default([]),
 });
 
 export type PreviewSummary = z.infer<typeof PreviewSummarySchema>;

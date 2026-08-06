@@ -165,12 +165,13 @@ export function BulkImportClientCSV({
         />
       )}
 
-      {step === "confirm" && (
+      {step === "confirm" && preview && (
         <ConfirmStep
           organizationId={organizationId}
           categoryId={categoryId}
           organizations={organizations}
           categories={categories}
+          detectedOrgCodes={preview.summary.detected_org_codes}
           onChangeOrg={setOrganizationId}
           onChangeCat={setCategoryId}
           onBack={() => setStep("preview")}
@@ -398,6 +399,13 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
       <td className={tdClass}>{row.vin || "—"}</td>
       <td className={cn(tdClass, "font-semibold", status.className)}>
         {status.label}
+        {row.errors.length > 0 && (
+          <ul className="m-0 mt-1 pl-3 text-[10px] font-normal list-disc">
+            {row.errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        )}
       </td>
       <td className={tdClass}>{Object.keys(row.mapped_fields).length}</td>
       <td className={tdClass}>{row.images_found.length}</td>
@@ -410,6 +418,7 @@ interface ConfirmStepProps {
   categoryId: string;
   organizations: Array<{ id: string; name: string }>;
   categories: Array<{ id: string; name: string }>;
+  detectedOrgCodes: string[];
   onChangeOrg: (id: string) => void;
   onChangeCat: (id: string) => void;
   onBack: () => void;
@@ -423,6 +432,7 @@ function ConfirmStep({
   categoryId,
   organizations,
   categories,
+  detectedOrgCodes,
   onChangeOrg,
   onChangeCat,
   onBack,
@@ -430,15 +440,29 @@ function ConfirmStep({
   onConfirm,
   isPending,
 }: ConfirmStepProps) {
+  // ponytail: hide org selector if CSV has org codes
+  const hasOrgInCsv = detectedOrgCodes.length > 0;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3">
-        <SelectField
-          label="Organización"
-          value={organizationId}
-          options={organizations}
-          onChange={onChangeOrg}
-        />
+        {hasOrgInCsv ? (
+          <div className="rounded-lg bg-ps-bg-surface border border-ps-border-default p-3.5">
+            <p className="m-0 text-xs font-semibold text-ps-text-primary">
+              Organizaciones detectadas en CSV
+            </p>
+            <p className="m-0 mt-1 text-xs text-ps-text-secondary">
+              {detectedOrgCodes.join(", ")}
+            </p>
+          </div>
+        ) : (
+          <SelectField
+            label="Organización"
+            value={organizationId}
+            options={organizations}
+            onChange={onChangeOrg}
+          />
+        )}
         <SelectField
           label="Categoría"
           value={categoryId}
@@ -472,7 +496,9 @@ function ConfirmStep({
         <button
           type="button"
           onClick={onConfirm}
-          disabled={isPending || !organizationId || !categoryId}
+          disabled={
+            isPending || (!hasOrgInCsv && !organizationId) || !categoryId
+          }
           className={primaryBtnClass}
         >
           {isPending ? "Importando..." : "Importar"}
@@ -496,7 +522,7 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-ps-border-default bg-ps-bg-base px-3 py-2.5 text-sm text-ps-text-primary"
+        className="appearance-none rounded-lg border border-ps-border-default bg-ps-bg-surface px-3 py-2.5 text-sm text-ps-text-primary [&>option]:bg-ps-bg-surface [&>option]:text-ps-text-primary"
       >
         {options.map((o) => (
           <option key={o.id} value={o.id}>
@@ -553,10 +579,10 @@ function resolvePreviewStatus(row: PreviewRow): {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const primaryBtnClass =
-  "inline-flex items-center gap-1.5 rounded-lg bg-ps-cyan px-4.5 py-2.5 text-sm font-bold text-ps-bg-base cursor-pointer border-none";
+  "inline-flex items-center gap-1.5 rounded-lg bg-ps-cyan px-4 py-2.5 text-sm font-bold text-ps-bg-base cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed";
 
 const secondaryBtnClass =
-  "inline-flex items-center gap-1.5 rounded-lg bg-transparent px-4.5 py-2.5 text-sm font-semibold text-ps-text-primary cursor-pointer border border-ps-border-default";
+  "inline-flex items-center gap-1.5 rounded-lg bg-transparent px-4 py-2.5 text-sm font-semibold text-ps-text-primary cursor-pointer border border-ps-border-default";
 
 const dropzoneCardClass =
   "flex flex-col items-center gap-2.5 rounded-xl border-2 border-dashed bg-ps-bg-surface p-6 cursor-pointer";

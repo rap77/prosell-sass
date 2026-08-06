@@ -59,6 +59,7 @@ class BulkUploadPreviewUseCase:
         importable_count = 0
         error_count = 0
         images_count = 0
+        detected_org_codes: set[str] = set()
 
         csv_file = StringIO(csv_content)
         reader = csv.DictReader(csv_file, delimiter=";")
@@ -74,6 +75,10 @@ class BulkUploadPreviewUseCase:
                     error_count += 1
 
                 images_count += len(preview_row.images_found)
+
+                # ponytail: collect org codes from title field (cod_organization)
+                if preview_row.title and preview_row.title.strip():
+                    detected_org_codes.add(preview_row.title.strip())
 
             except (ValueError, KeyError, TypeError) as e:
                 # ValueError: csv_field_mapper raises on bad VIN/price/missing required
@@ -96,6 +101,7 @@ class BulkUploadPreviewUseCase:
             importable_count=importable_count,
             error_count=error_count,
             images_count=images_count,
+            detected_org_codes=sorted(detected_org_codes),
         )
 
         return PreviewUseCaseResult(total_rows=total, rows=rows, summary=summary)
