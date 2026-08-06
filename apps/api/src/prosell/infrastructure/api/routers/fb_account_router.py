@@ -5,8 +5,8 @@ from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -25,6 +25,7 @@ router = APIRouter(prefix="/fb-accounts", tags=["fb-accounts"])
 
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
+StatusFilters = Annotated[list[str] | None, Query()]
 
 
 # =============================================================================
@@ -52,7 +53,7 @@ class FBAccountCreate(BaseModel):
     browser: str = "chrome"
     language: str = "es"
     time_to_sleep: Decimal = Decimal("0.7")
-    groups: list[FBGroupInput] = []
+    groups: list[FBGroupInput] = Field(default_factory=list)
 
 
 class FBAccountUpdate(BaseModel):
@@ -95,6 +96,8 @@ class FBAccountOut(BaseModel):
     total_failures: int
     last_used_at: datetime | None
     last_error: str | None
+    is_migrated: bool
+    credential_verified_at: datetime | None
     created_at: datetime
 
 
@@ -113,6 +116,8 @@ class FBAccountDetail(FBAccountOut):
 async def list_accounts(
     db: DbSession,
     user: CurrentUser,
+    statuses: StatusFilters = None,
+    migrated_only: Annotated[bool, Query()] = False,
 ) -> list[FBAccountOut]:
     """List all FB accounts for current tenant."""
     query = (
@@ -122,6 +127,10 @@ async def list_accounts(
         .options(selectinload(FBAccountModel.groups))
         .order_by(FBAccountModel.created_at.desc())
     )
+    if statuses:
+        query = query.where(FBAccountModel.status.in_(statuses))
+    if migrated_only:
+        query = query.where(FBAccountModel.migration_token_id.is_not(None))
     result = await db.execute(query)
     accounts = result.scalars().all()
 
@@ -140,6 +149,8 @@ async def list_accounts(
             total_failures=a.total_failures,
             last_used_at=a.last_used_at,
             last_error=a.last_error,
+            is_migrated=a.migration_token_id is not None,
+            credential_verified_at=a.credential_verified_at,
             created_at=a.created_at,
         )
         for a in accounts
@@ -210,6 +221,8 @@ async def create_account(
         total_failures=account.total_failures,
         last_used_at=account.last_used_at,
         last_error=account.last_error,
+        is_migrated=account.migration_token_id is not None,
+        credential_verified_at=account.credential_verified_at,
         created_at=account.created_at,
     )
 
@@ -247,6 +260,8 @@ async def get_account(
         total_failures=account.total_failures,
         last_used_at=account.last_used_at,
         last_error=account.last_error,
+        is_migrated=account.migration_token_id is not None,
+        credential_verified_at=account.credential_verified_at,
         created_at=account.created_at,
         groups=[
             FBGroupOut(
@@ -307,6 +322,8 @@ async def update_account(
         total_failures=account.total_failures,
         last_used_at=account.last_used_at,
         last_error=account.last_error,
+        is_migrated=account.migration_token_id is not None,
+        credential_verified_at=account.credential_verified_at,
         created_at=account.created_at,
     )
 
@@ -317,13 +334,23 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
-@router.post("/{account_id}/change-password", status_code=status.HTTP_200_OK)
+class ChangePasswordResponse(BaseModel):
+    """Password change confirmation."""
+
+    status: str
+
+
+@router.post(
+    "/{account_id}/change-password",
+    response_model=ChangePasswordResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def change_password(
     account_id: UUID,
     request: ChangePasswordRequest,
     db: DbSession,
     user: CurrentUser,
-) -> dict[str, str]:
+) -> ChangePasswordResponse:
     """Change account password."""
     query = (
         select(FBAccountModel)
@@ -342,10 +369,10 @@ async def change_password(
 
     await db.commit()
 
-    return {"status": "password_changed"}
+    return ChangePasswordResponse(status="password_changed")
 
 
-@router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{account_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_account(
     account_id: UUID,
     db: DbSession,

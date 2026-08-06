@@ -78,6 +78,20 @@ class ImportCredentialsResponse(BaseModel):
     accounts: list[ImportedCredentialResponse]
 
 
+class PendingVerificationAccount(BaseModel):
+    """Migrated account available to the credential verifier."""
+
+    id: UUID
+    email: EmailStr
+    status: str
+
+
+class PendingVerificationAccountsResponse(BaseModel):
+    """Pending migrated credentials for the bot verifier."""
+
+    accounts: list[PendingVerificationAccount]
+
+
 class VerificationReportRequest(BaseModel):
     """Verification result produced by the migration bot."""
 
@@ -242,6 +256,36 @@ async def import_credentials(
     return ImportCredentialsResponse(accounts=response_accounts)
 
 
+@router.get(
+    "/accounts/pending-verification",
+    response_model=PendingVerificationAccountsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
+async def list_pending_verification_accounts(
+    db: DbSession,
+) -> PendingVerificationAccountsResponse:
+    """List migrated credentials that require initial verification or a retry."""
+    result = await db.execute(
+        select(FBAccountModel)
+        .where(
+            FBAccountModel.migration_token_id.is_not(None),
+            FBAccountModel.status.in_(["pending_verification", "verification_failed"]),
+        )
+        .order_by(FBAccountModel.created_at)
+    )
+    accounts = result.scalars().all()
+    return PendingVerificationAccountsResponse(
+        accounts=[
+            PendingVerificationAccount(
+                id=account.id,
+                email=account.email,
+                status=account.status,
+            )
+            for account in accounts
+        ]
+    )
+
+
 @router.post(
     "/accounts/{account_id}/verification",
     response_model=VerificationReportResponse,
@@ -277,7 +321,7 @@ async def report_credential_verification(
             status=account.status,
             verified_at=None,
         )
-    if account.status != "pending_verification":
+    if account.status not in {"pending_verification", "verification_failed"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Account cannot be verified",

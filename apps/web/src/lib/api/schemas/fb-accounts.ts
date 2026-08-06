@@ -41,6 +41,8 @@ export const FBAccountSchema = z.object({
   total_failures: z.number(),
   last_used_at: z.string().nullable(),
   last_error: z.string().nullable(),
+  is_migrated: z.boolean(),
+  credential_verified_at: z.string().nullable(),
   created_at: z.string(),
 });
 
@@ -53,3 +55,12 @@ export const FBAccountDetailSchema = FBAccountSchema.extend({
 export type FBAccountDetail = z.infer<typeof FBAccountDetailSchema>;
 
 export const FBAccountListResponseSchema = z.array(FBAccountSchema);
+
+export const MigrationTokenResponseSchema = z.object({
+  token: z.string(),
+  expires_at: z.string(),
+});
+
+export type MigrationTokenResponse = z.infer<
+  typeof MigrationTokenResponseSchema
+>;

@@ -221,6 +221,61 @@ async def test_import_rejects_expired_token_and_verification_report_advances_sta
     assert failed_account is not None
     assert failed_account.last_error == "Two-factor authentication required"
 
+    retry_response = await client.post(
+        f"/api/v1/fb-sync/migrations/accounts/{failed_account.id}/verification",
+        json={"status": "verified"},
+        headers={"X-Bot-Token": BOT_TOKEN},
+    )
+
+    assert retry_response.status_code == 200, retry_response.text
+    assert retry_response.json()["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_bot_lists_only_migrated_accounts_pending_verification(
+    migration_context: tuple[AsyncClient, AsyncSession, UUID, User],
+) -> None:
+    """The verifier discovers pending migrated accounts without seeing active ones."""
+    client, _db, tenant_id, _admin = migration_context
+    token = await _create_migration_token(client)
+    import_response = await client.post(
+        "/api/v1/fb-sync/migrations/accounts",
+        json={
+            "migration_token": token,
+            "tenant_id": str(tenant_id),
+            "accounts": [{"email": "pending@example.com", "password": "secret-password"}],
+        },
+        headers={"X-Bot-Token": BOT_TOKEN},
+    )
+    assert import_response.status_code == 200, import_response.text
+    account_id = import_response.json()["accounts"][0]["account_id"]
+
+    await client.post(
+        f"/api/v1/fb-sync/migrations/accounts/{account_id}/verification",
+        json={"status": "verified"},
+        headers={"X-Bot-Token": BOT_TOKEN},
+    )
+
+    pending_token = await _create_migration_token(client)
+    await client.post(
+        "/api/v1/fb-sync/migrations/accounts",
+        json={
+            "migration_token": pending_token,
+            "tenant_id": str(tenant_id),
+            "accounts": [{"email": "still-pending@example.com", "password": "secret-password"}],
+        },
+        headers={"X-Bot-Token": BOT_TOKEN},
+    )
+
+    response = await client.get(
+        "/api/v1/fb-sync/migrations/accounts/pending-verification",
+        headers={"X-Bot-Token": BOT_TOKEN},
+    )
+
+    assert response.status_code == 200, response.text
+    accounts = response.json()["accounts"]
+    assert [account["email"] for account in accounts] == ["still-pending@example.com"]
+
 
 @pytest.mark.asyncio
 async def test_token_generation_requires_tenant_admin(

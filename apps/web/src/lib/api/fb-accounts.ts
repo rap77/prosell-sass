@@ -14,10 +14,12 @@ import {
   FBAccountListResponseSchema,
   FBAccountSchema,
   FBGroupSchema,
+  MigrationTokenResponseSchema,
   type FBAccount,
   type FBAccountDetail,
   type FBGroup,
   type FBGroupCategory,
+  type MigrationTokenResponse,
 } from "@/lib/api/schemas/fb-accounts";
 
 // -----------------------------------------------------------------------------
@@ -79,18 +81,34 @@ interface UpdateFBAccountInput {
   status?: string;
 }
 
+interface FBAccountsFilters {
+  statuses?: string[];
+  migratedOnly?: boolean;
+}
+
 // -----------------------------------------------------------------------------
 // Query hooks
 // -----------------------------------------------------------------------------
 
 /** List all FB accounts when Facebook publishing is enabled. */
 export function useFBAccounts(
+  filters: FBAccountsFilters = {},
   enabled = true,
 ): UseQueryResult<FBAccount[], Error> {
+  const searchParams = new URLSearchParams();
+  for (const status of filters.statuses ?? []) {
+    searchParams.append("statuses", status);
+  }
+  if (filters.migratedOnly) {
+    searchParams.set("migrated_only", "true");
+  }
+  const query = searchParams.toString();
   return useQuery({
-    queryKey: ["fb-accounts"],
+    queryKey: ["fb-accounts", filters],
     queryFn: async () => {
-      const raw = await getJson("/api/v1/fb-accounts");
+      const raw = await getJson(
+        `/api/v1/fb-accounts${query ? `?${query}` : ""}`,
+      );
       return FBAccountListResponseSchema.parse(raw);
     },
     enabled,
@@ -238,21 +256,16 @@ export function useAddFBGroup() {
 // Migration token
 // -----------------------------------------------------------------------------
 
-interface MigrationTokenResponse {
-  token: string;
-  expires_at: string;
-}
-
 /** Generate a one-time migration token for importing legacy FB accounts. */
 export function useCreateMigrationToken() {
-  return useMutation({
+  return useMutation<MigrationTokenResponse, Error, number>({
     mutationFn: async (
       expiresInMinutes = 15,
     ): Promise<MigrationTokenResponse> => {
       const raw = await postJson("/api/v1/fb-sync/migrations/tokens", {
         expires_in_minutes: expiresInMinutes,
       });
-      return raw as MigrationTokenResponse;
+      return MigrationTokenResponseSchema.parse(raw);
     },
   });
 }

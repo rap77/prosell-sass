@@ -9,6 +9,7 @@ import {
   Key,
   Copy,
   Check,
+  ShieldCheck,
 } from "lucide-react";
 import {
   useFBAccounts,
@@ -51,7 +52,13 @@ const STATUS_STYLES: Record<
 };
 
 export default function FBAccountsPage() {
-  const { data: accounts, isLoading, error } = useFBAccounts();
+  const {
+    data: accounts,
+    isLoading,
+    error,
+  } = useFBAccounts({
+    statuses: ["active"],
+  });
   const deleteAccount = useDeleteFBAccount();
   const createMigrationToken = useCreateMigrationToken();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -104,6 +111,12 @@ export default function FBAccountsPage() {
           Cuentas de Facebook Marketplace
         </h1>
         <div className="flex gap-2">
+          <Link href="/admin/fb-accounts/verification">
+            <Button variant="outline">
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Verificar migradas
+            </Button>
+          </Link>
           <Button
             variant="outline"
             onClick={handleGenerateToken}
@@ -162,7 +175,7 @@ export default function FBAccountsPage() {
 
       {!accounts?.length ? (
         <div className="text-center py-12 text-ps-text-secondary">
-          No hay cuentas configuradas. Creá una para empezar.
+          No hay cuentas activas configuradas. Creá una o verificá las migradas.
         </div>
       ) : (
         <div className="space-y-3">
