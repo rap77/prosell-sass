@@ -135,15 +135,19 @@ def test_rate_limits_in_different_environments():
 
     # Test production-like environment
     settings.environment = "production"
-    print(f"Production environment: {is_test_environment()}")
+    assert not is_test_environment()
 
     # Test test environment
     settings.environment = "testing"
-    print(f"Test environment: {is_test_environment()}")
+    assert is_test_environment()
 
     # Test development environment
     settings.environment = "development"
-    print(f"Development environment: {is_test_environment()}")
+    assert is_test_environment()
+
+    # Staging must retain production-like request protections.
+    settings.environment = "staging"
+    assert not is_test_environment()
 
     # Restore original
     settings.environment = original_env
