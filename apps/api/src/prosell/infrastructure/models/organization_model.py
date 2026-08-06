@@ -4,6 +4,8 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, text
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -73,6 +75,11 @@ class OrganizationModel(Base):
 
     # Settings
     settings: Mapped[dict[str, object]] = mapped_column(JSON, default=dict, nullable=False)
+
+    # FB publishing defaults: null=all accounts, []=none, [ids]=specific
+    default_fb_account_ids: Mapped[list[UUID] | None] = mapped_column(
+        ARRAY(PG_UUID(as_uuid=True)), nullable=True
+    )
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

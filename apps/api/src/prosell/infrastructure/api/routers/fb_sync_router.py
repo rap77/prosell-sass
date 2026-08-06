@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import or_, select
+from sqlalchemy import and_, exists, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -34,6 +34,7 @@ from prosell.infrastructure.models.fb_account_model import (
     FBPublicationStatusModel,
     product_fb_account_assignments,
 )
+from prosell.infrastructure.models.fb_unpublish_request_model import FBUnpublishRequestModel
 from prosell.infrastructure.models.marketplace_publication_model import (
     MarketplacePublicationModel,
 )
@@ -83,6 +84,44 @@ def _str_attr(attrs: _VehicleAttributes, key: str) -> str | None:
     return val if isinstance(val, str) else None
 
 
+async def _category_descendant_ids(db: DbSession, root_id: UUID) -> set[UUID]:
+    """Resolve a root vertical to every nested category it contains."""
+    result = await db.execute(select(CategoryModel.id, CategoryModel.parent_id))
+    children_by_parent: dict[UUID, list[UUID]] = {}
+    for category_id, parent_id in result.all():
+        if parent_id is not None:
+            children_by_parent.setdefault(parent_id, []).append(category_id)
+
+    category_ids = {root_id}
+    pending_ids = [root_id]
+    while pending_ids:
+        parent_id = pending_ids.pop()
+        for child_id in children_by_parent.get(parent_id, []):
+            if child_id not in category_ids:
+                category_ids.add(child_id)
+                pending_ids.append(child_id)
+    return category_ids
+
+
+async def _root_verticals(db: DbSession, category_ids: list[UUID]) -> list[tuple[str, str]]:
+    """Map product leaf categories to the root vertical displayed by the bot."""
+    result = await db.execute(select(CategoryModel))
+    categories = {category.id: category for category in result.scalars().all()}
+    root_ids: set[UUID] = set()
+    for category_id in category_ids:
+        current = categories.get(category_id)
+        visited_ids: set[UUID] = set()
+        while (
+            current is not None and current.parent_id is not None and current.id not in visited_ids
+        ):
+            visited_ids.add(current.id)
+            current = categories.get(current.parent_id)
+        if current is not None:
+            root_ids.add(current.id)
+
+    return sorted((categories[root_id].slug, categories[root_id].name) for root_id in root_ids)
+
+
 # ponytail: DTOs inline, single use
 SIGNED_URL_TTL = 3600  # 1 hour
 
@@ -120,6 +159,8 @@ class PendingProduct(BaseModel):
     vin: str | None = None
     option: str = ""  # ponytail: features not in ProSell yet
     image_urls: list[str]  # signed URLs for download
+    organization_code: str | None = None  # org code badge
+    organization_color: str | None = None  # hex color for badge
 
 
 class PendingProductsResponse(BaseModel):
@@ -159,6 +200,41 @@ class SyncCallbackResponse(BaseModel):
     status: str
 
 
+MAX_UNPUBLISH_ATTEMPTS = 3
+
+
+class PendingUnpublishRequest(BaseModel):
+    """A queued Facebook listing removal for one bot account."""
+
+    id: UUID
+    product_id: UUID
+    fb_post_id: str | None
+    attempt_count: int
+
+
+class PendingUnpublishRequestsResponse(BaseModel):
+    """Response for GET /unpublish-pending."""
+
+    requests: list[PendingUnpublishRequest]
+
+
+class UnpublishCallbackRequest(BaseModel):
+    """Bot reports the outcome of a queued Facebook listing removal."""
+
+    request_id: UUID
+    account_email: EmailStr
+    status: Literal["completed", "failed"]
+    error: str | None = Field(default=None, max_length=1000)
+
+
+class UnpublishCallbackResponse(BaseModel):
+    """Response for POST /unpublish-callback."""
+
+    request_id: UUID
+    status: str
+    attempt_count: int
+
+
 async def _account_can_publish_product(
     db: AsyncSession,
     account: FBAccountModel,
@@ -187,6 +263,154 @@ async def _account_can_publish_product(
         )
     )
     return access.scalar_one_or_none() is not None
+
+
+async def _get_active_fb_account(db: AsyncSession, account_email: EmailStr) -> FBAccountModel:
+    """Resolve an active bot account without allowing inactive account work."""
+    account = (
+        await db.execute(select(FBAccountModel).where(FBAccountModel.email == account_email))
+    ).scalar_one_or_none()
+    if account is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="FB account not found")
+    if account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"FB account is {account.status}",
+        )
+    return account
+
+
+@router.get(
+    "/unpublish-pending",
+    response_model=PendingUnpublishRequestsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
+async def get_pending_unpublish_requests(
+    db: DbSession,
+    account_email: EmailStr = Query(..., description="Active FB account polling removal work."),
+) -> PendingUnpublishRequestsResponse:
+    """Return queued removal work belonging only to the active polling account."""
+    account = await _get_active_fb_account(db, account_email)
+    requests = (
+        (
+            await db.execute(
+                select(FBUnpublishRequestModel)
+                .where(
+                    FBUnpublishRequestModel.fb_account_id == account.id,
+                    FBUnpublishRequestModel.status == "queued",
+                )
+                .order_by(FBUnpublishRequestModel.created_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return PendingUnpublishRequestsResponse(
+        requests=[
+            PendingUnpublishRequest(
+                id=request.id,
+                product_id=request.product_id,
+                fb_post_id=request.fb_post_id,
+                attempt_count=request.attempt_count,
+            )
+            for request in requests
+        ]
+    )
+
+
+@router.post(
+    "/unpublish-callback",
+    response_model=UnpublishCallbackResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
+async def unpublish_callback(
+    callback: UnpublishCallbackRequest,
+    db: DbSession,
+) -> UnpublishCallbackResponse:
+    """Persist a bot removal result and update every publication projection."""
+    account = await _get_active_fb_account(db, callback.account_email)
+    unpublish_request = (
+        await db.execute(
+            select(FBUnpublishRequestModel)
+            .where(
+                FBUnpublishRequestModel.id == callback.request_id,
+                FBUnpublishRequestModel.fb_account_id == account.id,
+            )
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if unpublish_request is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unpublish request not found"
+        )
+
+    if unpublish_request.status == "completed":
+        return UnpublishCallbackResponse(
+            request_id=unpublish_request.id,
+            status=unpublish_request.status,
+            attempt_count=unpublish_request.attempt_count,
+        )
+
+    if callback.status == "failed":
+        unpublish_request.attempt_count = min(
+            unpublish_request.attempt_count + 1, MAX_UNPUBLISH_ATTEMPTS
+        )
+        unpublish_request.last_error = callback.error or "Removal failed without error detail"
+        await db.commit()
+        return UnpublishCallbackResponse(
+            request_id=unpublish_request.id,
+            status=unpublish_request.status,
+            attempt_count=unpublish_request.attempt_count,
+        )
+
+    now = datetime.now(UTC)
+    history_id = uuid4()
+    history = FBPublicationHistoryModel(
+        id=history_id,
+        tenant_id=unpublish_request.tenant_id,
+        product_id=unpublish_request.product_id,
+        fb_account_id=account.id,
+        event_type="deleted",
+        fb_post_id=unpublish_request.fb_post_id,
+        event_at=now,
+    )
+    db.add(history)
+    publication_status = await db.get(
+        FBPublicationStatusModel, unpublish_request.publication_status_id
+    )
+    if publication_status is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publication status not found"
+        )
+    publication_status.status = "deleted"
+    publication_status.last_event_id = history_id
+    publication_status.last_event_at = now
+    publication_status.last_deleted_at = now
+    unpublish_request.status = "completed"
+    unpublish_request.last_error = None
+
+    legacy_publication_filter = [
+        MarketplacePublicationModel.product_id == unpublish_request.product_id,
+        MarketplacePublicationModel.account_email == account.email,
+        MarketplacePublicationModel.status.in_(["active", "pending"]),
+    ]
+    if unpublish_request.fb_post_id is None:
+        legacy_publication_filter.append(MarketplacePublicationModel.fb_post_id.is_(None))
+    else:
+        legacy_publication_filter.append(
+            MarketplacePublicationModel.fb_post_id == unpublish_request.fb_post_id
+        )
+    await db.execute(
+        update(MarketplacePublicationModel)
+        .where(*legacy_publication_filter)
+        .values(status="deleted", deleted_at=now, updated_at=now)
+    )
+    await db.commit()
+    return UnpublishCallbackResponse(
+        request_id=unpublish_request.id,
+        status=unpublish_request.status,
+        attempt_count=unpublish_request.attempt_count,
+    )
 
 
 @router.get(
@@ -241,14 +465,42 @@ async def get_pending_products(
         OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True),
     )
 
-    # Build query
+    # Subquery: product has explicit assignment to THIS account
+    has_explicit_assignment = exists(
+        select(product_fb_account_assignments.c.product_id).where(
+            product_fb_account_assignments.c.product_id == ProductModel.id,
+            product_fb_account_assignments.c.fb_account_id == fb_account.id,
+        )
+    )
+
+    # Subquery: product has ANY explicit assignments (to any account)
+    has_any_assignment = exists(
+        select(product_fb_account_assignments.c.product_id).where(
+            product_fb_account_assignments.c.product_id == ProductModel.id
+        )
+    )
+
+    # Build query with org fallback: explicit assignment OR inherit from org
+    # ponytail: null org defaults = all accounts, [] = none, [ids] = specific
     query = (
         select(ProductModel)
-        .join(
-            product_fb_account_assignments,
-            ProductModel.id == product_fb_account_assignments.c.product_id,
+        .join(OrganizationModel, ProductModel.organization_id == OrganizationModel.id)
+        .where(
+            or_(
+                # Case 1: product explicitly assigned to this account
+                has_explicit_assignment,
+                # Case 2: no explicit assignments, inherit from org
+                and_(
+                    ~has_any_assignment,
+                    or_(
+                        # org defaults null = all accounts
+                        OrganizationModel.default_fb_account_ids.is_(None),
+                        # org defaults contains this account
+                        OrganizationModel.default_fb_account_ids.contains([fb_account.id]),
+                    ),
+                ),
+            )
         )
-        .where(product_fb_account_assignments.c.fb_account_id == fb_account.id)
         .where(
             or_(
                 ProductModel.tenant_id == fb_account.tenant_id,
@@ -263,10 +515,19 @@ async def get_pending_products(
     if organization_id:
         query = query.where(ProductModel.organization_id == organization_id)
 
-    # Filter by category slug. Product categories in the current taxonomy are
-    # the selected vertical roots, so the slug is the stable API contract.
+    # The dashboard exposes root verticals while products can live in any
+    # descendant category, so resolve the full subtree before filtering.
     if category:
-        query = query.join(CategoryModel).where(CategoryModel.slug == category)
+        selected_category = await db.scalar(
+            select(CategoryModel).where(CategoryModel.slug == category)
+        )
+        if selected_category is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown category {category!r}",
+            )
+        category_ids = await _category_descendant_ids(db, selected_category.id)
+        query = query.where(ProductModel.category_id.in_(category_ids))
 
     published_subq = (
         select(MarketplacePublicationModel.product_id)
@@ -277,12 +538,15 @@ async def get_pending_products(
 
     query = query.limit(limit)
 
+    # ponytail: add org fields for badge display
+    query = query.add_columns(OrganizationModel.code, OrganizationModel.color)
+
     result = await db.execute(query)
-    products = result.scalars().all()
+    rows = result.all()  # tuples: (ProductModel, org_code, org_color)
 
     # Build response with signed URLs
     pending = []
-    for p in products:
+    for p, org_code, org_color in rows:
         # Sign image URLs
         signed_urls = []
         for url in p.image_urls or []:
@@ -340,6 +604,8 @@ async def get_pending_products(
                 vin=_str_attr(attrs, "vin"),
                 option="",  # ponytail: not in ProSell yet
                 image_urls=signed_urls,
+                organization_code=org_code,
+                organization_color=org_color,
             )
         )
 
@@ -614,6 +880,19 @@ class OrganizationsResponse(BaseModel):
     organizations: list[OrganizationSummary]
 
 
+class VerticalSummary(BaseModel):
+    """Product vertical available for an account's current publication queue."""
+
+    slug: str
+    name: str
+
+
+class VerticalsResponse(BaseModel):
+    """Available product verticals for a publishing account."""
+
+    verticals: list[VerticalSummary]
+
+
 @router.get(
     "/organizations",
     response_model=OrganizationsResponse,
@@ -623,7 +902,7 @@ async def get_organizations(
     db: DbSession,
     account_email: EmailStr = Query(..., description="FB account used to resolve inventory access"),
 ) -> OrganizationsResponse:
-    """List dealer organizations whose inventory an account may publish.
+    """List the operator organization and dealer organizations it may publish for.
 
     The account's operator organization is resolved server-side; callers
     cannot enumerate arbitrary tenants by providing an organization ID.
@@ -638,16 +917,21 @@ async def get_organizations(
             detail=f"Active FB account {account_email} not found",
         )
 
+    authorized_dealer_orgs = select(
+        OrganizationMarketplaceAccessModel.inventory_owner_organization_id
+    ).where(
+        OrganizationMarketplaceAccessModel.operator_organization_id == account.tenant_id,
+        OrganizationMarketplaceAccessModel.status == "active",
+        OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True),
+    )
     query = (
         select(OrganizationModel)
-        .join(
-            OrganizationMarketplaceAccessModel,
-            OrganizationMarketplaceAccessModel.inventory_owner_organization_id
-            == OrganizationModel.id,
+        .where(
+            or_(
+                OrganizationModel.id == account.tenant_id,
+                OrganizationModel.id.in_(authorized_dealer_orgs),
+            )
         )
-        .where(OrganizationMarketplaceAccessModel.operator_organization_id == account.tenant_id)
-        .where(OrganizationMarketplaceAccessModel.status == "active")
-        .where(OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True))
         .order_by(OrganizationModel.name)
     )
     result = await db.execute(query)
@@ -655,6 +939,84 @@ async def get_organizations(
 
     return OrganizationsResponse(
         organizations=[OrganizationSummary(id=o.id, name=o.name, code=o.code) for o in orgs]
+    )
+
+
+@router.get(
+    "/verticals",
+    response_model=VerticalsResponse,
+    dependencies=[Depends(verify_bot_token)],
+)
+async def get_verticals(
+    db: DbSession,
+    account_email: EmailStr = Query(..., description="FB account used to resolve inventory access"),
+) -> VerticalsResponse:
+    """List only verticals with products the selected account can publish now."""
+    account_result = await db.execute(
+        select(FBAccountModel).where(FBAccountModel.email == account_email)
+    )
+    account = account_result.scalar_one_or_none()
+    if account is None or account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Active FB account {account_email} not found",
+        )
+
+    authorized_dealer_orgs = select(
+        OrganizationMarketplaceAccessModel.inventory_owner_organization_id
+    ).where(
+        OrganizationMarketplaceAccessModel.operator_organization_id == account.tenant_id,
+        OrganizationMarketplaceAccessModel.status == "active",
+        OrganizationMarketplaceAccessModel.can_publish_marketplace.is_(True),
+    )
+    published_subq = (
+        select(MarketplacePublicationModel.product_id)
+        .where(MarketplacePublicationModel.account_email == account_email)
+        .where(MarketplacePublicationModel.status.in_(["active", "pending"]))
+    )
+
+    # ponytail: same fallback logic as /pending — explicit assignment OR org defaults
+    has_explicit_assignment = exists(
+        select(product_fb_account_assignments.c.product_id).where(
+            product_fb_account_assignments.c.product_id == ProductModel.id,
+            product_fb_account_assignments.c.fb_account_id == account.id,
+        )
+    )
+    has_any_assignment = exists(
+        select(product_fb_account_assignments.c.product_id).where(
+            product_fb_account_assignments.c.product_id == ProductModel.id
+        )
+    )
+
+    result = await db.execute(
+        select(ProductModel.category_id)
+        .join(OrganizationModel, ProductModel.organization_id == OrganizationModel.id)
+        .where(
+            or_(
+                has_explicit_assignment,
+                and_(
+                    ~has_any_assignment,
+                    or_(
+                        OrganizationModel.default_fb_account_ids.is_(None),
+                        OrganizationModel.default_fb_account_ids.contains([account.id]),
+                    ),
+                ),
+            )
+        )
+        .where(
+            or_(
+                ProductModel.tenant_id == account.tenant_id,
+                ProductModel.organization_id.in_(authorized_dealer_orgs),
+            )
+        )
+        .where(ProductModel.status == ProductStatus.PUBLISHED)
+        .where(ProductModel.published_to_marketplace.is_(True))
+        .where(ProductModel.id.not_in(published_subq))
+        .distinct()
+    )
+    verticals = await _root_verticals(db, list(result.scalars().all()))
+    return VerticalsResponse(
+        verticals=[VerticalSummary(slug=slug, name=name) for slug, name in verticals]
     )
 
 
@@ -672,6 +1034,10 @@ async def get_account_config(
         description="Filter groups by vertical/category (vehicles, real_estate, etc). "
         "If omitted, returns all active groups.",
     ),
+    include_pending_verification: bool = Query(
+        False,
+        description="Allow the migration verifier to retrieve a pending migrated credential.",
+    ),
 ) -> FBAccountConfig:
     """Get full account config with decrypted password for bot.
 
@@ -680,10 +1046,21 @@ async def get_account_config(
     vertical of the product being published (e.g. `vehicles` for a car),
     so the bot doesn't try to post a vehicle into a real-estate group.
     """
+    account_status = (
+        or_(
+            FBAccountModel.status == "active",
+            and_(
+                FBAccountModel.status.in_(["pending_verification", "verification_failed"]),
+                FBAccountModel.migration_token_id.is_not(None),
+            ),
+        )
+        if include_pending_verification
+        else FBAccountModel.status == "active"
+    )
     query = (
         select(FBAccountModel)
         .where(FBAccountModel.email == email)
-        .where(FBAccountModel.status == "active")
+        .where(account_status)
         .options(selectinload(FBAccountModel.groups))
     )
     result = await db.execute(query)
@@ -692,7 +1069,7 @@ async def get_account_config(
     if not account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Active account with email {email} not found",
+            detail=f"Eligible account with email {email} not found",
         )
 
     # Validate the category filter so a typo doesn't silently return nothing.
