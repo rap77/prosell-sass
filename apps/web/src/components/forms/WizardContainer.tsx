@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, List, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 
 // GGA TypeScript const-types
@@ -46,6 +46,8 @@ export function WizardContainer({
   const [sections, setSections] = useState<HTMLElement[]>([]);
   // ponytail: state only for auto mode, derive isMobile to avoid setState in effect
   const [isAutoAndMobile, setIsAutoAndMobile] = useState(false);
+  // FAB menu state (mobile only)
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Auto mode: listen to viewport resize
   useEffect(() => {
@@ -60,22 +62,47 @@ export function WizardContainer({
   // Derive isMobile: auto uses state (updates on resize), mobile/desktop use variant directly
   const isMobile = variant === "auto" ? isAutoAndMobile : variant === "mobile";
 
-  // Find all sections after mount
+  // Find all sections after mount + re-scan when DOM changes
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const formSections = Array.from(
-      containerRef.current.querySelectorAll("section"),
-    ).filter((el): el is HTMLElement => el instanceof HTMLElement);
+    const scanSections = () => {
+      if (!containerRef.current) return;
+      const formSections = Array.from(
+        containerRef.current.querySelectorAll("section"),
+      ).filter((el): el is HTMLElement => el instanceof HTMLElement);
 
-    // Filter out sections we don't want as steps (e.g., nested sections)
-    // ponytail: simple filter - direct children sections only
-    const topLevelSections = formSections.filter((section) => {
-      const parent = section.parentElement;
-      return parent?.tagName !== "SECTION";
-    });
+      // Filter out nested sections
+      const topLevelSections = formSections.filter((section) => {
+        const parent = section.parentElement;
+        return parent?.tagName !== "SECTION";
+      });
 
-    setSections(topLevelSections);
+      // The desktop layout reparents the form after the sidebar appears.
+      // Keep references current so scrollIntoView targets connected elements.
+      setSections((previousSections) => {
+        const sectionsAreUnchanged =
+          previousSections.length === topLevelSections.length &&
+          previousSections.every(
+            (section, index) => section === topLevelSections[index],
+          );
+
+        return sectionsAreUnchanged ? previousSections : topLevelSections;
+      });
+    };
+
+    // Initial scan + delayed re-scan for async content
+    scanSections();
+    const timeout = setTimeout(scanSections, 100);
+
+    // Watch for DOM changes (sections added/removed)
+    const observer = new MutationObserver(scanSections);
+    observer.observe(containerRef.current, { childList: true, subtree: true });
+
+    return () => {
+      clearTimeout(timeout);
+      observer.disconnect();
+    };
   }, [children]);
 
   // Control section visibility
@@ -111,32 +138,45 @@ export function WizardContainer({
 
   const handleJumpToSection = (index: number) => {
     setCurrentStep(index);
-    // Scroll to section (desktop)
+    setIsNavOpen(false);
+    // Scroll to section
     sections[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   // Extract section titles for tabs/progress
-  const sectionTitles = sections.map((section) => {
+  // Prefer data-label (clean title) over textContent (may include counters)
+  const sectionTitles = sections.map((section, idx) => {
     const heading = section.querySelector("h2");
-    return heading?.textContent || `Step ${sections.indexOf(section) + 1}`;
+    return (
+      heading?.getAttribute("data-label") ||
+      heading?.textContent ||
+      `Step ${idx + 1}`
+    );
   });
 
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === sections.length - 1;
 
-  return (
-    <div ref={containerRef} className="relative">
-      {/* Desktop: Jump-to-section tabs */}
-      {!isMobile && sections.length > 0 && (
-        <div className="sticky top-0 z-10 mb-6 border-b bg-background">
-          <div className="flex gap-2 overflow-x-auto pb-2">
+  // Desktop: sidebar layout
+  if (!isMobile && sections.length > 0) {
+    return (
+      <div ref={containerRef} className="relative flex gap-6">
+        {/* Sidebar navigation */}
+        <nav
+          aria-label="Secciones"
+          className="sticky top-4 z-10 h-fit w-48 shrink-0 rounded-lg border bg-muted/30 p-3"
+        >
+          <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+            Secciones
+          </div>
+          <div className="flex flex-col gap-1">
             {sectionTitles.map((title, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => handleJumpToSection(index)}
                 className={cn(
-                  "whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                  "cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors",
                   currentStep === index
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -146,6 +186,55 @@ export function WizardContainer({
               </button>
             ))}
           </div>
+        </nav>
+
+        {/* Form content */}
+        <div className="min-w-0 flex-1">
+          {children}
+          {/* Lets trailing sections align with the top of the scroll container. */}
+          <div aria-hidden="true" className="h-[calc(100vh-8rem)]" />
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile layout
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Mobile: FAB navigation */}
+      {isMobile && sections.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          {isNavOpen && (
+            <div className="mb-2 flex flex-col gap-1 rounded-lg border bg-background p-2 shadow-lg">
+              {sectionTitles.map((title, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleJumpToSection(index)}
+                  className={cn(
+                    "rounded px-3 py-1.5 text-left text-sm transition-colors",
+                    currentStep === index
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {title}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsNavOpen((prev) => !prev)}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
+            aria-label={isNavOpen ? "Cerrar navegación" : "Ir a sección"}
+          >
+            {isNavOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <List className="h-5 w-5" />
+            )}
+          </button>
         </div>
       )}
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { type Control, type UseFormSetValue, useWatch } from "react-hook-form";
 
 import type { AttributeGroup, AttributeSchemaEntry } from "@/types/category";
@@ -37,6 +39,8 @@ export function SchemaFormSection({
   disabled,
   defaultOpen = true,
 }: SchemaFormSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   // Watch all fields in this group to count filled vs empty
   const values = useWatch({ control, name: fieldKeys });
   const filledCount = fieldKeys.filter((_, i) => isFilled(values?.[i])).length;
@@ -44,27 +48,41 @@ export function SchemaFormSection({
   if (fieldKeys.length === 0) return null;
 
   // ponytail: use <section> + <h2> so WizardContainer picks up group titles for nav tabs
+  // scroll-mt-20 compensates sticky nav bar so title lands below it with breathing room
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="flex items-center gap-2 text-lg font-semibold">
-        {group.label}
+    <section className="flex flex-col scroll-mt-20">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex w-full items-center gap-2 py-2 text-left"
+      >
+        {isOpen ? (
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        )}
+        <h2 className="text-lg font-semibold" data-label={group.label}>
+          {group.label}
+        </h2>
         <span className="text-sm font-normal text-muted-foreground">
-          {filledCount}/{fieldKeys.length}
+          ({filledCount}/{fieldKeys.length})
         </span>
-      </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {fieldKeys.map((key) => (
-          <SchemaFieldRenderer
-            key={key}
-            fieldKey={key}
-            entry={schema[key]}
-            control={control}
-            setValue={setValue}
-            schema={schema}
-            disabled={disabled}
-          />
-        ))}
-      </div>
+      </button>
+      {isOpen && (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {fieldKeys.map((key) => (
+            <SchemaFieldRenderer
+              key={key}
+              fieldKey={key}
+              entry={schema[key]}
+              control={control}
+              setValue={setValue}
+              schema={schema}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

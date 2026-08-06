@@ -81,7 +81,7 @@ export default function EditProductPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-[896px] mx-auto flex justify-center p-16">
+      <div className="flex justify-center p-16">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -89,7 +89,7 @@ export default function EditProductPage() {
 
   if (!product) {
     return (
-      <div className="max-w-[896px] mx-auto">
+      <div>
         <p>Producto no encontrado.</p>
       </div>
     );
@@ -97,7 +97,7 @@ export default function EditProductPage() {
 
   if (!category) {
     return (
-      <div className="max-w-[896px] mx-auto">
+      <div>
         <p>
           Categoría no encontrada. El producto puede pertenecer a una categoría
           deshabilitada.
@@ -107,9 +107,9 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="max-w-[896px] mx-auto">
+    <div>
       {/* Header */}
-      <div className="flex items-start gap-4 mb-7">
+      <div className="flex items-start gap-4 mb-7 max-w-4xl">
         <Link
           href="/catalog"
           className="inline-flex items-center gap-1.5 h-9 px-3 mt-0.5 bg-bg-elevated border border-border-default rounded-lg text-text-secondary text-sm no-underline flex-shrink-0"
@@ -120,7 +120,7 @@ export default function EditProductPage() {
 
         <div>
           <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">
-            Editar {category.name}
+            Editar {product.title}
           </h1>
           <p className="m-0 mt-1 text-sm text-text-secondary">
             Actualizá la información y las fotos del producto.

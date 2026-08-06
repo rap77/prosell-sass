@@ -21,7 +21,7 @@ import {
   User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -160,10 +160,11 @@ export function getSelectableBrokers(
   selectedOwnerIds: ReadonlySet<string>,
   currentOwnerId: string,
 ): Broker[] {
-  return brokers.filter(
-    (broker) =>
-      broker.id === currentOwnerId || !selectedOwnerIds.has(broker.id),
-  );
+  return brokers.filter((broker) => {
+    // Use user_id (the ownership key) for comparison, fallback to id
+    const ownerId = broker.user_id ?? broker.id;
+    return ownerId === currentOwnerId || !selectedOwnerIds.has(ownerId);
+  });
 }
 
 export function UnifiedProductForm({
@@ -199,7 +200,6 @@ export function UnifiedProductForm({
   const [fbAccountsOverride, setFbAccountsOverride] = useState<string[] | null>(
     null,
   );
-  const { data: fbAccounts = [] } = useFBAccounts();
   const initializedOwnershipProductId = useRef<string | null>(null);
   const { data: organizations = [] } = useOrganizations();
   const { data: brokers = [], isLoading: isLoadingBrokers } =
@@ -279,26 +279,21 @@ export function UnifiedProductForm({
   // Derived FB state (must be after existingProduct declaration)
   const publishToFB =
     fbOverride ?? existingProduct?.published_to_marketplace ?? false;
+  const { data: fbAccounts = [] } = useFBAccounts({}, publishToFB);
   // Derived FB accounts: null=not dirty, []=any account, [ids]=specific
   const selectedFbAccounts =
     fbAccountsOverride ?? existingProduct?.fb_account_ids ?? [];
   const fbAccountsDirty = fbAccountsOverride !== null;
   const fbDirty = fbOverride !== null;
 
-  // Build schema from category
-  // React 19: useMemo JUSTIFIED - schema derivation walks attribute_schema (O(n) complexity),
-  // expensive on large categories (100+ fields); memoization prevents re-running buildZodSchema
-  // on every keystroke, which would cause validation performance issues
-  const { combinedSchema, defaultValues } = useMemo(() => {
-    const attrSchema = buildZodSchema(category.attribute_schema);
-    const combined = FIXED_FIELDS_SCHEMA.merge(attrSchema);
-    const defaults = {
-      price: 0,
-      description: "",
-      ...getSchemaDefaults(category.attribute_schema),
-    };
-    return { combinedSchema: combined, defaultValues: defaults };
-  }, [category.attribute_schema]);
+  // Build schema from category (React 19 Compiler handles memoization)
+  const attrSchema = buildZodSchema(category.attribute_schema);
+  const combinedSchema = FIXED_FIELDS_SCHEMA.merge(attrSchema);
+  const defaultValues = {
+    price: 0,
+    description: "",
+    ...getSchemaDefaults(category.attribute_schema),
+  };
 
   // Form
   const {
@@ -306,12 +301,19 @@ export function UnifiedProductForm({
     handleSubmit,
     setValue,
     reset,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<Record<string, unknown>>({
     resolver: zodResolver(combinedSchema),
     defaultValues,
     mode: "onSubmit",
   });
+
+  // Debug: log validation errors when they change
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      logger.warn("Form validation errors", errors);
+    }
+  }, [errors]);
 
   // Populate form with existing data in edit mode
   useEffect(() => {
@@ -432,22 +434,13 @@ export function UnifiedProductForm({
     }
   }, [mode, productId, existingImageData, seedImages, setCoverImage]);
 
-  // Group fields
-  // React 19: useMemo JUSTIFIED - group sorting (O(n log n)) + grouping (O(n)) runs over
-  // attribute_schema/attribute_groups; memoization prevents re-sorting on every form change
-  const sortedGroups = useMemo(
-    () =>
-      [...category.attribute_groups].sort(
-        (a, b) => (a.order ?? 0) - (b.order ?? 0),
-      ),
-    [category.attribute_groups],
+  // Group fields (React 19 Compiler handles memoization)
+  const sortedGroups = [...category.attribute_groups].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
   );
-  // React 19: useMemo JUSTIFIED - groupFieldsByGroup walks schema (O(n));
-  // memoization prevents re-grouping on every keystroke
-  const fieldsByGroup = useMemo(
-    () =>
-      groupFieldsByGroup(category.attribute_schema, category.attribute_groups),
-    [category.attribute_schema, category.attribute_groups],
+  const fieldsByGroup = groupFieldsByGroup(
+    category.attribute_schema,
+    category.attribute_groups,
   );
 
   const isDisabled =
@@ -500,7 +493,11 @@ export function UnifiedProductForm({
     }
 
     const titleTemplate = category.presentation?.title_template;
-    const title = generateTitle(titleTemplate, formAttributes) || category.name;
+    // ponytail: in edit mode, keep existing title if template fails
+    const title =
+      generateTitle(titleTemplate, formAttributes) ||
+      existingProduct?.title ||
+      category.name;
 
     return {
       title,
@@ -636,15 +633,19 @@ export function UnifiedProductForm({
       className="flex flex-col gap-8 max-w-4xl"
     >
       {/* Images */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Imágenes</h2>
+      <section className="flex flex-col gap-4 scroll-mt-20">
+        <h2 className="text-lg font-semibold" data-label="Imágenes">
+          Imágenes
+        </h2>
         <ImageDropzone />
         <ProductCoverPicker />
       </section>
 
       {/* Price (fixed field) */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Precio</h2>
+      <section className="flex flex-col gap-4 scroll-mt-20">
+        <h2 className="text-lg font-semibold" data-label="Precio">
+          Precio
+        </h2>
         <Controller
           name="price"
           control={control}
@@ -690,8 +691,10 @@ export function UnifiedProductForm({
 
       {/* Ungrouped fields */}
       {fieldsByGroup._ungrouped?.length > 0 && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold">Otros</h2>
+        <section className="flex flex-col gap-4 scroll-mt-20">
+          <h2 className="text-lg font-semibold" data-label="Otros">
+            Otros
+          </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {fieldsByGroup._ungrouped.map((key) => (
               <Controller
@@ -742,24 +745,24 @@ export function UnifiedProductForm({
       </section>
 
       {/* Facebook Marketplace */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Facebook className="h-5 w-5 text-blue-600" />
+      <section className="flex flex-col gap-4 scroll-mt-20">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-ps-text-primary">
+          <Facebook className="h-5 w-5 text-ps-cyan" />
           Facebook Marketplace
         </h2>
-        <label className="flex items-center gap-3 cursor-pointer">
+        <label className="flex cursor-pointer items-center gap-3 text-ps-text-primary">
           <input
             type="checkbox"
             checked={publishToFB}
             onChange={(e) => setFbOverride(e.target.checked)}
             disabled={isDisabled}
-            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-5 w-5 cursor-pointer rounded border-ps-border-default accent-ps-cyan focus:ring-ps-cyan"
           />
           <div>
             <span className="font-medium">
               Publicar en Facebook Marketplace
             </span>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ps-text-secondary">
               El bot publicará este producto en los grupos de FB configurados
             </p>
           </div>
@@ -767,32 +770,46 @@ export function UnifiedProductForm({
 
         {/* FB Account multi-select — only visible when publishing */}
         {publishToFB && fbAccounts.length > 0 && (
-          <div className="ml-8 mt-2 space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
+          <div className="ml-8 mt-2 space-y-3 rounded-lg border border-ps-border-subtle bg-ps-elevated p-3">
+            <p className="text-sm font-medium text-ps-text-primary">
               Cuentas que publicarán este producto:
             </p>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex cursor-pointer items-center gap-2 text-ps-text-primary">
               <input
                 type="checkbox"
                 checked={selectedFbAccounts.length === 0}
-                onChange={() => setFbAccountsOverride([])}
+                onChange={() => {
+                  // Toggle: if "all" is active, switch to first account; otherwise set to all
+                  if (selectedFbAccounts.length === 0) {
+                    const firstActive = fbAccounts.find(
+                      (a) => a.status === "active",
+                    );
+                    setFbAccountsOverride(firstActive ? [firstActive.id] : []);
+                  } else {
+                    setFbAccountsOverride([]);
+                  }
+                }}
                 disabled={isDisabled}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                className="h-4 w-4 cursor-pointer rounded border-ps-border-default accent-ps-cyan"
               />
-              <span className="text-sm">Todas las cuentas</span>
+              <span className="text-sm">
+                Usar configuración de la organización
+                <span className="ml-1 text-ps-text-tertiary">(heredado)</span>
+              </span>
             </label>
             {fbAccounts
               .filter((a) => a.status === "active")
               .map((account) => (
                 <label
                   key={account.id}
-                  className="flex items-center gap-2 cursor-pointer"
+                  className="flex cursor-pointer items-center gap-2 text-ps-text-primary"
                 >
                   <input
                     type="checkbox"
                     checked={selectedFbAccounts.includes(account.id)}
                     onChange={(e) => {
                       if (e.target.checked) {
+                        // Add this account (removes "all" mode)
                         setFbAccountsOverride([
                           ...selectedFbAccounts.filter(
                             (id) => id !== account.id,
@@ -800,24 +817,29 @@ export function UnifiedProductForm({
                           account.id,
                         ]);
                       } else {
+                        const remaining = selectedFbAccounts.filter(
+                          (id) => id !== account.id,
+                        );
+                        // If no accounts left, revert to "all"
                         setFbAccountsOverride(
-                          selectedFbAccounts.filter((id) => id !== account.id),
+                          remaining.length > 0 ? remaining : [],
                         );
                       }
                     }}
-                    disabled={isDisabled || selectedFbAccounts.length === 0}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                    disabled={isDisabled}
+                    className="h-4 w-4 cursor-pointer rounded border-ps-border-default accent-ps-cyan"
                   />
                   <span className="text-sm">
                     {account.alias || account.email}
-                    <span className="text-muted-foreground ml-1">
+                    <span className="ml-1 text-ps-text-secondary">
                       ({account.groups_count} grupos)
                     </span>
                   </span>
                 </label>
               ))}
-            <p className="text-xs text-muted-foreground">
-              Si no seleccionás ninguna, cualquier cuenta activa puede publicar.
+            <p className="text-xs text-ps-text-tertiary">
+              La configuración de la organización aplica a todos sus productos
+              por defecto. Seleccioná cuentas específicas solo para excepciones.
             </p>
           </div>
         )}

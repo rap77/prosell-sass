@@ -70,13 +70,17 @@ function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
   }
 
   // String (default)
-  let schema: ZodTypeAny = z.string();
+  // ponytail: preprocess null → "" to handle backend nulls
   if (entry.required) {
-    schema = (schema as z.ZodString).min(1, { message: "Required" });
-  } else {
-    schema = schema.optional();
+    return z.preprocess(
+      (val) => (val === null || val === undefined ? "" : val),
+      z.string().min(1, { message: "Required" }),
+    );
   }
-  return schema;
+  return z.preprocess(
+    (val) => (val === null || val === undefined ? "" : val),
+    z.string().optional(),
+  );
 }
 
 /**

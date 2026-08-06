@@ -8,14 +8,9 @@ GIT_DIR="$(git rev-parse --git-dir)"
 
 MAX_FILES_PER_BATCH="${GGA_BATCH_MAX_FILES:-8}"
 MAX_BYTES_PER_BATCH="${GGA_BATCH_MAX_BYTES:-50000}"
-PRIMARY_PROVIDER="${GGA_PRIMARY_PROVIDER:-}"
-FALLBACK_PROVIDERS="${GGA_FALLBACK_PROVIDERS:-codex}"
-
-if [[ -z "$PRIMARY_PROVIDER" && -f ".gga" ]]; then
-  PRIMARY_PROVIDER="$(
-    sed -n 's/^PROVIDER="\([^"]*\)"/\1/p' .gga | head -n 1
-  )"
-fi
+# ponytail: hardcode claude — sed parsing was unreliable, codex times out
+PRIMARY_PROVIDER="${GGA_PRIMARY_PROVIDER:-claude}"
+FALLBACK_PROVIDERS="${GGA_FALLBACK_PROVIDERS:-}"
 
 FILE_PATTERNS=""
 EXCLUDE_PATTERNS=""

@@ -1,7 +1,6 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useCallback } from "react";
 import type { UseFormSetValue } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,10 @@ interface VinDecodeFieldProps {
   disabled?: boolean;
   /** Used to auto-fill stock_number from last 6 chars of VIN */
   setValue?: UseFormSetValue<Record<string, unknown>>;
+  /** Show required asterisk */
+  required?: boolean;
+  /** Validation error message */
+  error?: string;
 }
 
 /**
@@ -33,22 +36,22 @@ export function VinDecodeField({
   onDecode,
   disabled,
   setValue,
+  required,
+  error,
 }: VinDecodeFieldProps) {
   const { mutate: decodeVin, isPending } = useDecodeVin();
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      // Uppercase, strip invalid chars (I, O, Q)
-      const cleaned = e.target.value
-        .toUpperCase()
-        .replace(/[IOQ]/g, "")
-        .slice(0, 17);
-      onChange(cleaned);
-    },
-    [onChange],
-  );
+  // React 19 Compiler handles memoization
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Uppercase, strip invalid chars (I, O, Q)
+    const cleaned = e.target.value
+      .toUpperCase()
+      .replace(/[IOQ]/g, "")
+      .slice(0, 17);
+    onChange(cleaned);
+  };
 
-  const handleDecode = useCallback(() => {
+  const handleDecode = () => {
     if (value.length !== 17) return;
 
     decodeVin(value, {
@@ -60,13 +63,16 @@ export function VinDecodeField({
         }
       },
     });
-  }, [value, decodeVin, onDecode, setValue]);
+  };
 
   const isValidLength = value.length === 17;
 
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor="vin">VIN</Label>
+      <Label htmlFor="vin">
+        VIN
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
       <div className="flex gap-2">
         <Input
           id="vin"
@@ -94,7 +100,8 @@ export function VinDecodeField({
           )}
         </Button>
       </div>
-      {value.length > 0 && !isValidLength && (
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {!error && value.length > 0 && !isValidLength && (
         <p className="text-sm text-muted-foreground">
           {17 - value.length} characters remaining
         </p>

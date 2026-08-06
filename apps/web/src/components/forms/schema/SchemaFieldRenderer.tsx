@@ -51,7 +51,7 @@ export function SchemaFieldRenderer({
       <Controller
         name={fieldKey}
         control={control}
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <VinDecodeField
             value={String(field.value ?? "")}
             onChange={field.onChange}
@@ -60,6 +60,8 @@ export function SchemaFieldRenderer({
             }
             disabled={disabled}
             setValue={setValue}
+            required={entry.required}
+            error={fieldState.error?.message}
           />
         )}
       />
