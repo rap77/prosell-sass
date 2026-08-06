@@ -18,6 +18,7 @@ import {
   useResendOrganizationInvitation,
   useUpdateOrganization,
 } from "@/lib/api/organizations";
+import { useFBAccounts } from "@/lib/api/fb-accounts";
 
 /**
  * Admin organization detail — Subsystem D Phase 6.
@@ -36,6 +37,10 @@ export default function AdminOrganizationDetailPage() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+  const [fbAccountsOverride, setFbAccountsOverride] = useState<
+    string[] | null | undefined
+  >();
+  const { data: fbAccounts = [] } = useFBAccounts({}, true);
 
   const handleStartEdit = () => {
     if (organization) {
@@ -64,14 +69,7 @@ export default function AdminOrganizationDetailPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          color: "var(--ps-text-secondary)",
-        }}
-      >
+      <div className="flex items-center gap-2 text-ps-text-secondary">
         <Loader2 size={16} className="animate-spin" />
         Cargando organización…
       </div>
@@ -80,7 +78,7 @@ export default function AdminOrganizationDetailPage() {
 
   if (error) {
     return (
-      <p style={{ color: "var(--ps-error)" }}>
+      <p className="text-ps-error">
         Error al cargar el organización: {error.message}
       </p>
     );
@@ -88,34 +86,25 @@ export default function AdminOrganizationDetailPage() {
 
   if (!organization) {
     return (
-      <p style={{ color: "var(--ps-text-secondary)" }}>
-        Organización no encontrado.
-      </p>
+      <p className="text-ps-text-secondary">Organización no encontrado.</p>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Back button */}
       <Link
         href="/admin/organizations"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          color: "var(--ps-text-secondary)",
-          textDecoration: "none",
-          fontSize: 13,
-        }}
+        className="inline-flex items-center gap-1.5 text-[13px] text-ps-text-secondary no-underline"
       >
         <ArrowLeft size={14} />
         Organizaciones
       </Link>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="flex items-center gap-3">
         {isEditingName ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="flex items-center gap-2">
             <input
               type="text"
               value={editedName}
@@ -125,34 +114,13 @@ export default function AdminOrganizationDetailPage() {
                 if (e.key === "Escape") handleCancelEdit();
               }}
               autoFocus
-              style={{
-                height: 36,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: "1px solid var(--ps-cyan)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-primary)",
-                fontSize: 18,
-                fontWeight: 700,
-                minWidth: 200,
-              }}
+              className="h-9 min-w-[200px] rounded-lg border border-ps-cyan bg-ps-elevated px-3 text-lg font-bold text-ps-text-primary"
             />
             <button
               type="button"
               onClick={handleSaveName}
               disabled={updateOrganization.isPending || !editedName.trim()}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 32,
-                height: 32,
-                borderRadius: 6,
-                border: "none",
-                background: "var(--ps-success)",
-                color: "white",
-                cursor: "pointer",
-              }}
+              className="flex h-8 w-8 items-center justify-center rounded-md border-0 bg-ps-success text-white"
             >
               {updateOrganization.isPending ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -163,49 +131,20 @@ export default function AdminOrganizationDetailPage() {
             <button
               type="button"
               onClick={handleCancelEdit}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 32,
-                height: 32,
-                borderRadius: 6,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-secondary)",
-                cursor: "pointer",
-              }}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-ps-border-default bg-ps-elevated text-ps-text-secondary"
             >
               <X size={14} />
             </button>
           </div>
         ) : (
           <>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 700,
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <h1 className="m-0 text-[22px] font-bold text-ps-text-primary">
               {organization.name}
             </h1>
             <button
               type="button"
               onClick={handleStartEdit}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                border: "1px solid var(--ps-border-default)",
-                background: "var(--ps-bg-elevated)",
-                color: "var(--ps-text-secondary)",
-                cursor: "pointer",
-              }}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-ps-border-default bg-ps-elevated text-ps-text-secondary"
               title="Editar nombre"
             >
               <Pencil size={12} />
@@ -213,20 +152,11 @@ export default function AdminOrganizationDetailPage() {
           </>
         )}
         <span
-          style={{
-            padding: "4px 10px",
-            borderRadius: 12,
-            fontSize: 12,
-            fontWeight: 600,
-            background:
-              organization.status === "active"
-                ? "var(--ps-success-10)"
-                : "var(--ps-warning-10)",
-            color:
-              organization.status === "active"
-                ? "var(--ps-success)"
-                : "var(--ps-warning)",
-          }}
+          className={
+            organization.status === "active"
+              ? "rounded-xl bg-ps-success-10 px-2.5 py-1 text-xs font-semibold text-ps-success"
+              : "rounded-xl bg-ps-warning-10 px-2.5 py-1 text-xs font-semibold text-ps-warning"
+          }
         >
           {organization.status === "active" ? "Activo" : "Pendiente"}
         </span>
@@ -234,21 +164,11 @@ export default function AdminOrganizationDetailPage() {
 
       {/* Pending status explanation */}
       {organization.status === "pending_verification" && (
-        <div
-          style={{
-            padding: 16,
-            borderRadius: 8,
-            background: "var(--ps-warning-10)",
-            border: "1px solid var(--ps-warning)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
-          <div style={{ fontWeight: 600, color: "var(--ps-warning)" }}>
+        <div className="flex flex-col gap-2 rounded-lg border border-ps-warning bg-ps-warning-10 p-4">
+          <div className="font-semibold text-ps-warning">
             Esperando aceptación del owner
           </div>
-          <div style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>
+          <div className="text-[13px] text-ps-text-secondary">
             Se envió una invitación por email al owner. La organización se
             activará automáticamente cuando el owner acepte la invitación y
             complete su registro.
@@ -257,18 +177,7 @@ export default function AdminOrganizationDetailPage() {
             type="button"
             onClick={() => resendInvitation.mutate(organization.id)}
             disabled={resendInvitation.isPending}
-            style={{
-              alignSelf: "flex-start",
-              height: 32,
-              padding: "0 12px",
-              borderRadius: 6,
-              background: "var(--ps-warning)",
-              border: "none",
-              color: "white",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="h-8 self-start rounded-md border-0 bg-ps-warning px-3 text-xs font-semibold text-white"
           >
             {resendInvitation.isPending ? "Reenviando…" : "Reenviar invitación"}
           </button>
@@ -276,46 +185,145 @@ export default function AdminOrganizationDetailPage() {
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <div className="flex flex-wrap gap-3">
         <Link
           href={`/admin/organizations/${organization.id}/edit`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            height: 36,
-            padding: "0 16px",
-            borderRadius: 8,
-            background: "var(--ps-bg-elevated)",
-            border: "1px solid var(--ps-border-default)",
-            color: "var(--ps-text-primary)",
-            textDecoration: "none",
-            fontWeight: 600,
-            fontSize: 13,
-          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ps-border-default bg-ps-elevated px-4 text-[13px] font-semibold text-ps-text-primary no-underline"
         >
           <Settings size={14} />
           Editar información
         </Link>
         <Link
           href={`/admin/organizations/${organization.id}/products`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            height: 36,
-            padding: "0 16px",
-            borderRadius: 8,
-            background: "var(--ps-cyan)",
-            color: "var(--ps-bg-base)",
-            textDecoration: "none",
-            fontWeight: 600,
-            fontSize: 13,
-          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-ps-cyan px-4 text-[13px] font-semibold text-ps-bg-base no-underline"
         >
           Ver productos <ArrowRight size={14} />
         </Link>
       </div>
+
+      {/* FB Account Defaults */}
+      {fbAccounts.length > 0 && (
+        <FBAccountDefaultsSection
+          organization={organization}
+          fbAccounts={fbAccounts}
+          fbAccountsOverride={fbAccountsOverride}
+          setFbAccountsOverride={setFbAccountsOverride}
+          updateOrganization={updateOrganization}
+        />
+      )}
+    </div>
+  );
+}
+
+// ponytail: inline component to avoid prop drilling complexity
+function FBAccountDefaultsSection({
+  organization,
+  fbAccounts,
+  fbAccountsOverride,
+  setFbAccountsOverride,
+  updateOrganization,
+}: {
+  organization: { id: string; default_fb_account_ids?: string[] | null };
+  fbAccounts: {
+    id: string;
+    email: string;
+    alias?: string | null;
+    status: string;
+    groups_count: number;
+  }[];
+  fbAccountsOverride: string[] | null | undefined;
+  setFbAccountsOverride: (v: string[] | null | undefined) => void;
+  updateOrganization: ReturnType<typeof useUpdateOrganization>;
+}) {
+  // `undefined` means untouched; `null` means all accounts; [] means no defaults.
+  const currentSelection =
+    fbAccountsOverride !== undefined
+      ? fbAccountsOverride
+      : (organization.default_fb_account_ids ?? null);
+  const isAllAccounts = currentSelection === null;
+  const isDirty = fbAccountsOverride !== undefined;
+
+  const handleSave = async () => {
+    if (fbAccountsOverride === undefined) return;
+    await updateOrganization.mutateAsync({
+      organizationId: organization.id,
+      data: { default_fb_account_ids: fbAccountsOverride },
+    });
+    setFbAccountsOverride(undefined);
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-ps-border-subtle bg-ps-elevated p-4">
+      <div className="font-semibold text-ps-text-primary">
+        Cuentas FB por defecto
+      </div>
+      <p className="m-0 text-[13px] text-ps-text-secondary">
+        Los productos de esta organización heredarán estas cuentas a menos que
+        se configuren específicamente.
+      </p>
+
+      {/* All accounts option */}
+      <label className="flex cursor-pointer items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isAllAccounts}
+          onChange={() => setFbAccountsOverride(isAllAccounts ? [] : null)}
+          className="h-4 w-4 accent-ps-cyan"
+        />
+        <span className="text-sm text-ps-text-primary">
+          Todas las cuentas activas
+        </span>
+      </label>
+
+      {/* Individual accounts */}
+      {fbAccounts
+        .filter((a) => a.status === "active")
+        .map((account) => {
+          const isSelected =
+            !isAllAccounts && (currentSelection ?? []).includes(account.id);
+          return (
+            <label
+              key={account.id}
+              className="flex cursor-pointer items-center gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => {
+                  const current = currentSelection ?? [];
+                  if (e.target.checked) {
+                    setFbAccountsOverride([
+                      ...current.filter((id) => id !== account.id),
+                      account.id,
+                    ]);
+                  } else {
+                    const remaining = current.filter((id) => id !== account.id);
+                    setFbAccountsOverride(remaining);
+                  }
+                }}
+                className="h-4 w-4 accent-ps-cyan"
+              />
+              <span className="text-sm text-ps-text-primary">
+                {account.alias || account.email}
+                <span className="ml-1 text-ps-text-secondary">
+                  ({account.groups_count} grupos)
+                </span>
+              </span>
+            </label>
+          );
+        })}
+
+      {/* Save button */}
+      {isDirty && (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={updateOrganization.isPending}
+          className="h-9 self-start rounded-lg border-0 bg-ps-cyan px-4 text-[13px] font-semibold text-ps-bg-base"
+        >
+          {updateOrganization.isPending ? "Guardando…" : "Guardar cambios"}
+        </button>
+      )}
     </div>
   );
 }

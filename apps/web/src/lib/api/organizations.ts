@@ -156,6 +156,8 @@ interface UpdateOrganizationInput {
   tax_id?: string;
   instagram?: string;
   facebook?: string;
+  // ponytail: null=all accounts, []=none, [ids]=specific
+  default_fb_account_ids?: string[] | null;
 }
 
 /** Update a organization's details. */

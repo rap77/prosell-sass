@@ -38,6 +38,8 @@ export const OrganizationSchema = z
     // Social
     instagram: z.string().nullable().optional(),
     facebook: z.string().nullable().optional(),
+    // FB publishing: null=all accounts, []=none, [ids]=specific
+    default_fb_account_ids: z.array(z.string()).nullable().optional(),
     // Meta
     created_at: z.string(),
     updated_at: z.string(),

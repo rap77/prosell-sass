@@ -30,6 +30,11 @@ vi.mock("@/lib/api/organizations", () => ({
   useDeleteOrganizationBroker: () => mockUseDeleteOrganizationBroker(),
 }));
 
+const mockUseFBAccounts = vi.fn();
+vi.mock("@/lib/api/fb-accounts", () => ({
+  useFBAccounts: () => mockUseFBAccounts(),
+}));
+
 const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -40,6 +45,7 @@ describe("AdminOrganizationDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseRequireAdmin.mockReturnValue(true);
+    mockUseFBAccounts.mockReturnValue({ data: [] });
     mockUseResendInvitation.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,

@@ -11,7 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
-from sqlalchemy import text
+from sqlalchemy import text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org.response import OrganizationListResponse, OrganizationResponse
@@ -43,6 +43,7 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.api.middleware.rate_limit_middleware import smart_rate_limit
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.repositories.organization_broker_repository_impl import (
     BrokerInfo,
     SqlAlchemyOrganizationBrokerRepository,
@@ -292,6 +293,8 @@ class UpdateOrganizationRequest(BaseModel):
     tax_id: str | None = None
     instagram: str | None = None
     facebook: str | None = None
+    # ponytail: null=all accounts, []=none, [ids]=specific
+    default_fb_account_ids: list[UUID] | None = None
 
 
 class UpdateOrganizationResponse(BaseModel):
@@ -348,6 +351,13 @@ async def update_organization(
         organization.instagram = request.instagram
     if request.facebook is not None:
         organization.facebook = request.facebook
+    # `null` enables all accounts; an empty list explicitly disables defaults.
+    if "default_fb_account_ids" in request.model_fields_set:
+        await db.execute(
+            update(OrganizationModel)
+            .where(OrganizationModel.id == organization_id)
+            .values(default_fb_account_ids=request.default_fb_account_ids)
+        )
 
     updated = await org_repo.update(organization)
     return UpdateOrganizationResponse(id=updated.id, name=updated.name, status=updated.status)

@@ -498,6 +498,30 @@ async def test_broker_phone_is_optional(
 
 
 @pytest.mark.asyncio
+async def test_admin_updates_organization_fb_account_defaults(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    other_dealer: OrganizationModel,
+) -> None:
+    """The API preserves distinct all, none, and specific account defaults."""
+    account_ids = [uuid4(), uuid4()]
+
+    for defaults in (None, [], account_ids):
+        response = await async_client_as_admin.patch(
+            f"/api/v1/admin/organizations/{other_dealer.id}",
+            json={
+                "default_fb_account_ids": (
+                    None if defaults is None else [str(account_id) for account_id in defaults]
+                )
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        await db_session.refresh(other_dealer)
+        assert other_dealer.default_fb_account_ids == defaults
+
+
+@pytest.mark.asyncio
 async def test_create_dealer_accepts_brokers_with_phone(
     async_client_as_admin: AsyncClient,
     root_category: CategoryModel,
