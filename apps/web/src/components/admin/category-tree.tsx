@@ -26,9 +26,17 @@ import type { CategoryTreeNode } from "@/lib/utils/build-category-tree";
 import type { Category } from "@/types/category";
 import { CategoryRow } from "./category-row";
 
-/** ponytail: derive stable key from node order for change detection */
+/** ponytail: derive stable key from ALL nodes (recursive) for change detection */
 function getNodesKey(nodes: CategoryTreeNode[]): string {
-  return nodes.map((n) => n.id).join(",");
+  const ids: string[] = [];
+  function collect(list: CategoryTreeNode[]) {
+    for (const n of list) {
+      ids.push(n.id);
+      if (n.children.length) collect(n.children);
+    }
+  }
+  collect(nodes);
+  return ids.join(",");
 }
 
 interface CategoryTreeProps {
