@@ -3,6 +3,7 @@
 import csv
 import io
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Annotated, Literal
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
@@ -21,6 +22,7 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -71,7 +73,12 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
-from prosell.infrastructure.models.fb_account_model import product_fb_account_assignments
+from prosell.infrastructure.models.fb_account_model import (
+    FBPublicationHistoryModel,
+    FBPublicationStatusModel,
+    product_fb_account_assignments,
+)
+from prosell.infrastructure.models.fb_unpublish_request_model import FBUnpublishRequestModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.repositories.category_repository_impl import (
@@ -216,6 +223,49 @@ def _require_marketplace_publish(current_user: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Marketplace publish permission required",
         )
+
+
+async def _enqueue_unpublish_requests(db: AsyncSession, product: Product | ProductModel) -> None:
+    """Queue one idempotent removal request for every active FB publication."""
+    active_statuses = (
+        (
+            await db.execute(
+                select(FBPublicationStatusModel).where(
+                    FBPublicationStatusModel.product_id == product.id,
+                    FBPublicationStatusModel.tenant_id == product.tenant_id,
+                    FBPublicationStatusModel.status == "active",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    for publication_status in active_statuses:
+        fb_post_id = await db.scalar(
+            select(FBPublicationHistoryModel.fb_post_id)
+            .where(
+                FBPublicationHistoryModel.product_id == product.id,
+                FBPublicationHistoryModel.fb_account_id == publication_status.fb_account_id,
+                FBPublicationHistoryModel.fb_post_id.is_not(None),
+            )
+            .order_by(FBPublicationHistoryModel.event_at.desc())
+            .limit(1)
+        )
+        request = pg_insert(FBUnpublishRequestModel).values(
+            id=uuid4(),
+            tenant_id=product.tenant_id,
+            product_id=product.id,
+            publication_status_id=publication_status.id,
+            fb_account_id=publication_status.fb_account_id,
+            fb_post_id=fb_post_id,
+            status="queued",
+        )
+        await db.execute(
+            request.on_conflict_do_nothing(constraint="uq_fb_unpublish_requests_publication_status")
+        )
+
+    await db.flush()
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -451,8 +501,8 @@ async def list_products(
     search: str | None = None,
     min_price: int | None = None,
     max_price: int | None = None,
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=100),
 ) -> ProductListResponse:
     """
     List products with optional filters.
@@ -678,7 +728,7 @@ async def get_featured_products(
     current_user: CurrentUser,
     db: DbSession,
     organization_id: UUID | None = None,
-    limit: int = 10,
+    limit: int = Query(default=10, ge=1, le=50),
 ) -> list[ProductResponse]:
     """Get featured products."""
     owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
@@ -1026,18 +1076,20 @@ async def pause_product(
 
     Transitions product from PUBLISHED → PAUSED.
     """
+    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.pause()
     product = await repo.update(product)
+    await _enqueue_unpublish_requests(db, product)
 
     return ProductResponse.from_entity(product)
 
@@ -1053,6 +1105,7 @@ async def resume_product(
 
     Transitions product from PAUSED → PUBLISHED.
     """
+    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
@@ -1069,6 +1122,30 @@ async def resume_product(
     return ProductResponse.from_entity(product)
 
 
+@router.post("/{product_id}/reserve", response_model=ProductResponse)
+async def reserve_product(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> ProductResponse:
+    """Reserve a published product and queue Facebook unpublish requests."""
+    _require_marketplace_publish(current_user)
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    product.reserve()
+    product = await repo.update(product)
+    await _enqueue_unpublish_requests(db, product)
+
+    return ProductResponse.from_entity(product)
+
+
 @router.post("/{product_id}/mark-sold", response_model=ProductResponse)
 async def mark_product_sold(
     product_id: UUID,
@@ -1080,18 +1157,20 @@ async def mark_product_sold(
 
     Transitions product from PUBLISHED/RESERVED → SOLD.
     """
+    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.mark_sold()
     product = await repo.update(product)
+    await _enqueue_unpublish_requests(db, product)
 
     return ProductResponse.from_entity(product)
 
@@ -1190,7 +1269,13 @@ async def bulk_upload_preview(
 
     # Read CSV content
     content = await csv_file.read()
-    csv_content = content.decode("utf-8")
+    try:
+        csv_content = content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="CSV must use UTF-8 encoding",
+        ) from error
 
     # Execute preview use case
     use_case = BulkUploadPreviewUseCase()
@@ -1253,7 +1338,13 @@ async def bulk_upload_with_images(
 
     # Read CSV content
     csv_content = await csv_file.read()
-    csv_content_str = csv_content.decode("utf-8")
+    try:
+        csv_content_str = csv_content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="CSV must use UTF-8 encoding",
+        ) from error
 
     # Read ZIP if provided
     zip_bytes: bytes | None = None
@@ -1400,8 +1491,6 @@ async def set_product_brokers(
         product_repository=product_repo,
     )
 
-    from decimal import Decimal
-
     try:
         await use_case.execute(
             product_id=product_id,
@@ -1477,8 +1566,6 @@ async def set_product_ownership(
         ownership_repository=ownership_repo,
         product_repository=product_repo,
     )
-
-    from decimal import Decimal
 
     try:
         await use_case.execute(

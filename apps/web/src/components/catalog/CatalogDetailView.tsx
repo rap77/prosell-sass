@@ -26,6 +26,7 @@ import type { ProductImage } from "@/types/product-image";
 import { isVehicleAttributes, type VehicleAttributes } from "@/types/vehicle";
 import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
 import { ProductImageGallery } from "./ProductImageGallery";
+import { AvailabilityActions } from "./AvailabilityActions";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers (preserved verbatim) ─────────────────────────────────────────────
@@ -376,6 +377,12 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
+            <AvailabilityActions
+              id={product.id}
+              title={product.title}
+              description={product.description}
+              status={product.status}
+            />
             <button
               type="button"
               disabled={!publishVehicleData}

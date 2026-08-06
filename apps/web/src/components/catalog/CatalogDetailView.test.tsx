@@ -43,6 +43,26 @@ vi.mock("@/lib/api/products", () => ({
     data: { images: [] },
     isPending: false,
   })),
+  useReserveProduct: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  usePauseProduct: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  useResumeProduct: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  useMarkProductSold: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
 }));
 
 // Mock breadcrumbStore with Zustand selector pattern

@@ -7,11 +7,13 @@ Tests cover:
 """
 
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from tests.integration._constants import TEST_DB_URL
@@ -22,7 +24,13 @@ from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.fb_account_model import (
     FBAccountModel,
+    FBPublicationHistoryModel,
+    FBPublicationStatusModel,
     product_fb_account_assignments,
+)
+from prosell.infrastructure.models.fb_unpublish_request_model import FBUnpublishRequestModel
+from prosell.infrastructure.models.marketplace_publication_model import (
+    MarketplacePublicationModel,
 )
 from prosell.infrastructure.models.organization_marketplace_access_model import (
     OrganizationMarketplaceAccessModel,
@@ -83,14 +91,21 @@ async def _create_tenant(session: AsyncSession) -> OrganizationModel:
     return org
 
 
-async def _create_category(session: AsyncSession, tenant_id: UUID) -> CategoryModel:
+async def _create_category(
+    session: AsyncSession,
+    tenant_id: UUID,
+    *,
+    parent_id: UUID | None = None,
+    level: int = 0,
+) -> CategoryModel:
     """Create a test category."""
     cat = CategoryModel(
         id=uuid4(),
         tenant_id=tenant_id,
         name=f"Test Category {uuid4().hex[:6]}",
         slug=f"test-cat-{uuid4().hex[:8]}",
-        level=0,
+        level=level,
+        parent_id=parent_id,
     )
     session.add(cat)
     await session.flush()
@@ -121,6 +136,7 @@ async def _create_product(
     *,
     organization_id: UUID | None = None,
     published_to_marketplace: bool = True,
+    status: ProductStatus = ProductStatus.PUBLISHED,
 ) -> ProductModel:
     """Create a test product."""
     product = ProductModel(
@@ -133,7 +149,7 @@ async def _create_product(
         description="Test description",
         price_cents=1500000,
         currency="USD",
-        status=ProductStatus.PUBLISHED,
+        status=status,
         published_to_marketplace=published_to_marketplace,
         image_urls=["images/test.webp"],
         location_city="Miami",
@@ -292,6 +308,82 @@ class TestPendingEndpointTenantScoping:
         ]
 
 
+class TestOrganizationAndVerticalFilters:
+    """Tests for dashboard filter options resolved from the selected account."""
+
+    async def test_organizations_include_the_account_operator_organization(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """The bot can select its own organization even without dealer access."""
+        tenant = await _create_tenant(shared_session)
+        account = await _create_fb_account(shared_session, tenant.tenant_id, "owner@tenant.com")
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/organizations",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        assert response.json()["organizations"] == [
+            {"id": str(tenant.id), "name": tenant.name, "code": tenant.code}
+        ]
+
+    async def test_verticals_include_only_published_product_categories(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """Draft product categories are not presented as publishable verticals."""
+        tenant = await _create_tenant(shared_session)
+        account = await _create_fb_account(shared_session, tenant.tenant_id, "verticals@tenant.com")
+        published_vertical = await _create_category(shared_session, tenant.tenant_id)
+        published_category = await _create_category(
+            shared_session,
+            tenant.tenant_id,
+            parent_id=published_vertical.id,
+            level=1,
+        )
+        draft_category = await _create_category(shared_session, tenant.tenant_id)
+        published_product = await _create_product(
+            shared_session, tenant.tenant_id, published_category.id
+        )
+        draft_product = await _create_product(
+            shared_session,
+            tenant.tenant_id,
+            draft_category.id,
+            status=ProductStatus.DRAFT,
+        )
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [
+                {"product_id": published_product.id, "fb_account_id": account.id},
+                {"product_id": draft_product.id, "fb_account_id": account.id},
+            ],
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/verticals",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+            pending_response = await client.get(
+                "/api/v1/fb-sync/pending",
+                params={"account_email": account.email, "category": published_vertical.slug},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        assert response.json()["verticals"] == [
+            {"slug": published_vertical.slug, "name": published_vertical.name}
+        ]
+
+        assert pending_response.status_code == 200
+        assert [product["id"] for product in pending_response.json()["products"]] == [
+            str(published_product.id)
+        ]
+
+
 class TestCallbackEndpointTenantScoping:
     """Tests for /callback tenant isolation."""
 
@@ -355,3 +447,220 @@ class TestCallbackEndpointTenantScoping:
         data = response.json()
         assert data["status"] == "active"
         assert "publication_id" in data
+
+
+class TestUnpublishEndpoints:
+    """Tests for the bot-facing durable Facebook removal queue."""
+
+    async def test_pending_requires_bot_token(self, _setup_override: None) -> None:
+        """The removal queue is unavailable without the bot credential."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/unpublish-pending",
+                params={"account_email": "bot@example.com"},
+            )
+
+        assert response.status_code == 401
+
+    async def test_pending_returns_only_queued_requests_for_active_account(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """An account can only poll its own queued removal work."""
+        tenant = await _create_tenant(shared_session)
+        category = await _create_category(shared_session, tenant.tenant_id)
+        account = await _create_fb_account(shared_session, tenant.tenant_id, "bot@tenant.com")
+        other_account = await _create_fb_account(
+            shared_session, tenant.tenant_id, "other@tenant.com"
+        )
+        product = await _create_product(shared_session, tenant.tenant_id, category.id)
+        other_product = await _create_product(shared_session, tenant.tenant_id, category.id)
+        publication_status = FBPublicationStatusModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=product.id,
+            fb_account_id=account.id,
+            status="active",
+        )
+        other_publication_status = FBPublicationStatusModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=other_product.id,
+            fb_account_id=other_account.id,
+            status="active",
+        )
+        queued_request = FBUnpublishRequestModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=product.id,
+            publication_status_id=publication_status.id,
+            fb_account_id=account.id,
+            fb_post_id="listing-1",
+        )
+        other_request = FBUnpublishRequestModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=other_product.id,
+            publication_status_id=other_publication_status.id,
+            fb_account_id=other_account.id,
+            fb_post_id="listing-2",
+        )
+        shared_session.add_all(
+            [
+                publication_status,
+                other_publication_status,
+                queued_request,
+                other_request,
+            ]
+        )
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/unpublish-pending",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        assert response.json()["requests"] == [
+            {
+                "id": str(queued_request.id),
+                "product_id": str(product.id),
+                "fb_post_id": "listing-1",
+                "attempt_count": 0,
+            }
+        ]
+
+    async def test_completed_callback_updates_all_publication_records_idempotently(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """A completed removal updates every publication projection exactly once."""
+        tenant = await _create_tenant(shared_session)
+        category = await _create_category(shared_session, tenant.tenant_id)
+        account = await _create_fb_account(shared_session, tenant.tenant_id, "bot@tenant.com")
+        product = await _create_product(shared_session, tenant.tenant_id, category.id)
+        publication_status = FBPublicationStatusModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=product.id,
+            fb_account_id=account.id,
+            status="active",
+        )
+        unpublish_request = FBUnpublishRequestModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=product.id,
+            publication_status_id=publication_status.id,
+            fb_account_id=account.id,
+            fb_post_id="listing-1",
+        )
+        publication = MarketplacePublicationModel(
+            id=uuid4(),
+            product_id=product.id,
+            tenant_id=tenant.tenant_id,
+            account_email=account.email,
+            fb_groups=[],
+            fb_post_id="listing-1",
+            published_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC),
+            status="active",
+        )
+        shared_session.add_all([publication_status, unpublish_request, publication])
+        await shared_session.flush()
+
+        payload = {
+            "request_id": str(unpublish_request.id),
+            "account_email": account.email,
+            "status": "completed",
+        }
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/fb-sync/unpublish-callback",
+                json=payload,
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+            repeated_response = await client.post(
+                "/api/v1/fb-sync/unpublish-callback",
+                json=payload,
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        assert repeated_response.status_code == 200
+        await shared_session.refresh(unpublish_request)
+        await shared_session.refresh(publication_status)
+        await shared_session.refresh(publication)
+        history = (
+            (
+                await shared_session.execute(
+                    select(FBPublicationHistoryModel).where(
+                        FBPublicationHistoryModel.product_id == product.id,
+                        FBPublicationHistoryModel.event_type == "deleted",
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert unpublish_request.status == "completed"
+        assert publication_status.status == "deleted"
+        assert publication_status.last_deleted_at is not None
+        assert publication.status == "deleted"
+        assert publication.deleted_at is not None
+        assert len(history) == 1
+
+    async def test_failed_callback_keeps_request_queued_with_capped_attempt_count(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """Failures remain retryable without allowing an unbounded counter."""
+        tenant = await _create_tenant(shared_session)
+        category = await _create_category(shared_session, tenant.tenant_id)
+        account = await _create_fb_account(shared_session, tenant.tenant_id, "bot@tenant.com")
+        product = await _create_product(shared_session, tenant.tenant_id, category.id)
+        publication_status = FBPublicationStatusModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=product.id,
+            fb_account_id=account.id,
+            status="active",
+        )
+        unpublish_request = FBUnpublishRequestModel(
+            id=uuid4(),
+            tenant_id=tenant.tenant_id,
+            product_id=product.id,
+            publication_status_id=publication_status.id,
+            fb_account_id=account.id,
+            fb_post_id="listing-1",
+            attempt_count=2,
+        )
+        shared_session.add_all([publication_status, unpublish_request])
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/fb-sync/unpublish-callback",
+                json={
+                    "request_id": str(unpublish_request.id),
+                    "account_email": account.email,
+                    "status": "failed",
+                    "error": "Facebook session expired",
+                },
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+            repeated_response = await client.post(
+                "/api/v1/fb-sync/unpublish-callback",
+                json={
+                    "request_id": str(unpublish_request.id),
+                    "account_email": account.email,
+                    "status": "failed",
+                    "error": "Facebook session expired again",
+                },
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        assert repeated_response.status_code == 200
+        await shared_session.refresh(unpublish_request)
+        assert unpublish_request.status == "queued"
+        assert unpublish_request.attempt_count == 3
+        assert unpublish_request.last_error == "Facebook session expired again"

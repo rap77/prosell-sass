@@ -85,6 +85,7 @@ const productSchema = z.object({
   location_zip: z.string().nullish(),
   is_featured: z.boolean(),
   published_to_marketplace: z.boolean().optional(),
+  fb_account_ids: z.array(z.string()).optional(),
   view_count: z.number(),
   favorite_count: z.number(),
   submitted_for_approval_at: z.string().nullish(),
@@ -293,6 +294,125 @@ export async function updateProductStatus(
   }
 
   return parseProductResponse(await res.json());
+}
+
+const PRODUCT_AVAILABILITY_ENDPOINT = {
+  RESERVE: "reserve",
+  PAUSE: "pause",
+  RESUME: "resume",
+  MARK_SOLD: "mark-sold",
+} as const;
+
+type ProductAvailabilityEndpoint =
+  (typeof PRODUCT_AVAILABILITY_ENDPOINT)[keyof typeof PRODUCT_AVAILABILITY_ENDPOINT];
+
+async function postProductAvailabilityAction(
+  productId: string,
+  action: ProductAvailabilityEndpoint,
+): Promise<Product> {
+  const res = await fetch(`/api/v1/products/${productId}/${action}`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "No se pudo cambiar la disponibilidad"),
+    );
+  }
+
+  return parseProductResponse(await res.json());
+}
+
+export async function reserveProduct(productId: string): Promise<Product> {
+  return postProductAvailabilityAction(
+    productId,
+    PRODUCT_AVAILABILITY_ENDPOINT.RESERVE,
+  );
+}
+
+export async function pauseProduct(productId: string): Promise<Product> {
+  return postProductAvailabilityAction(
+    productId,
+    PRODUCT_AVAILABILITY_ENDPOINT.PAUSE,
+  );
+}
+
+export async function resumeProduct(productId: string): Promise<Product> {
+  return postProductAvailabilityAction(
+    productId,
+    PRODUCT_AVAILABILITY_ENDPOINT.RESUME,
+  );
+}
+
+export async function markProductSold(productId: string): Promise<Product> {
+  return postProductAvailabilityAction(
+    productId,
+    PRODUCT_AVAILABILITY_ENDPOINT.MARK_SOLD,
+  );
+}
+
+function useProductAvailabilityAction(
+  mutationFn: (productId: string) => Promise<Product>,
+  successMessage: string,
+): UseMutationResult<Product, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      toast.success(successMessage);
+    },
+    onError: (error) => toast.error(error.message),
+  });
+}
+
+export function useReserveProduct(): UseMutationResult<
+  Product,
+  Error,
+  string,
+  unknown
+> {
+  return useProductAvailabilityAction(reserveProduct, "Vehículo apartado");
+}
+
+export function usePauseProduct(): UseMutationResult<
+  Product,
+  Error,
+  string,
+  unknown
+> {
+  return useProductAvailabilityAction(
+    pauseProduct,
+    "Vehículo en mantenimiento",
+  );
+}
+
+export function useResumeProduct(): UseMutationResult<
+  Product,
+  Error,
+  string,
+  unknown
+> {
+  return useProductAvailabilityAction(
+    resumeProduct,
+    "Vehículo publicado nuevamente",
+  );
+}
+
+export function useMarkProductSold(): UseMutationResult<
+  Product,
+  Error,
+  string,
+  unknown
+> {
+  return useProductAvailabilityAction(
+    markProductSold,
+    "Vehículo marcado como vendido",
+  );
 }
 
 /**
