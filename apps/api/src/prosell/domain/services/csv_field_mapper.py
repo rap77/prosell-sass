@@ -10,9 +10,11 @@ Conversions include:
 - Mileage: str -> float (miles)
 - Year: str -> int
 - Publicado: "1"/""/None -> bool
+- VIN extraction: fallback to description if vin column empty
 """
 
 import logging
+import re
 from dataclasses import dataclass
 from typing import Literal
 
@@ -59,6 +61,18 @@ def _sanitize_path(value: str | None, field_name: str, row_number: int) -> str |
         )
         return None
     return value
+
+
+# ponytail: VIN regex — 17 alphanumeric chars, no I/O/Q
+_VIN_PATTERN = re.compile(r"\b[A-HJ-NPR-Z0-9]{17}\b", re.IGNORECASE)
+
+
+def _extract_vin_from_text(text: str | None) -> str | None:
+    """Extract VIN from free text (e.g., description) using regex."""
+    if not text:
+        return None
+    match = _VIN_PATTERN.search(text)
+    return match.group(0).upper() if match else None
 
 
 # =============================================================================
@@ -304,9 +318,15 @@ class CSVFieldMapper:
         except ValueError:
             raise ValueError(f"Row {row_number}: invalid price value {price_str!r}") from None
 
+        # ponytail: VIN fallback — try column first, then extract from description
+        vin = row.get("vin", "").strip()
+        if not vin:
+            description_raw = row.get("description", "")
+            vin = _extract_vin_from_text(description_raw) or ""
+
         return MappedCSVRow(
             row_number=row_number,
-            vin=row.get("vin", "").strip(),
+            vin=vin,
             cod_organization=_truncate(
                 row.get("title", "").strip(), MAX_SHORT_TEXT_LENGTH, "cod_organization", row_number
             )
