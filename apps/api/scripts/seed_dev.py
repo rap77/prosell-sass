@@ -361,6 +361,49 @@ async def seed_database():
         org_id = org_row[0]
         print(f"✅ Organization created/found: {org_id}")
 
+        # =========================================================================
+        # DEALER ORGANIZATIONS (from data39.csv cod_dealer column)
+        # =========================================================================
+        dealer_codes = [
+            "US",
+            "IC",
+            "PC",
+            "EA",
+            "TY",
+            "MF",
+            "LG",
+            "RM",
+            "IM",
+            "LY",
+            "PO",
+            "DK",
+            "TJ",
+            "PR",
+            "DC",
+            "ZP",
+            "DJ",
+            "AG",
+            "SM",
+            "TG",
+            "CF",
+            "PS",
+            "SV",
+            "SL",
+            "PV",
+            "AF",
+        ]
+        for code in dealer_codes:
+            name = f"Dealer {code}"
+            await conn.execute(
+                text("""
+                    INSERT INTO organizations (name, code, tenant_id)
+                    VALUES (:name, :code, :tenant_id)
+                    ON CONFLICT DO NOTHING
+                """),
+                {"name": name, "code": code, "tenant_id": org_id},
+            )
+        print(f"✅ {len(dealer_codes)} dealer organizations seeded")
+
         # Check if admin user exists
         result = await conn.execute(
             text("SELECT id FROM users WHERE email = 'admin@prosell-demo.com'")

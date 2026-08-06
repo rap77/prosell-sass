@@ -21,6 +21,7 @@ from uuid import UUID
 from prosell.application.dto.product.create import CreateProductRequest
 from prosell.domain.entities.product import Product
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
+from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper, ImageMappingResult
@@ -74,6 +75,7 @@ class BulkUploadVehiclesUseCase:
         self,
         product_repository: AbstractProductRepository,
         category_repository: AbstractCategoryRepository,
+        organization_repository: AbstractOrganizationRepository,
         csv_image_mapper: CSVImageMapper | None = None,
     ) -> None:
         """
@@ -82,10 +84,12 @@ class BulkUploadVehiclesUseCase:
         Args:
             product_repository: Product repository for upsert operations
             category_repository: Category repository for validation
+            organization_repository: Organization repository for code resolution
             csv_image_mapper: Image mapper for ZIP-based image association
         """
         self.product_repository = product_repository
         self.category_repository = category_repository
+        self.organization_repository = organization_repository
         self.csv_image_mapper = csv_image_mapper or CSVImageMapper()
 
     async def execute(
@@ -112,7 +116,10 @@ class BulkUploadVehiclesUseCase:
         # 1. Parse CSV rows
         parsed_rows = self._parse_csv(csv_content)
 
-        # 2. Map images if ZIP provided
+        # 2. Resolve org codes to org IDs (dealer-{code} slugs)
+        org_code_to_id = await self._resolve_org_codes(parsed_rows, tenant_id)
+
+        # 4. Map images if ZIP provided
         image_mapping: ImageMappingResult | None = None
         if zip_bytes:
             rows_as_dicts = [asdict(row) for row in parsed_rows]
@@ -123,7 +130,7 @@ class BulkUploadVehiclesUseCase:
                 organization_id=organization_id,
             )
 
-        # 3. Process each row (upsert by VIN)
+        # 5. Process each row (upsert by VIN)
         results: list[VehicleImportRowResult] = []
         imported_count = 0
         updated_count = 0
@@ -131,10 +138,17 @@ class BulkUploadVehiclesUseCase:
 
         for mapped_row in parsed_rows:
             try:
+                # ponytail: resolve org from CSV code, fallback to frontend selection
+                row_org_id = organization_id
+                if mapped_row.cod_organization:
+                    code = mapped_row.cod_organization.strip().upper()
+                    if code in org_code_to_id:
+                        row_org_id = org_code_to_id[code]
+
                 result = await self._upsert_vehicle(
                     mapped_row=mapped_row,
                     tenant_id=tenant_id,
-                    organization_id=organization_id,
+                    organization_id=row_org_id,
                     category_id=category_id,
                     image_mapping=image_mapping,
                 )
@@ -201,6 +215,33 @@ class BulkUploadVehiclesUseCase:
                 )
 
         return rows
+
+    async def _resolve_org_codes(
+        self, parsed_rows: list[MappedCSVRow], tenant_id: UUID
+    ) -> dict[str, UUID]:
+        """
+        Resolve org codes from CSV to organization IDs.
+
+        Args:
+            parsed_rows: Parsed CSV rows
+            tenant_id: Tenant ID for org lookup
+
+        Returns:
+            Dict mapping uppercase org code to organization UUID
+        """
+        # Extract unique codes
+        codes = [
+            row.cod_organization.strip().upper()
+            for row in parsed_rows
+            if row.cod_organization and row.cod_organization.strip()
+        ]
+        unique_codes = list(set(codes))
+        if not unique_codes:
+            return {}
+
+        # Query orgs by codes
+        orgs = await self.organization_repository.get_by_codes(unique_codes, tenant_id)
+        return {org.code: org.id for org in orgs if org.code}
 
     async def _upsert_vehicle(
         self,

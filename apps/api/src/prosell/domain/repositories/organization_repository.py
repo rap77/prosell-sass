@@ -122,3 +122,19 @@ class AbstractOrganizationRepository(ABC):
             Total count
         """
         pass
+
+    @abstractmethod
+    async def get_by_codes(
+        self, codes: list[str], tenant_id: UUID | None = None
+    ) -> list[Organization]:
+        """
+        Get organizations by code list (for bulk CSV import resolution).
+
+        Args:
+            codes: List of organization codes (e.g., ["US", "IC", "PC"])
+            tenant_id: Optional tenant filter
+
+        Returns:
+            List of matching organizations
+        """
+        pass

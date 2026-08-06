@@ -106,9 +106,12 @@ class TestBulkUploadPersistsImageUrls:
         product_repo.update.side_effect = capture
 
         # Act — pass the mocked mapper so we don't depend on the broken one
+        organization_repo = AsyncMock()
+        organization_repo.get_by_codes.return_value = []
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repo,
             category_repository=category_repo,
+            organization_repository=organization_repo,
             csv_image_mapper=mocked_mapper,
         )
         result = await use_case.execute(

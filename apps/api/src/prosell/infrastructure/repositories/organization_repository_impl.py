@@ -164,6 +164,19 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         result = await self.session.execute(stmt)
         return result.scalar() or 0
 
+    async def get_by_codes(
+        self, codes: list[str], tenant_id: UUID | None = None
+    ) -> list[Organization]:
+        """Get organizations by code list."""
+        if not codes:
+            return []
+        stmt = select(OrganizationModel).where(OrganizationModel.code.in_(codes))
+        if tenant_id is not None:
+            stmt = stmt.where(OrganizationModel.tenant_id == tenant_id)
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
     def _to_entity(self, model: OrganizationModel) -> Organization:
         """Convert ORM model to domain entity."""
         return Organization.model_validate(model, from_attributes=True)

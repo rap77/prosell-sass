@@ -64,9 +64,12 @@ class TestBulkUploadVehiclesUseCase:
         category_repository.get_by_id.return_value = mock_category
 
         # Create use case
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = []
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
+            organization_repository=organization_repository,
         )
 
         # Act
@@ -112,9 +115,12 @@ class TestBulkUploadVehiclesUseCase:
         product_repository = AsyncMock()
         category_repository = AsyncMock()
 
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = []
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
+            organization_repository=organization_repository,
         )
 
         # Act
@@ -154,9 +160,12 @@ class TestBulkUploadVehiclesUseCase:
         mock_category.tenant_id = tenant_id
         category_repository.get_by_id.return_value = mock_category
 
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = []
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
+            organization_repository=organization_repository,
         )
 
         # Act

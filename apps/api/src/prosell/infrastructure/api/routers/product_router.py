@@ -1354,9 +1354,11 @@ async def bulk_upload_with_images(
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
+    org_repo = SqlAlchemyOrganizationRepository(db)
     use_case = BulkUploadVehiclesUseCase(
         product_repository=product_repo,
         category_repository=category_repo,
+        organization_repository=org_repo,
     )
 
     result = await use_case.execute(
