@@ -362,45 +362,50 @@ async def seed_database():
         print(f"✅ Organization created/found: {org_id}")
 
         # =========================================================================
-        # DEALER ORGANIZATIONS (from data39.csv cod_dealer column)
+        # DEALER ORGANIZATIONS (from data39.csv title column = cod_organization)
+        # Each dealer is its own tenant (1:1 tenant=org), so id == tenant_id
         # =========================================================================
         dealer_codes = [
-            "US",
-            "IC",
-            "PC",
-            "EA",
-            "TY",
-            "MF",
-            "LG",
-            "RM",
-            "IM",
-            "LY",
-            "PO",
-            "DK",
-            "TJ",
-            "PR",
-            "DC",
-            "ZP",
-            "DJ",
-            "AG",
-            "SM",
-            "TG",
-            "CF",
-            "PS",
-            "SV",
-            "SL",
-            "PV",
             "AF",
+            "AG",
+            "CF",
+            "DJ",
+            "DK",
+            "EA",
+            "EG",
+            "IC",
+            "IM",
+            "IO",
+            "JD",
+            "LY",
+            "MF",
+            "MM",
+            "OX",
+            "PC",
+            "PM",
+            "PO",
+            "PS",
+            "PV",
+            "RM",
+            "SL",
+            "TG",
+            "TJ",
+            "TY",
+            "US",
+            "VL",
+            "ZP",
         ]
         for code in dealer_codes:
             name = f"Dealer {code}"
+            # ponytail: each org gets its own tenant_id (id == tenant_id for 1:1)
             await conn.execute(
                 text("""
-                    INSERT INTO organizations (name, code, tenant_id)
-                    VALUES (:name, :code, :tenant_id)
-                    ON CONFLICT DO NOTHING
+                    INSERT INTO organizations (id, name, code, tenant_id)
+                    SELECT new_id, :name, :code, new_id
+                    FROM (SELECT gen_random_uuid() AS new_id) AS t
+                    WHERE NOT EXISTS (SELECT 1 FROM organizations WHERE code = :code)
                 """),
-                {"name": name, "code": code, "tenant_id": org_id},
+                {"name": name, "code": code},
             )
         print(f"✅ {len(dealer_codes)} dealer organizations seeded")
 
