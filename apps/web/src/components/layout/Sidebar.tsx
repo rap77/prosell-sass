@@ -74,6 +74,12 @@ const navigationItems: NavItem[] = [
     icon: FileText,
     group: "inventario",
   },
+  {
+    label: "Categorías",
+    href: "/categories",
+    icon: Layers,
+    group: "inventario",
+  },
   // Ventas group
   {
     label: "Leads",
@@ -176,12 +182,10 @@ export function Sidebar({ groups }: SidebarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Filter navigation items based on user role. Groups with sensitive items
-  // get extra permission checks — defense in depth so a layout misconfiguration
-  // can't expose admin views to unauthorized users.
+  // Filter navigation items based on user permissions only.
+  // ponytail: removed layout-based filtering (groups prop) — admins see all items
+  // regardless of which route group they're in.
   const visibleItems = navigationItems.filter((item) => {
-    if (!groups.includes(item.group)) return false;
-
     if (item.group === "concesionarios") {
       return hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
     }

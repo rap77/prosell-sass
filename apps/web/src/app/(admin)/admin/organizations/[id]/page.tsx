@@ -11,7 +11,22 @@ import {
   Check,
   X,
   Settings,
+  Phone,
+  Mail,
+  MapPin,
+  Globe,
+  MessageCircle,
+  Share2,
+  Link2,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import {
   useOrganization,
@@ -37,9 +52,54 @@ export default function AdminOrganizationDetailPage() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [fbAccountsOverride, setFbAccountsOverride] = useState<
     string[] | null | undefined
   >();
+
+  // Build WhatsApp-friendly contact text
+  const buildContactText = () => {
+    if (!organization) return "";
+    const lines: string[] = [`📍 ${organization.name}`];
+    if (organization.street_address) lines.push(organization.street_address);
+    if (organization.city || organization.state) {
+      lines.push(
+        [organization.city, organization.state].filter(Boolean).join(", "),
+      );
+    }
+    if (organization.phone) lines.push(`📞 ${organization.phone}`);
+    if (organization.whatsapp && organization.whatsapp !== organization.phone) {
+      lines.push(`💬 ${organization.whatsapp}`);
+    }
+    return lines.join("\n");
+  };
+
+  const buildAddress = () => {
+    if (!organization) return "";
+    return [
+      organization.street_address,
+      organization.city,
+      organization.state,
+      organization.postal_code,
+    ]
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  const handleCopy = async (type: string, text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedItem(type);
+    setTimeout(() => setCopiedItem(null), 2000);
+  };
+
+  const shareViaWhatsApp = () => {
+    const text = buildContactText();
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(text)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
   const { data: fbAccounts = [] } = useFBAccounts({}, true);
 
   const handleStartEdit = () => {
@@ -162,6 +222,197 @@ export default function AdminOrganizationDetailPage() {
         </span>
       </div>
 
+      {/* Organization info card */}
+      <div className="rounded-xl border border-ps-border-subtle bg-ps-bg-elevated overflow-hidden">
+        {/* Color bar */}
+        <div
+          className="h-2 w-full"
+          style={{ backgroundColor: organization.color || "#666" }}
+        />
+
+        <div className="p-4 flex flex-col gap-4">
+          {/* Code + Color row */}
+          <div className="flex flex-wrap items-center gap-3">
+            {organization.code && (
+              <span
+                className="px-3 py-1 rounded text-sm font-bold text-white"
+                style={{ backgroundColor: organization.color || "#666" }}
+              >
+                {organization.code}
+              </span>
+            )}
+            {organization.color && (
+              <div className="flex items-center gap-2 text-sm text-ps-text-secondary">
+                <span
+                  className="w-4 h-4 rounded border border-ps-border-default"
+                  style={{ backgroundColor: organization.color }}
+                />
+                {organization.color}
+              </div>
+            )}
+            {(organization.broker_count ?? 0) > 0 && (
+              <span className="text-sm text-ps-text-secondary">
+                {organization.broker_count} brokers
+              </span>
+            )}
+          </div>
+
+          {/* Contact info grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            {organization.phone && (
+              <div className="flex items-center gap-2 text-ps-text-secondary">
+                <Phone size={14} className="text-ps-cyan flex-shrink-0" />
+                <span className="text-ps-text-primary">
+                  {organization.phone}
+                </span>
+              </div>
+            )}
+            {organization.whatsapp && (
+              <div className="flex items-center gap-2 text-ps-text-secondary">
+                <MessageCircle
+                  size={14}
+                  className="text-ps-cyan flex-shrink-0"
+                />
+                <span className="text-ps-text-primary">
+                  {organization.whatsapp}
+                </span>
+              </div>
+            )}
+            {organization.email && (
+              <div className="flex items-center gap-2 text-ps-text-secondary">
+                <Mail size={14} className="text-ps-cyan flex-shrink-0" />
+                <span className="text-ps-text-primary">
+                  {organization.email}
+                </span>
+              </div>
+            )}
+            {organization.website && (
+              <div className="flex items-center gap-2 text-ps-text-secondary">
+                <Globe size={14} className="text-ps-cyan flex-shrink-0" />
+                <a
+                  href={organization.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ps-cyan no-underline hover:underline"
+                >
+                  {organization.website.replace(/^https?:\/\//, "")}
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Address */}
+          {(organization.street_address || organization.city) && (
+            <div className="flex items-start gap-2 text-sm text-ps-text-secondary">
+              <MapPin size={14} className="text-ps-cyan flex-shrink-0 mt-0.5" />
+              <span className="text-ps-text-primary">
+                {[
+                  organization.street_address,
+                  organization.city,
+                  organization.state,
+                  organization.postal_code,
+                  organization.country,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </span>
+            </div>
+          )}
+
+          {/* Share dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-ps-text-secondary hover:text-ps-cyan border border-ps-border-default transition-colors"
+                style={{ background: "var(--ps-input-bg)" }}
+              >
+                <Share2 size={14} />
+                Compartir
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={8}
+              className="min-w-[220px] border-ps-border-default bg-ps-bg-elevated p-1.5"
+            >
+              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium uppercase tracking-wider text-ps-text-secondary">
+                Compartir vía
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="my-1 bg-ps-border-subtle" />
+
+              {/* WhatsApp */}
+              <DropdownMenuItem
+                onClick={shareViaWhatsApp}
+                className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-ps-text-primary hover:bg-ps-bg-base"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-green-500/10 text-green-500">
+                  <MessageCircle size={14} />
+                </span>
+                <span className="text-sm">Enviar por WhatsApp</span>
+              </DropdownMenuItem>
+
+              {/* Copy full info */}
+              <DropdownMenuItem
+                onClick={() => handleCopy("full", buildContactText())}
+                className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-ps-text-primary hover:bg-ps-bg-base"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ps-cyan/10 text-ps-cyan">
+                  {copiedItem === "full" ? (
+                    <Check size={14} />
+                  ) : (
+                    <Link2 size={14} />
+                  )}
+                </span>
+                <span className="text-sm">
+                  {copiedItem === "full" ? "¡Copiado!" : "Copiar info completa"}
+                </span>
+              </DropdownMenuItem>
+
+              {/* Copy phone */}
+              {organization.phone && (
+                <DropdownMenuItem
+                  onClick={() => handleCopy("phone", organization.phone!)}
+                  className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-ps-text-primary hover:bg-ps-bg-base"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ps-bg-base text-ps-text-secondary">
+                    {copiedItem === "phone" ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <Phone size={14} />
+                    )}
+                  </span>
+                  <span className="text-sm">
+                    {copiedItem === "phone" ? "¡Copiado!" : "Copiar teléfono"}
+                  </span>
+                </DropdownMenuItem>
+              )}
+
+              {/* Copy address */}
+              {(organization.street_address || organization.city) && (
+                <DropdownMenuItem
+                  onClick={() => handleCopy("address", buildAddress())}
+                  className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-ps-text-primary hover:bg-ps-bg-base"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ps-bg-base text-ps-text-secondary">
+                    {copiedItem === "address" ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <MapPin size={14} />
+                    )}
+                  </span>
+                  <span className="text-sm">
+                    {copiedItem === "address"
+                      ? "¡Copiado!"
+                      : "Copiar dirección"}
+                  </span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
       {/* Pending status explanation */}
       {organization.status === "pending_verification" && (
         <div className="flex flex-col gap-2 rounded-lg border border-ps-warning bg-ps-warning-10 p-4">
@@ -195,7 +446,7 @@ export default function AdminOrganizationDetailPage() {
         </Link>
         <Link
           href={`/admin/organizations/${organization.id}/products`}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-ps-cyan px-4 text-[13px] font-semibold text-ps-bg-base no-underline"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-ps-cyan px-4 text-[13px] font-semibold text-ps-base no-underline"
         >
           Ver productos <ArrowRight size={14} />
         </Link>
@@ -319,7 +570,7 @@ function FBAccountDefaultsSection({
           type="button"
           onClick={handleSave}
           disabled={updateOrganization.isPending}
-          className="h-9 self-start rounded-lg border-0 bg-ps-cyan px-4 text-[13px] font-semibold text-ps-bg-base"
+          className="h-9 self-start rounded-lg border-0 bg-ps-cyan px-4 text-[13px] font-semibold text-ps-base"
         >
           {updateOrganization.isPending ? "Guardando…" : "Guardar cambios"}
         </button>

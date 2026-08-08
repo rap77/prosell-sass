@@ -218,7 +218,6 @@ function SortableRow({
             </Select>
           )}
         </td>
-        {/* Expand button */}
         <td className="w-8 px-2 py-2">
           <button
             type="button"
@@ -961,7 +960,7 @@ export function CategorySchemaEditor({
                         <th className="px-2 py-1.5 text-left text-xs font-medium text-muted-foreground">
                           Group
                         </th>
-                        <th className="w-8" /> {/* expand */}
+                        <th className="w-8" />
                         {!isReadOnly && <th className="w-8" />}
                       </tr>
                     </thead>

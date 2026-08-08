@@ -19,10 +19,51 @@ import {
   Pencil,
   Trash2,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useCategories } from "@/lib/api/categories";
 import { cn } from "@/lib/utils";
+import {
+  buildCategoryTree,
+  type CategoryTreeNode,
+} from "@/lib/utils/build-category-tree";
 import type { Category } from "@/types/category";
+
+// ponytail: helper to extract leaf categories (no children) grouped by their root vertical
+interface VerticalWithLeaves {
+  vertical: CategoryTreeNode;
+  leaves: CategoryTreeNode[];
+}
+
+function getVerticalWithLeaves(tree: CategoryTreeNode[]): VerticalWithLeaves[] {
+  const result: VerticalWithLeaves[] = [];
+
+  for (const vertical of tree) {
+    const leaves: CategoryTreeNode[] = [];
+
+    // Recursive function to collect all leaves under this vertical
+    function collectLeaves(node: CategoryTreeNode): void {
+      if (node.children.length === 0) {
+        // It's a leaf
+        leaves.push(node);
+      } else {
+        // Has children, recurse
+        for (const child of node.children) {
+          collectLeaves(child);
+        }
+      }
+    }
+
+    // Start from vertical's children (not the vertical itself)
+    for (const child of vertical.children) {
+      collectLeaves(child);
+    }
+
+    result.push({ vertical, leaves });
+  }
+
+  return result;
+}
 
 const T = {
   chipBg: "var(--ps-chip-bg)",
@@ -684,6 +725,85 @@ function PageSkeleton() {
   );
 }
 
+// ponytail: VerticalSection — collapsible group for leaf categories under a vertical
+function VerticalSection({
+  vertical,
+  children,
+  activeCount,
+  leafCount,
+  defaultExpanded = false,
+}: {
+  vertical: CategoryTreeNode;
+  children: React.ReactNode;
+  activeCount: number;
+  leafCount: number;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const Icon = getNicheIcon(vertical.slug);
+
+  return (
+    <section className="rounded-xl border border-ps-border-subtle overflow-hidden">
+      {/* Header — click to toggle */}
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className={cn(
+          "w-full flex items-center gap-3 px-5 py-4 text-left cursor-pointer transition-colors duration-150",
+          expanded ? "bg-ps-surface" : "bg-ps-surface/50 hover:bg-ps-surface",
+        )}
+      >
+        {/* Expand/collapse icon */}
+        <span className="text-ps-text-secondary">
+          {expanded ? (
+            <ChevronDown size={18} strokeWidth={2} />
+          ) : (
+            <ChevronRight size={18} strokeWidth={2} />
+          )}
+        </span>
+
+        {/* Vertical icon */}
+        <span
+          className={cn(
+            "w-10 h-10 rounded-xl inline-flex items-center justify-center flex-shrink-0 border",
+            "bg-ps-info-bg border-ps-border-medium text-ps-cyan",
+          )}
+        >
+          <Icon size={22} strokeWidth={1.75} />
+        </span>
+
+        {/* Name and stats */}
+        <div className="flex-1 min-w-0">
+          <h2 className="m-0 text-[17px] font-semibold tracking-[-0.01em] text-ps-text-primary">
+            {vertical.name}
+          </h2>
+          <span className="text-[12px] text-ps-text-secondary">
+            {activeCount > 0 ? (
+              <>
+                <b className="text-ps-success font-semibold">{activeCount}</b>{" "}
+                {activeCount === 1 ? "activa" : "activas"}
+              </>
+            ) : (
+              "Sin categorías activas"
+            )}
+            {" · "}
+            {leafCount} {leafCount === 1 ? "categoría" : "categorías"}
+          </span>
+        </div>
+      </button>
+
+      {/* Children grid — visible when expanded */}
+      {expanded && (
+        <div className="px-5 pb-5 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {children}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function CategoriesPage() {
   const { data: categories = [], isLoading, error } = useCategories();
   const [localActive, setLocalActive] = useState<Record<string, boolean>>({});
@@ -696,7 +816,14 @@ export default function CategoriesPage() {
     // TODO: PATCH /api/v1/categories/{id} once backend supports toggle
   };
 
-  const firstActive = categories.find((c) => resolveActive(c));
+  // ponytail: group leaf categories by vertical
+  const tree = buildCategoryTree(categories);
+  const verticalsWithLeaves = getVerticalWithLeaves(tree);
+
+  // Find first active leaf for CustomFieldsCard
+  const firstActive = verticalsWithLeaves
+    .flatMap((v) => v.leaves)
+    .find((c) => resolveActive(c));
 
   if (isLoading) return <PageSkeleton />;
 
@@ -731,16 +858,31 @@ export default function CategoriesPage() {
         <CtaButton icon={Plus} label="Nueva categoría" />
       </div>
 
-      {/* Niches grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-7">
-        {categories.map((cat) => (
-          <NicheCard
-            key={cat.id}
-            category={{ ...cat, is_active: resolveActive(cat) }}
-            onToggle={handleToggle}
-          />
-        ))}
-        <AddNicheCard onClick={() => {}} />
+      {/* Verticals with collapsible sections — show LEAF categories only */}
+      <div className="space-y-4 mb-7">
+        {verticalsWithLeaves.map(({ vertical, leaves }) => {
+          const activeCount = leaves.filter((c) => resolveActive(c)).length;
+          const hasActiveLeaves = activeCount > 0;
+
+          return (
+            <VerticalSection
+              key={vertical.id}
+              vertical={vertical}
+              activeCount={activeCount}
+              leafCount={leaves.length}
+              defaultExpanded={hasActiveLeaves}
+            >
+              {leaves.map((cat) => (
+                <NicheCard
+                  key={cat.id}
+                  category={{ ...cat, is_active: resolveActive(cat) }}
+                  onToggle={handleToggle}
+                />
+              ))}
+              <AddNicheCard onClick={() => {}} />
+            </VerticalSection>
+          );
+        })}
       </div>
 
       {/* Custom fields */}
