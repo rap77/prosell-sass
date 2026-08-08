@@ -14,12 +14,14 @@ import { useCategories } from "@/lib/api/categories";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { logger } from "@/lib/logger";
 import { BrokerManager } from "@/components/admin/BrokerManager";
+import { ContactManager } from "@/components/admin/ContactManager";
 import {
   OrganizationFormFields,
   isValidPhone,
 } from "@/components/admin/OrganizationFormFields";
 import type {
   Organization,
+  OrganizationContact,
   OrganizationVerticalsResponse,
 } from "@/lib/api/schemas/organizations";
 
@@ -127,6 +129,9 @@ function EditOrganizationForm({
   const [taxId, setTaxId] = useState(organization.tax_id ?? "");
   const [instagram, setInstagram] = useState(organization.instagram ?? "");
   const [facebook, setFacebook] = useState(organization.facebook ?? "");
+  const [contacts, setContacts] = useState<OrganizationContact[]>(
+    organization.contacts ?? [],
+  );
 
   // A null override means the user has not touched vertical assignments.
   const verticalsChanged =
@@ -157,6 +162,7 @@ function EditOrganizationForm({
           tax_id: taxId || undefined,
           instagram: instagram || undefined,
           facebook: facebook || undefined,
+          contacts: contacts.length > 0 ? contacts : undefined,
         },
       });
 
@@ -283,6 +289,11 @@ function EditOrganizationForm({
           onFacebookChange={setFacebook}
           defaultExpanded
         />
+
+        {/* Contacts section */}
+        <div className="border-t border-border-default pt-4 mt-2">
+          <ContactManager contacts={contacts} onChange={setContacts} />
+        </div>
 
         {/* Brokers section */}
         <div className="border-t border-border-default pt-4 mt-2">

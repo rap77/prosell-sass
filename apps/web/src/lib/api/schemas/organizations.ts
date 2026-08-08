@@ -12,6 +12,29 @@
 
 import { z } from "zod";
 
+export const ContactCategorySchema = z.enum([
+  "gerencia",
+  "ventas",
+  "servicio_tecnico",
+  "cobranza",
+  "recepcion",
+  "custom",
+]);
+
+export type ContactCategory = z.infer<typeof ContactCategorySchema>;
+
+export const OrganizationContactSchema = z.object({
+  id: z.string(),
+  category: ContactCategorySchema,
+  custom_label: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  whatsapp: z.string().nullable().optional(),
+  order: z.number(),
+});
+
+export type OrganizationContact = z.infer<typeof OrganizationContactSchema>;
+
 export const OrganizationSchema = z
   .object({
     id: z.string(),
@@ -40,6 +63,8 @@ export const OrganizationSchema = z
     facebook: z.string().nullable().optional(),
     // FB publishing: null=all accounts, []=none, [ids]=specific
     default_fb_account_ids: z.array(z.string()).nullable().optional(),
+    // Multi-contact
+    contacts: z.array(OrganizationContactSchema).optional(),
     // Meta
     created_at: z.string(),
     updated_at: z.string(),

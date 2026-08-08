@@ -2,6 +2,20 @@
 
 from pydantic import BaseModel, Field
 
+from prosell.domain.value_objects.organization_contact import ContactCategory
+
+
+class ContactInput(BaseModel):
+    """Input for creating/updating a contact."""
+
+    id: str
+    category: ContactCategory
+    custom_label: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    whatsapp: str | None = None
+    order: int = 0
+
 
 class UpdateOrganizationRequest(BaseModel):
     """DTO for organization update request (all fields optional)."""
@@ -29,3 +43,5 @@ class UpdateOrganizationRequest(BaseModel):
     # Social
     instagram: str | None = None
     facebook: str | None = None
+    # Multi-contact
+    contacts: list[ContactInput] | None = None

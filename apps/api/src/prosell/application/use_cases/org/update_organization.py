@@ -5,6 +5,7 @@ from uuid import UUID
 from prosell.application.dto.org import OrganizationResponse, UpdateOrganizationRequest
 from prosell.domain.exceptions.org_exceptions import OrganizationNotFoundException
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
+from prosell.domain.value_objects.organization_contact import OrganizationContact
 
 
 class UpdateOrganizationUseCase:
@@ -65,6 +66,21 @@ class UpdateOrganizationUseCase:
 
         if request.settings is not None:
             org.update_settings(request.settings)
+
+        if request.contacts is not None:
+            contacts = [
+                OrganizationContact(
+                    id=c.id,
+                    category=c.category,
+                    custom_label=c.custom_label,
+                    phone=c.phone,
+                    email=c.email,
+                    whatsapp=c.whatsapp,
+                    order=c.order,
+                )
+                for c in request.contacts
+            ]
+            org.update_contacts(contacts)
 
         updated = await self.org_repository.update(org)
         return OrganizationResponse.from_entity(updated)

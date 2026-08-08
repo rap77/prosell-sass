@@ -139,6 +139,16 @@ export function useResendOrganizationInvitation() {
   });
 }
 
+interface ContactInput {
+  id: string;
+  category: string;
+  custom_label?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  order: number;
+}
+
 interface UpdateOrganizationInput {
   name?: string;
   code?: string;
@@ -156,6 +166,7 @@ interface UpdateOrganizationInput {
   tax_id?: string;
   instagram?: string;
   facebook?: string;
+  contacts?: ContactInput[];
   // ponytail: null=all accounts, []=none, [ids]=specific
   default_fb_account_ids?: string[] | null;
 }

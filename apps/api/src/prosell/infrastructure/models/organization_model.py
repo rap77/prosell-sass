@@ -32,9 +32,12 @@ class OrganizationModel(Base):
     website: Mapped[str | None] = mapped_column(String(500), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    # Contact info
+    # Contact info (legacy fields kept for backward compat)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     whatsapp: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Multi-contact support (JSONB array)
+    contacts: Mapped[list[dict[str, object]] | None] = mapped_column(JSON, nullable=True)
 
     # Address (desglosada)
     street_address: Mapped[str | None] = mapped_column(String(500), nullable=True)

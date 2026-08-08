@@ -3,8 +3,9 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from prosell.domain.base import DomainModel, Field
+from prosell.domain.base import DomainModel, Field, field_validator
 from prosell.domain.exceptions.org_exceptions import OrganizationVerificationException
+from prosell.domain.value_objects.organization_contact import OrganizationContact
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 
 
@@ -33,9 +34,22 @@ class Organization(DomainModel):
     website: str | None = None
     phone: str | None = None
 
-    # Contact info
+    # Contact info (legacy fields kept for backward compat)
     email: str | None = None
     whatsapp: str | None = None
+
+    # Multi-contact support
+    contacts: list[OrganizationContact] = Field(default_factory=list)
+
+    @field_validator("contacts", mode="before")
+    @classmethod
+    def _parse_contacts(cls, v: object) -> list[OrganizationContact]:
+        """Parse contacts from JSONB (list of dicts) or pass through."""
+        if v is None:
+            return []
+        if isinstance(v, list) and v and isinstance(v[0], dict):
+            return [OrganizationContact.model_validate(c) for c in v]
+        return v  # type: ignore[return-value] # already list[OrganizationContact]
 
     # Address
     street_address: str | None = None
@@ -262,6 +276,33 @@ class Organization(DomainModel):
         if facebook is not None:
             self.facebook = facebook
 
+        self.updated_at = datetime.now(UTC)
+
+    def add_contact(self, contact: OrganizationContact) -> None:
+        """Add a contact, auto-assigning order based on position."""
+        # ponytail: rebuild with new order if not set
+        new_order = len(self.contacts)
+        if contact.order == 0 and new_order > 0:
+            contact = OrganizationContact(
+                id=contact.id,
+                category=contact.category,
+                custom_label=contact.custom_label,
+                phone=contact.phone,
+                email=contact.email,
+                whatsapp=contact.whatsapp,
+                order=new_order,
+            )
+        self.contacts = [*self.contacts, contact]
+        self.updated_at = datetime.now(UTC)
+
+    def update_contacts(self, contacts: list[OrganizationContact]) -> None:
+        """Replace all contacts (used for drag-and-drop reorder)."""
+        self.contacts = contacts
+        self.updated_at = datetime.now(UTC)
+
+    def remove_contact(self, contact_id: str) -> None:
+        """Remove a contact by ID (noop if not found)."""
+        self.contacts = [c for c in self.contacts if c.id != contact_id]
         self.updated_at = datetime.now(UTC)
 
     @property

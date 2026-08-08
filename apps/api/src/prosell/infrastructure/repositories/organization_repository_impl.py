@@ -47,6 +47,7 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
             wallet_id=organization.wallet_id,
             created_by_user_id=organization.created_by_user_id,
             settings=organization.settings,
+            contacts=[c.model_dump() for c in organization.contacts] or None,
             created_at=organization.created_at,
             updated_at=organization.updated_at,
         )
@@ -124,6 +125,7 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         model.wallet_id = organization.wallet_id
         model.setup_complete = organization.setup_complete
         model.settings = organization.settings
+        model.contacts = [c.model_dump() for c in organization.contacts] or None
         model.updated_at = datetime.now(UTC)
 
         await self.session.flush()

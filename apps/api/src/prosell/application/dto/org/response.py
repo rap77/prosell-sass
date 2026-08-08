@@ -6,6 +6,35 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from prosell.domain.entities.organization import Organization
+from prosell.domain.value_objects.organization_contact import (
+    ContactCategory,
+    OrganizationContact,
+)
+
+
+class OrganizationContactDTO(BaseModel):
+    """DTO for organization contact in responses."""
+
+    id: str
+    category: ContactCategory
+    custom_label: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    whatsapp: str | None = None
+    order: int = 0
+
+    @classmethod
+    def from_vo(cls, contact: OrganizationContact) -> "OrganizationContactDTO":
+        """Build from value object."""
+        return cls(
+            id=contact.id,
+            category=contact.category,
+            custom_label=contact.custom_label,
+            phone=contact.phone,
+            email=contact.email,
+            whatsapp=contact.whatsapp,
+            order=contact.order,
+        )
 
 
 class OrganizationResponse(BaseModel):
@@ -41,6 +70,7 @@ class OrganizationResponse(BaseModel):
     wallet_id: UUID | None = None
     setup_complete: bool = False
     settings: dict[str, object] = Field(default_factory=dict)
+    contacts: list[OrganizationContactDTO] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     broker_count: int | None = None  # populated when listing organizations
@@ -81,6 +111,7 @@ class OrganizationResponse(BaseModel):
             wallet_id=org.wallet_id,
             setup_complete=org.setup_complete,
             settings=org.settings,
+            contacts=[OrganizationContactDTO.from_vo(c) for c in org.contacts],
             created_at=org.created_at,
             updated_at=org.updated_at,
             broker_count=broker_count,

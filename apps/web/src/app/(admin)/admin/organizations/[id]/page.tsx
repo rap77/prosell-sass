@@ -34,6 +34,16 @@ import {
   useUpdateOrganization,
 } from "@/lib/api/organizations";
 import { useFBAccounts } from "@/lib/api/fb-accounts";
+import type { OrganizationContact } from "@/lib/api/schemas/organizations";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  gerencia: "Gerencia",
+  ventas: "Ventas",
+  servicio_tecnico: "Servicio Técnico",
+  cobranza: "Cobranza",
+  recepcion: "Recepción",
+  custom: "Otro",
+};
 
 /**
  * Admin organization detail — Subsystem D Phase 6.
@@ -316,6 +326,47 @@ export default function AdminOrganizationDetailPage() {
                   .filter(Boolean)
                   .join(", ")}
               </span>
+            </div>
+          )}
+
+          {/* Multi-contacts list */}
+          {organization.contacts && organization.contacts.length > 0 && (
+            <div className="border-t border-ps-border-subtle pt-4 mt-2">
+              <h3 className="text-sm font-medium text-ps-text-secondary mb-3">
+                Contactos ({organization.contacts.length})
+              </h3>
+              <div className="grid gap-2">
+                {[...organization.contacts]
+                  .sort((a, b) => a.order - b.order)
+                  .map((contact: OrganizationContact) => (
+                    <div
+                      key={contact.id}
+                      className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-ps-bg-base text-sm"
+                    >
+                      <span className="font-medium text-ps-text-primary">
+                        {contact.category === "custom" && contact.custom_label
+                          ? contact.custom_label
+                          : (CATEGORY_LABELS[contact.category] ??
+                            contact.category)}
+                      </span>
+                      {contact.phone && (
+                        <span className="flex items-center gap-1 text-ps-text-secondary">
+                          <Phone size={12} /> {contact.phone}
+                        </span>
+                      )}
+                      {contact.email && (
+                        <span className="flex items-center gap-1 text-ps-text-secondary">
+                          <Mail size={12} /> {contact.email}
+                        </span>
+                      )}
+                      {contact.whatsapp && (
+                        <span className="flex items-center gap-1 text-ps-text-secondary">
+                          <MessageCircle size={12} /> {contact.whatsapp}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 
