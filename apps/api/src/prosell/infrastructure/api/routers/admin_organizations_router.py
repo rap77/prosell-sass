@@ -11,7 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
-from sqlalchemy import text, update
+from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org.response import OrganizationListResponse, OrganizationResponse
@@ -517,7 +517,12 @@ async def delete_organization_broker(
     current_user: CurrentUser,
     db: DbSession,
 ) -> None:
-    """Delete a broker. Requires ORG_ADMIN_VIEW_ALL."""
+    """Delete a broker. Requires ORG_ADMIN_VIEW_ALL.
+
+    Ownership redistribution:
+    - If broker is sole owner (100%) → ownership transfers to organization
+    - If broker shares with others → percentages redistribute proportionally
+    """
     _require_org_admin_view_all(current_user)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
@@ -526,9 +531,69 @@ async def delete_organization_broker(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
 
     broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
+    broker = await broker_repo.get_broker(broker_id, organization_id)
+    if broker is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Broker not found")
+
+    # ponytail: redistribute ownership before delete — use broker.user_id or broker.id
+    owner_id = broker.user_id if broker.user_id else broker_id
+    await _redistribute_broker_ownership(db, owner_id, organization_id)
+
     deleted = await broker_repo.delete_broker(broker_id, organization_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Broker not found")
+
+
+async def _redistribute_broker_ownership(
+    db: AsyncSession, broker_owner_id: UUID, organization_id: UUID
+) -> None:
+    """Redistribute ownership when a broker is deleted.
+
+    - Sole owner (100%) → transfer to organization
+    - Shared ownership → redistribute proportionally among remaining owners
+    """
+    from decimal import Decimal
+
+    from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
+
+    # Find all products where this broker has ownership
+    stmt = select(ProductOwnershipModel).where(ProductOwnershipModel.owner_id == broker_owner_id)
+    result = await db.execute(stmt)
+    broker_ownerships = result.scalars().all()
+
+    for ownership in broker_ownerships:
+        product_id = ownership.product_id
+        broker_percentage = ownership.percentage
+
+        # Get other owners for this product
+        others_stmt = select(ProductOwnershipModel).where(
+            ProductOwnershipModel.product_id == product_id,
+            ProductOwnershipModel.owner_id != broker_owner_id,
+        )
+        others_result = await db.execute(others_stmt)
+        other_owners = others_result.scalars().all()
+
+        # Delete the broker's ownership row
+        await db.delete(ownership)
+
+        if not other_owners:
+            # Sole owner → transfer to organization
+            new_ownership = ProductOwnershipModel(
+                product_id=product_id,
+                owner_id=organization_id,
+                owner_type="organization",
+                percentage=Decimal("100.00"),
+            )
+            db.add(new_ownership)
+        else:
+            # Redistribute proportionally
+            others_total = sum(o.percentage for o in other_owners)
+            for other in other_owners:
+                # Each owner gets their proportional share of the freed percentage
+                additional = broker_percentage * (other.percentage / others_total)
+                other.percentage += additional
+
+    await db.flush()
 
 
 async def _count_products_per_vertical(

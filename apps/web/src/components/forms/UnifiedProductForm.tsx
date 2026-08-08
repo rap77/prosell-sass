@@ -152,7 +152,8 @@ export function findBrokerByOwnerId(
   brokers: Broker[],
   ownerId: string,
 ): Broker | undefined {
-  return brokers.find((broker) => broker.user_id === ownerId);
+  // ponytail: match by user_id OR id — brokers without user_id use id as fallback
+  return brokers.find((broker) => (broker.user_id ?? broker.id) === ownerId);
 }
 
 export function getSelectableBrokers(
@@ -161,7 +162,7 @@ export function getSelectableBrokers(
   currentOwnerId: string,
 ): Broker[] {
   return brokers.filter((broker) => {
-    // Use user_id (the ownership key) for comparison, fallback to id
+    // ponytail: use user_id if linked, otherwise broker.id for pending brokers
     const ownerId = broker.user_id ?? broker.id;
     return ownerId === currentOwnerId || !selectedOwnerIds.has(ownerId);
   });
