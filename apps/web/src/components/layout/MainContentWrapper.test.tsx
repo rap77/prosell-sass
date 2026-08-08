@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { MainContentWrapper } from "./MainContentWrapper";
-import { useLayoutStore } from "@/lib/stores/layoutStore";
 
 // Mock with Zustand selector pattern (React 19 compatibility)
 const { mockUseLayoutStore } = vi.hoisted(() => ({
@@ -15,17 +14,18 @@ vi.mock("@/lib/stores/layoutStore", () => ({
 
 describe("MainContentWrapper", () => {
   const mockToggleMobileDrawer = vi.fn();
+  let sidebarCollapsed = false;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sidebarCollapsed = false;
 
     // Implement Zustand selector pattern
-    const mockState = {
-      sidebarCollapsed: false,
-      toggleMobileDrawer: mockToggleMobileDrawer,
-    };
-
     mockUseLayoutStore.mockImplementation((selector) => {
+      const mockState = {
+        sidebarCollapsed,
+        toggleMobileDrawer: mockToggleMobileDrawer,
+      };
       if (!selector) return mockState;
       return selector(mockState);
     });
@@ -110,10 +110,7 @@ describe("MainContentWrapper", () => {
     expect(wrapper).toHaveClass("md:ml-64");
 
     // Sidebar collapsed: ml-16
-    (useLayoutStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      sidebarCollapsed: true,
-      toggleMobileDrawer: mockToggleMobileDrawer,
-    });
+    sidebarCollapsed = true;
 
     rerender(
       <MainContentWrapper>

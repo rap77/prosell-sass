@@ -1,4 +1,5 @@
 import imageCompression from "browser-image-compression";
+import { logger } from "@/lib/logger";
 
 /**
  * Hook for client-side image compression before upload.
@@ -36,7 +37,7 @@ export function useImageCompression() {
       return compressedFile;
     } catch (error) {
       // ponytail: fallback to original on error, don't block upload
-      console.error("Image compression failed, using original:", error);
+      logger.error("Image compression failed, using original:", error);
       return file;
     }
   }

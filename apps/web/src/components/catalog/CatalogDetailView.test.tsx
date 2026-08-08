@@ -21,6 +21,7 @@ vi.mock("@/lib/api/products", () => ({
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       attributes: {
+        category: "vehicle",
         year: 2020,
         make: "Toyota",
         model: "Corolla",
@@ -121,7 +122,7 @@ describe("CatalogDetailView - Mobile-First", () => {
     expect(mainGrid?.className).toContain("lg:grid-cols-");
   });
 
-  it.skip("attributes grid should be responsive: grid-cols-1 md:grid-cols-2", () => {
+  it("attributes grid should be responsive: grid-cols-1 md:grid-cols-2", () => {
     const { container } = renderWithQuery(
       <CatalogDetailView productId="test-product-id" />,
     );

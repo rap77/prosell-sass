@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImageDropzone } from "@/components/upload/ImageDropzone";
 
@@ -142,14 +142,16 @@ describe("ImageDropzone", () => {
     window.dispatchEvent(event);
   }
 
-  it.skip("hands a pasted image File to the store (same path as drop / file-input)", () => {
+  it("hands a pasted image File to the store (same path as drop / file-input)", async () => {
     const { unmount } = render(<ImageDropzone />);
 
     const file = new File(["binary"], "pasted.png", { type: "image/png" });
     dispatchPaste([{ kind: "file", type: "image/png", getAsFile: () => file }]);
 
-    expect(mockAddFile).toHaveBeenCalledTimes(1);
-    expect(mockAddFile).toHaveBeenCalledWith(file);
+    await waitFor(() => {
+      expect(mockAddFile).toHaveBeenCalledOnce();
+      expect(mockAddFile).toHaveBeenCalledWith(file);
+    });
 
     unmount();
   });

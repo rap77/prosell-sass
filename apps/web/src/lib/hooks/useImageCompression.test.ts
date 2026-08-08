@@ -6,8 +6,12 @@ import { useImageCompression } from "./useImageCompression";
 vi.mock("browser-image-compression", () => ({
   default: vi.fn(),
 }));
+vi.mock("@/lib/logger", () => ({
+  logger: { error: vi.fn() },
+}));
 
 import imageCompression from "browser-image-compression";
+import { logger } from "@/lib/logger";
 
 describe("useImageCompression", () => {
   beforeEach(() => {
@@ -97,7 +101,7 @@ describe("useImageCompression", () => {
   });
 
   it("should handle compression errors gracefully (fallback to original)", async () => {
-    const originalFile = new File(["data"], "photo.jpg", {
+    const originalFile = new File(["x".repeat(2 * 1024 * 1024)], "photo.jpg", {
       type: "image/jpeg",
     });
 
@@ -115,6 +119,7 @@ describe("useImageCompression", () => {
 
     // Should fallback to original file
     expect(compressed).toBe(originalFile);
+    expect(logger.error).toHaveBeenCalledOnce();
   });
 
   it("should use correct compression options", async () => {

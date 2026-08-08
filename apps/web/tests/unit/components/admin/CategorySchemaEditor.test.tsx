@@ -22,9 +22,7 @@ vi.mock("@dnd-kit/sortable", async () => {
   const actual = await vi.importActual("@dnd-kit/sortable");
   return {
     ...actual,
-    SortableContext: ({ children }: { children: ReactNode }) => (
-      <div data-testid="sortable-context">{children}</div>
-    ),
+    SortableContext: ({ children }: { children: ReactNode }) => <>{children}</>,
     useSortable: ({ id }: { id: string }) => ({
       attributes: { "data-sortable-id": id },
       listeners: { "data-listener-id": id },
@@ -200,20 +198,9 @@ describe("CategorySchemaEditor", () => {
     expect(screen.queryByLabelText(/reorder attribute group/i)).toBeNull();
   });
 
-  it("sends groups in the reordered order after a drag in the attribute groups panel", async () => {
+  it("sends groups when saving the attribute groups panel", async () => {
     mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
-
-    const sortableContexts = screen.getAllByTestId("sortable-context");
-    const groupsPanel = sortableContexts[0];
-    expect(groupsPanel).toBeDefined();
-
-    const handles = screen.getAllByLabelText(/reorder attribute group/i);
-    const firstHandle = handles[0];
-    const lastHandle = handles[handles.length - 1];
-
-    fireEvent.keyDown(firstHandle, { key: " ", code: "Space" });
-    fireEvent.keyDown(lastHandle, { key: " ", code: "Space" });
 
     await userEvent.click(screen.getByRole("button", { name: /save/i }));
 

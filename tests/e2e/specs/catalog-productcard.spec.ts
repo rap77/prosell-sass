@@ -4,7 +4,7 @@ import {
   mockCategoriesEndpoint,
   mockOrgVerticalsEndpoint,
 } from "../helpers/mock-endpoints";
-import { MOCK_ORG_VERTICALS } from "../fixtures/mock-data";
+import { MOCK_ORG_VERTICALS, MOCK_VEHICLE_LIST } from "../fixtures/mock-data";
 
 /**
  * E2E smoke for the generic ProductCard (Subsystem A).
@@ -45,6 +45,41 @@ test.describe("Catalog — Generic ProductCard", () => {
     // resolve a signed cover URL via image-urls).
     const img = page.getByRole("article").first().locator("img").first();
     await expect(img).toBeVisible();
+  });
+
+  test("virtualizes table rows while scrolling a large catalog", async ({
+    page,
+  }) => {
+    const vehicles = Array.from({ length: 100 }, (_, index) => ({
+      ...MOCK_VEHICLE_LIST[0],
+      vin: `TESTVIN${String(index).padStart(10, "0")}`,
+      product: {
+        ...MOCK_VEHICLE_LIST[0].product,
+        id: `virtual-product-${index}`,
+        title: `Virtual Product ${index}`,
+      },
+    }));
+
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await mockOrgVerticalsEndpoint(page);
+    await mockCategoriesEndpoint(page);
+    await mockVehiclesEndpoint(page, vehicles);
+    await page.goto("/catalog");
+    await page.getByRole("button", { name: "Tabla" }).click();
+
+    const scrollContainer = page.getByTestId("data-grid-scroll");
+    await expect(scrollContainer).toBeVisible();
+    await expect(page.getByTestId("product-row").first()).toBeVisible();
+    expect(await page.getByTestId("product-row").count()).toBeLessThan(100);
+
+    await scrollContainer.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+      element.dispatchEvent(new Event("scroll"));
+    });
+
+    await expect(
+      page.locator('[data-product-id="virtual-product-99"]'),
+    ).toBeVisible();
   });
 
   test("falls back to the vehicles placeholder when the product has no cover", async ({

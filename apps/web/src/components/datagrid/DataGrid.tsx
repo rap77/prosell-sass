@@ -298,6 +298,9 @@ export function DataGrid({
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualRows[0]?.start ?? 0;
+  const paddingBottom =
+    rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0);
   const rowsToRender =
     virtualRows.length > 0
       ? virtualRows.map((virtualRow) => ({
@@ -347,6 +350,7 @@ export function DataGrid({
 
       <div
         ref={tableContainerRef}
+        data-testid="data-grid-scroll"
         className="h-[600px] overflow-auto overflow-x-auto touch-pan-x"
       >
         <table className="w-full border-collapse">
@@ -378,6 +382,11 @@ export function DataGrid({
             ))}
           </thead>
           <tbody>
+            {paddingTop > 0 && (
+              <tr aria-hidden="true">
+                <td colSpan={columns.length} style={{ height: paddingTop }} />
+              </tr>
+            )}
             {rowsToRender.map(({ key, row }) => (
               <tr
                 key={key}
@@ -412,6 +421,14 @@ export function DataGrid({
                 })}
               </tr>
             ))}
+            {paddingBottom > 0 && (
+              <tr aria-hidden="true">
+                <td
+                  colSpan={columns.length}
+                  style={{ height: paddingBottom }}
+                />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

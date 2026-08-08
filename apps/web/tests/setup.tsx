@@ -1,10 +1,17 @@
-import React from "react";
+import {
+  cloneElement,
+  createElement,
+  isValidElement,
+  type HTMLAttributes,
+  type JSX,
+  type ReactNode,
+} from "react";
 import { expect, afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import * as matchers from "@testing-library/jest-dom/matchers";
 
 interface ChildrenProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 interface TriggerProps extends ChildrenProps {
@@ -89,19 +96,19 @@ afterEach(() => {
 
 // Mock Radix UI DropdownMenu components globally
 vi.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: ChildrenProps): React.JSX.Element => (
+  DropdownMenu: ({ children }: ChildrenProps): JSX.Element => (
     <div data-testid="dropdown-menu">{children}</div>
   ),
   DropdownMenuTrigger: ({
     children,
     asChild,
     ...props
-  }: TriggerProps): React.JSX.Element => {
+  }: TriggerProps): JSX.Element => {
     // When asChild=true, Radix merges the trigger element with the child (no wrapper)
     // When asChild=false, it wraps children in a button
-    if (asChild && React.isValidElement<{ "data-testid"?: string }>(children)) {
+    if (asChild && isValidElement<{ "data-testid"?: string }>(children)) {
       // Clone child and add data-testid for testing
-      return React.cloneElement(children, {
+      return cloneElement(children, {
         "data-testid": "dropdown-trigger",
       });
     }
@@ -111,7 +118,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
       </button>
     );
   },
-  DropdownMenuContent: ({ children }: ChildrenProps): React.JSX.Element => (
+  DropdownMenuContent: ({ children }: ChildrenProps): JSX.Element => (
     <div data-testid="dropdown-content" role="menu">
       {children}
     </div>
@@ -120,7 +127,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
     children,
     onClick,
     className,
-  }: DropdownMenuItemProps): React.JSX.Element => (
+  }: DropdownMenuItemProps): JSX.Element => (
     <button
       data-testid="dropdown-item"
       className={className}
@@ -130,42 +137,35 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
       {children}
     </button>
   ),
-  DropdownMenuLabel: ({ children }: ChildrenProps): React.JSX.Element => (
+  DropdownMenuLabel: ({ children }: ChildrenProps): JSX.Element => (
     <div data-testid="dropdown-label">{children}</div>
   ),
-  DropdownMenuSeparator: (): React.JSX.Element => (
+  DropdownMenuSeparator: (): JSX.Element => (
     <hr data-testid="dropdown-separator" />
   ),
 }));
 
 // Mock Radix UI Select components globally to fix hasPointerCapture error
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ children, value, disabled }: SelectProps): React.JSX.Element => (
+  Select: ({ children, value, disabled }: SelectProps): JSX.Element => (
     <div data-testid="select" data-value={value} data-disabled={disabled}>
       {children}
     </div>
   ),
-  SelectTrigger: ({
-    children,
-    ...props
-  }: SelectTriggerProps): React.JSX.Element => (
+  SelectTrigger: ({ children, ...props }: SelectTriggerProps): JSX.Element => (
     <button data-testid="select-trigger" type="button" {...props}>
       {children}
     </button>
   ),
-  SelectValue: ({ placeholder }: SelectValueProps): React.JSX.Element => (
+  SelectValue: ({ placeholder }: SelectValueProps): JSX.Element => (
     <span data-testid="select-value">{placeholder}</span>
   ),
-  SelectContent: ({ children }: ChildrenProps): React.JSX.Element => (
+  SelectContent: ({ children }: ChildrenProps): JSX.Element => (
     <div data-testid="select-content" role="listbox">
       {children}
     </div>
   ),
-  SelectItem: ({
-    children,
-    value,
-    onClick,
-  }: SelectItemProps): React.JSX.Element => (
+  SelectItem: ({ children, value, onClick }: SelectItemProps): JSX.Element => (
     <div
       data-testid="select-item"
       data-value={value}
@@ -184,7 +184,7 @@ vi.mock("cmdk", () => ({
     children,
     open,
     onOpenChange,
-  }: CommandDialogProps): React.JSX.Element => (
+  }: CommandDialogProps): JSX.Element => (
     <div
       data-testid="command-dialog"
       data-open={open}
@@ -197,7 +197,7 @@ vi.mock("cmdk", () => ({
     value,
     onValueChange,
     ...props
-  }: CommandInputProps): React.JSX.Element => {
+  }: CommandInputProps): JSX.Element => {
     const { onChange: _onChange, ...rest } = props;
     return (
       <input
@@ -208,16 +208,13 @@ vi.mock("cmdk", () => ({
       />
     );
   },
-  CommandList: ({ children }: ChildrenProps): React.JSX.Element => (
+  CommandList: ({ children }: ChildrenProps): JSX.Element => (
     <div data-testid="command-list">{children}</div>
   ),
-  CommandEmpty: ({ children }: ChildrenProps): React.JSX.Element => (
+  CommandEmpty: ({ children }: ChildrenProps): JSX.Element => (
     <div data-testid="command-empty">{children}</div>
   ),
-  CommandGroup: ({
-    children,
-    heading,
-  }: CommandGroupProps): React.JSX.Element => (
+  CommandGroup: ({ children, heading }: CommandGroupProps): JSX.Element => (
     <div data-testid="command-group">
       {heading && <div data-testid="command-group-heading">{heading}</div>}
       {children}
@@ -227,7 +224,7 @@ vi.mock("cmdk", () => ({
     children,
     onSelect,
     ...props
-  }: CommandItemProps): React.JSX.Element => (
+  }: CommandItemProps): JSX.Element => (
     <div data-testid="command-item" onClick={onSelect} {...props}>
       {children}
     </div>
@@ -273,16 +270,46 @@ vi.mock("next-intl", () => ({
   NextIntlClientProvider: ({ children }: ChildrenProps) => <>{children}</>,
 }));
 
-// Mock framer-motion to fix React 19 onClick compatibility
-// React 19 + framer-motion + vitest have an incompatibility where
-// motion components don't properly handle mocked onClick handlers.
-// Solution: Replace motion components with regular HTML elements in tests.
+interface MotionTestProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  "onDrag" | "onDragEnd"
+> {
+  animate?: unknown;
+  drag?: unknown;
+  dragConstraints?: unknown;
+  dragElastic?: unknown;
+  dragMomentum?: unknown;
+  exit?: unknown;
+  initial?: unknown;
+  layout?: unknown;
+  onDrag?: unknown;
+  onDragEnd?: unknown;
+  transition?: unknown;
+  variants?: unknown;
+  whileHover?: unknown;
+  whileTap?: unknown;
+}
+
+// Replace motion elements in tests without leaking motion-only props into the DOM.
 vi.mock("framer-motion", () => {
   const createMotionComponent = (element: string) => {
-    const Component = React.forwardRef<any, any>(
-      ({ children, ...props }, ref) =>
-        React.createElement(element, { ...props, ref }, children),
-    );
+    const Component = ({
+      animate: _animate,
+      drag: _drag,
+      dragConstraints: _dragConstraints,
+      dragElastic: _dragElastic,
+      dragMomentum: _dragMomentum,
+      exit: _exit,
+      initial: _initial,
+      layout: _layout,
+      onDrag: _onDrag,
+      onDragEnd: _onDragEnd,
+      transition: _transition,
+      variants: _variants,
+      whileHover: _whileHover,
+      whileTap: _whileTap,
+      ...props
+    }: MotionTestProps) => createElement(element, props, props.children);
     Component.displayName = `Motion${element.charAt(0).toUpperCase()}${element.slice(1)}`;
     return Component;
   };

@@ -119,26 +119,6 @@ describe("DataGrid Touch Targets (Minimum Viable)", () => {
 });
 
 describe("DataGrid Desktop Compatibility", () => {
-  it.skip("should maintain row virtualization for performance", () => {
-    // ponytail: virtualization works in browser but not in jsdom (no layout/scroll)
-    // tested manually in real browser
-    const largeData = Array.from({ length: 100 }, (_, i) => ({
-      id: `${i}`,
-      title: `Product ${i}`,
-      price: 10000 + i * 1000,
-      status: "published" as const,
-    }));
-
-    render(<DataGrid data={largeData} />);
-
-    // Virtualization means not all 100 rows are rendered
-    const renderedRows = screen.getAllByTestId("product-row");
-
-    // Should render only visible rows (not all 100)
-    expect(renderedRows.length).toBeLessThan(100);
-    expect(renderedRows.length).toBeGreaterThan(0);
-  });
-
   it("should maintain sticky header on vertical scroll", () => {
     render(<DataGrid data={mockData} />);
 

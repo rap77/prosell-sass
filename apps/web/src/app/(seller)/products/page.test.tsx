@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import ProductsPage from "./page";
 
 // Mock dependencies
@@ -71,10 +72,11 @@ describe("ProductsPage - Mobile-First", () => {
 
   it("form action buttons should stack on mobile", async () => {
     const { getByText, container } = render(<ProductsPage />);
+    const user = userEvent.setup();
 
     // Open form
     const newButton = getByText("New Product");
-    await vi.waitFor(() => newButton.click());
+    await user.click(newButton);
 
     // Action buttons container (last .flex.gap-2 is the form buttons)
     const allFlexGap = container.querySelectorAll(".flex.gap-2");

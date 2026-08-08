@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+vi.mock("@/lib/logger", () => ({
+  logger: { error: vi.fn() },
+}));
+
 import { useInferCategory } from "@/lib/api/useInferCategory";
+import { logger } from "@/lib/logger";
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient();
@@ -100,5 +106,6 @@ describe("useInferCategory", () => {
     );
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.suggestion).toBeNull();
+    expect(logger.error).toHaveBeenCalledOnce();
   });
 });

@@ -300,6 +300,9 @@ describe("downloadSchemaTemplate", () => {
     global.fetch = fetchMock;
     global.URL.createObjectURL = vi.fn().mockReturnValue("blob:fake");
     global.URL.revokeObjectURL = vi.fn();
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
 
     await downloadSchemaTemplate(CAT_ID);
 
@@ -307,5 +310,6 @@ describe("downloadSchemaTemplate", () => {
       `/api/v1/categories/${CAT_ID}/schema/template.csv`,
       expect.objectContaining({ credentials: "include" }),
     );
+    expect(click).toHaveBeenCalledOnce();
   });
 });

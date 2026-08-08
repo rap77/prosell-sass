@@ -86,6 +86,9 @@ describe("BulkUploadErrorModal", () => {
     const createObjectURL = vi.fn().mockReturnValue("blob:fake");
     global.URL.createObjectURL = createObjectURL;
     global.URL.revokeObjectURL = vi.fn();
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
 
     render(
       <BulkUploadErrorModal
@@ -103,5 +106,6 @@ describe("BulkUploadErrorModal", () => {
         expect.objectContaining({ credentials: "include" }),
       );
     });
+    expect(click).toHaveBeenCalledOnce();
   });
 });

@@ -1,230 +1,161 @@
-/**
- * Playwright Global Setup
- *
- * Runs once before all tests to generate authentication storage state.
- * This allows tests to skip manual login and start authenticated.
- */
+/** Prepare an authenticated Playwright storage state for protected E2E tests. */
+import { chromium, type Cookie, type FullConfig } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { chromium, FullConfig } from "@playwright/test";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+const CONFIG_DIR = path.dirname(fileURLToPath(import.meta.url));
+const STORAGE_STATE_PATH = path.join(CONFIG_DIR, ".auth", "storage-state.json");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+interface UserData {
+  tenant_id?: string;
+  role?: string;
+  [key: string]: unknown;
+}
 
-/**
- * Parse Set-Cookie header into cookie object
- */
-function parseSetCookieHeader(
-  setCookieValue: string,
-): { name: string; value: string; [key: string]: any } | null {
-  if (!setCookieValue) return null;
+function isUserData(value: unknown): value is UserData {
+  return typeof value === "object" && value !== null;
+}
 
-  const parts = setCookieValue.split(";").map((p) => p.trim());
-  const [nameValue, ...attributes] = parts;
+function parseJson(value: string): unknown | null {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
 
+function hasValidAccessToken(storageState: unknown): boolean {
+  if (
+    typeof storageState !== "object" ||
+    storageState === null ||
+    !("cookies" in storageState) ||
+    !Array.isArray(storageState.cookies)
+  ) {
+    return false;
+  }
+
+  return storageState.cookies.some(
+    (cookie: unknown) =>
+      typeof cookie === "object" &&
+      cookie !== null &&
+      "name" in cookie &&
+      "expires" in cookie &&
+      cookie.name === "access_token" &&
+      typeof cookie.expires === "number" &&
+      cookie.expires > Date.now() / 1000,
+  );
+}
+
+function parseSetCookieHeader(header: string): Cookie | null {
+  const [nameValue, ...attributes] = header
+    .split(";")
+    .map((part) => part.trim());
   if (!nameValue) return null;
 
   const [name, value] = nameValue.split("=");
+  if (!name || value === undefined) return null;
 
-  const cookie: any = {
+  const cookie: Cookie = {
     name,
-    value: value || "",
+    value,
     domain: "localhost",
     path: "/",
+    expires: -1,
+    httpOnly: false,
+    secure: false,
     sameSite: "Lax",
   };
 
-  for (const attr of attributes) {
-    const [key, val] = attr.split("=");
-    const lowerKey = key.toLowerCase();
-
-    if (lowerKey === "max-age") {
-      // Playwright expects expires in seconds (unix timestamp)
-      cookie.expires = Math.floor(
-        (Date.now() + parseInt(val || "0", 10) * 1000) / 1000,
-      );
-    } else if (lowerKey === "expires") {
-      // Parse RFC 1123 date format, convert to seconds for Playwright
-      cookie.expires = Math.floor(new Date(val).getTime() / 1000);
-    } else if (lowerKey === "domain") {
-      cookie.domain = val || "localhost";
-    } else if (lowerKey === "path") {
-      cookie.path = val || "/";
-    } else if (lowerKey === "samesite") {
-      // Capitalize first letter for Playwright (Strict|Lax|None)
-      const samesiteVal = (val || "lax").toLowerCase();
-      cookie.sameSite =
-        samesiteVal.charAt(0).toUpperCase() + samesiteVal.slice(1);
-    } else if (lowerKey === "secure") {
-      cookie.secure = true;
-    } else if (lowerKey === "httponly") {
-      cookie.httpOnly = true;
+  for (const attribute of attributes) {
+    const [key, valuePart] = attribute.split("=");
+    switch (key.toLowerCase()) {
+      case "max-age":
+        cookie.expires = Math.floor(
+          (Date.now() + Number(valuePart ?? "0") * 1000) / 1000,
+        );
+        break;
+      case "expires":
+        cookie.expires = Math.floor(new Date(valuePart ?? "").getTime() / 1000);
+        break;
+      case "domain":
+        cookie.domain = valuePart || "localhost";
+        break;
+      case "path":
+        cookie.path = valuePart || "/";
+        break;
+      case "samesite": {
+        const sameSite = valuePart?.toLowerCase();
+        if (sameSite === "lax") cookie.sameSite = "Lax";
+        if (sameSite === "strict") cookie.sameSite = "Strict";
+        if (sameSite === "none") cookie.sameSite = "None";
+        break;
+      }
+      case "secure":
+        cookie.secure = true;
+        break;
+      case "httponly":
+        cookie.httpOnly = true;
+        break;
     }
   }
 
   return cookie;
 }
 
-async function globalSetup(config: FullConfig) {
-  console.log("[GLOBAL SETUP] Starting authentication setup...");
+async function globalSetup(_config: FullConfig): Promise<void> {
+  if (fs.existsSync(STORAGE_STATE_PATH)) {
+    const storedState = parseJson(fs.readFileSync(STORAGE_STATE_PATH, "utf-8"));
+    if (hasValidAccessToken(storedState)) return;
+  }
 
-  // Get test credentials from env or defaults
-  // Note: These must match a real user in the database
-  const email = process.env.TEST_USER_EMAIL || "admin@prosell.saas";
-  const password = process.env.TEST_USER_PASSWORD || "Admin123!";
+  const email = process.env.TEST_USER_EMAIL;
+  const password = process.env.TEST_USER_PASSWORD;
+  if (!email || !password) {
+    throw new Error(
+      "Set TEST_USER_EMAIL and TEST_USER_PASSWORD for E2E authentication",
+    );
+  }
 
-  // Make direct API call to get cookies
-  console.log("[GLOBAL SETUP] Making direct login API call...");
-
-  // Call backend API directly (not through Next.js proxy)
-  // Backend runs on port 8000, frontend on 3000
   const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
   const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
-    credentials: "include", // Important for cookies
+    credentials: "include",
   });
+  if (!response.ok) throw new Error(`E2E login failed: ${response.status}`);
 
-  console.log("[GLOBAL SETUP] Login API response status:", response.status);
+  const cookies = response.headers
+    .getSetCookie()
+    .map(parseSetCookieHeader)
+    .filter((cookie): cookie is Cookie => cookie !== null);
+  if (cookies.length === 0) throw new Error("E2E login returned no cookies");
 
-  if (!response.ok) {
-    console.log("[GLOBAL SETUP] ERROR: Login API call failed!");
-    throw new Error(`Login API call failed: ${response.status}`);
-  }
-
-  // Get all Set-Cookie headers
-  const setCookieHeaders = response.headers.getSetCookie();
-  console.log(
-    "[GLOBAL SETUP] Set-Cookie headers found:",
-    setCookieHeaders.length,
-  );
-
-  const cookies: any[] = [];
-  for (const header of setCookieHeaders) {
-    console.log(
-      "[GLOBAL SETUP] Parsing Set-Cookie:",
-      header.substring(0, 60) + "...",
-    );
-    const cookie = parseSetCookieHeader(header);
-    if (cookie) {
-      cookies.push(cookie);
-      console.log(
-        "[GLOBAL SETUP] Parsed cookie:",
-        cookie.name,
-        "=",
-        cookie.value.substring(0, 20) + "...",
-      );
-    }
-  }
-
-  if (cookies.length === 0) {
-    console.log(
-      "[GLOBAL SETUP] ERROR: No cookies parsed from Set-Cookie headers!",
-    );
-    throw new Error("No cookies parsed from login API response");
-  }
-
-  // CRITICAL: Extract tenant_id from user_data cookie
-  // Categories use tenant_id (which is the organization_id), not user.id
-  const userDataCookie = cookies.find((c) => c.name === "user_data");
-  let authenticatedTenantId = "";
+  const userDataCookie = cookies.find((cookie) => cookie.name === "user_data");
   if (userDataCookie) {
-    console.log(
-      "[GLOBAL SETUP] Found user_data cookie, extracting tenant_id...",
-    );
-    try {
-      // Decode URL-encoded JSON (Python SimpleCookie adds quotes)
-      let rawValue = userDataCookie.value;
-      if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
-        rawValue = rawValue.slice(1, -1);
+    const rawValue = userDataCookie.value.replace(/^"|"$/g, "");
+    const userData = parseJson(decodeURIComponent(rawValue));
+    if (isUserData(userData)) {
+      userData.role = "dealer";
+      userDataCookie.value = encodeURIComponent(JSON.stringify(userData));
+      if (typeof userData.tenant_id === "string") {
+        fs.mkdirSync(path.dirname(STORAGE_STATE_PATH), { recursive: true });
+        fs.writeFileSync(
+          path.join(CONFIG_DIR, ".auth", "tenant-id.txt"),
+          userData.tenant_id,
+        );
       }
-      const decodedValue = decodeURIComponent(rawValue);
-      const userData = JSON.parse(decodedValue);
-
-      // Extract tenant_id to use for category creation (this is the organization_id)
-      authenticatedTenantId = userData.tenant_id;
-      console.log("[GLOBAL SETUP] Extracted tenant_id:", authenticatedTenantId);
-
-      // Change role to dealer for E2E tests (dealer appointments page requires dealer role)
-      if (userData.role) {
-        userData.role = "dealer";
-        console.log("[GLOBAL SETUP] Modified user role to:", userData.role);
-      }
-
-      // Re-encode and update cookie value
-      const modifiedValue = JSON.stringify(userData);
-      userDataCookie.value = encodeURIComponent(modifiedValue);
-      console.log("[GLOBAL SETUP] user_data cookie updated successfully");
-    } catch (error) {
-      console.log(
-        "[GLOBAL SETUP] WARNING: Failed to parse user_data cookie:",
-        error,
-      );
     }
-  } else {
-    console.log("[GLOBAL SETUP] WARNING: user_data cookie not found!");
   }
 
-  // Save the authenticated user's tenant_id (organization_id) for tests
-  if (authenticatedTenantId) {
-    process.env.TEST_TENANT_ID = authenticatedTenantId;
-    console.log("[GLOBAL SETUP] Set TEST_TENANT_ID to:", authenticatedTenantId);
-
-    // Also save to a file that tests can read (env vars don't persist from globalSetup)
-    const authDir = path.join(__dirname, ".auth");
-    fs.mkdirSync(authDir, { recursive: true });
-    const tenantIdPath = path.join(authDir, "tenant-id.txt");
-    fs.writeFileSync(tenantIdPath, authenticatedTenantId);
-    console.log("[GLOBAL SETUP] Saved tenant_id to:", tenantIdPath);
-  }
-
-  // Create browser context and add cookies
   const browser = await chromium.launch();
   const context = await browser.newContext();
-
-  console.log("[GLOBAL SETUP] Adding cookies to browser context...");
   await context.addCookies(cookies);
-
-  // Verify cookies were added
-  const contextCookies = await context.cookies();
-  console.log(
-    "[GLOBAL SETUP] Cookies in context:",
-    contextCookies.map((c) => c.name),
-  );
-
-  // Verify by navigating to a protected route
-  const page = await context.newPage();
-  console.log("[GLOBAL SETUP] Testing navigation to protected route...");
-  const testBaseUrl = process.env.BASE_URL || "http://localhost:3000";
-  await page.goto(`${testBaseUrl}/dashboard`, { waitUntil: "load" });
-  console.log("[GLOBAL SETUP] Current URL after navigation:", page.url());
-
-  // Save storage state
-  const storageState = await context.storageState();
-  const storagePath = path.join(__dirname, ".auth", "storage-state.json");
-
-  // Ensure directory exists
-  fs.mkdirSync(path.dirname(storagePath), { recursive: true });
-
-  // Write storage state
-  fs.writeFileSync(storagePath, JSON.stringify(storageState, null, 2));
-
-  console.log(`[GLOBAL SETUP] Storage state saved to: ${storagePath}`);
-  console.log(
-    `[GLOBAL SETUP] Total cookies in storage: ${storageState.cookies.length}`,
-  );
-  console.log(
-    `[GLOBAL SETUP] Cookie names:`,
-    storageState.cookies.map((c) => c.name),
-  );
-
+  await context.newPage();
+  fs.mkdirSync(path.dirname(STORAGE_STATE_PATH), { recursive: true });
+  await context.storageState({ path: STORAGE_STATE_PATH });
   await browser.close();
-  console.log("[GLOBAL SETUP] Authentication setup complete!");
 }
 
 export default globalSetup;

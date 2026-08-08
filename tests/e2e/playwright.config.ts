@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const CONFIG_DIR = path.dirname(fileURLToPath(import.meta.url));
+const STORAGE_STATE_PATH = path.join(CONFIG_DIR, ".auth", "storage-state.json");
 
 export default defineConfig({
   // Global setup to generate authentication storage state
@@ -13,11 +18,6 @@ export default defineConfig({
   // B1.1.37: Global timeout per test to keep suite fast
   timeout: 30 * 1000,
   reporter: [["html"], ["list"]],
-  // Set environment variables for tests
-  // TEST_TENANT_ID will be set by global-setup from the authenticated user's ID
-  env: {
-    TEST_TENANT_ID: process.env.TEST_TENANT_ID || "default-tenant-id",
-  },
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
@@ -30,9 +30,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         // Use storageState for dashboard tests (protected routes)
-        storageState: process.env.SKIP_AUTH
-          ? undefined
-          : "./.auth/storage-state.json",
+        storageState: process.env.SKIP_AUTH ? undefined : STORAGE_STATE_PATH,
       },
     },
     // Project for authentication tests (NO storageState)
@@ -51,9 +49,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         // Use storageState for API tests (needs auth cookies)
-        storageState: process.env.SKIP_AUTH
-          ? undefined
-          : "./.auth/storage-state.json",
+        storageState: process.env.SKIP_AUTH ? undefined : STORAGE_STATE_PATH,
       },
     },
     // Firefox and WebKit disabled - not installed in current environment
