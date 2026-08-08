@@ -58,8 +58,8 @@ set -euo pipefail
 # Loaded after args because we need to read $HOME without env side-effects.
 SECRETS_FILE="${SECRETS_FILE:-$HOME/.config/mastermind/secrets.env}"
 MINIMAX_BASE_URL="${MINIMAX_BASE_URL:-https://api.minimax.io/v1}"
-# Default: MiniMax-M2.7-highspeed (Starter plan + good speed/cost balance)
-MINIMAX_MODEL="${MINIMAX_MODEL:-MiniMax-M2.7-highspeed}"
+# MiniMax-M3 honors thinking.disabled, avoiding unnecessary reasoning tokens.
+MINIMAX_MODEL="${MINIMAX_MODEL:-MiniMax-M3}"
 OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://127.0.0.1:11434/v1}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
 # Max concurrency. Starter allows 1-2; default 1 is safe for cloud. Override

@@ -174,7 +174,7 @@ def check_backend_tests() -> tuple[bool, str]:
     try:
         os.chdir(api_dir)
         result = subprocess.run(
-            ["uv", "run", "pytest", "-q"],  # Quiet mode for shorter output
+            ["uv", "run", "pytest"],
             capture_output=True,
             text=True,
             timeout=300,  # 5 minutes for large test suites
@@ -234,7 +234,7 @@ def check_frontend_tests() -> tuple[bool, str]:
 
     try:
         result = subprocess.run(
-            ["pnpm", "--prefix", str(web_dir), "test:run"],
+            ["pnpm", "--prefix", str(web_dir), "test", "run"],
             capture_output=True,
             text=True,
             timeout=120,
@@ -317,7 +317,9 @@ def run_gga_validation(fix: bool = False) -> tuple[bool, str]:
     original_dir = Path.cwd()
     try:
         os.chdir(git_root)
-        cmd = ["pre-commit", "run", "--all-files"]
+        # Match Git's pre-commit scope so unrelated legacy violations do not
+        # block a commit whose staged files already satisfy the hooks.
+        cmd = ["pre-commit", "run"]
         if fix:
             cmd.append("--fix-mode")
 
@@ -343,7 +345,12 @@ def run_gga_validation(fix: bool = False) -> tuple[bool, str]:
 # ------------------------------------------------------------------ #
 
 CONVENTIONAL_COMMIT_PATTERN = re.compile(
-    r"^(feat|fix|docs|style|refactor|perf|test|build|ci|revert)" r"(\(.+\))?\!?:\s.+"
+    r"^(feat|fix|docs|style|refactor|test|chore)"
+    r"(\(.+\))?\!?:\s.+"
+)
+PAST_TENSE_DESCRIPTION_PATTERN = re.compile(
+    r"^(added|changed|created|fixed|implemented|refactored|removed|updated)\b",
+    re.IGNORECASE,
 )
 
 
@@ -366,9 +373,13 @@ def validate_commit_message(message: str) -> tuple[bool, str]:
     if not CONVENTIONAL_COMMIT_PATTERN.match(message):
         return False, (
             "Invalid format. Expected: type(scope): description\n"
-            "Types: feat, fix, docs, style, refactor, perf, test, build, ci, revert\n"
+            "Types: feat, fix, docs, style, refactor, test, chore\n"
             "Example: feat(auth): add JWT refresh token rotation"
         )
+
+    description = message.split(":", maxsplit=1)[1].strip()
+    if PAST_TENSE_DESCRIPTION_PATTERN.match(description):
+        return False, "Use an imperative description, such as 'add' instead of 'added'"
 
     # Check for AI attribution (should have been removed)
     if "Co-Authored-By:" in message:
