@@ -94,7 +94,9 @@ describe("Sidebar", () => {
     expect(screen.getAllByText("Configuración").length).toBeGreaterThan(0);
   });
 
-  it("filters navigation by user role (seller excludes Configuración)", () => {
+  it("filters navigation by permissions, not groups prop", () => {
+    // ponytail: groups prop no longer filters — permissions do
+    // Seller without SETTINGS_READ sees Inventario + Ventas but not Configuración
     render(<Sidebar groups={["inventario", "ventas"]} />);
 
     expect(screen.getByText("Inventario")).toBeInTheDocument();
@@ -102,11 +104,12 @@ describe("Sidebar", () => {
     expect(screen.queryByText("Configuración")).not.toBeInTheDocument();
   });
 
-  it("shows only Inventario group for limited role", () => {
+  it("shows Inventario and Ventas for all users (no permission required)", () => {
+    // ponytail: these groups are always visible regardless of groups prop
     render(<Sidebar groups={["inventario"]} />);
 
     expect(screen.getByText("Inventario")).toBeInTheDocument();
-    expect(screen.queryByText("Ventas")).not.toBeInTheDocument();
+    expect(screen.getByText("Ventas")).toBeInTheDocument();
     expect(screen.queryByText("Configuración")).not.toBeInTheDocument();
   });
 

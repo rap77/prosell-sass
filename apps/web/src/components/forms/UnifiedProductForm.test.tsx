@@ -85,16 +85,31 @@ describe("UnifiedProductForm broker select identity", () => {
   it("resolves a stored user owner id to the broker label", () => {
     expect(findBrokerByOwnerId(BROKERS, "user-1")?.name).toBe("Ana Broker");
     expect(findBrokerByOwnerId(BROKERS, "user-3")?.name).toBe("Luis Broker");
-    expect(findBrokerByOwnerId(BROKERS, "broker-1")).toBeUndefined();
   });
 
-  it("preserves the original dedup behavior (always returns the broker list)", () => {
+  it("resolves pending broker by id fallback", () => {
+    // ponytail: pending brokers have user_id=null, use broker.id as fallback
+    expect(findBrokerByOwnerId(BROKERS, "broker-2")?.name).toBe(
+      "Pending Broker",
+    );
+  });
+
+  it("filters out already-selected brokers except current", () => {
+    // user-1 is current, user-3 is selected elsewhere → broker-3 excluded
     const selectable = getSelectableBrokers(
       BROKERS,
       new Set(["user-1", "user-3"]),
       "user-1",
     );
 
+    expect(selectable.map((broker) => broker.id)).toEqual([
+      "broker-1", // current owner, always visible
+      "broker-2", // pending broker, ownerId=broker-2 not in set
+    ]);
+  });
+
+  it("includes all brokers when none selected", () => {
+    const selectable = getSelectableBrokers(BROKERS, new Set(), "");
     expect(selectable.map((broker) => broker.id)).toEqual([
       "broker-1",
       "broker-2",

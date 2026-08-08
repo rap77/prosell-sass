@@ -100,7 +100,9 @@ describe("CategorySchemaEditor", () => {
   it("can add a new field row", async () => {
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /add field/i }));
+    // ponytail: multiple "add field" buttons after UI redesign, take first
+    const addButtons = screen.getAllByRole("button", { name: /add field/i });
+    await userEvent.click(addButtons[0]);
 
     const inputs = screen.getAllByPlaceholderText(/field name/i);
     expect(inputs.length).toBeGreaterThan(0);

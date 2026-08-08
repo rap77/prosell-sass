@@ -105,6 +105,8 @@ const successPreview = {
     importable_count: 1,
     error_count: 1,
     images_count: 1,
+    // ponytail: required after CSV org codes feature
+    detected_org_codes: [],
   },
 };
 
