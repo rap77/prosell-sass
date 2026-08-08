@@ -18,6 +18,7 @@ from prosell.application.dto.organization.verticals import OrgVerticalsResponse
 from prosell.application.use_cases.organization.list_org_verticals import (
     ListOrgVerticalsUseCase,
 )
+from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
@@ -54,7 +55,9 @@ async def list_org_verticals(
     via own-or-inherited from the root, and ``filter_fields`` is derived
     from its ``attribute_schema``.
     """
-    if current_user.tenant_id != organization_id:
+    # ponytail: super_admin can read any org's verticals for cross-tenant editing
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    if not is_org_admin and current_user.tenant_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot read another organization's verticals",

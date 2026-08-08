@@ -203,7 +203,7 @@ function StepIndicator({ step }: { step: Step }) {
             className={cn(
               "flex-1 rounded-lg py-3 px-4 text-center text-sm",
               active
-                ? "bg-ps-cyan text-ps-bg-base font-bold"
+                ? "bg-ps-cyan text-ps-base font-bold"
                 : "bg-ps-bg-surface text-ps-text-secondary font-medium",
             )}
           >
@@ -329,10 +329,11 @@ interface PreviewStepProps {
 }
 
 function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
-  const { summary, rows } = preview;
+  const { summary, rows, total_rows } = preview;
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <SummaryCard label="Total registros" value={total_rows} tone="cyan" />
         <SummaryCard
           label="Importables"
           value={summary.importable_count}
@@ -356,10 +357,10 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
             <thead>
               <tr className={tableHeadRowClass}>
                 <th className={thClass}>#</th>
+                <th className={thClass}>ID CSV</th>
                 <th className={thClass}>VIN</th>
                 <th className={thClass}>Estado</th>
                 <th className={thClass}>Mapeados</th>
-                <th className={thClass}>Imágenes</th>
               </tr>
             </thead>
             <tbody>
@@ -396,6 +397,7 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
   return (
     <tr className={tableBodyRowClass}>
       <td className={tdClass}>{row.row_number}</td>
+      <td className={tdClass}>{row.csv_id || "—"}</td>
       <td className={tdClass}>{row.vin || "—"}</td>
       <td className={cn(tdClass, "font-semibold", status.className)}>
         {status.label}
@@ -408,7 +410,6 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
         )}
       </td>
       <td className={tdClass}>{Object.keys(row.mapped_fields).length}</td>
-      <td className={tdClass}>{row.images_found.length}</td>
     </tr>
   );
 }
@@ -518,14 +519,21 @@ interface SelectFieldProps {
 function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold">{label}</span>
+      <span className="text-xs font-semibold text-ps-text-primary">
+        {label}
+      </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-lg border border-ps-border-default bg-ps-bg-surface px-3 py-2.5 text-sm text-ps-text-primary [&>option]:bg-ps-bg-surface [&>option]:text-ps-text-primary"
+        className="appearance-none rounded-lg border border-ps-border-default px-3 py-2.5 text-sm text-ps-text-primary cursor-pointer"
+        style={{ background: "var(--ps-input-bg)" }}
       >
         {options.map((o) => (
-          <option key={o.id} value={o.id}>
+          <option
+            key={o.id}
+            value={o.id}
+            className="bg-ps-bg-elevated text-ps-text-primary"
+          >
             {o.name}
           </option>
         ))}
@@ -579,7 +587,7 @@ function resolvePreviewStatus(row: PreviewRow): {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const primaryBtnClass =
-  "inline-flex items-center gap-1.5 rounded-lg bg-ps-cyan px-4 py-2.5 text-sm font-bold text-ps-bg-base cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex items-center gap-1.5 rounded-lg bg-ps-cyan px-4 py-2.5 text-sm font-bold text-ps-base cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed";
 
 const secondaryBtnClass =
   "inline-flex items-center gap-1.5 rounded-lg bg-transparent px-4 py-2.5 text-sm font-semibold text-ps-text-primary cursor-pointer border border-ps-border-default";

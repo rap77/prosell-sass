@@ -355,7 +355,7 @@ async def bulk_upload_products(
 
     content = await csv_file.read()
     try:
-        csv_content = content.decode("utf-8")
+        csv_content = content.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="CSV must be UTF-8 encoded"
@@ -1267,10 +1267,10 @@ async def bulk_upload_preview(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only CSV files are supported"
         )
 
-    # Read CSV content
+    # Read CSV content (utf-8-sig handles BOM if present)
     content = await csv_file.read()
     try:
-        csv_content = content.decode("utf-8")
+        csv_content = content.decode("utf-8-sig")
     except UnicodeDecodeError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -1294,7 +1294,9 @@ async def bulk_upload_with_images(
     db: DbSession,
     csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
     images_zip: UploadFile | None = File(None, description="Optional ZIP file with vehicle images"),
-    organization_id: UUID = Form(..., description="Organization ID for the products"),
+    organization_id: UUID | None = Form(
+        None, description="Organization ID (optional if CSV has org codes)"
+    ),
     category_id: UUID = Form(..., description="Category ID for vehicles"),
 ) -> BulkUploadVehiclesResponse:
     """
@@ -1321,14 +1323,16 @@ async def bulk_upload_with_images(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    # IDOR prevention: verify organization belongs to user's tenant
-    org_repo = SqlAlchemyOrganizationRepository(db)
-    org = await org_repo.get_by_id(org_id=organization_id, tenant_id=current_user.tenant_id)
-    if org is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organization not found or access denied",
-        )
+    # IDOR prevention: verify organization belongs to user's tenant (if provided)
+    # ponytail: if organization_id is None, use case resolves from CSV org codes
+    if organization_id is not None:
+        org_repo = SqlAlchemyOrganizationRepository(db)
+        org = await org_repo.get_by_id(org_id=organization_id, tenant_id=current_user.tenant_id)
+        if org is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organization not found or access denied",
+            )
 
     # Validate CSV file
     if not csv_file.filename or not csv_file.filename.endswith(".csv"):
@@ -1339,7 +1343,7 @@ async def bulk_upload_with_images(
     # Read CSV content
     csv_content = await csv_file.read()
     try:
-        csv_content_str = csv_content.decode("utf-8")
+        csv_content_str = csv_content.decode("utf-8-sig")
     except UnicodeDecodeError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

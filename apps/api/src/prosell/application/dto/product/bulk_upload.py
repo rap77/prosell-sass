@@ -9,6 +9,7 @@ class PreviewRowResponse(BaseModel):
     """Response DTO for a single row in the preview."""
 
     row_number: int = Field(description="Row number in the CSV (1-indexed, header is row 1)")
+    csv_id: str | None = Field(default=None, description="ID from the CSV file (if present)")
     vin: str = Field(description="VIN extracted from the row")
     title: str = Field(description="Title/cod_organization from the row")
     importable: bool = Field(description="Whether this row can be imported")

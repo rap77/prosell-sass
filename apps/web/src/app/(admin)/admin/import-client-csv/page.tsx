@@ -50,10 +50,13 @@ export default function ImportClientCSVPage() {
     id: o.id,
     name: o.name,
   }));
-  const categories = (categoryOptions ?? []).map((c) => ({
-    id: c.value,
-    name: c.label,
-  }));
+  // ponytail: this importer is for "Carros y Camionetas" only
+  const categories = (categoryOptions ?? [])
+    .filter((c) => c.label === "Carros y Camionetas")
+    .map((c) => ({
+      id: c.value,
+      name: c.label,
+    }));
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">

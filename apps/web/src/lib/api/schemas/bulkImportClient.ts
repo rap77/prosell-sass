@@ -23,6 +23,7 @@ import { z } from "zod";
  */
 export const PreviewRowSchema = z.object({
   row_number: z.number().int(),
+  csv_id: z.string().nullable().optional(),
   vin: z.string(),
   title: z.string(),
   importable: z.boolean(),

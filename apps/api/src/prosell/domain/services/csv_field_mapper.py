@@ -318,11 +318,13 @@ class CSVFieldMapper:
         except ValueError:
             raise ValueError(f"Row {row_number}: invalid price value {price_str!r}") from None
 
-        # ponytail: VIN fallback — try column first, then extract from description
+        # ponytail: VIN fallback — try column, then option field, then description
         vin = row.get("vin", "").strip()
         if not vin:
-            description_raw = row.get("description", "")
-            vin = _extract_vin_from_text(description_raw) or ""
+            # CSV sometimes has VIN in 'option' field instead of 'description'
+            vin = _extract_vin_from_text(row.get("option", "")) or ""
+        if not vin:
+            vin = _extract_vin_from_text(row.get("description", "")) or ""
 
         return MappedCSVRow(
             row_number=row_number,

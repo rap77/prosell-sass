@@ -58,7 +58,6 @@ class BulkUploadPreviewUseCase:
         rows: list[PreviewRowResponse] = []
         importable_count = 0
         error_count = 0
-        images_count = 0
         detected_org_codes: set[str] = set()
 
         csv_file = StringIO(csv_content)
@@ -74,7 +73,7 @@ class BulkUploadPreviewUseCase:
                 else:
                     error_count += 1
 
-                images_count += len(preview_row.images_found)
+                # ponytail: don't count images in preview — no ZIP to verify against
 
                 # ponytail: collect org codes from title field (cod_organization)
                 if preview_row.title and preview_row.title.strip():
@@ -89,6 +88,7 @@ class BulkUploadPreviewUseCase:
                 rows.append(
                     PreviewRowResponse(
                         row_number=idx,
+                        csv_id=row_dict.get("id", "").strip() or None,
                         vin="",
                         title="",
                         importable=False,
@@ -97,10 +97,11 @@ class BulkUploadPreviewUseCase:
                 )
 
         total = len(rows)
+        # ponytail: images_count=0 in preview — can't verify without ZIP
         summary = PreviewSummaryResponse(
             importable_count=importable_count,
             error_count=error_count,
-            images_count=images_count,
+            images_count=0,
             detected_org_codes=sorted(detected_org_codes),
         )
 
@@ -189,8 +190,12 @@ class BulkUploadPreviewUseCase:
 
         importable = len(missing_fields) == 0 and len(errors) == 0
 
+        # ponytail: csv_id from original file for error tracking
+        csv_id = row.get("id", "").strip() or None
+
         return PreviewRowResponse(
             row_number=mapped.row_number,
+            csv_id=csv_id,
             vin=mapped.vin or "",
             title=mapped.cod_organization or "",
             importable=importable,

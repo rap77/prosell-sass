@@ -22,7 +22,7 @@ const attributeTypeSchema = z.enum(["number", "string", "boolean", "select"]);
 const attributeSchemaEntrySchema = z
   .object({
     type: attributeTypeSchema,
-    filter_type: filterTypeSchema,
+    filter_type: filterTypeSchema.optional(),
     unit: z.string().optional(),
     label: z.string().optional(),
     // ponytail: options can be strings or numbers (cylinders: [3,4,5,6,8], doors: [2,3,4,5])

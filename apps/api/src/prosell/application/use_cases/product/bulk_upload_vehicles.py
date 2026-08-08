@@ -96,7 +96,7 @@ class BulkUploadVehiclesUseCase:
         self,
         csv_content: str,
         tenant_id: UUID,
-        organization_id: UUID,
+        organization_id: UUID | None,
         category_id: UUID,
         zip_bytes: bytes | None = None,
     ) -> BulkUploadVehiclesResult:
@@ -116,12 +116,13 @@ class BulkUploadVehiclesUseCase:
         # 1. Parse CSV rows
         parsed_rows = self._parse_csv(csv_content)
 
-        # 2. Resolve org codes to org IDs (dealer-{code} slugs)
-        org_code_to_id = await self._resolve_org_codes(parsed_rows, tenant_id)
+        # 2. Resolve org codes to (org_id, tenant_id) tuples
+        org_code_map = await self._resolve_org_codes(parsed_rows)
 
         # 4. Map images if ZIP provided
+        # ponytail: skip image mapping if no global org — multi-org CSV needs per-row paths
         image_mapping: ImageMappingResult | None = None
-        if zip_bytes:
+        if zip_bytes and organization_id is not None:
             rows_as_dicts = [asdict(row) for row in parsed_rows]
             image_mapping = self.csv_image_mapper.map_images(
                 zip_bytes=zip_bytes,
@@ -138,16 +139,20 @@ class BulkUploadVehiclesUseCase:
 
         for mapped_row in parsed_rows:
             try:
-                # ponytail: resolve org from CSV code, fallback to frontend selection
-                row_org_id = organization_id
+                # ponytail: resolve org+tenant from CSV code, fallback to frontend selection
+                row_org_id: UUID | None = organization_id
+                row_tenant_id = tenant_id
                 if mapped_row.cod_organization:
                     code = mapped_row.cod_organization.strip().upper()
-                    if code in org_code_to_id:
-                        row_org_id = org_code_to_id[code]
+                    if code in org_code_map:
+                        row_org_id, row_tenant_id = org_code_map[code]
+
+                if row_org_id is None:
+                    raise ValueError("No organization: CSV row has no org code and none selected")
 
                 result = await self._upsert_vehicle(
                     mapped_row=mapped_row,
-                    tenant_id=tenant_id,
+                    tenant_id=row_tenant_id,
                     organization_id=row_org_id,
                     category_id=category_id,
                     image_mapping=image_mapping,
@@ -217,17 +222,16 @@ class BulkUploadVehiclesUseCase:
         return rows
 
     async def _resolve_org_codes(
-        self, parsed_rows: list[MappedCSVRow], tenant_id: UUID
-    ) -> dict[str, UUID]:
+        self, parsed_rows: list[MappedCSVRow]
+    ) -> dict[str, tuple[UUID, UUID]]:
         """
-        Resolve org codes from CSV to organization IDs.
+        Resolve org codes from CSV to organization IDs and tenant IDs.
 
         Args:
             parsed_rows: Parsed CSV rows
-            tenant_id: Tenant ID for org lookup
 
         Returns:
-            Dict mapping uppercase org code to organization UUID
+            Dict mapping uppercase org code to (organization_id, tenant_id) tuple
         """
         # Extract unique codes
         codes = [
@@ -239,9 +243,9 @@ class BulkUploadVehiclesUseCase:
         if not unique_codes:
             return {}
 
-        # Query orgs by codes
-        orgs = await self.organization_repository.get_by_codes(unique_codes, tenant_id)
-        return {org.code: org.id for org in orgs if org.code}
+        # Query orgs by codes (no tenant filter - admin can access all)
+        orgs = await self.organization_repository.get_by_codes(unique_codes)
+        return {org.code: (org.id, org.tenant_id) for org in orgs if org.code}
 
     async def _upsert_vehicle(
         self,

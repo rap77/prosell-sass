@@ -14,7 +14,6 @@ import { useEffect } from "react";
 
 import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
 import { useProduct } from "@/lib/api/products";
-import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals } from "@/lib/api/verticals";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import type { CategoryNode } from "@/types/category";
@@ -56,9 +55,9 @@ export default function EditProductPage() {
   );
 
   // Fetch org verticals to get category schema
-  const { data: orgProfile } = useCurrentOrganizationProfile();
+  // Use product's org (not current user's) to support cross-tenant editing by super_admin
   const { data: verticalsData, isLoading: isLoadingVerticals } =
-    useOrgVerticals(orgProfile?.id ?? null);
+    useOrgVerticals(product?.organization_id ?? null);
 
   // Find the category in the verticals tree
   const categoryId = product?.category_id;
@@ -77,7 +76,9 @@ export default function EditProductPage() {
     return () => clearBreadcrumbLabel(productId);
   }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
 
-  const isLoading = isLoadingProduct || isLoadingVerticals;
+  // Wait for both product AND verticals to be fully loaded
+  const isLoading =
+    isLoadingProduct || isLoadingVerticals || (product && !verticalsData);
 
   if (isLoading) {
     return (

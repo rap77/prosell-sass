@@ -79,7 +79,7 @@ export function usePreviewBulkUpload() {
 export interface BulkUploadVehiclesInput {
   csv: File;
   zip?: File | null;
-  organizationId: string;
+  organizationId?: string | null; // ponytail: optional if CSV has org codes
   categoryId: string;
 }
 
@@ -105,7 +105,9 @@ export function useBulkUploadVehicles() {
       if (zip) {
         formData.append("images_zip", zip);
       }
-      formData.append("organization_id", organizationId);
+      if (organizationId) {
+        formData.append("organization_id", organizationId);
+      }
       formData.append("category_id", categoryId);
 
       const res = await fetch("/api/v1/products/bulk-upload/with-images", {
