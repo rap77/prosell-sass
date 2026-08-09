@@ -17,6 +17,7 @@ from prosell.infrastructure.models.fb_account_model import (
     FBPublicationStatusModel,
 )
 from prosell.infrastructure.models.fb_credential_migration_model import (
+    FBCredentialMigrationAuthorizationModel,
     FBCredentialMigrationTokenModel,
 )
 from prosell.infrastructure.models.fb_unpublish_request_model import FBUnpublishRequestModel
@@ -61,6 +62,7 @@ __all__ = [
     "CategorySchemaChangeModel",
     "FBAccountGroupModel",
     "FBAccountModel",
+    "FBCredentialMigrationAuthorizationModel",
     "FBCredentialMigrationTokenModel",
     "FBGroupCategory",
     "FBPublicationHistoryModel",

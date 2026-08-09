@@ -18,6 +18,7 @@ import {
 } from "@/lib/api/fb-accounts";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const STATUS_STYLES: Record<
   string,
@@ -52,6 +53,7 @@ const STATUS_STYLES: Record<
 };
 
 export default function FBAccountsPage() {
+  const { isSuperAdmin } = useAuth();
   const {
     data: accounts,
     isLoading,
@@ -111,6 +113,14 @@ export default function FBAccountsPage() {
           Cuentas de Facebook Marketplace
         </h1>
         <div className="flex gap-2">
+          {isSuperAdmin && (
+            <Link href="/admin/fb-accounts/migration-approval">
+              <Button variant="outline">
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                Aprobar migración
+              </Button>
+            </Link>
+          )}
           <Link href="/admin/fb-accounts/verification">
             <Button variant="outline">
               <ShieldCheck className="h-4 w-4 mr-2" />

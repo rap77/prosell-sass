@@ -4,6 +4,7 @@ import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -439,6 +440,12 @@ class Settings(BaseSettings):
         default=None,
         description="Shared secret for fb-auto-post bot auth (X-Bot-Token header). "
         "Required in staging/production; bot endpoints refuse requests without it.",
+    )
+    service_organization_id: UUID | None = Field(
+        default=None,
+        validation_alias="PROSELL_SERVICE_ORGANIZATION_ID",
+        description="ProSell-owned organization for Facebook credential migration. "
+        "Required before migration endpoints can be used.",
     )
 
     # =============================================================================

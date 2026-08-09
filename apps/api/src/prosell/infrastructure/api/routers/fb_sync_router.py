@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.core.config import settings
 from prosell.domain.entities.user import User
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
@@ -1052,6 +1053,7 @@ async def get_account_config(
             and_(
                 FBAccountModel.status.in_(["pending_verification", "verification_failed"]),
                 FBAccountModel.migration_token_id.is_not(None),
+                FBAccountModel.tenant_id == settings.service_organization_id,
             ),
         )
         if include_pending_verification
