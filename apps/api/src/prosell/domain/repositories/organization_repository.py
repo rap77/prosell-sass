@@ -138,3 +138,8 @@ class AbstractOrganizationRepository(ABC):
             List of matching organizations
         """
         pass
+
+    @abstractmethod
+    async def get_used_colors(self) -> set[str]:
+        """Get all colors currently in use by organizations."""
+        pass

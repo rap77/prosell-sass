@@ -179,6 +179,12 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
+    async def get_used_colors(self) -> set[str]:
+        """Get all colors currently in use by organizations."""
+        stmt = select(OrganizationModel.color).where(OrganizationModel.color.isnot(None))
+        result = await self.session.execute(stmt)
+        return {row[0].upper() for row in result.all() if row[0]}
+
     def _to_entity(self, model: OrganizationModel) -> Organization:
         """Convert ORM model to domain entity."""
         return Organization.model_validate(model, from_attributes=True)

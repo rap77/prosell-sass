@@ -14,6 +14,7 @@ from prosell.domain.repositories.organization_vertical_repository import (
     AbstractOrganizationVerticalRepository,
 )
 from prosell.domain.repositories.user_repository import AbstractUserRepository
+from prosell.domain.services.color_generator import generate_unique_color
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,11 @@ class CreateOrganizationUseCase:
         organization = Organization.create(
             name=name, tenant_id=tenant_id, creator_id=created_by_user_id
         )
+
+        # Auto-assign unique color that contrasts with white text
+        used_colors = await self.organization_repository.get_used_colors()
+        organization.color = generate_unique_color(used_colors)
+
         organization = await self.organization_repository.create(organization)
 
         for root_category_id in vertical_ids:
