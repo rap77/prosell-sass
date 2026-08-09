@@ -20,10 +20,7 @@ from sqlalchemy import make_url, select
 # Use settings from the app — no hardcoded DATABASE_URL
 from prosell.core.config import settings
 from prosell.domain.entities.user import UserStatus  # Import UserStatus
-from prosell.infrastructure.database.seed_categories import (
-    enable_default_verticals,
-    seed_global_taxonomy,
-)
+from prosell.infrastructure.database.seed_categories import seed_global_taxonomy
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import (
     OrganizationModel,
@@ -73,16 +70,8 @@ async def init_data() -> None:
         await seed_global_taxonomy(session, force=force_seed)
         print(f"Seeded global category taxonomy (3 niches){' [FORCED]' if force_seed else ''}")
 
-        # 2b. Enable default verticals for ALL existing organizations.
-        # This ensures orgs created before this code have their verticals.
-        # The enable function is idempotent (ON CONFLICT DO NOTHING).
-        all_orgs_stmt = select(OrganizationModel)
-        all_orgs_result = await session.execute(all_orgs_stmt)
-        all_orgs = all_orgs_result.scalars().all()
-        for o in all_orgs:
-            enabled = await enable_default_verticals(session, o.id)
-            if enabled:
-                print(f"Enabled {len(enabled)} default vertical(s) for {o.name}")
+        # ponytail: removed auto-assign of default verticals to all orgs
+        # Verticals are now assigned manually per-org at creation time
 
         # 3. Ensure System Roles Exist
         roles_data = [

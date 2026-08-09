@@ -3,6 +3,8 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ContactManager } from "./ContactManager";
+import type { OrganizationContact } from "@/lib/api/schemas/organizations";
 
 // ponytail: E.164 format — + followed by 1-15 digits, optional spaces/dashes for readability
 const E164_REGEX = /^\+[1-9]\d{0,14}$/;
@@ -60,6 +62,9 @@ interface OrganizationFormFieldsProps {
   onFacebookChange: (v: string) => void;
   // Optional: start expanded (for edit mode when data exists)
   defaultExpanded?: boolean;
+  // Multi-contacts (optional — only for edit mode)
+  contacts?: OrganizationContact[];
+  onContactsChange?: (contacts: OrganizationContact[]) => void;
 }
 
 const inputClassName =
@@ -69,16 +74,14 @@ const errorTextClassName = "mt-1 text-[11px] text-ps-error";
 const sectionDividerClassName = "border-t border-ps-border-default pt-2";
 const sectionBodyClassName = "mt-2 flex flex-col gap-3";
 
-// ponytail: extracted outside render to satisfy React Compiler
-function SectionHeader({
-  title,
-  isOpen,
-  onToggle,
-}: {
+interface SectionHeaderProps {
   title: string;
   isOpen: boolean;
   onToggle: () => void;
-}) {
+}
+
+// ponytail: extracted outside render to satisfy React Compiler
+function SectionHeader({ title, isOpen, onToggle }: SectionHeaderProps) {
   return (
     <button
       type="button"
@@ -125,9 +128,13 @@ export function OrganizationFormFields({
   onInstagramChange,
   onFacebookChange,
   defaultExpanded = false,
+  contacts,
+  onContactsChange,
 }: OrganizationFormFieldsProps) {
   const [showContact, setShowContact] = useState(
-    defaultExpanded || !!(phone || email || whatsapp),
+    defaultExpanded ||
+      !!(phone || email || whatsapp) ||
+      (contacts?.length ?? 0) > 0,
   );
   const [showAddress, setShowAddress] = useState(
     defaultExpanded ||
@@ -209,7 +216,7 @@ export function OrganizationFormFields({
       {/* Contact section */}
       <div className={sectionDividerClassName}>
         <SectionHeader
-          title="Contacto"
+          title="Contactos"
           isOpen={showContact}
           onToggle={() => setShowContact(!showContact)}
         />
@@ -265,6 +272,15 @@ export function OrganizationFormFields({
                 </span>
               )}
             </label>
+            {/* Multi-contacts with drag-and-drop */}
+            {contacts !== undefined && onContactsChange && (
+              <div className="mt-2 pt-3 border-t border-ps-border-default">
+                <ContactManager
+                  contacts={contacts}
+                  onChange={onContactsChange}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

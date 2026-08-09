@@ -14,7 +14,6 @@ import { useCategories } from "@/lib/api/categories";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { logger } from "@/lib/logger";
 import { BrokerManager } from "@/components/admin/BrokerManager";
-import { ContactManager } from "@/components/admin/ContactManager";
 import {
   OrganizationFormFields,
   isValidPhone,
@@ -288,12 +287,9 @@ function EditOrganizationForm({
           onInstagramChange={setInstagram}
           onFacebookChange={setFacebook}
           defaultExpanded
+          contacts={contacts}
+          onContactsChange={setContacts}
         />
-
-        {/* Contacts section */}
-        <div className="border-t border-border-default pt-4 mt-2">
-          <ContactManager contacts={contacts} onChange={setContacts} />
-        </div>
 
         {/* Brokers section */}
         <div className="border-t border-border-default pt-4 mt-2">
