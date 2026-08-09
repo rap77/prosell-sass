@@ -15,6 +15,7 @@ from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org.response import OrganizationListResponse, OrganizationResponse
+from prosell.application.dto.org.update import ContactInput
 from prosell.application.dto.organization.create_organization import (
     CreateOrganizationRequest,
     CreateOrganizationResponse,
@@ -34,6 +35,7 @@ from prosell.domain.entities.user import User
 from prosell.domain.repositories.organization_invitation_repository import (
     AbstractOrganizationInvitationRepository,
 )
+from prosell.domain.value_objects.organization_contact import OrganizationContact
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 from prosell.infrastructure.api.dependencies import (
     get_create_organization_use_case,
@@ -293,6 +295,7 @@ class UpdateOrganizationRequest(BaseModel):
     tax_id: str | None = None
     instagram: str | None = None
     facebook: str | None = None
+    contacts: list[ContactInput] | None = None
     # ponytail: null=all accounts, []=none, [ids]=specific
     default_fb_account_ids: list[UUID] | None = None
 
@@ -351,6 +354,21 @@ async def update_organization(
         organization.instagram = request.instagram
     if request.facebook is not None:
         organization.facebook = request.facebook
+    if request.contacts is not None:
+        organization.update_contacts(
+            [
+                OrganizationContact(
+                    id=contact.id,
+                    category=contact.category,
+                    custom_label=contact.custom_label,
+                    phone=contact.phone,
+                    email=contact.email,
+                    whatsapp=contact.whatsapp,
+                    order=contact.order,
+                )
+                for contact in request.contacts
+            ]
+        )
     # `null` enables all accounts; an empty list explicitly disables defaults.
     if "default_fb_account_ids" in request.model_fields_set:
         await db.execute(
@@ -554,10 +572,19 @@ async def _redistribute_broker_ownership(
     """
     from decimal import Decimal
 
+    from prosell.infrastructure.models.product_model import ProductModel
     from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
 
-    # Find all products where this broker has ownership
-    stmt = select(ProductOwnershipModel).where(ProductOwnershipModel.owner_id == broker_owner_id)
+    # Scope ownership mutations to the organization of the broker being removed.
+    stmt = (
+        select(ProductOwnershipModel)
+        .join(ProductModel, ProductModel.id == ProductOwnershipModel.product_id)
+        .where(
+            ProductOwnershipModel.owner_id == broker_owner_id,
+            ProductModel.organization_id == organization_id,
+            ProductModel.tenant_id == organization_id,
+        )
+    )
     result = await db.execute(stmt)
     broker_ownerships = result.scalars().all()
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -13,11 +13,9 @@ import {
 import { useCategories } from "@/lib/api/categories";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
 import { BrokerManager } from "@/components/admin/BrokerManager";
-import {
-  OrganizationFormFields,
-  isValidPhone,
-} from "@/components/admin/OrganizationFormFields";
+import { OrganizationFormFields } from "@/components/admin/OrganizationFormFields";
 import type {
   Organization,
   OrganizationContact,
@@ -29,6 +27,10 @@ const EMPTY_VERTICALS_DATA: OrganizationVerticalsResponse = {
   vertical_ids: [],
   product_counts: [],
 };
+
+interface EditOrganizationFormProps {
+  organization: Organization;
+}
 
 /**
  * Edit organization page — uses shared OrganizationFormFields component
@@ -44,7 +46,7 @@ export default function AdminEditOrganizationPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-text-secondary">
+      <div className="flex items-center gap-2 text-ps-text-secondary">
         <Loader2 size={16} className="animate-spin" />
         Cargando organización…
       </div>
@@ -53,7 +55,7 @@ export default function AdminEditOrganizationPage() {
 
   if (error || !organization) {
     return (
-      <p className="text-error">
+      <p className="text-ps-error">
         Error al cargar la organización: {error?.message ?? "No encontrada"}
       </p>
     );
@@ -65,11 +67,7 @@ export default function AdminEditOrganizationPage() {
   );
 }
 
-function EditOrganizationForm({
-  organization,
-}: {
-  organization: Organization;
-}) {
+function EditOrganizationForm({ organization }: EditOrganizationFormProps) {
   const router = useRouter();
   const updateOrganization = useUpdateOrganization();
   const updateVerticals = useUpdateOrganizationVerticals();
@@ -115,9 +113,6 @@ function EditOrganizationForm({
     organization.description ?? "",
   );
   const [website, setWebsite] = useState(organization.website ?? "");
-  const [phone, setPhone] = useState(organization.phone ?? "");
-  const [email, setEmail] = useState(organization.email ?? "");
-  const [whatsapp, setWhatsapp] = useState(organization.whatsapp ?? "");
   const [streetAddress, setStreetAddress] = useState(
     organization.street_address ?? "",
   );
@@ -138,7 +133,7 @@ function EditOrganizationForm({
     (verticalIds.length !== verticalsData.vertical_ids.length ||
       verticalIds.some((id) => !verticalsData.vertical_ids.includes(id)));
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       // Update org details
@@ -150,9 +145,6 @@ function EditOrganizationForm({
           color: color || undefined,
           description: description || undefined,
           website: website || undefined,
-          phone: phone || undefined,
-          email: email || undefined,
-          whatsapp: whatsapp || undefined,
           street_address: streetAddress || undefined,
           city: city || undefined,
           state: state || undefined,
@@ -161,7 +153,7 @@ function EditOrganizationForm({
           tax_id: taxId || undefined,
           instagram: instagram || undefined,
           facebook: facebook || undefined,
-          contacts: contacts.length > 0 ? contacts : undefined,
+          contacts,
         },
       });
 
@@ -184,13 +176,13 @@ function EditOrganizationForm({
       {/* Back button */}
       <Link
         href={`/admin/organizations/${organization.id}`}
-        className="inline-flex items-center gap-1.5 text-text-secondary no-underline text-xs"
+        className="inline-flex items-center gap-1.5 text-ps-text-secondary no-underline text-xs"
       >
         <ArrowLeft size={14} />
         Volver al detalle
       </Link>
 
-      <h1 className="m-0 text-2xl font-bold text-text-primary">
+      <h1 className="m-0 text-2xl font-bold text-ps-text-primary">
         Editar: {organization.name}
       </h1>
 
@@ -202,12 +194,12 @@ function EditOrganizationForm({
         <fieldset className="flex flex-col gap-2 border-none p-0">
           <legend className="text-sm mb-1.5">Verticals</legend>
           {(verticalsLoading || categoriesLoading) && (
-            <p className="text-text-secondary">Cargando verticals…</p>
+            <p className="text-ps-text-secondary">Cargando verticals…</p>
           )}
           {!verticalsLoading &&
             !categoriesLoading &&
             verticals.length === 0 && (
-              <p className="text-text-secondary">
+              <p className="text-ps-text-secondary">
                 No hay verticals disponibles.
               </p>
             )}
@@ -222,17 +214,15 @@ function EditOrganizationForm({
               return (
                 <label
                   key={vertical.id}
-                  className="flex items-center gap-2 p-2.5 rounded"
-                  style={{
-                    background: isSelected
-                      ? "var(--ps-cyan-10)"
-                      : "var(--ps-bg-elevated)",
-                    border: isSelected
-                      ? "1px solid var(--ps-cyan)"
-                      : "1px solid var(--ps-border-default)",
-                    cursor: isLocked ? "not-allowed" : "pointer",
-                    opacity: isLocked ? 0.7 : 1,
-                  }}
+                  className={cn(
+                    "flex items-center gap-2 rounded border p-2.5",
+                    isSelected
+                      ? "border-ps-cyan bg-ps-cyan-10"
+                      : "border-ps-border-default bg-ps-elevated",
+                    isLocked
+                      ? "cursor-not-allowed opacity-70"
+                      : "cursor-pointer",
+                  )}
                 >
                   <input
                     type="checkbox"
@@ -243,7 +233,7 @@ function EditOrganizationForm({
                   />
                   <span>{vertical.name}</span>
                   {productCount > 0 && (
-                    <span className="text-xs text-text-tertiary ml-auto">
+                    <span className="text-xs text-ps-tertiary ml-auto">
                       ({productCount} producto{productCount !== 1 ? "s" : ""})
                     </span>
                   )}
@@ -262,9 +252,6 @@ function EditOrganizationForm({
           onColorChange={setColor}
           description={description}
           website={website}
-          phone={phone}
-          email={email}
-          whatsapp={whatsapp}
           streetAddress={streetAddress}
           city={city}
           state={state}
@@ -275,9 +262,6 @@ function EditOrganizationForm({
           facebook={facebook}
           onDescriptionChange={setDescription}
           onWebsiteChange={setWebsite}
-          onPhoneChange={setPhone}
-          onEmailChange={setEmail}
-          onWhatsappChange={setWhatsapp}
           onStreetAddressChange={setStreetAddress}
           onCityChange={setCity}
           onStateChange={setState}
@@ -292,13 +276,13 @@ function EditOrganizationForm({
         />
 
         {/* Brokers section */}
-        <div className="border-t border-border-default pt-4 mt-2">
+        <div className="border-t border-ps-border-default pt-4 mt-2">
           <BrokerManager organizationId={organization.id} />
         </div>
 
         {/* Error */}
         {(updateOrganization.error || updateVerticals.error) && (
-          <p className="text-error">
+          <p className="text-ps-error">
             {updateOrganization.error?.message ||
               updateVerticals.error?.message}
           </p>
@@ -311,11 +295,9 @@ function EditOrganizationForm({
             disabled={
               updateOrganization.isPending ||
               updateVerticals.isPending ||
-              !name.trim() ||
-              !isValidPhone(phone) ||
-              !isValidPhone(whatsapp)
+              !name.trim()
             }
-            className="flex-1 h-10 rounded-lg bg-cyan border-none text-bg-base font-bold cursor-pointer"
+            className="flex-1 h-10 rounded-lg bg-ps-cyan border-none text-ps-bg-base font-bold cursor-pointer"
           >
             {updateOrganization.isPending || updateVerticals.isPending
               ? "Guardando..."
@@ -323,7 +305,7 @@ function EditOrganizationForm({
           </button>
           <Link
             href={`/admin/organizations/${organization.id}`}
-            className="flex items-center justify-center h-10 px-5 rounded-lg border border-border-default bg-bg-elevated text-text-primary no-underline font-semibold"
+            className="flex items-center justify-center h-10 px-5 rounded-lg border border-ps-border-default bg-ps-elevated text-ps-text-primary no-underline font-semibold"
           >
             Cancelar
           </Link>

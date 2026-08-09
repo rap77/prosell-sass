@@ -47,7 +47,9 @@ describe("ContactManager", () => {
 
     render(<ContactManager contacts={contacts} onChange={onChange} />);
 
-    expect(screen.getByText("Contactos")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Personas de contacto" }),
+    ).toBeInTheDocument();
     // ponytail: check we have 2 contact rows by counting Detalles buttons
     expect(screen.getAllByRole("button", { name: /detalles/i })).toHaveLength(
       2,
@@ -59,7 +61,7 @@ describe("ContactManager", () => {
 
     render(<ContactManager contacts={[]} onChange={onChange} />);
 
-    await user.click(screen.getByRole("button", { name: /agregar/i }));
+    await user.click(screen.getByRole("button", { name: /añadir contacto/i }));
 
     expect(onChange).toHaveBeenCalledWith([
       expect.objectContaining({
@@ -76,13 +78,7 @@ describe("ContactManager", () => {
 
     render(<ContactManager contacts={contacts} onChange={onChange} />);
 
-    // ponytail: find the delete button by its destructive styling
-    const deleteButtons = screen
-      .getAllByRole("button")
-      .filter((btn) => btn.className.includes("destructive"));
-    expect(deleteButtons).toHaveLength(1);
-
-    await user.click(deleteButtons[0]);
+    await user.click(screen.getByRole("button", { name: "Eliminar contacto" }));
 
     expect(onChange).toHaveBeenCalledWith([]);
   });
@@ -123,6 +119,9 @@ describe("ContactManager", () => {
 
     render(<ContactManager contacts={contacts} onChange={onChange} />);
 
+    expect(screen.getByTestId("select-trigger")).toHaveTextContent(
+      "Personalizado",
+    );
     expect(screen.getByDisplayValue("Financiamiento")).toBeInTheDocument();
   });
 
@@ -131,6 +130,8 @@ describe("ContactManager", () => {
 
     render(<ContactManager contacts={contacts} onChange={onChange} disabled />);
 
-    expect(screen.getByRole("button", { name: /agregar/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /añadir contacto/i }),
+    ).toBeDisabled();
   });
 });

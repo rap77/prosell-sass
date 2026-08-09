@@ -35,27 +35,21 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectControlled } from "@/components/ui/select-controlled";
+import { cn } from "@/lib/utils";
 import {
   ContactCategorySchema,
   type OrganizationContact,
-  type ContactCategory,
 } from "@/lib/api/schemas/organizations";
 
-const CATEGORY_LABELS: Record<ContactCategory, string> = {
-  gerencia: "Gerencia",
-  ventas: "Ventas",
-  servicio_tecnico: "Servicio Técnico",
-  cobranza: "Cobranza",
-  recepcion: "Recepción",
-  custom: "Personalizado",
-};
+const CATEGORY_OPTIONS = [
+  { value: "gerencia", label: "Gerencia" },
+  { value: "ventas", label: "Ventas" },
+  { value: "servicio_tecnico", label: "Servicio Técnico" },
+  { value: "cobranza", label: "Cobranza" },
+  { value: "recepcion", label: "Recepción" },
+  { value: "custom", label: "Personalizado" },
+];
 
 interface ContactManagerProps {
   contacts: OrganizationContact[];
@@ -113,9 +107,16 @@ export function ContactManager({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-lg border border-ps-border-default bg-ps-elevated/40 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Contactos</h3>
+        <div>
+          <h3 className="m-0 text-sm font-semibold text-ps-text-primary">
+            Personas de contacto
+          </h3>
+          <p className="m-0 mt-1 text-xs text-ps-text-secondary">
+            Definí quién atiende cada canal y ordená la prioridad.
+          </p>
+        </div>
         <Button
           type="button"
           variant="outline"
@@ -124,13 +125,13 @@ export function ContactManager({
           disabled={disabled}
         >
           <Plus className="mr-1 h-4 w-4" />
-          Agregar
+          Añadir contacto
         </Button>
       </div>
 
       {contacts.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-md">
-          No hay contactos. Agregá uno para empezar.
+        <p className="rounded-md border border-dashed border-ps-border-default py-5 text-center text-sm text-ps-text-secondary">
+          Todavía no hay contactos. Añadí la primera persona responsable.
         </p>
       ) : (
         <DndContext
@@ -195,14 +196,17 @@ function ContactRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`border rounded-md bg-background ${isDragging ? "opacity-50 shadow-lg" : ""}`}
+      className={cn(
+        "rounded-md border border-ps-border-default bg-ps-elevated",
+        isDragging && "opacity-50 shadow-lg",
+      )}
     >
       {/* Header row */}
       <div className="flex items-center gap-2 p-3">
         {!disabled && (
           <button
             type="button"
-            className="cursor-grab text-muted-foreground hover:text-foreground touch-none"
+            className="touch-none cursor-grab text-ps-text-secondary hover:text-ps-text-primary"
             aria-label="Arrastrar para reordenar"
             {...attributes}
             {...listeners}
@@ -211,25 +215,18 @@ function ContactRow({
           </button>
         )}
 
-        <Select
+        <SelectControlled
           value={contact.category}
-          onValueChange={(v) => {
-            const parsed = ContactCategorySchema.safeParse(v);
+          onChange={(value) => {
+            const parsed = ContactCategorySchema.safeParse(value);
             if (parsed.success) onUpdate({ category: parsed.data });
           }}
+          options={CATEGORY_OPTIONS}
+          placeholder="Seleccioná una categoría"
+          aria-label="Categoría de contacto"
+          className="w-40"
           disabled={disabled}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
 
         {showCustomLabel && (
           <Input
@@ -259,7 +256,8 @@ function ContactRow({
           size="icon"
           onClick={onRemove}
           disabled={disabled}
-          className="text-destructive hover:text-destructive"
+          className="text-ps-error hover:text-ps-error"
+          aria-label="Eliminar contacto"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -267,9 +265,9 @@ function ContactRow({
 
       {/* Expanded details */}
       {isExpanded && (
-        <div className="border-t px-3 py-3 grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 border-t border-ps-border-default px-3 py-3 sm:grid-cols-3">
           <div className="space-y-1">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="flex items-center gap-1 text-xs text-ps-text-secondary">
               <Phone className="h-3 w-3" /> Teléfono
             </span>
             <Input
@@ -282,7 +280,7 @@ function ContactRow({
             />
           </div>
           <div className="space-y-1">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="flex items-center gap-1 text-xs text-ps-text-secondary">
               <Mail className="h-3 w-3" /> Email
             </span>
             <Input
@@ -295,7 +293,7 @@ function ContactRow({
             />
           </div>
           <div className="space-y-1">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="flex items-center gap-1 text-xs text-ps-text-secondary">
               <MessageCircle className="h-3 w-3" /> WhatsApp
             </span>
             <Input

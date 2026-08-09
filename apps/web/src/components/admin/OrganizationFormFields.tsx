@@ -36,9 +36,6 @@ interface OrganizationFormFieldsProps {
   // Optional fields
   description: string;
   website: string;
-  phone: string;
-  email: string;
-  whatsapp: string;
   streetAddress: string;
   city: string;
   state: string;
@@ -49,9 +46,6 @@ interface OrganizationFormFieldsProps {
   facebook: string;
   onDescriptionChange: (v: string) => void;
   onWebsiteChange: (v: string) => void;
-  onPhoneChange: (v: string) => void;
-  onEmailChange: (v: string) => void;
-  onWhatsappChange: (v: string) => void;
   onStreetAddressChange: (v: string) => void;
   onCityChange: (v: string) => void;
   onStateChange: (v: string) => void;
@@ -69,8 +63,6 @@ interface OrganizationFormFieldsProps {
 
 const inputClassName =
   "h-[38px] rounded-lg border border-ps-border-default bg-ps-elevated px-3 py-0 text-ps-text-primary";
-const errorInputClassName = "border-ps-danger-hover-border";
-const errorTextClassName = "mt-1 text-[11px] text-ps-error";
 const sectionDividerClassName = "border-t border-ps-border-default pt-2";
 const sectionBodyClassName = "mt-2 flex flex-col gap-3";
 
@@ -86,7 +78,7 @@ function SectionHeader({ title, isOpen, onToggle }: SectionHeaderProps) {
     <button
       type="button"
       onClick={onToggle}
-      className="flex items-center gap-2 bg-none border-0 text-ps-text-primary cursor-pointer text-sm font-semibold py-2 px-0"
+      className="flex cursor-pointer items-center gap-2 border-0 bg-transparent px-0 py-2 text-sm font-semibold text-ps-text-primary"
     >
       {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       {title}
@@ -103,9 +95,6 @@ export function OrganizationFormFields({
   onColorChange,
   description,
   website,
-  phone,
-  email,
-  whatsapp,
   streetAddress,
   city,
   state,
@@ -116,9 +105,6 @@ export function OrganizationFormFields({
   facebook,
   onDescriptionChange,
   onWebsiteChange,
-  onPhoneChange,
-  onEmailChange,
-  onWhatsappChange,
   onStreetAddressChange,
   onCityChange,
   onStateChange,
@@ -132,9 +118,7 @@ export function OrganizationFormFields({
   onContactsChange,
 }: OrganizationFormFieldsProps) {
   const [showContact, setShowContact] = useState(
-    defaultExpanded ||
-      !!(phone || email || whatsapp) ||
-      (contacts?.length ?? 0) > 0,
+    defaultExpanded || (contacts?.length ?? 0) > 0,
   );
   const [showAddress, setShowAddress] = useState(
     defaultExpanded ||
@@ -144,13 +128,6 @@ export function OrganizationFormFields({
   const [showSocial, setShowSocial] = useState(
     defaultExpanded || !!(instagram || facebook),
   );
-
-  // ponytail: track touched state for validation UX
-  const [phoneTouched, setPhoneTouched] = useState(false);
-  const [whatsappTouched, setWhatsappTouched] = useState(false);
-
-  const phoneError = phoneTouched && !isValidPhone(phone);
-  const whatsappError = whatsappTouched && !isValidPhone(whatsapp);
 
   return (
     <div className="flex flex-col gap-4">
@@ -222,64 +199,8 @@ export function OrganizationFormFields({
         />
         {showContact && (
           <div className={sectionBodyClassName}>
-            {/* ponytail: 1 col mobile, 2 cols desktop */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5">
-                Teléfono
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => onPhoneChange(e.target.value)}
-                  onBlur={() => setPhoneTouched(true)}
-                  placeholder="+54 9 11 1234-5678"
-                  className={cn(
-                    inputClassName,
-                    phoneError && errorInputClassName,
-                  )}
-                />
-                {phoneError && (
-                  <span className={errorTextClassName}>
-                    Formato E.164: +código país + número
-                  </span>
-                )}
-              </label>
-              <label className="flex flex-col gap-1.5">
-                Email de contacto
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => onEmailChange(e.target.value)}
-                  className={inputClassName}
-                />
-              </label>
-            </div>
-            <label className="flex flex-col gap-1.5">
-              WhatsApp
-              <input
-                type="tel"
-                value={whatsapp}
-                onChange={(e) => onWhatsappChange(e.target.value)}
-                onBlur={() => setWhatsappTouched(true)}
-                placeholder="+54 9 11 1234-5678"
-                className={cn(
-                  inputClassName,
-                  whatsappError && errorInputClassName,
-                )}
-              />
-              {whatsappError && (
-                <span className={errorTextClassName}>
-                  Formato E.164: +código país + número
-                </span>
-              )}
-            </label>
-            {/* Multi-contacts with drag-and-drop */}
             {contacts !== undefined && onContactsChange && (
-              <div className="mt-2 pt-3 border-t border-ps-border-default">
-                <ContactManager
-                  contacts={contacts}
-                  onChange={onContactsChange}
-                />
-              </div>
+              <ContactManager contacts={contacts} onChange={onContactsChange} />
             )}
           </div>
         )}

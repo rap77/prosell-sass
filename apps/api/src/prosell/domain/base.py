@@ -16,6 +16,7 @@ __all__ = [
     "DomainModel",
     "EmailStr",
     "Field",
+    "SerializedValueObject",
     "ValueObject",
     "field_validator",
     "model_validator",
@@ -64,6 +65,16 @@ class ValueObject(BaseModel):
     model_config = ConfigDict(
         frozen=True,  # Value objects are immutable
         str_strip_whitespace=True,
+    )
+
+
+class SerializedValueObject(ValueObject):
+    """Immutable value object that serializes enums as their wire values."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        str_strip_whitespace=True,
+        use_enum_values=True,
     )
 
 

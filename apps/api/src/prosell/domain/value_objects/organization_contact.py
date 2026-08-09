@@ -1,13 +1,11 @@
 """Organization contact value object for multi-contact support."""
 
-from enum import Enum
+from enum import StrEnum
 
-from pydantic import ConfigDict
-
-from prosell.domain.base import ValueObject
+from prosell.domain.base import SerializedValueObject
 
 
-class ContactCategory(str, Enum):
+class ContactCategory(StrEnum):
     """Predefined contact categories."""
 
     GERENCIA = "gerencia"
@@ -18,18 +16,13 @@ class ContactCategory(str, Enum):
     CUSTOM = "custom"
 
 
-class OrganizationContact(ValueObject):
+class OrganizationContact(SerializedValueObject):
     """Single contact entry for an organization.
 
     Each contact has a category (predefined or custom) and optional
     phone, email, and whatsapp fields. Order is used for drag-and-drop
     persistence.
     """
-
-    model_config = ConfigDict(
-        frozen=True,
-        use_enum_values=True,  # serialize enum as string for JSONB
-    )
 
     id: str
     category: ContactCategory

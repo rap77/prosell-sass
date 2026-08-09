@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
+import { cn } from "@/lib/utils";
 import { useCategories } from "@/lib/api/categories";
 import {
   useCreateOrganization,
@@ -14,6 +15,13 @@ import {
   OrganizationFormFields,
   isValidPhone,
 } from "@/components/admin/OrganizationFormFields";
+import type { OrganizationContact } from "@/lib/api/schemas/organizations";
+
+interface BrokerInput {
+  name: string;
+  email: string;
+  phone?: string;
+}
 
 /**
  * Staff form to create a organization org + invite its owner — Subsystem E Task 16.
@@ -39,9 +47,7 @@ export default function AdminNewDealerPage() {
   const [code, setCode] = useState("");
   const [color, setColor] = useState("#4DB8FF");
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
-  const [brokers, setBrokers] = useState<
-    Array<{ name: string; email: string; phone?: string }>
-  >([]);
+  const [brokers, setBrokers] = useState<BrokerInput[]>([]);
   const [brokerName, setBrokerName] = useState("");
   const [brokerEmail, setBrokerEmail] = useState("");
   const [brokerPhone, setBrokerPhone] = useState("");
@@ -49,9 +55,6 @@ export default function AdminNewDealerPage() {
   // Optional fields
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -60,6 +63,7 @@ export default function AdminNewDealerPage() {
   const [taxId, setTaxId] = useState("");
   const [instagram, setInstagram] = useState("");
   const [facebook, setFacebook] = useState("");
+  const [contacts, setContacts] = useState<OrganizationContact[]>([]);
 
   useEffect(() => {
     if (!authLoading && !canCreate) {
@@ -109,9 +113,6 @@ export default function AdminNewDealerPage() {
   const hasOptionalFields = () =>
     description ||
     website ||
-    phone ||
-    email ||
-    whatsapp ||
     streetAddress ||
     city ||
     state ||
@@ -119,9 +120,10 @@ export default function AdminNewDealerPage() {
     country ||
     taxId ||
     instagram ||
-    facebook;
+    facebook ||
+    contacts.length > 0;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const result = await createOrganization.mutateAsync({
@@ -139,9 +141,6 @@ export default function AdminNewDealerPage() {
             color: color || undefined,
             description: description || undefined,
             website: website || undefined,
-            phone: phone || undefined,
-            email: email || undefined,
-            whatsapp: whatsapp || undefined,
             street_address: streetAddress || undefined,
             city: city || undefined,
             state: state || undefined,
@@ -150,6 +149,7 @@ export default function AdminNewDealerPage() {
             tax_id: taxId || undefined,
             instagram: instagram || undefined,
             facebook: facebook || undefined,
+            contacts,
           },
         });
       }
@@ -180,15 +180,12 @@ export default function AdminNewDealerPage() {
           {verticals.map((vertical) => (
             <label
               key={vertical.id}
-              className="flex items-center gap-2 px-3 py-2 rounded cursor-pointer"
-              style={{
-                background: verticalIds.includes(vertical.id)
-                  ? "var(--ps-cyan-10)"
-                  : "var(--ps-bg-elevated)",
-                border: verticalIds.includes(vertical.id)
-                  ? "1px solid var(--ps-cyan)"
-                  : "1px solid var(--ps-border-default)",
-              }}
+              className={cn(
+                "flex cursor-pointer items-center gap-2 rounded border px-3 py-2",
+                verticalIds.includes(vertical.id)
+                  ? "border-ps-cyan bg-ps-cyan-10"
+                  : "border-ps-border-default bg-ps-elevated",
+              )}
             >
               <input
                 type="checkbox"
@@ -211,9 +208,6 @@ export default function AdminNewDealerPage() {
           onColorChange={setColor}
           description={description}
           website={website}
-          phone={phone}
-          email={email}
-          whatsapp={whatsapp}
           streetAddress={streetAddress}
           city={city}
           state={state}
@@ -224,9 +218,6 @@ export default function AdminNewDealerPage() {
           facebook={facebook}
           onDescriptionChange={setDescription}
           onWebsiteChange={setWebsite}
-          onPhoneChange={setPhone}
-          onEmailChange={setEmail}
-          onWhatsappChange={setWhatsapp}
           onStreetAddressChange={setStreetAddress}
           onCityChange={setCity}
           onStateChange={setState}
@@ -235,6 +226,8 @@ export default function AdminNewDealerPage() {
           onTaxIdChange={setTaxId}
           onInstagramChange={setInstagram}
           onFacebookChange={setFacebook}
+          contacts={contacts}
+          onContactsChange={setContacts}
         />
 
         {/* Brokers section */}
@@ -278,12 +271,12 @@ export default function AdminNewDealerPage() {
                 }
               }}
               placeholder="+54 9 11 1234-5678 (opcional)"
-              className="flex-1 h-9 px-3 rounded-lg bg-ps-bg-elevated text-ps-text-primary"
-              style={{
-                border: !isValidPhone(brokerPhone)
-                  ? "1px solid var(--ps-error)"
-                  : "1px solid var(--ps-border-default)",
-              }}
+              className={cn(
+                "h-9 flex-1 rounded-lg border bg-ps-bg-elevated px-3 text-ps-text-primary",
+                !isValidPhone(brokerPhone)
+                  ? "border-ps-error"
+                  : "border-ps-border-default",
+              )}
             />
             <button
               type="button"
@@ -342,9 +335,7 @@ export default function AdminNewDealerPage() {
           disabled={
             createOrganization.isPending ||
             updateOrganization.isPending ||
-            verticalIds.length === 0 ||
-            !isValidPhone(phone) ||
-            !isValidPhone(whatsapp)
+            verticalIds.length === 0
           }
           className="h-10 rounded-lg bg-ps-cyan border-none text-ps-bg-base font-bold cursor-pointer"
         >
