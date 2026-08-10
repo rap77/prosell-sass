@@ -60,6 +60,20 @@ describe("BrokerManager — phone", () => {
     expect(screen.getByText("+58 412 5551234")).toBeInTheDocument();
   });
 
+  it("uses the organization theme for broker backgrounds", () => {
+    mockUseOrganizationBrokers.mockReturnValue({
+      data: [makeBroker()],
+      isLoading: false,
+    });
+
+    const { container } = render(<BrokerManager organizationId="dealer-1" />);
+
+    expect(container.firstElementChild).toHaveClass("bg-ps-elevated/40");
+    expect(
+      screen.getByText("Ana Broker").closest("div.rounded-md"),
+    ).toHaveClass("bg-ps-elevated");
+  });
+
   it("sends phone when creating a broker", async () => {
     mockUseOrganizationBrokers.mockReturnValue({ data: [], isLoading: false });
     const user = userEvent.setup();

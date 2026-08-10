@@ -22,6 +22,7 @@ import {
   useDeleteOrganizationBroker,
 } from "@/lib/api/organizations";
 import type { Broker } from "@/lib/api/schemas/organizations";
+import { cn } from "@/lib/utils";
 import { isValidPhone } from "./OrganizationFormFields";
 
 interface BrokerManagerProps {
@@ -101,7 +102,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-4 text-muted-foreground">
+      <div className="flex items-center gap-2 py-4 text-ps-text-secondary">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>Cargando brokers...</span>
       </div>
@@ -109,11 +110,13 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
   }
 
   return (
-    <div className="rounded-lg border p-4">
-      <h3 className="mb-4 text-sm font-semibold">Brokers</h3>
+    <div className="rounded-lg border border-ps-border-default bg-ps-elevated/40 p-4">
+      <h3 className="mb-4 text-sm font-semibold text-ps-text-primary">
+        Brokers
+      </h3>
 
       {brokers.length === 0 ? (
-        <p className="mb-4 text-sm text-muted-foreground">
+        <p className="mb-4 text-sm text-ps-text-secondary">
           Sin brokers. La organización es propietaria directa de sus productos.
         </p>
       ) : (
@@ -121,7 +124,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
           {brokers.map((broker) => (
             <div
               key={broker.id}
-              className="flex items-center justify-between rounded-md bg-muted/50 p-2"
+              className="flex items-center justify-between rounded-md border border-ps-border-default bg-ps-elevated p-2"
             >
               {editingId === broker.id ? (
                 <div className="flex flex-1 items-center gap-2">
@@ -129,21 +132,26 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="Nombre"
-                    className="h-8 flex-1"
+                    className="h-8 flex-1 border-ps-border-default bg-ps-elevated text-ps-text-primary placeholder:text-ps-text-tertiary"
                   />
                   <Input
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
                     placeholder="Email"
-                    className="h-8 flex-1"
+                    className="h-8 flex-1 border-ps-border-default bg-ps-elevated text-ps-text-primary placeholder:text-ps-text-tertiary"
                   />
                   <Input
                     type="tel"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
                     placeholder="+54 9 11 1234-5678"
-                    className={`h-8 flex-1 ${!isValidPhone(editPhone) ? "border-red-500" : ""}`}
+                    className={cn(
+                      "h-8 flex-1 bg-ps-elevated text-ps-text-primary placeholder:text-ps-text-tertiary",
+                      !isValidPhone(editPhone)
+                        ? "border-ps-error"
+                        : "border-ps-border-default",
+                    )}
                   />
                   <Button
                     type="button"
@@ -153,7 +161,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                     disabled={
                       updateBroker.isPending || !isValidPhone(editPhone)
                     }
-                    className="h-8 w-8 text-green-600"
+                    className="h-8 w-8 text-ps-success hover:bg-ps-success-bg"
                     title="Guardar"
                   >
                     {updateBroker.isPending ? (
@@ -167,7 +175,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                     variant="ghost"
                     size="icon"
                     onClick={cancelEdit}
-                    className="h-8 w-8"
+                    className="h-8 w-8 text-ps-text-secondary hover:bg-ps-elevated"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -175,23 +183,23 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <User className="h-4 w-4 text-ps-text-secondary" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium text-ps-text-primary">
                           {broker.name}
                         </span>
                         {broker.status === "verified" && (
-                          <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">
+                          <span className="rounded bg-ps-success-bg px-1.5 py-0.5 text-[10px] font-semibold text-ps-success">
                             Verificado
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-ps-text-secondary">
                         {broker.email}
                       </div>
                       {broker.phone && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-ps-text-secondary">
                           {broker.phone}
                         </div>
                       )}
@@ -204,7 +212,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                         variant="ghost"
                         size="icon"
                         onClick={() => startEdit(broker)}
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-ps-text-secondary hover:bg-ps-elevated"
                         title="Editar"
                       >
                         <Pencil className="h-4 w-4" />
@@ -216,7 +224,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                       size="icon"
                       onClick={() => handleDelete(broker.id)}
                       disabled={deleteBroker.isPending}
-                      className="h-8 w-8 text-destructive"
+                      className="h-8 w-8 text-ps-error hover:bg-ps-error-bg"
                       title="Eliminar"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -238,7 +246,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="flex-1"
+              className="flex-1 border-ps-border-default bg-ps-elevated text-ps-text-primary placeholder:text-ps-text-tertiary"
             />
             <Input
               type="email"
@@ -246,7 +254,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="flex-1"
+              className="flex-1 border-ps-border-default bg-ps-elevated text-ps-text-primary placeholder:text-ps-text-tertiary"
             />
           </div>
           <Input
@@ -255,10 +263,15 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
             value={newPhone}
             onChange={(e) => setNewPhone(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            className={!isValidPhone(newPhone) ? "border-red-500" : ""}
+            className={cn(
+              "bg-ps-elevated text-ps-text-primary placeholder:text-ps-text-tertiary",
+              !isValidPhone(newPhone)
+                ? "border-ps-error"
+                : "border-ps-border-default",
+            )}
           />
           {!isValidPhone(newPhone) && newPhone.trim() && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-ps-error">
               Formato E.164: +código país + número
             </p>
           )}
@@ -273,6 +286,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                 createBroker.isPending ||
                 !isValidPhone(newPhone)
               }
+              className="bg-ps-cyan text-ps-bg-base hover:bg-ps-cyan-hover"
             >
               {createBroker.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -289,6 +303,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
                 setNewName("");
                 setNewEmail("");
               }}
+              className="text-ps-text-secondary hover:bg-ps-elevated"
             >
               Cancelar
             </Button>
@@ -300,6 +315,7 @@ export function BrokerManager({ organizationId }: BrokerManagerProps) {
           variant="outline"
           size="sm"
           onClick={() => setShowAddForm(true)}
+          className="border-ps-border-default bg-ps-elevated text-ps-text-primary hover:bg-ps-cyan-10 hover:text-ps-text-primary"
         >
           <Plus className="mr-1 h-4 w-4" />
           Agregar broker
