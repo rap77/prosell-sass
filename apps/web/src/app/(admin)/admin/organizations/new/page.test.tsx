@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdminNewDealerPage from "./page";
 
@@ -82,13 +83,12 @@ describe("AdminNewDealerPage", () => {
 
   it("renders the form and submits with selected verticals (no owner_email required)", async () => {
     mockHasPermission.mockReturnValue(true);
+    const user = userEvent.setup();
     render(<AdminNewDealerPage />);
 
-    fireEvent.change(screen.getByLabelText(/nombre/i), {
-      target: { value: "Acme Motors" },
-    });
-    fireEvent.click(screen.getByLabelText("Vehicles"));
-    fireEvent.click(screen.getByRole("button", { name: /crear/i }));
+    await user.type(screen.getByLabelText(/nombre/i), "Acme Motors");
+    await user.click(screen.getByLabelText("Vehicles"));
+    await user.click(screen.getByRole("button", { name: /crear/i }));
 
     await waitFor(() =>
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -104,5 +104,25 @@ describe("AdminNewDealerPage", () => {
     render(<AdminNewDealerPage />);
 
     expect(screen.queryByLabelText(/email del owner/i)).not.toBeInTheDocument();
+  });
+
+  it("starts with a random color instead of the legacy fixed cyan", () => {
+    mockHasPermission.mockReturnValue(true);
+    const randomColor = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    const { container } = render(<AdminNewDealerPage />);
+
+    expect(container.querySelector('input[type="color"]')).toHaveValue(
+      "#0f766e",
+    );
+    randomColor.mockRestore();
+  });
+
+  it("does not preselect any vertical", () => {
+    mockHasPermission.mockReturnValue(true);
+    render(<AdminNewDealerPage />);
+
+    expect(screen.getByLabelText("Vehicles")).not.toBeChecked();
+    expect(screen.getByLabelText("Real Estate")).not.toBeChecked();
   });
 });

@@ -23,6 +23,20 @@ interface BrokerInput {
   phone?: string;
 }
 
+const ORGANIZATION_COLORS = [
+  "#0D1B6E",
+  "#1E5FD4",
+  "#7A1E8A",
+  "#0F766E",
+  "#9A3412",
+  "#7F1D1D",
+] as const;
+
+function randomOrganizationColor(): string {
+  const index = Math.floor(Math.random() * ORGANIZATION_COLORS.length);
+  return ORGANIZATION_COLORS[index] ?? ORGANIZATION_COLORS[0];
+}
+
 /**
  * Staff form to create a organization org + invite its owner — Subsystem E Task 16.
  *
@@ -45,7 +59,7 @@ export default function AdminNewDealerPage() {
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [color, setColor] = useState("#4DB8FF");
+  const [color, setColor] = useState(randomOrganizationColor);
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
   const [brokers, setBrokers] = useState<BrokerInput[]>([]);
   const [brokerName, setBrokerName] = useState("");

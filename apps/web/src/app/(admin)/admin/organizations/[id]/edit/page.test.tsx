@@ -33,8 +33,9 @@ vi.mock("@/lib/api/organizations", () => ({
   useDeleteOrganizationBroker: () => mockUseDeleteOrganizationBroker(),
 }));
 
+const mockUseCategories = vi.fn();
 vi.mock("@/lib/api/categories", () => ({
-  useCategories: () => ({ data: [], isLoading: false }),
+  useCategories: () => mockUseCategories(),
 }));
 
 const mockPush = vi.fn();
@@ -61,6 +62,7 @@ describe("AdminEditOrganizationPage — form structure", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseRequireAdmin.mockReturnValue(true);
+    mockUseCategories.mockReturnValue({ data: [], isLoading: false });
     mockUseUpdateOrganization.mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
@@ -122,5 +124,29 @@ describe("AdminEditOrganizationPage — form structure", () => {
     ) as HTMLInputElement | null;
     expect(colorInput).not.toBeNull();
     expect(colorInput?.value).toBe("#ff0000");
+  });
+
+  it("prevents removing a selected vertical that has products", () => {
+    mockUseOrganization.mockReturnValue({
+      organization: makeOrganization(),
+      isLoading: false,
+      error: null,
+    });
+    mockUseCategories.mockReturnValue({
+      data: [{ id: "vehicles", name: "Vehicles", level: 0 }],
+      isLoading: false,
+    });
+    mockUseOrganizationVerticals.mockReturnValue({
+      data: {
+        vertical_ids: ["vehicles"],
+        product_counts: [{ vertical_id: "vehicles", product_count: 1 }],
+      },
+      isLoading: false,
+    });
+
+    render(<AdminEditOrganizationPage />);
+
+    expect(screen.getByLabelText("Vehicles")).toBeDisabled();
+    expect(screen.getByText("(1 producto)")).toBeInTheDocument();
   });
 });
