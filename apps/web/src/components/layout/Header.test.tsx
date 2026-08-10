@@ -241,6 +241,16 @@ describe("Header — breadcrumb humanization", () => {
   });
 });
 
+describe("Header — search", () => {
+  it("does not render a nonfunctional global search field", () => {
+    mockUsePathname.mockReturnValue("/dashboard");
+
+    render(<Header />);
+
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  });
+});
+
 describe("Header — user menu navigation", () => {
   beforeEach(() => {
     mockUsePathname.mockReset();

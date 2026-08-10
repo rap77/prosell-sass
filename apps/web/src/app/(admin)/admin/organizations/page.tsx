@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Building2,
   Loader2,
@@ -29,18 +29,16 @@ export default function AdminOrganizationsPage() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Filter organizations by search term
-  const filtered = useMemo(() => {
-    if (!search.trim()) return organizations;
-    const q = search.toLowerCase();
-    return organizations.filter(
-      (org) =>
-        org.name.toLowerCase().includes(q) ||
-        org.code?.toLowerCase().includes(q) ||
-        org.city?.toLowerCase().includes(q) ||
-        org.phone?.includes(q),
-    );
-  }, [organizations, search]);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filtered = normalizedSearch
+    ? organizations.filter(
+        (org) =>
+          org.name.toLowerCase().includes(normalizedSearch) ||
+          org.code?.toLowerCase().includes(normalizedSearch) ||
+          org.city?.toLowerCase().includes(normalizedSearch) ||
+          org.phone?.includes(normalizedSearch),
+      )
+    : organizations;
 
   // Build WhatsApp-friendly contact text (plain text, no emojis for encoding safety)
   const buildContactText = (org: (typeof organizations)[0]) => {
@@ -95,18 +93,18 @@ export default function AdminOrganizationsPage() {
         </span>
         <input
           type="search"
+          aria-label="Buscar organizaciones"
           placeholder="Buscar por nombre, código, ciudad o teléfono..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setSearchFocused(false)}
           className={cn(
-            "h-9 w-full pl-8 pr-3 border rounded-lg text-ps-text-primary text-[13px] outline-none box-border",
+            "h-9 w-full bg-ps-input-bg pl-8 pr-3 border rounded-lg text-ps-text-primary text-[13px] outline-none box-border",
             searchFocused
               ? "border-ps-border-active shadow-input-focus"
               : "border-ps-border-default",
           )}
-          style={{ background: "var(--ps-input-bg)" }}
         />
       </div>
 
@@ -138,7 +136,7 @@ export default function AdminOrganizationsPage() {
         organizations.length > 0 &&
         filtered.length === 0 && (
           <p className="text-ps-text-secondary">
-            No se encontraron organizaciones para "{search}"
+            No se encontraron organizaciones para &quot;{search}&quot;
           </p>
         )}
 
@@ -202,6 +200,22 @@ export default function AdminOrganizationsPage() {
                     <span>{org.whatsapp}</span>
                   </div>
                 )}
+              </div>
+
+              <div className="flex flex-col gap-1.5 border-t border-ps-border-subtle pt-2">
+                <span className="text-xs font-medium text-ps-text-primary">
+                  {(org.product_count ?? 0) === 1
+                    ? "1 producto"
+                    : `${org.product_count ?? 0} productos`}
+                </span>
+                {(org.vertical_product_counts ?? []).map((vertical) => (
+                  <span
+                    key={vertical.vertical_id}
+                    className="text-xs text-ps-text-secondary"
+                  >
+                    {vertical.vertical_name} · {vertical.product_count}
+                  </span>
+                ))}
               </div>
 
               {/* Footer: brokers count + copy button */}

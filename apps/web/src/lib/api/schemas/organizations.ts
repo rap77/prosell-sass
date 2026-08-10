@@ -35,6 +35,12 @@ export const OrganizationContactSchema = z.object({
 
 export type OrganizationContact = z.infer<typeof OrganizationContactSchema>;
 
+export const VerticalProductCountSchema = z.object({
+  vertical_id: z.string(),
+  vertical_name: z.string(),
+  product_count: z.number(),
+});
+
 export const OrganizationSchema = z
   .object({
     id: z.string(),
@@ -70,6 +76,8 @@ export const OrganizationSchema = z
     updated_at: z.string(),
     broker_count: z.number().nullable().optional(),
     owner_email: z.string().nullable().optional(),
+    product_count: z.number().optional(),
+    vertical_product_counts: z.array(VerticalProductCountSchema).optional(),
   })
   .passthrough();
 

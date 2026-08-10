@@ -1,11 +1,9 @@
-"use client"; // Required for useState and usePathname hooks
+"use client"; // Required for usePathname hooks and user actions
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { formatBreadcrumbLabel } from "@/lib/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,14 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  User,
-  Settings,
-  LogOut,
-  Building2,
-  ChevronRight,
-} from "lucide-react";
+import { User, Settings, LogOut, Building2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { useLayoutStore } from "@/lib/stores/layoutStore";
@@ -93,10 +84,9 @@ function resolveUserData(
 }
 
 /**
- * Header component with global search, breadcrumbs, user menu, and org switcher.
+ * Header component with breadcrumbs, user menu, and org switcher.
  *
  * Features:
- * - Global search input (placeholder for Cmd+K CommandPalette in later plan)
  * - Breadcrumb navigation using Next.js usePathname
  * - User menu dropdown with visible role badge
  * - Org switcher placeholder (multi-brancheship in Phase 5)
@@ -110,8 +100,6 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
   const toggleMobileDrawer = useLayoutStore(
     (state) => state.toggleMobileDrawer,
   );
-  const [searchQuery, setSearchQuery] = useState("");
-
   // Use real user data from auth context, fallback to placeholder
   const userData = resolveUserData(user, authUser);
 
@@ -197,25 +185,6 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
         </nav>
 
         <div className="flex-1" />
-
-        {/* Global search (placeholder for Cmd+K) */}
-        <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              name="search"
-              aria-label="Search"
-              placeholder="Search... (Cmd+K)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </div>
-        </div>
 
         {/* Admins get the cross-organization OrganizationPicker (Subsystem D); everyone
             else keeps the single-org switcher placeholder. */}

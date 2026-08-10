@@ -126,6 +126,25 @@ async def test_admin_lists_all_dealers(
 
 
 @pytest.mark.asyncio
+async def test_admin_list_includes_product_counts_by_vertical(
+    async_client_as_admin: AsyncClient,
+    other_dealer: OrganizationModel,
+) -> None:
+    """Organization cards can summarize their inventory without extra requests."""
+    response = await async_client_as_admin.get("/api/v1/admin/organizations")
+
+    assert response.status_code == 200
+    other_dealer_data = next(
+        org for org in response.json()["organizations"] if org["id"] == str(other_dealer.id)
+    )
+    assert other_dealer_data["product_count"] == 1
+    vertical_counts = other_dealer_data["vertical_product_counts"]
+    assert len(vertical_counts) == 1
+    assert vertical_counts[0]["vertical_name"] == "Other Dealer Category"
+    assert vertical_counts[0]["product_count"] == 1
+
+
+@pytest.mark.asyncio
 async def test_list_dealers_exposes_owner_email_from_latest_invitation(
     async_client_as_admin: AsyncClient,
     root_category: CategoryModel,

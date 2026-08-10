@@ -37,6 +37,14 @@ class OrganizationContactDTO(BaseModel):
         )
 
 
+class VerticalProductCountDTO(BaseModel):
+    """Product count for a root category shown in organization summaries."""
+
+    vertical_id: UUID
+    vertical_name: str
+    product_count: int
+
+
 class OrganizationResponse(BaseModel):
     """DTO for organization responses."""
 
@@ -75,6 +83,8 @@ class OrganizationResponse(BaseModel):
     updated_at: datetime
     broker_count: int | None = None  # populated when listing organizations
     owner_email: str | None = None  # populated when listing organizations (latest invitation)
+    product_count: int = 0  # populated when listing organizations
+    vertical_product_counts: list[VerticalProductCountDTO] = Field(default_factory=list)
 
     @classmethod
     def from_entity(
@@ -83,6 +93,8 @@ class OrganizationResponse(BaseModel):
         *,
         broker_count: int | None = None,
         owner_email: str | None = None,
+        product_count: int = 0,
+        vertical_product_counts: list[VerticalProductCountDTO] | None = None,
     ) -> "OrganizationResponse":
         """Build response from domain entity."""
         return cls(
@@ -116,6 +128,8 @@ class OrganizationResponse(BaseModel):
             updated_at=org.updated_at,
             broker_count=broker_count,
             owner_email=owner_email,
+            product_count=product_count,
+            vertical_product_counts=vertical_product_counts or [],
         )
 
 

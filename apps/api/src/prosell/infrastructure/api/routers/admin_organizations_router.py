@@ -14,7 +14,11 @@ from pydantic import BaseModel
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.application.dto.org.response import OrganizationListResponse, OrganizationResponse
+from prosell.application.dto.org.response import (
+    OrganizationListResponse,
+    OrganizationResponse,
+    VerticalProductCountDTO,
+)
 from prosell.application.dto.org.update import ContactInput
 from prosell.application.dto.organization.create_organization import (
     CreateOrganizationRequest,
@@ -45,6 +49,7 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.api.middleware.rate_limit_middleware import smart_rate_limit
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.repositories.organization_broker_repository_impl import (
     BrokerInfo,
@@ -104,15 +109,48 @@ async def list_organizations(current_user: CurrentUser, db: DbSession) -> Organi
     organizations = await org_repo.get_all(tenant_id=None)
 
     # ponytail: N+1 is fine for admin dashboard with ~50 orgs max
+    product_counts_by_organization: dict[UUID, dict[UUID, int]] = {}
+    root_category_ids: set[UUID] = set()
+    for org in organizations:
+        product_counts = await _count_products_per_vertical(db, org.id, org.tenant_id)
+        product_counts_by_organization[org.id] = product_counts
+        root_category_ids.update(product_counts)
+
+    category_names: dict[UUID, str] = {}
+    if root_category_ids:
+        category_result = await db.execute(
+            select(CategoryModel.id, CategoryModel.name).where(
+                CategoryModel.id.in_(root_category_ids)
+            )
+        )
+        for category_id, name in category_result.all():
+            category_names[category_id] = name
+
     responses = []
     for org in organizations:
         count = await broker_repo.count_brokers(org.id)
         invitation = await invitation_repo.get_latest_by_organization(org.id, org.tenant_id)
+        product_counts = product_counts_by_organization[org.id]
+        vertical_product_counts = sorted(
+            [
+                VerticalProductCountDTO(
+                    vertical_id=vertical_id,
+                    vertical_name=vertical_name,
+                    product_count=product_count,
+                )
+                for vertical_id, product_count in product_counts.items()
+                if (vertical_name := category_names.get(vertical_id)) is not None
+                and product_count > 0
+            ],
+            key=lambda vertical: vertical.vertical_name,
+        )
         responses.append(
             OrganizationResponse.from_entity(
                 org,
                 broker_count=count,
                 owner_email=invitation.email if invitation else None,
+                product_count=sum(product_counts.values()),
+                vertical_product_counts=vertical_product_counts,
             )
         )
 

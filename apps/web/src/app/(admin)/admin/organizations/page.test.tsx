@@ -4,6 +4,7 @@
  * Renders the organizations list for an admin; redirects a non-admin to /dashboard.
  */
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import AdminDealersPage from "./page";
 
@@ -88,6 +89,65 @@ describe("AdminDealersPage", () => {
 
     const link = screen.getByText("Organization One").closest("a");
     expect(link).toHaveAttribute("href", "/admin/organizations/organization-1");
+  });
+
+  it("filters organizations from the visible search field", async () => {
+    mockUseAuth.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      data: [
+        { id: "organization-1", name: "Autos García" },
+        { id: "organization-2", name: "MM Automotores" },
+      ],
+      isLoading: false,
+      error: null,
+    });
+    const user = userEvent.setup();
+
+    render(<AdminDealersPage />);
+    await user.type(
+      screen.getByRole("searchbox", { name: /buscar organizaciones/i }),
+      "García",
+    );
+
+    expect(screen.getByText("Autos García")).toBeInTheDocument();
+    expect(screen.queryByText("MM Automotores")).not.toBeInTheDocument();
+  });
+
+  it("shows total inventory and vertical counts on each organization card", () => {
+    mockUseAuth.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasPermission: () => false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      data: [
+        {
+          id: "organization-1",
+          name: "AutoFerro Motors",
+          product_count: 9,
+          vertical_product_counts: [
+            {
+              vertical_id: "vehicles",
+              vertical_name: "Vehículos y Transporte",
+              product_count: 9,
+            },
+          ],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AdminDealersPage />);
+
+    expect(screen.getByText("9 productos")).toBeInTheDocument();
+    expect(screen.getByText("Vehículos y Transporte · 9")).toBeInTheDocument();
   });
 
   it("links to /admin/organizations/new when the user can create organizations", () => {
