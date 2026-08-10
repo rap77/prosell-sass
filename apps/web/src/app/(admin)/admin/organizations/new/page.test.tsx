@@ -99,6 +99,20 @@ describe("AdminNewDealerPage", () => {
     );
   });
 
+  it("renders added brokers with the organization theme", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<AdminNewDealerPage />);
+
+    await user.type(screen.getByPlaceholderText("Nombre"), "Ana Broker");
+    await user.type(screen.getByPlaceholderText("Email"), "ana@example.com");
+    await user.click(screen.getByRole("button", { name: /^agregar$/i }));
+
+    expect(
+      screen.getByText("Ana Broker").closest("div.rounded-lg"),
+    ).toHaveClass("bg-ps-bg-elevated");
+  });
+
   it("does not render the legacy 'Email del owner' required input", () => {
     mockHasPermission.mockReturnValue(true);
     render(<AdminNewDealerPage />);

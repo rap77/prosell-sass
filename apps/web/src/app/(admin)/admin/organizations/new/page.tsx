@@ -315,7 +315,7 @@ export default function AdminNewDealerPage() {
               {brokers.map((broker) => (
                 <div
                   key={broker.email}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-ps-cyan-10 border border-ps-cyan text-xs"
+                  className="flex items-center justify-between rounded-lg border border-ps-border-default bg-ps-bg-elevated px-3 py-2 text-xs"
                 >
                   <div>
                     <div className="font-semibold">{broker.name}</div>
