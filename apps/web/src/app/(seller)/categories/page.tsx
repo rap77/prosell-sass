@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ElementType } from "react";
+import { useState, type ElementType, type ReactNode } from "react";
 import {
   Plus,
   Car,
@@ -65,41 +65,31 @@ function getVerticalWithLeaves(tree: CategoryTreeNode[]): VerticalWithLeaves[] {
   return result;
 }
 
-const T = {
-  chipBg: "var(--ps-chip-bg)",
-  nicheInactiveBg: "var(--ps-niche-inactive-bg)",
-  switchOffBg: "var(--ps-switch-off-bg)",
-  icoInactiveBg: "var(--ps-ico-inactive-bg)",
-  icoInactiveBorder: "var(--ps-ico-inactive-border)",
-  hoverBgSm: "var(--ps-hover-bg-sm)",
-  hoverBgXs: "var(--ps-hover-bg-xs)",
-  addCardBg: "var(--ps-add-card-bg)",
-  addCardHoverBg: "var(--ps-add-card-hover-bg)",
-  iconBtnHoverBorder: "var(--ps-icon-btn-hover-border)",
-  tableRowHover: "var(--ps-table-row-hover)",
-  tableDivider: "var(--ps-table-divider)",
-  nicheActiveBorder: "var(--ps-niche-active-border)",
-  nicheActiveBorderHover: "var(--ps-niche-active-border-hover)",
-  nicheInactiveBorder: "var(--ps-niche-inactive-border)",
-  nicheInactiveBorderHover: "var(--ps-niche-inactive-border-hover)",
-  error: "var(--ps-error)",
-} as const;
-
 type IconEl = ElementType<{
   size?: number;
   strokeWidth?: number;
   color?: string;
 }>;
 
-const NICHE_ICONS: Record<string, IconEl> = {
-  vehiculos: Car,
-  inmuebles: Home,
-  maquinaria: Tractor,
-  productos: Package,
-};
+interface NicheIconProps {
+  slug: string;
+  size?: number;
+  strokeWidth?: number;
+}
 
-function getNicheIcon(slug: string): IconEl {
-  return NICHE_ICONS[slug.toLowerCase()] ?? Layers;
+function NicheIcon({ slug, size = 22, strokeWidth = 1.75 }: NicheIconProps) {
+  switch (slug.toLowerCase()) {
+    case "vehiculos":
+      return <Car size={size} strokeWidth={strokeWidth} />;
+    case "inmuebles":
+      return <Home size={size} strokeWidth={strokeWidth} />;
+    case "maquinaria":
+      return <Tractor size={size} strokeWidth={strokeWidth} />;
+    case "productos":
+      return <Package size={size} strokeWidth={strokeWidth} />;
+    default:
+      return <Layers size={size} strokeWidth={strokeWidth} />;
+  }
 }
 
 const NICHE_STATS: Record<
@@ -109,10 +99,16 @@ const NICHE_STATS: Record<
   vehiculos: { products: 38, publications: 24, leads: 284 },
 };
 
+const FIELD_TYPES = {
+  text: "text",
+  number: "number",
+  boolean: "boolean",
+} as const;
+
 const CUSTOM_FIELDS: Array<{
   name: string;
   icon: IconEl;
-  type: "text" | "number" | "boolean";
+  type: (typeof FIELD_TYPES)[keyof typeof FIELD_TYPES];
   required: boolean;
   visible: boolean;
 }> = [
@@ -138,21 +134,9 @@ const CUSTOM_FIELDS: Array<{
 ];
 
 const TYPE_CHIPS = {
-  text: {
-    bgVar: "var(--ps-type-chip-text-bg)",
-    colorVar: "var(--ps-cyan)",
-    label: "Texto",
-  },
-  number: {
-    bgVar: "var(--ps-type-chip-num-bg)",
-    colorVar: "var(--ps-success)",
-    label: "Número",
-  },
-  boolean: {
-    bgVar: "var(--ps-type-chip-bool-bg)",
-    colorVar: "var(--ps-warning)",
-    label: "Boolean",
-  },
+  text: { className: "bg-ps-info-bg text-ps-cyan", label: "Texto" },
+  number: { className: "bg-ps-success-bg text-ps-success", label: "Número" },
+  boolean: { className: "bg-ps-warning-bg text-ps-warning", label: "Boolean" },
 } as const;
 
 function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
@@ -164,20 +148,19 @@ function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
       onClick={onClick}
       className={cn(
         "relative w-[38px] h-[22px] rounded-full border flex-shrink-0 cursor-pointer transition-all duration-150 ease-out",
-        on ? "bg-ps-cyan border-ps-border-active" : "border-ps-border-subtle",
+        on
+          ? "bg-ps-cyan border-ps-border-active"
+          : "bg-ps-text-secondary border-ps-border-subtle",
       )}
       style={{
-        background: on ? undefined : T.switchOffBg,
-        boxShadow: on ? "0 0 12px rgba(77,184,255,0.25)" : "none",
         transition: "all 180ms cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
       <span
         className={cn(
           "absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full transition-all duration-200 ease-out",
-          on ? "left-[18px] bg-ps-base" : "left-[2px]",
+          on ? "left-[18px] bg-ps-base" : "left-[2px] bg-ps-text-secondary",
         )}
-        style={{ background: on ? undefined : "var(--ps-text-secondary)" }}
       />
     </button>
   );
@@ -193,33 +176,19 @@ function IconBtn({
   "aria-label"?: string;
 }) {
   const [hov, setHov] = useState(false);
-  const borderColor = hov
-    ? danger
-      ? "var(--ps-danger-hover-border)"
-      : T.iconBtnHoverBorder
-    : "transparent";
-  const background = hov
-    ? danger
-      ? "var(--ps-danger-hover-bg)"
-      : T.hoverBgSm
-    : "transparent";
-  const color = hov
-    ? danger
-      ? T.error
-      : "var(--ps-cyan)"
-    : "var(--ps-text-secondary)";
   return (
     <button
       type="button"
       aria-label={label}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      className="w-7 h-7 rounded-md border inline-flex items-center justify-center cursor-pointer transition-all duration-150"
-      style={{
-        borderColor,
-        background,
-        color,
-      }}
+      className={cn(
+        "w-7 h-7 rounded-md border border-transparent inline-flex items-center justify-center cursor-pointer transition-all duration-150 text-ps-text-secondary",
+        hov && !danger && "border-ps-border-medium bg-ps-info-bg text-ps-cyan",
+        hov &&
+          danger &&
+          "border-ps-danger-hover-border bg-ps-danger-hover-bg text-ps-error",
+      )}
     >
       <Icon size={13} strokeWidth={2} />
     </button>
@@ -235,12 +204,11 @@ function GhostButton({ icon: Icon, label }: { icon: IconEl; label: string }) {
       onMouseLeave={() => setHov(false)}
       className={cn(
         "inline-flex items-center justify-center gap-2 h-9 px-[14px] rounded-lg border text-[13px] font-semibold cursor-pointer flex-1 transition-all duration-150",
-        hov ? "border-ps-border-active" : "border-ps-border-default",
+        hov
+          ? "border-ps-border-active bg-ps-info-bg"
+          : "border-ps-border-default",
+        "text-ps-text-primary",
       )}
-      style={{
-        background: hov ? T.hoverBgXs : "transparent",
-        color: "var(--ps-text-primary)",
-      }}
     >
       <Icon size={13} strokeWidth={2.5} />
       {label}
@@ -274,7 +242,6 @@ function CtaButton({
         hov ? "bg-ps-cyan-hover" : "bg-ps-cyan",
       )}
       style={{
-        boxShadow: hov ? "0 6px 20px rgba(77,184,255,0.3)" : "none",
         transform: hov ? "translateY(-1px)" : "none",
       }}
     >
@@ -292,7 +259,6 @@ function NicheCard({
   onToggle: (id: string, active: boolean) => void;
 }) {
   const [hov, setHov] = useState(false);
-  const Icon = getNicheIcon(category.slug);
   const active = category.is_active;
   const stats = NICHE_STATS[category.slug.toLowerCase()] ?? {
     products: 0,
@@ -303,25 +269,19 @@ function NicheCard({
   const shown = fields.slice(0, 6);
   const extra = Math.max(0, fields.length - 6);
 
-  function resolveBorder(): string {
-    if (active && hov) return T.nicheActiveBorderHover;
-    if (active) return T.nicheActiveBorder;
-    if (hov) return T.nicheInactiveBorderHover;
-    return T.nicheInactiveBorder;
-  }
-
   return (
     <article
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       className={cn(
         "rounded-2xl p-6 flex flex-col transition-[border-color,transform] duration-200",
-        active ? "bg-ps-surface" : undefined,
+        active
+          ? "bg-ps-surface border-ps-border-medium"
+          : "bg-ps-surface border-ps-border-subtle",
+        hov && "border-ps-border-strong",
         active ? "gap-[18px]" : "gap-4",
       )}
       style={{
-        background: active ? undefined : T.nicheInactiveBg,
-        border: `1px solid ${resolveBorder()}`,
         transform: active && hov ? "translateY(-1px)" : "none",
       }}
     >
@@ -330,40 +290,30 @@ function NicheCard({
         <span
           className={cn(
             "w-10 h-10 md:w-13 md:h-13 rounded-xl inline-flex items-center justify-center flex-shrink-0 border",
-            active ? "bg-ps-info-bg border-ps-border-medium" : undefined,
+            active
+              ? "bg-ps-info-bg border-ps-border-medium text-ps-cyan"
+              : "bg-ps-surface border-ps-border-subtle text-ps-tertiary",
           )}
-          style={{
-            background: active ? undefined : T.icoInactiveBg,
-            borderColor: active ? undefined : T.icoInactiveBorder,
-            color: active ? "var(--ps-cyan)" : "var(--ps-text-tertiary)",
-          }}
         >
-          {
-            // eslint-disable-next-line react-hooks/static-components -- lucide icons are stateless; resolving per render is intentional and cheap
-            <Icon size={26} strokeWidth={1.75} />
-          }
+          <NicheIcon slug={category.slug} size={26} />
         </span>
 
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <h2
-            className="m-0 text-[20px] font-bold tracking-[-0.015em]"
-            style={{
-              color: active
-                ? "var(--ps-text-primary)"
-                : "var(--ps-text-secondary)",
-            }}
+            className={cn(
+              "m-0 text-[20px] font-bold tracking-[-0.015em]",
+              active ? "text-ps-text-primary" : "text-ps-text-secondary",
+            )}
           >
             {category.name}
           </h2>
           <span
             className={cn(
               "inline-flex items-center gap-[5px] text-[10.5px] font-bold px-[9px] py-[3px] rounded-full tracking-[0.08em] uppercase self-start",
-              active ? "bg-ps-success-bg" : undefined,
+              active
+                ? "bg-ps-success-bg text-ps-success"
+                : "bg-ps-surface text-ps-text-secondary",
             )}
-            style={{
-              background: active ? undefined : T.chipBg,
-              color: active ? "var(--ps-success)" : "var(--ps-text-secondary)",
-            }}
           >
             <span
               className={cn(
@@ -392,9 +342,10 @@ function NicheCard({
             key={label}
             className={cn(
               "inline-flex items-baseline gap-[5px] px-3 py-[6px] border border-ps-border-subtle rounded-lg text-[12px] tabular-nums",
-              active ? "text-ps-text-secondary" : "text-ps-tertiary",
+              active
+                ? "text-ps-text-secondary bg-ps-surface"
+                : "text-ps-tertiary bg-ps-surface",
             )}
-            style={{ background: T.chipBg }}
           >
             <b
               className={cn(
@@ -447,17 +398,30 @@ function NicheCard({
             <span className="inline-flex">
               {(
                 [
-                  { bg: "#1877F2", label: "f", color: "#fff", sm: false },
-                  { bg: "#FF6600", label: "AT", color: "#fff", sm: true },
-                  { bg: "#FFE600", label: "ML", color: "#1E1E1E", sm: true },
+                  {
+                    className: "bg-ps-blue text-ps-base",
+                    label: "f",
+                    sm: false,
+                  },
+                  {
+                    className: "bg-ps-warning text-ps-base",
+                    label: "AT",
+                    sm: true,
+                  },
+                  {
+                    className: "bg-ps-warning-bg text-ps-text-primary",
+                    label: "ML",
+                    sm: true,
+                  },
                 ] as const
-              ).map(({ bg, label, color, sm }, idx) => (
+              ).map(({ className, label, sm }, idx) => (
                 <span
                   key={label}
-                  className="w-6 h-6 rounded-md inline-flex items-center justify-center text-[9px] font-extrabold border-[1.5px] border-ps-surface tracking-[-0.02em]"
+                  className={cn(
+                    "w-6 h-6 rounded-md inline-flex items-center justify-center text-[9px] font-extrabold border-[1.5px] border-ps-surface tracking-[-0.02em]",
+                    className,
+                  )}
                   style={{
-                    background: bg,
-                    color,
                     marginLeft: idx === 0 ? 0 : -6,
                     fontSize: sm ? 9 : 11,
                   }}
@@ -466,8 +430,8 @@ function NicheCard({
                 </span>
               ))}
               <span
-                className="w-6 h-6 rounded-md inline-flex items-center justify-center bg-ps-navy border-[1.5px] border-ps-surface"
-                style={{ marginLeft: -6, color: "var(--ps-cyan)" }}
+                style={{ marginLeft: -6 }}
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center bg-ps-navy border-[1.5px] border-ps-surface text-ps-cyan"
               >
                 <Globe size={12} strokeWidth={2} />
               </span>
@@ -498,11 +462,10 @@ function NicheCard({
   );
 }
 
-function AddNicheCard({ onClick }: { onClick: () => void }) {
+function AddNicheCard() {
   const [hov, setHov] = useState(false);
   return (
     <article
-      onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       className={cn(
@@ -510,7 +473,6 @@ function AddNicheCard({ onClick }: { onClick: () => void }) {
         hov ? "border-ps-border-strong" : "border-ps-border-default",
       )}
       style={{
-        background: hov ? T.addCardHoverBg : T.addCardBg,
         transform: hov ? "translateY(-1px)" : "none",
       }}
     >
@@ -534,7 +496,7 @@ function AddNicheCard({ onClick }: { onClick: () => void }) {
           ] as const
         ).map(({ Icon, label }) => (
           <span key={label} className="inline-flex items-center gap-1">
-            <Icon size={12} strokeWidth={2} color="var(--ps-text-secondary)" />
+            <Icon size={12} strokeWidth={2} />
             <b className="font-medium text-ps-text-secondary">{label}</b>
           </span>
         ))}
@@ -555,9 +517,6 @@ function AddFieldButton() {
         "w-full h-10 rounded-lg text-ps-cyan text-[13px] font-semibold cursor-pointer inline-flex items-center justify-center gap-2 transition-all duration-150 border-[1.5px] border-dashed",
         hov ? "border-ps-border-active" : "border-ps-border-medium",
       )}
-      style={{
-        background: hov ? T.hoverBgSm : "transparent",
-      }}
     >
       <Plus size={14} strokeWidth={2.5} />
       Agregar campo personalizado
@@ -609,8 +568,8 @@ function CustomFieldsCard({ contextLabel }: { contextLabel: string }) {
                     "text-[10.5px] font-bold tracking-[0.1em] uppercase text-ps-tertiary py-3 px-[14px] border-b border-ps-border-subtle",
                     col === "" ? "text-right" : "text-left",
                     col === "Nombre del campo" && "pl-5",
+                    "bg-ps-surface",
                   )}
-                  style={{ background: T.chipBg }}
                 >
                   {col}
                 </th>
@@ -645,31 +604,23 @@ function FieldRow({
     <tr
       onMouseEnter={() => setRowHov(true)}
       onMouseLeave={() => setRowHov(false)}
-      className="transition-colors duration-150"
-      style={{
-        background: rowHov ? T.tableRowHover : "transparent",
-      }}
+      className={cn(
+        "transition-colors duration-150",
+        rowHov && "bg-ps-info-bg",
+      )}
     >
-      <td
-        className="py-3 pl-5 pr-[14px] text-[13px] text-ps-text-primary align-middle"
-        style={{ borderBottom: `1px solid ${T.tableDivider}` }}
-      >
+      <td className="py-3 pl-5 pr-[14px] text-[13px] text-ps-text-primary align-middle border-b border-ps-border-subtle">
         <span className="flex items-center gap-[10px]">
-          <field.icon
-            size={14}
-            strokeWidth={2}
-            color="var(--ps-text-tertiary)"
-          />
+          <field.icon size={14} strokeWidth={2} />
           <span className="font-medium">{field.name}</span>
         </span>
       </td>
-      <td
-        className="py-3 px-[14px] align-middle"
-        style={{ borderBottom: `1px solid ${T.tableDivider}` }}
-      >
+      <td className="py-3 px-[14px] align-middle border-b border-ps-border-subtle">
         <span
-          className="inline-flex items-center text-[11px] font-semibold px-2 py-[3px] rounded-full tracking-[-0.005em] font-mono"
-          style={{ background: chip.bgVar, color: chip.colorVar }}
+          className={cn(
+            "inline-flex items-center text-[11px] font-semibold px-2 py-[3px] rounded-full tracking-[-0.005em] font-mono",
+            chip.className,
+          )}
         >
           {chip.label}
         </span>
@@ -677,8 +628,7 @@ function FieldRow({
       {([field.required, field.visible] as const).map((val, i) => (
         <td
           key={i}
-          className="py-3 px-[14px] align-middle"
-          style={{ borderBottom: `1px solid ${T.tableDivider}` }}
+          className="py-3 px-[14px] align-middle border-b border-ps-border-subtle"
         >
           <span
             className={cn(
@@ -695,10 +645,7 @@ function FieldRow({
           </span>
         </td>
       ))}
-      <td
-        className="py-3 pr-5 pl-[14px] text-right align-middle"
-        style={{ borderBottom: `1px solid ${T.tableDivider}` }}
-      >
+      <td className="py-3 pr-5 pl-[14px] text-right align-middle border-b border-ps-border-subtle">
         <div className="inline-flex gap-1">
           <IconBtn icon={Pencil} aria-label="Editar" />
           <IconBtn icon={Trash2} aria-label="Eliminar" danger />
@@ -734,13 +681,12 @@ function VerticalSection({
   defaultExpanded = false,
 }: {
   vertical: CategoryTreeNode;
-  children: React.ReactNode;
+  children: ReactNode;
   activeCount: number;
   leafCount: number;
   defaultExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const Icon = getNicheIcon(vertical.slug);
 
   return (
     <section className="rounded-xl border border-ps-border-subtle overflow-hidden">
@@ -769,7 +715,7 @@ function VerticalSection({
             "bg-ps-info-bg border-ps-border-medium text-ps-cyan",
           )}
         >
-          <Icon size={22} strokeWidth={1.75} />
+          <NicheIcon slug={vertical.slug} />
         </span>
 
         {/* Name and stats */}
@@ -830,9 +776,7 @@ export default function CategoriesPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="mb-4" style={{ color: T.error }}>
-          Error al cargar las categorías
-        </p>
+        <p className="mb-4 text-ps-error">Error al cargar las categorías</p>
         <button
           onClick={() => window.location.reload()}
           className="px-5 py-2 bg-ps-cyan text-ps-bg-base border-0 rounded-lg cursor-pointer font-semibold text-[13px]"
@@ -879,7 +823,7 @@ export default function CategoriesPage() {
                   onToggle={handleToggle}
                 />
               ))}
-              <AddNicheCard onClick={() => {}} />
+              <AddNicheCard />
             </VerticalSection>
           );
         })}
