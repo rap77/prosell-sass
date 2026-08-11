@@ -8,6 +8,7 @@ AGGRESSIVE MODE: Generates dependencies for ALL tasks, not just completed ones.
 
 import re
 from pathlib import Path
+from typing import ClassVar
 
 
 class Task:
@@ -66,7 +67,7 @@ class DependencyGenerator:
     """Generates dependencies based on clean architecture patterns."""
 
     # Layer ordering (lower number = earlier in dependency chain)
-    LAYER_ORDER = {
+    LAYER_ORDER: ClassVar[dict[str, int]] = {
         "migration": 1,
         "entity": 2,
         "enum": 3,
@@ -95,7 +96,7 @@ class DependencyGenerator:
     }
 
     # Keywords for each layer (expanded for better matching)
-    LAYER_KEYWORDS = {
+    LAYER_KEYWORDS: ClassVar[dict[str, list[str]]] = {
         "migration": ["alembic", "migration", "create table", "add column", "add index"],
         "entity": ["entity", "aggregate", "create .* entity", "create .* aggregate"],
         "enum": ["enum", "create enum", "create status", "create type"],
@@ -359,7 +360,7 @@ def find_usecase_task(
             return task
 
     # If not found, search across all prefixes (cross-prefix dependency)
-    for prefix, task_list in all_tasks.items():
+    for task_list in all_tasks.values():
         for task in task_list:
             if f"{usecase_name.lower()}usecase" in task.description.lower():
                 return task
@@ -438,8 +439,6 @@ def generate_dependencies_for_task(
         return [task.existing_requires]
 
     dependencies = []
-    description_lower = task.description.lower()
-
     layer, layer_order = DependencyGenerator.detect_layer(task.description)
 
     # AGGRESSIVE: Generate sequential dependency if no clear pattern
@@ -609,7 +608,7 @@ def update_todo_md(file_path: Path, lines: list[str], tasks: dict[str, list[Task
     for line_num, line in enumerate(lines, 1):
         # Check if this line has a task
         task_found = None
-        for prefix, task_list in tasks.items():
+        for task_list in tasks.values():
             for task in task_list:
                 if task.line_number == line_num:
                     task_found = task
@@ -670,7 +669,7 @@ def main():
     skipped_count = 0
     no_deps_count = 0
 
-    for prefix, task_list in tasks.items():
+    for task_list in tasks.values():
         for task in task_list:
             if task.existing_requires:
                 skipped_count += 1

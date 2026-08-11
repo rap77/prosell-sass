@@ -70,9 +70,8 @@ class DependencyValidator:
                     elif tag_type == "parallel-with:":
                         deps = [d.strip() for d in tag_value.split(",")]
                         parallel_with.extend(deps)
-                    elif tag_type == "requires-all:":
-                        if tag_value == "previous":
-                            requires_all = True
+                    elif tag_type == "requires-all:" and tag_value == "previous":
+                        requires_all = True
 
                 self.subtasks[subtask_id] = {
                     "task_id": parent_task,
@@ -124,9 +123,8 @@ class DependencyValidator:
                     elif tag_type == "parallel-with:":
                         deps = [d.strip() for d in tag_value.split(",")]
                         parallel_with.extend(deps)
-                    elif tag_type == "requires-all:":
-                        if tag_value == "previous":
-                            requires_all = True
+                    elif tag_type == "requires-all:" and tag_value == "previous":
+                        requires_all = True
 
                 self.subtasks[subtask_id] = {
                     "task_id": current_task,
@@ -147,21 +145,12 @@ class DependencyValidator:
             # Extract prefix correctly for multi-level IDs
             # e.g., "A1.01" -> "A1", "B2.3.05" -> "B2.3"
             parts = subtask_id.split(".")
-            if len(parts) == 3:
-                # 3 levels: B2.3.05 -> prefix is B2.3
-                task_prefix = ".".join(parts[:-1])
-            else:
-                # 2 levels: A1.01 -> prefix is A1
-                task_prefix = parts[0]
+            task_prefix = ".".join(parts[:-1]) if len(parts) == 3 else parts[0]
 
             # Check requires
             for req in subtask["requires"]:
                 # Try to find the referenced subtask
-                if "." not in req:
-                    # Reference without subtask number, try same task
-                    req_full = f"{task_prefix}.{req}"
-                else:
-                    req_full = req
+                req_full = f"{task_prefix}.{req}" if "." not in req else req
 
                 if req_full not in all_subtasks:
                     self.errors.append(
@@ -170,10 +159,7 @@ class DependencyValidator:
 
             # Check parallel_with
             for pw in subtask["parallel_with"]:
-                if "." not in pw:
-                    pw_full = f"{task_prefix}.{pw}"
-                else:
-                    pw_full = pw
+                pw_full = f"{task_prefix}.{pw}" if "." not in pw else pw
 
                 if pw_full not in all_subtasks:
                     self.warnings.append(
@@ -221,7 +207,7 @@ class DependencyValidator:
                     elif req_full in rec_stack:
                         # Found a cycle
                         cycle_start = path.index(req_full)
-                        cycle = path[cycle_start:] + [req_full]
+                        cycle = [*path[cycle_start:], req_full]
                         cycles.append(cycle)
                         return True
 
@@ -260,10 +246,9 @@ class DependencyValidator:
                     task_obj = self.subtasks[task]
                     # Check if all tasks in this group are marked as parallel with each other
                     for other in tasks_list:
-                        if other != task:
-                            if other not in task_obj["parallel_with"]:
-                                already_parallel = False
-                                break
+                        if other != task and other not in task_obj["parallel_with"]:
+                            already_parallel = False
+                            break
                     if not already_parallel:
                         break
 

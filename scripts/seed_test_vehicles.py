@@ -181,10 +181,10 @@ async def main():
     # Get the admin user's tenant_id (created in previous session)
     # Admin user ID: 68a2323a-0254-48a4-a2c1-9ff0e29269d9
     # For the admin user, tenant_id equals user_id
-    TENANT_ID = "68a2323a-0254-48a4-a2c1-9ff0e29269d9"
+    tenant_id = "68a2323a-0254-48a4-a2c1-9ff0e29269d9"
 
     async with get_async_session() as session:
-        created_count = await create_vehicles(session, TENANT_ID)
+        created_count = await create_vehicles(session, tenant_id)
 
     print(f"\n✅ Successfully created {created_count} test vehicles!")
     print(f"Total vehicles in database: {len(TEST_VEHICLES)}")

@@ -246,7 +246,7 @@ fi
 # The running container may not know the revisions being deployed.
 log_info "Checking migration status..."
 if docker ps --format '{{.Names}}' | grep -q '^prosell-prod-api$'; then
-  docker exec prosell-prod-api uv run alembic current || \
+  docker exec prosell-prod-api alembic current || \
     log_warning "Could not read the current revision from the running API"
   log_info "  → pending migrations will be checked from the newly built image"
 else
@@ -363,20 +363,20 @@ fi
 
 log_info "Checking migration status from the newly built API image..."
 if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
-  run --rm --no-deps api uv run alembic current; then
+  run --rm --no-deps api alembic current; then
   log_error "Could not read the current Alembic revision from the new image."
   log_error "Aborting before restarting application services."
   exit 1
 fi
 
 if docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
-  run --rm --no-deps api uv run alembic current --check-heads; then
+  run --rm --no-deps api alembic current --check-heads; then
   log_success "Alembic is already at head — no migration window needed."
 else
   log_warning "Pending migrations detected. Entering maintenance window."
   log_info "Reviewing the pending migration range for destructive revisions..."
   if ! PENDING_HISTORY="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
-    run --rm --no-deps api uv run alembic history -r current:heads)"; then
+    run --rm --no-deps api alembic history -r current:heads)"; then
     log_error "Could not read the pending Alembic history. Aborting safely."
     exit 1
   fi
@@ -402,7 +402,7 @@ else
 
   log_info "Applying migrations from the newly built API image..."
   if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
-    run --rm --no-deps api uv run alembic upgrade head; then
+    run --rm --no-deps api alembic upgrade head; then
     log_error "alembic upgrade head FAILED. Application services remain stopped."
     log_error "Your backup is at the most recent file in $BACKUP_DIR/"
     log_error "Restore with: gunzip < $BACKUP_DIR/<file>.sql.gz | docker exec -i prosell-prod-db psql -U $POSTGRES_USER -d $POSTGRES_DB"
@@ -411,7 +411,7 @@ else
   fi
 
   if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
-    run --rm --no-deps api uv run alembic current --check-heads; then
+    run --rm --no-deps api alembic current --check-heads; then
     log_error "Alembic did not reach all heads after upgrade. Application services remain stopped."
     record_deploy "FAILED" "alembic did not reach head at $POST_PULL_SHA"
     exit 1
@@ -520,7 +520,7 @@ if ! docker exec prosell-prod-db \
      | grep -q '^1$'; then
   log_warning "==========================================="
   log_warning "FIRST DEPLOY DETECTED — admin user is missing"
-  log_warning "Run: docker exec prosell-prod-api uv run python /app/scripts/init_data.py"
+  log_warning "Run: docker exec prosell-prod-api python /app/scripts/init_data.py"
   log_warning "Then change the default password immediately."
   log_warning "==========================================="
 fi
