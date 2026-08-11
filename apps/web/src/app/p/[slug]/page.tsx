@@ -53,7 +53,9 @@ async function getImageUrls(slug: string): Promise<ImageUrlsData | null> {
     const res = await fetch(
       `${API_URL}/api/v1/public/products/${slug}/image-urls`,
       {
-        next: { revalidate: 300 }, // Cache signed URLs for 5 minutes
+        // The gallery changes as images are uploaded or removed; cached signed
+        // URLs can preserve an older, incomplete image list in the public page.
+        cache: "no-store",
       },
     );
     if (!res.ok) return null;

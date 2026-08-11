@@ -262,14 +262,14 @@ export default function AdminNewDealerPage() {
               value={brokerName}
               onChange={(e) => setBrokerName(e.target.value)}
               placeholder="Nombre"
-              className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary"
+              className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-elevated text-ps-text-primary"
             />
             <input
               type="email"
               value={brokerEmail}
               onChange={(e) => setBrokerEmail(e.target.value)}
               placeholder="Email"
-              className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary"
+              className="flex-1 h-9 px-3 rounded-lg border border-ps-border-default bg-ps-elevated text-ps-text-primary"
             />
           </div>
           {/* ponytail: stack on mobile, horizontal on desktop */}
@@ -286,7 +286,7 @@ export default function AdminNewDealerPage() {
               }}
               placeholder="+54 9 11 1234-5678 (opcional)"
               className={cn(
-                "h-9 flex-1 rounded-lg border bg-ps-bg-elevated px-3 text-ps-text-primary",
+                "h-9 flex-1 rounded-lg border bg-ps-elevated px-3 text-ps-text-primary",
                 !isValidPhone(brokerPhone)
                   ? "border-ps-error"
                   : "border-ps-border-default",
@@ -300,7 +300,7 @@ export default function AdminNewDealerPage() {
                 !brokerEmail.trim() ||
                 !isValidPhone(brokerPhone)
               }
-              className="h-9 px-3 rounded-lg border border-ps-border-default bg-ps-bg-elevated text-ps-text-primary cursor-pointer flex items-center gap-1"
+              className="h-9 px-3 rounded-lg border border-ps-border-default bg-ps-elevated text-ps-text-primary cursor-pointer flex items-center gap-1"
             >
               <Plus size={14} /> Agregar
             </button>
@@ -315,7 +315,7 @@ export default function AdminNewDealerPage() {
               {brokers.map((broker) => (
                 <div
                   key={broker.email}
-                  className="flex items-center justify-between rounded-lg border border-ps-border-default bg-ps-bg-elevated px-3 py-2 text-xs"
+                  className="flex items-center justify-between rounded-lg border border-ps-border-default bg-ps-elevated px-3 py-2 text-xs"
                 >
                   <div>
                     <div className="font-semibold">{broker.name}</div>

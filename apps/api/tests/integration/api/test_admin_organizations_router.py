@@ -145,6 +145,39 @@ async def test_admin_list_includes_product_counts_by_vertical(
 
 
 @pytest.mark.asyncio
+async def test_admin_list_includes_enabled_verticals_without_products(
+    async_client_as_admin: AsyncClient,
+    root_category: CategoryModel,
+) -> None:
+    """Organization cards show enabled verticals even before inventory exists."""
+    create_response = await async_client_as_admin.post(
+        "/api/v1/admin/organizations",
+        json={
+            "name": "Zero Inventory Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "zero-inventory@x.com",
+        },
+    )
+    assert create_response.status_code == 201
+    organization_id = create_response.json()["organization_id"]
+
+    response = await async_client_as_admin.get("/api/v1/admin/organizations")
+
+    assert response.status_code == 200
+    organization = next(
+        org for org in response.json()["organizations"] if org["id"] == organization_id
+    )
+    assert organization["product_count"] == 0
+    assert organization["vertical_product_counts"] == [
+        {
+            "vertical_id": str(root_category.id),
+            "vertical_name": root_category.name,
+            "product_count": 0,
+        }
+    ]
+
+
+@pytest.mark.asyncio
 async def test_list_dealers_exposes_owner_email_from_latest_invitation(
     async_client_as_admin: AsyncClient,
     root_category: CategoryModel,

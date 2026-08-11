@@ -110,7 +110,7 @@ describe("AdminNewDealerPage", () => {
 
     expect(
       screen.getByText("Ana Broker").closest("div.rounded-lg"),
-    ).toHaveClass("bg-ps-bg-elevated");
+    ).toHaveClass("bg-ps-elevated");
   });
 
   it("does not render the legacy 'Email del owner' required input", () => {

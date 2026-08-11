@@ -91,6 +91,38 @@ interface CategorySchemaEditorProps {
   isReadOnly?: boolean;
 }
 
+/**
+ * JSONB object keys are not an ordering contract. Persist the order shown in
+ * the editor with each group so product forms can render it deterministically.
+ */
+export function buildGroupsWithFieldOrder(
+  groups: ReadonlyArray<
+    Pick<AttributeGroup, "key" | "label" | "order" | "fields">
+  >,
+  rows: ReadonlyArray<Pick<FieldRow, "key" | "group">>,
+): AttributeGroup[] {
+  return groups
+    .filter((group) => group.key.trim() && group.label.trim())
+    .map((group) => {
+      const key = group.key.trim();
+      const legacyFields = (group.fields ?? []).filter((fieldKey) =>
+        rows.some((row) => row.key.trim() === fieldKey && !row.group?.trim()),
+      );
+      const orderedFields = [
+        ...rows
+          .filter((row) => row.group?.trim() === key && row.key.trim())
+          .map((row) => row.key.trim()),
+        ...legacyFields,
+      ];
+      return {
+        key,
+        label: group.label,
+        order: group.order,
+        fields: [...new Set(orderedFields)],
+      };
+    });
+}
+
 const RENDER_AS_OPTIONS: readonly RenderAs[] = RenderAsSchema.options;
 
 function SortableRow({
@@ -480,6 +512,7 @@ export function CategorySchemaEditor({
   };
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
 
   // ponytail: detect duplicate keys for validation
   const duplicateKeys = useMemo(() => {
@@ -567,16 +600,6 @@ export function CategorySchemaEditor({
         ),
     );
 
-  const toGroupList = (gs: GroupRow[]): AttributeGroup[] =>
-    gs
-      .filter((g) => g.key.trim() && g.label.trim())
-      .map(({ key, label, order, fields }) => ({
-        key: key.trim(),
-        label,
-        order,
-        ...(fields && fields.length > 0 ? { fields } : {}),
-      }));
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -586,11 +609,11 @@ export function CategorySchemaEditor({
     const overRow = rows.find((r) => r._id === over.id);
 
     if (activeRow && overRow) {
-      // ponytail: cross-group detection — if target row is in different group, move field to that group
       const activeGroup = activeRow.group?.trim() || "__ungrouped__";
       const overGroup = overRow.group?.trim() || "__ungrouped__";
-      const crossGroup = activeGroup !== overGroup;
+      if (activeGroup !== overGroup) return;
 
+      setIsDirty(true);
       setRows((prev) => {
         // Find indices within the SAME group's section for proper ordering
         const groupRows = prev.filter(
@@ -607,13 +630,9 @@ export function CategorySchemaEditor({
         );
 
         // Insert at the position after 'over'
-        const updated: FieldRow = crossGroup
-          ? { ...activeRow, group: overRow.group }
-          : activeRow;
-
         return [
           ...withoutActive.slice(0, overIndexInFull + 1),
-          updated,
+          activeRow,
           ...withoutActive.slice(overIndexInFull + 1),
         ];
       });
@@ -628,6 +647,7 @@ export function CategorySchemaEditor({
       ) {
         const oldIndex = prev.findIndex((g) => g._id === active.id);
         const newIndex = prev.findIndex((g) => g._id === over.id);
+        setIsDirty(true);
         return arrayMove(prev, oldIndex, newIndex).map((g, index) => ({
           ...g,
           order: index,
@@ -638,6 +658,7 @@ export function CategorySchemaEditor({
   };
 
   const handleAdd = () => {
+    setIsDirty(true);
     setRows((prev) => [
       ...prev,
       { _id: newId(), key: "", type: "string", required: false },
@@ -645,14 +666,17 @@ export function CategorySchemaEditor({
   };
 
   const handleUpdate = (id: string, patch: Partial<FieldRow>) => {
+    setIsDirty(true);
     setRows((prev) => prev.map((r) => (r._id === id ? { ...r, ...patch } : r)));
   };
 
   const handleDelete = (id: string) => {
+    setIsDirty(true);
     setRows((prev) => prev.filter((r) => r._id !== id));
   };
 
   const handleAddGroup = () => {
+    setIsDirty(true);
     setGroups((prev) => [
       ...prev,
       { _id: newId(), key: "", label: "", order: prev.length },
@@ -660,6 +684,7 @@ export function CategorySchemaEditor({
   };
 
   const handleUpdateGroup = (id: string, patch: Partial<GroupRow>) => {
+    setIsDirty(true);
     setGroups((prev) =>
       prev.map((g) => (g._id === id ? { ...g, ...patch } : g)),
     );
@@ -682,6 +707,7 @@ export function CategorySchemaEditor({
 
   const confirmDeleteGroup = () => {
     if (!pendingGroupDeletion) return;
+    setIsDirty(true);
     setGroups((prev) => prev.filter((g) => g._id !== pendingGroupDeletion._id));
     setPendingGroupDeletion(null);
   };
@@ -691,7 +717,7 @@ export function CategorySchemaEditor({
       groups.map((g) => g.key.trim()).filter((key) => key.length > 0),
     );
     const schemaMap = toSchemaMap(rows, groupKeySet);
-    const groupList = toGroupList(groups);
+    const groupList = buildGroupsWithFieldOrder(groups, rows);
     const removedGroups = groupList.filter(
       (g) =>
         !groupKeySet.has(g.key) ||
@@ -743,6 +769,7 @@ export function CategorySchemaEditor({
       );
       setMigrationWarnings([]);
       setShowMigrationModal(false);
+      setIsDirty(false);
     } catch (err) {
       if (err instanceof Error) {
         try {
@@ -766,7 +793,13 @@ export function CategorySchemaEditor({
       {/* Groups panel */}
       <div className="rounded border p-3">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium">Attribute Groups</span>
+          <div>
+            <span className="text-sm font-medium">Grupos del formulario</span>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              El orden de los grupos define las secciones del formulario de
+              producto.
+            </p>
+          </div>
           {!isReadOnly && (
             <Button
               type="button"
@@ -869,6 +902,10 @@ export function CategorySchemaEditor({
       </div>
 
       {/* Fields by group */}
+      <div className="rounded border border-dashed px-3 py-2 text-xs text-muted-foreground">
+        Arrastrá campos para ordenar dentro de su grupo. Para mover un campo a
+        otro grupo, usá el selector de grupo en su fila.
+      </div>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -921,6 +958,7 @@ export function CategorySchemaEditor({
                       className="ml-auto h-6 px-2"
                       onClick={(e) => {
                         e.stopPropagation();
+                        setIsDirty(true);
                         setRows((prev) => [
                           ...prev,
                           {
@@ -1012,6 +1050,9 @@ export function CategorySchemaEditor({
           >
             {patchSchema.isPending ? "Saving…" : "Save"}
           </Button>
+          <span className="text-sm text-muted-foreground" role="status">
+            {isDirty ? "Cambios sin guardar" : "Todos los cambios guardados"}
+          </span>
           {hasValidationErrors && (
             <span className="text-sm text-destructive">
               Fix duplicate or empty keys before saving

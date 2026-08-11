@@ -106,15 +106,20 @@ async def list_organizations(current_user: CurrentUser, db: DbSession) -> Organi
     org_repo = SqlAlchemyOrganizationRepository(db)
     broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
     invitation_repo = SqlAlchemyOrganizationInvitationRepository(db)
+    vertical_repo = SqlAlchemyOrganizationVerticalRepository(db)
     organizations = await org_repo.get_all(tenant_id=None)
 
     # ponytail: N+1 is fine for admin dashboard with ~50 orgs max
     product_counts_by_organization: dict[UUID, dict[UUID, int]] = {}
+    enabled_vertical_ids_by_organization: dict[UUID, list[UUID]] = {}
     root_category_ids: set[UUID] = set()
     for org in organizations:
         product_counts = await _count_products_per_vertical(db, org.id, org.tenant_id)
+        enabled_vertical_ids = await vertical_repo.list_root_category_ids(org.id)
         product_counts_by_organization[org.id] = product_counts
+        enabled_vertical_ids_by_organization[org.id] = enabled_vertical_ids
         root_category_ids.update(product_counts)
+        root_category_ids.update(enabled_vertical_ids)
 
     category_names: dict[UUID, str] = {}
     if root_category_ids:
@@ -131,16 +136,17 @@ async def list_organizations(current_user: CurrentUser, db: DbSession) -> Organi
         count = await broker_repo.count_brokers(org.id)
         invitation = await invitation_repo.get_latest_by_organization(org.id, org.tenant_id)
         product_counts = product_counts_by_organization[org.id]
+        enabled_vertical_ids = enabled_vertical_ids_by_organization[org.id]
+        visible_vertical_ids = set(enabled_vertical_ids) | set(product_counts)
         vertical_product_counts = sorted(
             [
                 VerticalProductCountDTO(
                     vertical_id=vertical_id,
                     vertical_name=vertical_name,
-                    product_count=product_count,
+                    product_count=product_counts.get(vertical_id, 0),
                 )
-                for vertical_id, product_count in product_counts.items()
+                for vertical_id in visible_vertical_ids
                 if (vertical_name := category_names.get(vertical_id)) is not None
-                and product_count > 0
             ],
             key=lambda vertical: vertical.vertical_name,
         )
