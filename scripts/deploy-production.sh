@@ -43,6 +43,22 @@ CONFIRM_PHRASE="deploy-prod"
 BRANCH="main"
 SKIP_BUILD=false
 NO_BACKUP=false
+MIGRATIONS_APPLIED=false
+
+# These revisions alter or delete existing data. A generic `upgrade head` must
+# never apply them to a populated production database without a separately
+# reviewed migration plan and a tested restore.
+DESTRUCTIVE_REVISIONS=(
+  "20f24e79033e"
+  "recreate_facebook_tables"
+  "c3schema001"
+  "c3schema_cleanup"
+  "fix_publications_schema"
+  "fix_teams_schema_align"
+  "refactor_brokers_20260707"
+  "20260717_0001"
+  "20260718_0001"
+)
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -226,25 +242,16 @@ if [[ -z "$PENDING_COMMITS" ]]; then
   log_warning "This will re-deploy the current code (still requires confirmation)."
 fi
 
-# Pending Alembic migrations. We read revisions from the running API container
-# so we don't need alembic installed on the host. If the container is down we
-# skip the preview and let the post-deploy migration step handle it.
+# The exact migration check happens after the build, from the new API image.
+# The running container may not know the revisions being deployed.
 log_info "Checking migration status..."
 if docker ps --format '{{.Names}}' | grep -q '^prosell-prod-api$'; then
-  CURRENT_REV="$(docker exec prosell-prod-api uv run alembic current 2>/dev/null \
-    | grep -oE '[a-f0-9]{12}' | head -1 || echo 'unknown')"
-  HEAD_REV="$(docker exec prosell-prod-api uv run alembic heads 2>/dev/null \
-    | grep -oE '[a-f0-9]{12}' | head -1 || echo 'unknown')"
-  log_info "  alembic current: $CURRENT_REV"
-  log_info "  alembic head:    $HEAD_REV"
-  if [[ "$CURRENT_REV" != "$HEAD_REV" && "$HEAD_REV" != "unknown" ]]; then
-    log_info "  → migrations will be applied"
-  else
-    log_info "  → no migrations pending"
-  fi
+  docker exec prosell-prod-api uv run alembic current || \
+    log_warning "Could not read the current revision from the running API"
+  log_info "  → pending migrations will be checked from the newly built image"
 else
   log_warning "prosell-prod-api is not running — cannot preview migration status"
-  log_warning "(this is expected on a first deploy)"
+  log_warning "(this is expected on a first deploy; migration status will be checked after build)"
 fi
 
 # Show currently running containers for context
@@ -351,6 +358,70 @@ else
 fi
 
 # =============================================================================
+# MIGRATIONS — before new application containers serve traffic
+# =============================================================================
+
+log_info "Checking migration status from the newly built API image..."
+if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
+  run --rm --no-deps api uv run alembic current; then
+  log_error "Could not read the current Alembic revision from the new image."
+  log_error "Aborting before restarting application services."
+  exit 1
+fi
+
+if docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
+  run --rm --no-deps api uv run alembic current --check-heads; then
+  log_success "Alembic is already at head — no migration window needed."
+else
+  log_warning "Pending migrations detected. Entering maintenance window."
+  log_info "Reviewing the pending migration range for destructive revisions..."
+  if ! PENDING_HISTORY="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
+    run --rm --no-deps api uv run alembic history -r current:heads)"; then
+    log_error "Could not read the pending Alembic history. Aborting safely."
+    exit 1
+  fi
+
+  DESTRUCTIVE_PENDING=()
+  for revision in "${DESTRUCTIVE_REVISIONS[@]}"; do
+    if grep -Fq "$revision" <<< "$PENDING_HISTORY"; then
+      DESTRUCTIVE_PENDING+=("$revision")
+    fi
+  done
+
+  if [[ "${#DESTRUCTIVE_PENDING[@]}" -gt 0 ]]; then
+    log_error "Refusing to apply destructive migrations to production automatically:"
+    printf '  %s\n' "${DESTRUCTIVE_PENDING[@]}"
+    log_error "No application service has been stopped and no migration was applied."
+    log_error "Create a reviewed data-export and restoration plan for these revisions first."
+    record_deploy "ABORTED" "destructive migrations pending: ${DESTRUCTIVE_PENDING[*]}"
+    exit 1
+  fi
+
+  log_warning "Stopping API, worker, and web before changing the database..."
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" stop api worker web
+
+  log_info "Applying migrations from the newly built API image..."
+  if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
+    run --rm --no-deps api uv run alembic upgrade head; then
+    log_error "alembic upgrade head FAILED. Application services remain stopped."
+    log_error "Your backup is at the most recent file in $BACKUP_DIR/"
+    log_error "Restore with: gunzip < $BACKUP_DIR/<file>.sql.gz | docker exec -i prosell-prod-db psql -U $POSTGRES_USER -d $POSTGRES_DB"
+    record_deploy "FAILED" "alembic upgrade failed at $POST_PULL_SHA"
+    exit 1
+  fi
+
+  if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" \
+    run --rm --no-deps api uv run alembic current --check-heads; then
+    log_error "Alembic did not reach all heads after upgrade. Application services remain stopped."
+    record_deploy "FAILED" "alembic did not reach head at $POST_PULL_SHA"
+    exit 1
+  fi
+
+  MIGRATIONS_APPLIED=true
+  log_success "Migrations applied and verified at head."
+fi
+
+# =============================================================================
 # DEPLOY — bring up changed services
 # =============================================================================
 
@@ -431,32 +502,6 @@ else
 fi
 
 # =============================================================================
-# MIGRATIONS — only run if pending
-# =============================================================================
-
-log_info "Re-checking migration status post-deploy..."
-CURRENT_REV="$(docker exec prosell-prod-api uv run alembic current 2>/dev/null \
-  | grep -oE '[a-f0-9]{12}' | head -1 || echo 'unknown')"
-HEAD_REV="$(docker exec prosell-prod-api uv run alembic heads 2>/dev/null \
-  | grep -oE '[a-f0-9]{12}' | head -1 || echo 'unknown')"
-
-if [[ "$CURRENT_REV" == "unknown" || "$HEAD_REV" == "unknown" ]]; then
-  log_error "Could not read alembic revisions. Skipping migrations — investigate manually."
-elif [[ "$CURRENT_REV" == "$HEAD_REV" ]]; then
-  log_success "Alembic already at head ($HEAD_REV) — no migrations to apply"
-else
-  log_info "Applying migrations: $CURRENT_REV → $HEAD_REV"
-  if ! docker exec prosell-prod-api uv run alembic upgrade head; then
-    log_error "alembic upgrade head FAILED."
-    log_error "Your backup is at the most recent file in $BACKUP_DIR/"
-    log_error "Restore with: gunzip < $BACKUP_DIR/<file>.sql.gz | docker exec -i prosell-prod-db psql -U $POSTGRES_USER -d $POSTGRES_DB"
-    record_deploy "FAILED" "alembic upgrade failed at $POST_PULL_SHA"
-    exit 1
-  fi
-  log_success "Migrations applied."
-fi
-
-# =============================================================================
 # POST-DEPLOY
 # =============================================================================
 
@@ -498,9 +543,11 @@ if [[ "$NO_BACKUP" == false ]]; then
 fi
 echo ""
 log_info "ROLLBACK (if something is wrong):"
-log_info "  cd $PROJECT_ROOT"
-log_info "  git checkout $PRE_PULL_SHA"
-log_info "  $0 --skip-build"
+if [[ "$MIGRATIONS_APPLIED" == true ]]; then
+  log_warning "  Migrations were applied: restore the DB backup before rolling code back."
+  log_info "  gunzip < $BACKUP_FILE | docker exec -i prosell-prod-db psql -U $POSTGRES_USER -d $POSTGRES_DB"
+fi
+log_info "  cd $PROJECT_ROOT && git checkout $PRE_PULL_SHA && $0 --skip-build"
 echo ""
 log_info "Logs:"
 log_info "  All:     docker compose -f $COMPOSE_FILE logs -f"

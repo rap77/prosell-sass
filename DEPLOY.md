@@ -152,7 +152,7 @@ Deberías ver:
 
 ## Deploys posteriores (actualización de código)
 
-**Usá el script automatizado** — tiene pre-flight checks, backup de DB, detección de migraciones pendientes, health checks por dominio público, y muestra el plan de rollback al final:
+**Usá el script automatizado** — tiene pre-flight checks, backup de DB, detección de migraciones pendientes desde la imagen nueva, health checks por dominio público, y muestra el plan de rollback al final. Si hay migraciones pendientes, entra en una ventana breve de mantenimiento: detiene API, worker y web, migra, verifica que Alembic llegó al head y recién entonces levanta los servicios nuevos.
 
 ```bash
 cd /opt/prosell
@@ -178,7 +178,8 @@ git pull origin main
 # Rebuild y reiniciar (zero-downtime parcial con Caddy)
 docker compose -f docker/docker-compose.prod.yml --env-file .env.prod up -d --build
 
-# Si hay migraciones nuevas
+# Sólo para un caso manual excepcional: migrar con backup tomado y servicios de app detenidos.
+# El script automatizado de arriba hace esto en el orden seguro.
 docker exec prosell-prod-api uv run alembic upgrade head
 ```
 
