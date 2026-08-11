@@ -32,6 +32,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             is_active=category.is_active,
             field_config=category.field_config,
             attribute_schema=category.attribute_schema,
+            attribute_groups=category.attribute_groups,
             presentation=category.presentation,
             created_at=category.created_at,
             updated_at=category.updated_at,
@@ -249,6 +250,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model.is_active = category.is_active
         model.field_config = category.field_config
         model.attribute_schema = category.attribute_schema
+        model.attribute_groups = category.attribute_groups
         model.presentation = category.presentation
         # Set updated_at explicitly from domain entity — onupdate="now()" string is not a valid
         # asyncpg value. The domain entity already sets updated_at = datetime.now(UTC).

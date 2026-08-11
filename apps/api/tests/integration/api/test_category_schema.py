@@ -115,6 +115,42 @@ async def test_patch_schema_additive_field_no_force_needed(
 
 
 @pytest.mark.asyncio
+async def test_patch_schema_persists_attribute_group_field_order(
+    async_client_as_admin: AsyncClient,
+    schema_category: CategoryModel,
+) -> None:
+    """The product form's explicit field order survives a schema reload."""
+    payload = {
+        "attribute_schema": {
+            "vin": {"type": "string", "required": True, "group": "basic"},
+            "year": {"type": "number", "required": False, "group": "basic"},
+        },
+        "attribute_groups": [
+            {
+                "key": "basic",
+                "label": "Basic information",
+                "order": 0,
+                "fields": ["year", "vin"],
+            }
+        ],
+    }
+    patch_response = await async_client_as_admin.patch(
+        f"/api/v1/categories/{schema_category.id}/schema",
+        json=payload,
+    )
+
+    assert patch_response.status_code == 200
+    assert patch_response.json()["attribute_groups"] == payload["attribute_groups"]
+
+    get_response = await async_client_as_admin.get(
+        f"/api/v1/categories/{schema_category.id}/schema"
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json()["attribute_groups"] == payload["attribute_groups"]
+
+
+@pytest.mark.asyncio
 async def test_patch_schema_type_change_without_force_returns_422(
     async_client_as_admin: AsyncClient,
     schema_category: CategoryModel,
