@@ -337,6 +337,30 @@ button {
   display: none;
 }
 
+/* Keep the sidebar scroll affordance visible without introducing a light track. */
+.sidebar-scrollbar {
+  scrollbar-color: var(--ps-border-medium) var(--ps-bg-sidebar);
+  scrollbar-width: thin;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: var(--ps-bg-sidebar);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--ps-border-medium);
+  border: 2px solid var(--ps-bg-sidebar);
+  border-radius: 9999px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--ps-border-strong);
+}
+
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
   -ms-overflow-style: none;

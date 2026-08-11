@@ -119,7 +119,9 @@ describe("CategorySchemaEditor", () => {
     mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
@@ -150,7 +152,9 @@ describe("CategorySchemaEditor", () => {
     mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
@@ -174,7 +178,9 @@ describe("CategorySchemaEditor", () => {
 
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Schema migration required")).toBeDefined();
@@ -202,7 +208,9 @@ describe("CategorySchemaEditor", () => {
     mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
@@ -274,7 +282,9 @@ describe("CategorySchemaEditor", () => {
     expect(screen.queryByDisplayValue("Details")).toBeNull();
     expect(screen.queryByDisplayValue("details")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
@@ -304,7 +314,9 @@ describe("CategorySchemaEditor", () => {
       screen.getByRole("button", { name: /^delete group$/i }),
     );
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalled();
@@ -335,7 +347,9 @@ describe("CategorySchemaEditor", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /guardar cambios/i }),
+    );
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(

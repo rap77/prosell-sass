@@ -179,6 +179,14 @@ describe("Sidebar Mobile Drawer", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("uses the theme-aware scrollbar in the main navigation", () => {
+    render(<Sidebar groups={["general"]} />);
+
+    expect(
+      screen.getByRole("navigation", { name: /main navigation/i }),
+    ).toHaveClass("sidebar-scrollbar");
+  });
+
   it("should have correct z-index layering (desktop z-40, mobile drawer z-[70])", () => {
     mockStore({
       sidebarCollapsed: false,

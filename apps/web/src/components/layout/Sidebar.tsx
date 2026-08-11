@@ -404,7 +404,7 @@ function SidebarNav({
 
   return (
     <nav
-      className="flex-1 overflow-y-auto px-2 py-4"
+      className="sidebar-scrollbar flex-1 overflow-y-auto px-2 py-4"
       aria-label="Main navigation"
     >
       {NAV_GROUP_ORDER.filter((group) => groupedItems[group].length > 0).map(

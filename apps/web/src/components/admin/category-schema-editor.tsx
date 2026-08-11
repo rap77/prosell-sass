@@ -1046,9 +1046,9 @@ export function CategorySchemaEditor({
             size="sm"
             onClick={() => handleSave(false)}
             disabled={patchSchema.isPending || hasValidationErrors}
-            aria-label="Save schema"
+            aria-label="Guardar cambios"
           >
-            {patchSchema.isPending ? "Saving…" : "Save"}
+            {patchSchema.isPending ? "Guardando…" : "Guardar cambios"}
           </Button>
           <span className="text-sm text-muted-foreground" role="status">
             {isDirty ? "Cambios sin guardar" : "Todos los cambios guardados"}
