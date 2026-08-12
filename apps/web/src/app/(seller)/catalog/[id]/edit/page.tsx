@@ -15,8 +15,31 @@ import { useEffect } from "react";
 import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
 import { useCategory } from "@/lib/api/categories";
 import { useProduct } from "@/lib/api/products";
+import { useOrgVerticals } from "@/lib/api/verticals";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import type { Category, CategoryNode } from "@/types/category";
+
+function findCategoryById(
+  verticals: { categories: CategoryNode[] }[],
+  categoryId: string,
+): CategoryNode | null {
+  for (const vertical of verticals) {
+    const found = findInTree(vertical.categories, categoryId);
+    if (found) return found;
+  }
+  return null;
+}
+
+function findInTree(nodes: CategoryNode[], id: string): CategoryNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children?.length) {
+      const found = findInTree(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
 function toCategoryNode(category: Category): CategoryNode {
   return {
@@ -41,12 +64,20 @@ export default function EditProductPage() {
     { internal: true },
   );
 
-  // Read the product's category directly: the navigation tree deliberately hides
-  // soft-deleted categories, but existing products must remain editable.
+  // The verticals tree holds the effective category configuration used by the
+  // form. A direct lookup is only the fallback for a soft-deleted category,
+  // which navigation intentionally excludes.
+  const { data: verticalsData, isLoading: isLoadingVerticals } =
+    useOrgVerticals(product?.organization_id ?? null);
   const { data: categoryData, isLoading: isLoadingCategory } = useCategory(
     product?.category_id,
   );
-  const category = categoryData ? toCategoryNode(categoryData) : null;
+  const categoryFromVerticals = product?.category_id
+    ? findCategoryById(verticalsData?.verticals ?? [], product.category_id)
+    : null;
+  const category =
+    categoryFromVerticals ??
+    (categoryData ? toCategoryNode(categoryData) : null);
 
   // Breadcrumb
   const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
@@ -59,9 +90,12 @@ export default function EditProductPage() {
     return () => clearBreadcrumbLabel(productId);
   }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
 
-  // Wait for product and its category schema to be fully loaded.
+  // Wait for the effective schema; only wait for the direct lookup when the
+  // category is absent from the active navigation tree.
   const isLoading =
-    isLoadingProduct || isLoadingCategory || (product && !categoryData);
+    isLoadingProduct ||
+    isLoadingVerticals ||
+    (product && !categoryFromVerticals && (isLoadingCategory || !categoryData));
 
   if (isLoading) {
     return (
