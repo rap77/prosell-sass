@@ -29,6 +29,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 VERSIONS_DIR = REPO_ROOT / "apps" / "api" / "alembic" / "versions"
+SCHEMA_REPAIR_MIGRATION = VERSIONS_DIR / "20260812_0001_create_category_schema_changes.py"
 
 
 def _migration_files() -> list[Path]:
@@ -186,6 +187,13 @@ class TestMigrationChainIntegrity:
             f"This project does not use merge migrations. Heads: {heads}. "
             f"Consolidate the timeline into a single linear chain."
         )
+
+    def test_schema_repair_migration_restores_omitted_schema_tables(self) -> None:
+        """Production migration paths must restore both historical schema branch tables."""
+        migration = SCHEMA_REPAIR_MIGRATION.read_text()
+
+        assert "CREATE TABLE IF NOT EXISTS bulk_upload_errors" in migration
+        assert "CREATE TABLE IF NOT EXISTS category_schema_changes" in migration
 
     def test_no_orphan_revisions_pointed_to_from_pyc_cache(self, migration_graph: dict) -> None:
         """Defensive: __pycache__ may still hold references to deleted migrations.
