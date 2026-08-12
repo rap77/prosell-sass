@@ -32,7 +32,7 @@ export default function SellerLayout({
         <Header />
         {/* FIXED: Added relative z-50 to create stacking context above sidebar (z-40) */}
         {/* This ensures calendar events and all interactive elements are clickable */}
-        <main className="relative z-50 flex-1 overflow-y-auto bg-muted/20 p-6">
+        <main className="sidebar-scrollbar relative z-50 flex-1 overflow-y-auto bg-muted/20 p-6">
           {children}
         </main>
       </MainContentWrapper>

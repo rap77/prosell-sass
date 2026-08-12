@@ -483,7 +483,7 @@ export default function CatalogPage() {
           {/* ── Content area ─────────────────────────────────────────────── */}
           <div
             className={cn(
-              "flex-1 overflow-y-auto",
+              "sidebar-scrollbar flex-1 overflow-y-auto",
               viewMode === "tabla" ? "p-0" : "p-6",
             )}
           >

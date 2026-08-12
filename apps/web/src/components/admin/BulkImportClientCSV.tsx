@@ -32,13 +32,28 @@ import type {
 } from "@/lib/api/schemas/bulkImportClient";
 import { cn } from "@/lib/utils";
 
-type Step = "upload" | "preview" | "confirm";
+const STEP = {
+  UPLOAD: "upload",
+  PREVIEW: "preview",
+  CONFIRM: "confirm",
+} as const;
+type Step = (typeof STEP)[keyof typeof STEP];
+
+interface SelectOption {
+  id: string;
+  name: string;
+}
+
+interface StepItem {
+  id: Step;
+  label: string;
+}
 
 interface BulkImportClientCSVProps {
   /** Tenant-scoped list of orgs (UUID → label) for the confirm step. */
-  organizations: Array<{ id: string; name: string }>;
+  organizations: SelectOption[];
   /** Vehicle categories for the confirm step (UUID → label). */
-  categories: Array<{ id: string; name: string }>;
+  categories: SelectOption[];
   /** Called after a successful import. */
   onComplete?: () => void;
   /** Called when the user wants to abandon the wizard. */
@@ -51,7 +66,7 @@ export function BulkImportClientCSV({
   onComplete,
   onCancel,
 }: BulkImportClientCSVProps) {
-  const [step, setStep] = useState<Step>("upload");
+  const [step, setStep] = useState<Step>(STEP.UPLOAD);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<BulkUploadPreview | null>(null);
@@ -101,7 +116,7 @@ export function BulkImportClientCSV({
         zip: zipFile,
       });
       setPreview(result);
-      setStep("preview");
+      setStep(STEP.PREVIEW);
     } catch {
       // toast handled in hook onError
     }
@@ -111,12 +126,12 @@ export function BulkImportClientCSV({
 
   const goToConfirm = () => {
     if (!preview) return;
-    setStep("confirm");
+    setStep(STEP.CONFIRM);
   };
 
   const backToUpload = () => {
     setPreview(null);
-    setStep("upload");
+    setStep(STEP.UPLOAD);
   };
 
   // ── Step 3: Confirm ───────────────────────────────────────────────────────
@@ -143,7 +158,7 @@ export function BulkImportClientCSV({
     <div className="flex flex-col gap-6">
       <StepIndicator step={step} />
 
-      {step === "upload" && (
+      {step === STEP.UPLOAD && (
         <UploadStep
           csvFile={csvFile}
           zipFile={zipFile}
@@ -157,7 +172,7 @@ export function BulkImportClientCSV({
         />
       )}
 
-      {step === "preview" && preview && (
+      {step === STEP.PREVIEW && preview && (
         <PreviewStep
           preview={preview}
           onBack={backToUpload}
@@ -165,7 +180,7 @@ export function BulkImportClientCSV({
         />
       )}
 
-      {step === "confirm" && preview && (
+      {step === STEP.CONFIRM && preview && (
         <ConfirmStep
           organizationId={organizationId}
           categoryId={categoryId}
@@ -175,7 +190,7 @@ export function BulkImportClientCSV({
           missingOrgCodes={preview.summary.missing_org_codes}
           onChangeOrg={setOrganizationId}
           onChangeCat={setCategoryId}
-          onBack={() => setStep("preview")}
+          onBack={() => setStep(STEP.PREVIEW)}
           onCancel={onCancel}
           onConfirm={runImport}
           isPending={importMutation.isPending}
@@ -188,10 +203,10 @@ export function BulkImportClientCSV({
 // ─── Sub-components ────────────────────────────────────────────────────────
 
 function StepIndicator({ step }: { step: Step }) {
-  const steps: Array<{ id: Step; label: string }> = [
-    { id: "upload", label: "1. Subir archivos" },
-    { id: "preview", label: "2. Vista previa" },
-    { id: "confirm", label: "3. Confirmar importación" },
+  const steps: StepItem[] = [
+    { id: STEP.UPLOAD, label: "1. Subir archivos" },
+    { id: STEP.PREVIEW, label: "2. Vista previa" },
+    { id: STEP.CONFIRM, label: "3. Confirmar importación" },
   ];
 
   return (
@@ -331,6 +346,7 @@ interface PreviewStepProps {
 
 function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
   const { summary, rows, total_rows } = preview;
+  const hasMissingOrganizations = summary.missing_org_codes.length > 0;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -351,6 +367,18 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
           tone="cyan"
         />
       </div>
+
+      {hasMissingOrganizations && (
+        <div className="rounded-lg border border-ps-error bg-ps-bg-surface p-3.5">
+          <p className="m-0 text-xs font-semibold text-ps-error">
+            Organizaciones faltantes
+          </p>
+          <p className="m-0 mt-1 text-xs text-ps-text-secondary">
+            Creá estas organizaciones antes de continuar:{" "}
+            {summary.missing_org_codes.join(", ")}
+          </p>
+        </div>
+      )}
 
       <div className="border border-ps-border-default rounded-lg overflow-hidden">
         <div className="surface-scrollbar max-h-96 overflow-y-auto">
@@ -382,7 +410,7 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
           type="button"
           onClick={onConfirm}
           className={primaryBtnClass}
-          disabled={summary.importable_count === 0}
+          disabled={summary.importable_count === 0 || hasMissingOrganizations}
         >
           Continuar
           <ChevronRight size={16} />
@@ -418,8 +446,8 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
 interface ConfirmStepProps {
   organizationId: string;
   categoryId: string;
-  organizations: Array<{ id: string; name: string }>;
-  categories: Array<{ id: string; name: string }>;
+  organizations: SelectOption[];
+  categories: SelectOption[];
   detectedOrgCodes: string[];
   missingOrgCodes: string[];
   onChangeOrg: (id: string) => void;
@@ -530,7 +558,7 @@ function ConfirmStep({
 interface SelectFieldProps {
   label: string;
   value: string;
-  options: Array<{ id: string; name: string }>;
+  options: SelectOption[];
   onChange: (id: string) => void;
 }
 
@@ -559,7 +587,12 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   );
 }
 
-type SummaryTone = "success" | "error" | "cyan";
+const SUMMARY_TONE = {
+  SUCCESS: "success",
+  ERROR: "error",
+  CYAN: "cyan",
+} as const;
+type SummaryTone = (typeof SUMMARY_TONE)[keyof typeof SUMMARY_TONE];
 
 const summaryToneClass: Record<SummaryTone, string> = {
   success: "text-ps-success",

@@ -270,10 +270,10 @@ describe("BulkImportClientCSV", () => {
     await waitFor(() =>
       expect(screen.getByText("Continuar")).toBeInTheDocument(),
     );
-    await user.click(screen.getByText("Continuar"));
-
     expect(screen.getByText("Organizaciones faltantes")).toBeInTheDocument();
-    expect(screen.getByText("MISSING")).toBeInTheDocument();
-    expect(screen.getByText("Importar")).toBeDisabled();
+    expect(
+      screen.getByText(/Creá estas organizaciones antes de continuar: MISSING/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Continuar")).toBeDisabled();
   });
 });
