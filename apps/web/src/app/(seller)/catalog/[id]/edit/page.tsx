@@ -13,34 +13,21 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect } from "react";
 
 import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
+import { useCategory } from "@/lib/api/categories";
 import { useProduct } from "@/lib/api/products";
-import { useOrgVerticals } from "@/lib/api/verticals";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
-import type { CategoryNode } from "@/types/category";
+import type { Category, CategoryNode } from "@/types/category";
 
-/**
- * Recursively find a category node by ID in the verticals tree.
- */
-function findCategoryById(
-  verticals: { categories: CategoryNode[] }[],
-  categoryId: string,
-): CategoryNode | null {
-  for (const vertical of verticals) {
-    const found = findInTree(vertical.categories, categoryId);
-    if (found) return found;
-  }
-  return null;
-}
-
-function findInTree(nodes: CategoryNode[], id: string): CategoryNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    if (node.children?.length) {
-      const found = findInTree(node.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
+function toCategoryNode(category: Category): CategoryNode {
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    attribute_schema: category.attribute_schema,
+    attribute_groups: category.attribute_groups,
+    presentation: category.presentation,
+    filter_fields: [],
+  };
 }
 
 export default function EditProductPage() {
@@ -54,16 +41,12 @@ export default function EditProductPage() {
     { internal: true },
   );
 
-  // Fetch org verticals to get category schema
-  // Use product's org (not current user's) to support cross-tenant editing by super_admin
-  const { data: verticalsData, isLoading: isLoadingVerticals } =
-    useOrgVerticals(product?.organization_id ?? null);
-
-  // Find the category in the verticals tree
-  const categoryId = product?.category_id;
-  const verticals = verticalsData?.verticals;
-  const category =
-    categoryId && verticals ? findCategoryById(verticals, categoryId) : null;
+  // Read the product's category directly: the navigation tree deliberately hides
+  // soft-deleted categories, but existing products must remain editable.
+  const { data: categoryData, isLoading: isLoadingCategory } = useCategory(
+    product?.category_id,
+  );
+  const category = categoryData ? toCategoryNode(categoryData) : null;
 
   // Breadcrumb
   const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
@@ -76,9 +59,9 @@ export default function EditProductPage() {
     return () => clearBreadcrumbLabel(productId);
   }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
 
-  // Wait for both product AND verticals to be fully loaded
+  // Wait for product and its category schema to be fully loaded.
   const isLoading =
-    isLoadingProduct || isLoadingVerticals || (product && !verticalsData);
+    isLoadingProduct || isLoadingCategory || (product && !categoryData);
 
   if (isLoading) {
     return (
@@ -99,10 +82,7 @@ export default function EditProductPage() {
   if (!category) {
     return (
       <div>
-        <p>
-          Categoría no encontrada. El producto puede pertenecer a una categoría
-          deshabilitada.
-        </p>
+        <p>Categoría no encontrada.</p>
       </div>
     );
   }

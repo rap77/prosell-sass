@@ -63,6 +63,33 @@ export function useCategories(): UseQueryResult<Category[], Error> {
 }
 
 /**
+ * Fetch one category by ID, including soft-deleted categories.
+ * Product editing needs the historical schema even when the category can no
+ * longer be selected for new products.
+ */
+export function useCategory(
+  categoryId: string | undefined,
+): UseQueryResult<Category, Error> {
+  return useQuery({
+    queryKey: ["category", categoryId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/categories/${categoryId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch category"));
+      }
+      const raw: BackendCategory = BackendCategorySchema.parse(
+        await res.json(),
+      );
+      return mapBackendCategoryToDomain(raw);
+    },
+    enabled: Boolean(categoryId),
+  });
+}
+
+/**
  * Transform categories for Select component dropdowns
  *
  * Returns the array of { value, label } options for use with
