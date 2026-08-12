@@ -269,7 +269,7 @@ export function PublishModal({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
+        <div className="surface-scrollbar overflow-y-auto px-6 py-4 flex-1 min-h-0">
           {/* Vehicle selector (when no fixed vehicleData) */}
           {!vehicleData && vehicleOptions.length > 0 && (
             <div className="mb-4 rounded-[10px] border border-border-default bg-bg-elevated p-4">

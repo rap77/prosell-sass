@@ -117,7 +117,7 @@ export function NotificationBell() {
             No tenés notificaciones
           </div>
         ) : (
-          <div className="max-h-80 overflow-y-auto">
+          <div className="surface-scrollbar max-h-80 overflow-y-auto">
             {notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}

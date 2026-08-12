@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function DataGridSkeleton() {
   return (
     <div className="w-full border border-border rounded-lg overflow-hidden">
-      <div className="h-[600px] overflow-auto">
+      <div className="surface-scrollbar h-[600px] overflow-auto">
         <table className="w-full border-collapse">
           <thead className="bg-muted sticky top-0 z-10">
             <tr>

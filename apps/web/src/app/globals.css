@@ -361,6 +361,28 @@ button {
   background: var(--ps-border-strong);
 }
 
+/* Match the sidebar affordance on scrollable light surfaces without a white track. */
+.surface-scrollbar {
+  scrollbar-color: var(--ps-border-medium) transparent;
+  scrollbar-width: thin;
+}
+
+.surface-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.surface-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--ps-border-medium);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
+}
+
+.surface-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--ps-border-strong);
+}
+
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
   -ms-overflow-style: none;

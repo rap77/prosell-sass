@@ -61,7 +61,7 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
           className="px-4 py-3 border-b focus:outline-none"
         />
 
-        <CommandList className="max-h-[400px] overflow-y-auto p-2">
+        <CommandList className="surface-scrollbar max-h-[400px] overflow-y-auto p-2">
           {filteredVehicles.length === 0 ? (
             <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
               No vehicles found.

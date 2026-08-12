@@ -69,7 +69,7 @@ export function BulkUploadErrorModal({
           {" rows)"}
         </p>
 
-        <div className="max-h-72 overflow-y-auto rounded border">
+        <div className="surface-scrollbar max-h-72 overflow-y-auto rounded border">
           <table className="w-full text-sm">
             <thead className="bg-muted sticky top-0">
               <tr>

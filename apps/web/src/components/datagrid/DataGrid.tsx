@@ -351,7 +351,7 @@ export function DataGrid({
       <div
         ref={tableContainerRef}
         data-testid="data-grid-scroll"
-        className="h-[600px] overflow-auto overflow-x-auto touch-pan-x"
+        className="surface-scrollbar h-[600px] overflow-auto overflow-x-auto touch-pan-x"
       >
         <table className="w-full border-collapse">
           <thead className="bg-muted sticky top-0 z-10">

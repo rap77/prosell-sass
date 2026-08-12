@@ -305,7 +305,7 @@ export function AppointmentForm({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto px-6 py-5 flex-1">
+        <div className="surface-scrollbar overflow-y-auto px-6 py-5 flex-1">
           {/* A4.33: Banner de error */}
           {submitError && (
             <div
