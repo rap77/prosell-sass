@@ -120,6 +120,15 @@ check_env_var() {
   return 0
 }
 
+ownership_migration_is_safe() {
+  local ownership_count
+  ownership_count="$(docker exec prosell-prod-db \
+    psql -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -c "SELECT count(*) FROM product_ownership" 2>/dev/null)" || return 1
+
+  [[ "$ownership_count" == "0" ]]
+}
+
 # Record the deploy in a local log (separate from container logs). Append-only
 # so a `tail deploys.log` shows the deploy history at a glance.
 record_deploy() {
@@ -384,6 +393,10 @@ else
   DESTRUCTIVE_PENDING=()
   for revision in "${DESTRUCTIVE_REVISIONS[@]}"; do
     if grep -Fq "$revision" <<< "$PENDING_HISTORY"; then
+      if [[ "$revision" == "20260718_0001" ]] && ownership_migration_is_safe; then
+        log_warning "Allowing 20260718_0001: product_ownership is empty."
+        continue
+      fi
       DESTRUCTIVE_PENDING+=("$revision")
     fi
   done
