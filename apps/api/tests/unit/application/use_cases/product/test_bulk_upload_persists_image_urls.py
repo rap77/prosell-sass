@@ -27,6 +27,7 @@ import pytest
 from prosell.application.use_cases.product.bulk_upload_vehicles import (
     BulkUploadVehiclesUseCase,
 )
+from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.product import Product
 from prosell.domain.services.csv_image_mapper import (
     CSVImageMapper,
@@ -107,7 +108,9 @@ class TestBulkUploadPersistsImageUrls:
 
         # Act — pass the mocked mapper so we don't depend on the broken one
         organization_repo = AsyncMock()
-        organization_repo.get_by_codes.return_value = []
+        organization_repo.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repo,
             category_repository=category_repo,
