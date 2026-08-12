@@ -57,6 +57,11 @@ describe("Categories API Client - useCategories", () => {
           attribute_schema: {
             year: { type: "number", filter_type: "range" },
             make: { type: "string", filter_type: "select" },
+            doors: {
+              type: "number",
+              filter_type: "select",
+              options: [2, 3, 4, 5],
+            },
             model: { type: "string", filter_type: "exact" },
           },
           presentation: null,
@@ -111,6 +116,9 @@ describe("Categories API Client - useCategories", () => {
     expect(result.current.data?.[0].parent_id).toBeNull();
     expect(result.current.data?.[0].level).toBe(0);
     expect(result.current.data?.[0].sort_order).toBe(0);
+    expect(result.current.data?.[0].attribute_schema.doors?.options).toEqual([
+      2, 3, 4, 5,
+    ]);
   });
 
   it("should cache categories for 5 minutes (staleTime)", async () => {

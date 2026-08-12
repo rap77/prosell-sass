@@ -47,7 +47,7 @@ const _attributeSchemaEntrySchema = z.object({
     .default("text"),
   unit: z.string().optional(),
   label: z.string().optional(),
-  options: z.array(z.string()).optional(),
+  options: z.array(z.union([z.string(), z.number()])).optional(),
   group: z.string().optional(),
 });
 const _attributeSchemaMapSchema = z.record(
