@@ -118,6 +118,9 @@ class BulkUploadVehiclesUseCase:
 
         # 2. Resolve org codes to (org_id, tenant_id) tuples
         org_code_map = await self._resolve_org_codes(parsed_rows)
+        unknown_codes = self._unknown_org_codes(parsed_rows, org_code_map)
+        if unknown_codes:
+            raise ValueError(f"Unknown organization codes: {', '.join(unknown_codes)}")
 
         # 4. Map images if ZIP provided
         # ponytail: skip image mapping if no global org — multi-org CSV needs per-row paths
@@ -245,7 +248,22 @@ class BulkUploadVehiclesUseCase:
 
         # Query orgs by codes (no tenant filter - admin can access all)
         orgs = await self.organization_repository.get_by_codes(unique_codes)
-        return {org.code: (org.id, org.tenant_id) for org in orgs if org.code}
+        return {org.code.upper(): (org.id, org.tenant_id) for org in orgs if org.code}
+
+    @staticmethod
+    def _unknown_org_codes(
+        parsed_rows: list[MappedCSVRow], org_code_map: dict[str, tuple[UUID, UUID]]
+    ) -> list[str]:
+        """Return CSV organization codes that could not be resolved before importing."""
+        return sorted(
+            {
+                row.cod_organization.strip()
+                for row in parsed_rows
+                if row.cod_organization
+                and row.cod_organization.strip()
+                and row.cod_organization.strip().upper() not in org_code_map
+            }
+        )
 
     async def _upsert_vehicle(
         self,

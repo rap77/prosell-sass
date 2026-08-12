@@ -1235,6 +1235,7 @@ async def archive_product(
 @router.post("/bulk-upload/preview", response_model=BulkUploadPreviewResponse)
 async def bulk_upload_preview(
     current_user: CurrentUser,
+    db: DbSession,
     csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
 ) -> BulkUploadPreviewResponse:
     """
@@ -1278,7 +1279,7 @@ async def bulk_upload_preview(
         ) from error
 
     # Execute preview use case
-    use_case = BulkUploadPreviewUseCase()
+    use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
     result = await use_case.execute(csv_content)
 
     return BulkUploadPreviewResponse(

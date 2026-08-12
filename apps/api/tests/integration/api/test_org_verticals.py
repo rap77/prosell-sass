@@ -53,6 +53,7 @@ async def _create_child(
     slug: str,
     presentation: dict | None = None,
     attribute_schema: dict | None = None,
+    is_active: bool = True,
 ) -> CategoryModel:
     """Insert a child category under a parent root."""
     cat = CategoryModel(
@@ -62,7 +63,7 @@ async def _create_child(
         slug=slug,
         level=1,
         parent_id=parent_id,
-        is_active=True,
+        is_active=is_active,
         sort_order=0,
         field_config=[],
         attribute_schema=attribute_schema or {},
@@ -151,6 +152,42 @@ async def test_list_org_verticals_returns_enabled_with_subtree(
     re_v = next(v for v in body["verticals"] if v["slug"] == f"real-estate-{suffix}")
     assert re_v["presentation"] is None
     assert re_v["categories"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_org_verticals_excludes_deactivated_child_categories(
+    async_client_as_admin: AsyncClient, admin_user, db_session: AsyncSession
+) -> None:
+    """A soft-deleted child must not keep its parent from being a selectable leaf."""
+    org_id = admin_user.tenant_id
+    suffix = uuid4().hex[:8]
+    root = await _create_global_root(
+        db_session,
+        name=f"Vehicles-{suffix}",
+        slug=f"vehicles-{suffix}",
+    )
+    parent = await _create_child(
+        db_session,
+        parent_id=root.id,
+        name=f"Cars-{suffix}",
+        slug=f"cars-{suffix}",
+    )
+    await _create_child(
+        db_session,
+        parent_id=parent.id,
+        name=f"Coupe-{suffix}",
+        slug=f"coupe-{suffix}",
+        is_active=False,
+    )
+    db_session.add(OrganizationVerticalModel(organization_id=org_id, root_category_id=root.id))
+    await db_session.flush()
+
+    response = await async_client_as_admin.get(f"/api/v1/organizations/{org_id}/verticals")
+
+    assert response.status_code == 200, response.text
+    categories = response.json()["verticals"][0]["categories"]
+    assert categories[0]["id"] == str(parent.id)
+    assert categories[0]["children"] == []
 
 
 # ─── 403 cross-org ────────────────────────────────────────────────────────────

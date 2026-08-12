@@ -172,6 +172,7 @@ export function BulkImportClientCSV({
           organizations={organizations}
           categories={categories}
           detectedOrgCodes={preview.summary.detected_org_codes}
+          missingOrgCodes={preview.summary.missing_org_codes}
           onChangeOrg={setOrganizationId}
           onChangeCat={setCategoryId}
           onBack={() => setStep("preview")}
@@ -352,7 +353,7 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
       </div>
 
       <div className="border border-ps-border-default rounded-lg overflow-hidden">
-        <div className="max-h-96 overflow-y-auto">
+        <div className="surface-scrollbar max-h-96 overflow-y-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className={tableHeadRowClass}>
@@ -420,6 +421,7 @@ interface ConfirmStepProps {
   organizations: Array<{ id: string; name: string }>;
   categories: Array<{ id: string; name: string }>;
   detectedOrgCodes: string[];
+  missingOrgCodes: string[];
   onChangeOrg: (id: string) => void;
   onChangeCat: (id: string) => void;
   onBack: () => void;
@@ -434,6 +436,7 @@ function ConfirmStep({
   organizations,
   categories,
   detectedOrgCodes,
+  missingOrgCodes,
   onChangeOrg,
   onChangeCat,
   onBack,
@@ -443,6 +446,7 @@ function ConfirmStep({
 }: ConfirmStepProps) {
   // ponytail: hide org selector if CSV has org codes
   const hasOrgInCsv = detectedOrgCodes.length > 0;
+  const hasMissingOrganizations = missingOrgCodes.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -463,6 +467,17 @@ function ConfirmStep({
             options={organizations}
             onChange={onChangeOrg}
           />
+        )}
+        {hasMissingOrganizations && (
+          <div className="rounded-lg border border-ps-error bg-ps-bg-surface p-3.5">
+            <p className="m-0 text-xs font-semibold text-ps-error">
+              Organizaciones faltantes
+            </p>
+            <p className="m-0 mt-1 text-xs text-ps-text-secondary">
+              Creá estas organizaciones antes de importar:{" "}
+              {missingOrgCodes.join(", ")}
+            </p>
+          </div>
         )}
         <SelectField
           label="Categoría"
@@ -498,7 +513,10 @@ function ConfirmStep({
           type="button"
           onClick={onConfirm}
           disabled={
-            isPending || (!hasOrgInCsv && !organizationId) || !categoryId
+            isPending ||
+            hasMissingOrganizations ||
+            (!hasOrgInCsv && !organizationId) ||
+            !categoryId
           }
           className={primaryBtnClass}
         >
@@ -525,8 +543,7 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-lg border border-ps-border-default px-3 py-2.5 text-sm text-ps-text-primary cursor-pointer"
-        style={{ background: "var(--ps-input-bg)" }}
+        className="appearance-none rounded-lg border border-ps-border-default bg-ps-input-bg px-3 py-2.5 text-sm text-ps-text-primary cursor-pointer"
       >
         {options.map((o) => (
           <option

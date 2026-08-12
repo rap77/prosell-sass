@@ -60,6 +60,7 @@ class ListOrgVerticalsUseCase:
         children = [
             await self._build_node(child, [*ancestor_presentations, category.presentation])
             for child in children_entities
+            if child.is_active
         ]
         return CategoryNode(
             id=category.id,
@@ -81,13 +82,15 @@ class ListOrgVerticalsUseCase:
         verticals: list[VerticalResponse] = []
         for root_id in root_ids:
             root = await self._category_repo.get_by_id_cross_tenant(root_id)
-            if root is None:
+            if root is None or not root.is_active:
                 continue
 
             root_presentation = _to_presentation_dict(root.presentation)
             children_entities = await self._category_repo.get_children_cross_tenant(root.id)
             category_nodes = [
-                await self._build_node(child, [root.presentation]) for child in children_entities
+                await self._build_node(child, [root.presentation])
+                for child in children_entities
+                if child.is_active
             ]
 
             verticals.append(

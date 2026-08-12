@@ -9,6 +9,7 @@ from prosell.application.use_cases.product.bulk_upload_vehicles import (
     BulkUploadVehiclesResult,
     BulkUploadVehiclesUseCase,
 )
+from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.product import Product
 
 
@@ -27,6 +28,29 @@ class TestBulkUploadVehiclesUseCase:
             "2;RM;1800000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
             "Blanco;Gris;0;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2019-CAMRY;1;01/02/25;0;2T1BURHE0LC123456\n"
         )
+
+    @pytest.mark.asyncio
+    async def test_use_case_rejects_unknown_csv_organization_codes(self, sample_csv: str):
+        """Unknown organization codes must stop the whole import before any writes."""
+        product_repository = AsyncMock()
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = []
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+        )
+
+        with pytest.raises(ValueError, match="Unknown organization codes: DJ, RM"):
+            await use_case.execute(
+                csv_content=sample_csv,
+                tenant_id=uuid4(),
+                organization_id=uuid4(),
+                category_id=uuid4(),
+            )
+
+        product_repository.create.assert_not_awaited()
+        product_repository.update.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_use_case_parses_csv_and_upserts_products(self, sample_csv: str):
@@ -65,7 +89,10 @@ class TestBulkUploadVehiclesUseCase:
 
         # Create use case
         organization_repository = AsyncMock()
-        organization_repository.get_by_codes.return_value = []
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ"),
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="RM"),
+        ]
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
@@ -116,7 +143,9 @@ class TestBulkUploadVehiclesUseCase:
         category_repository = AsyncMock()
 
         organization_repository = AsyncMock()
-        organization_repository.get_by_codes.return_value = []
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
@@ -161,7 +190,10 @@ class TestBulkUploadVehiclesUseCase:
         category_repository.get_by_id.return_value = mock_category
 
         organization_repository = AsyncMock()
-        organization_repository.get_by_codes.return_value = []
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ"),
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="RM"),
+        ]
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,

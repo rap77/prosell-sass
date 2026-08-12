@@ -45,6 +45,10 @@ class PreviewSummaryResponse(BaseModel):
         default_factory=list,
         description="Unique org codes found in CSV (empty if none)",
     )
+    missing_org_codes: list[str] = Field(
+        default_factory=list,
+        description="CSV org codes that do not match an existing organization",
+    )
 
 
 class BulkUploadPreviewResponse(BaseModel):

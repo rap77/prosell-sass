@@ -10,6 +10,7 @@ from prosell.application.dto.product.bulk_upload import (
     PreviewRowResponse,
     PreviewSummaryResponse,
 )
+from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 
 logger = logging.getLogger(__name__)
@@ -42,8 +43,9 @@ class BulkUploadPreviewUseCase:
     - Collects summary statistics
     """
 
-    def __init__(self) -> None:
+    def __init__(self, organization_repository: AbstractOrganizationRepository) -> None:
         """Initialize the preview use case."""
+        self._organization_repository = organization_repository
         self._required_fields = {"VIN", "price", "title"}
 
     async def execute(self, csv_content: str) -> PreviewUseCaseResult:
@@ -98,11 +100,22 @@ class BulkUploadPreviewUseCase:
 
         total = len(rows)
         # ponytail: images_count=0 in preview — can't verify without ZIP
+        existing_org_codes = {
+            org.code.strip().upper()
+            for org in await self._organization_repository.get_by_codes(
+                sorted(code.upper() for code in detected_org_codes)
+            )
+            if org.code
+        }
+        missing_org_codes = sorted(
+            code for code in detected_org_codes if code.upper() not in existing_org_codes
+        )
         summary = PreviewSummaryResponse(
             importable_count=importable_count,
             error_count=error_count,
             images_count=0,
             detected_org_codes=sorted(detected_org_codes),
+            missing_org_codes=missing_org_codes,
         )
 
         return PreviewUseCaseResult(total_rows=total, rows=rows, summary=summary)

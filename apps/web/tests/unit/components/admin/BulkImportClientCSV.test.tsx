@@ -107,6 +107,7 @@ const successPreview = {
     images_count: 1,
     // ponytail: required after CSV org codes feature
     detected_org_codes: [],
+    missing_org_codes: [],
   },
 };
 
@@ -244,5 +245,35 @@ describe("BulkImportClientCSV", () => {
     await waitFor(() => {
       expect(onComplete).toHaveBeenCalled();
     });
+  });
+
+  it("shows missing CSV organizations and blocks confirmation", async () => {
+    previewMock.mutateAsync.mockResolvedValue({
+      ...successPreview,
+      summary: {
+        ...successPreview.summary,
+        detected_org_codes: ["MISSING"],
+        missing_org_codes: ["MISSING"],
+      },
+    });
+    const user = userEvent.setup();
+
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
+
+    const csvInput = document.querySelector(
+      'input[accept*="text/csv"]',
+    ) as HTMLInputElement;
+    await user.upload(csvInput, new File(["vin;title\n1A;test"], "test.csv"));
+    await user.click(screen.getByText("Vista previa"));
+    await waitFor(() =>
+      expect(screen.getByText("Continuar")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByText("Continuar"));
+
+    expect(screen.getByText("Organizaciones faltantes")).toBeInTheDocument();
+    expect(screen.getByText("MISSING")).toBeInTheDocument();
+    expect(screen.getByText("Importar")).toBeDisabled();
   });
 });
