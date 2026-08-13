@@ -90,6 +90,7 @@ export function ReviewQueueTable({
                       width={48}
                       height={48}
                       className="rounded object-cover"
+                      unoptimized
                     />
                   )}
                   <div>
