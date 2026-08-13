@@ -48,6 +48,12 @@ const nextConfig: NextConfig = {
         hostname: "localhost",
         port: "9000",
       },
+      // MinIO staging (docker-compose.staging.yml maps MinIO to 9002)
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9002",
+      },
     ],
   },
 
