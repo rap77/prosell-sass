@@ -74,7 +74,11 @@ export default function ReviewQueuePage() {
   };
 
   // Extract products from infinite query
-  const products = data?.pages.flatMap((page) => page.items) ?? [];
+  // ponytail: filter out products without submission date (shouldn't be in review queue)
+  const products =
+    data?.pages
+      .flatMap((page) => page.items)
+      .filter((p) => p.submitted_for_approval_at) ?? [];
 
   if (isLoading) {
     return (
