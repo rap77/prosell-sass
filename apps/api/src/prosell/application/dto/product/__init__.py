@@ -10,6 +10,12 @@ from prosell.application.dto.product.attributes import (
     validate_real_estate_attributes,
     validate_vehicle_attributes,
 )
+from prosell.application.dto.product.batch_review import (
+    BatchApproveRequest,
+    BatchRejectRequest,
+    BatchReviewItemResult,
+    BatchReviewResponse,
+)
 from prosell.application.dto.product.bulk_upload import (
     BulkUploadPreviewResponse,
     BulkUploadVehiclesResponse,
@@ -32,6 +38,10 @@ from prosell.application.dto.product.update import UpdateProductRequest
 
 __all__ = [
     # Request/Response models
+    "BatchApproveRequest",
+    "BatchRejectRequest",
+    "BatchReviewItemResult",
+    "BatchReviewResponse",
     "BulkUploadPreviewResponse",
     "BulkUploadRowError",
     "BulkUploadUploadResult",

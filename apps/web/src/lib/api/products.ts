@@ -415,6 +415,171 @@ export function useMarkProductSold(): UseMutationResult<
   );
 }
 
+// ==================== Batch Review Types ====================
+
+export interface BatchReviewItemResult {
+  product_id: string;
+  status: "approved" | "rejected" | "failed";
+  error_code?: "not_found" | "invalid_transition" | null;
+  message?: string | null;
+}
+
+export interface BatchReviewResponse {
+  results: BatchReviewItemResult[];
+  approved_count: number;
+  rejected_count: number;
+  failed_count: number;
+}
+
+// ==================== Batch Review API Functions ====================
+
+/**
+ * Batch approve products
+ */
+export async function batchApproveProducts(
+  productIds: string[],
+): Promise<BatchReviewResponse> {
+  const res = await fetch("/api/v1/products/batch/approve", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ product_ids: productIds }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "No se pudo aprobar los productos"),
+    );
+  }
+
+  return res.json();
+}
+
+/**
+ * Batch reject products
+ */
+export async function batchRejectProducts(
+  productIds: string[],
+  reason: string,
+): Promise<BatchReviewResponse> {
+  const res = await fetch("/api/v1/products/batch/reject", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ product_ids: productIds, reason }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "No se pudo rechazar los productos"),
+    );
+  }
+
+  return res.json();
+}
+
+/**
+ * Submit product for approval
+ */
+export async function submitProductForApproval(
+  productId: string,
+): Promise<Product> {
+  const res = await fetch(`/api/v1/products/${productId}/submit`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "No se pudo enviar el producto a revisión"),
+    );
+  }
+
+  return parseProductResponse(await res.json());
+}
+
+// ==================== Batch Review Mutation Hooks ====================
+
+/**
+ * Mutation hook for batch approving products
+ */
+export function useBatchApproveProducts(): UseMutationResult<
+  BatchReviewResponse,
+  Error,
+  string[],
+  unknown
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: batchApproveProducts,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog"] });
+
+      if (data.failed_count === 0) {
+        toast.success(`${data.approved_count} productos aprobados`);
+      } else {
+        toast.warning(
+          `${data.approved_count} aprobados, ${data.failed_count} fallaron`,
+        );
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al aprobar productos");
+    },
+  });
+}
+
+/**
+ * Mutation hook for batch rejecting products
+ */
+export function useBatchRejectProducts(): UseMutationResult<
+  BatchReviewResponse,
+  Error,
+  { productIds: string[]; reason: string },
+  unknown
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productIds, reason }) =>
+      batchRejectProducts(productIds, reason),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      if (data.failed_count === 0) {
+        toast.success(`${data.rejected_count} productos rechazados`);
+      } else {
+        toast.warning(
+          `${data.rejected_count} rechazados, ${data.failed_count} fallaron`,
+        );
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al rechazar productos");
+    },
+  });
+}
+
+/**
+ * Mutation hook for submitting product for approval
+ */
+export function useSubmitProductForApproval(): UseMutationResult<
+  Product,
+  Error,
+  string,
+  unknown
+> {
+  return useProductAvailabilityAction(
+    submitProductForApproval,
+    "Producto enviado a revisión",
+  );
+}
+
 /**
  * Mutation hook for updating product status
  */

@@ -26,6 +26,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
+    BatchApproveRequest,
+    BatchRejectRequest,
+    BatchReviewResponse,
     BulkUploadPreviewResponse,
     BulkUploadRowError,
     BulkUploadUploadResult,
@@ -40,6 +43,12 @@ from prosell.application.dto.product import (
 )
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
+from prosell.application.use_cases.product.batch_approve_products import (
+    BatchApproveProductsUseCase,
+)
+from prosell.application.use_cases.product.batch_reject_products import (
+    BatchRejectProductsUseCase,
+)
 from prosell.application.use_cases.product.build_attribute_filters import (
     build_attribute_filters,
 )
@@ -1034,6 +1043,59 @@ async def reject_product(
     product = await repo.update(product)
 
     return ProductResponse.from_entity(product)
+
+
+@router.post("/batch/approve", response_model=BatchReviewResponse)
+async def batch_approve_products(
+    request: BatchApproveRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchReviewResponse:
+    """
+    Batch approve products.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchApproveProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+    )
+
+
+@router.post("/batch/reject", response_model=BatchReviewResponse)
+async def batch_reject_products(
+    request: BatchRejectRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchReviewResponse:
+    """
+    Batch reject products.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchRejectProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        reason=request.reason,
+    )
 
 
 @router.post("/{product_id}/publish", response_model=ProductResponse)
