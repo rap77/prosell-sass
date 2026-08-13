@@ -79,9 +79,13 @@ export function ReviewQueueTable({
               </td>
               <td className="p-4">
                 <div className="flex items-center gap-3">
-                  {product.image_urls?.[0]?.trim() && (
+                  {product.image_urls?.[0] && (
                     <Image
-                      src={product.image_urls[0]}
+                      src={
+                        product.image_urls[0].startsWith("http")
+                          ? product.image_urls[0]
+                          : `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9002/prosell-assets"}/${product.image_urls[0]}`
+                      }
                       alt={product.title}
                       width={48}
                       height={48}
