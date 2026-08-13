@@ -79,7 +79,7 @@ export function ReviewQueueTable({
               </td>
               <td className="p-4">
                 <div className="flex items-center gap-3">
-                  {product.image_urls?.[0] && (
+                  {product.image_urls?.[0]?.trim() && (
                     <Image
                       src={product.image_urls[0]}
                       alt={product.title}

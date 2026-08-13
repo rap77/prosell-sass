@@ -1369,11 +1369,12 @@ export interface BatchSubmitResponse {
 export async function submitProductsForApproval(
   productIds: string[],
 ): Promise<BatchSubmitResponse> {
+  const payload = { product_ids: productIds };
   const res = await fetch("/api/v1/products/batch/submit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ product_ids: productIds }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {

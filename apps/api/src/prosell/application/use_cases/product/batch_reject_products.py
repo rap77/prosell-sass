@@ -19,7 +19,7 @@ class BatchRejectProductsUseCase:
     async def execute(
         self,
         product_ids: list[UUID],
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         user_id: UUID,
         reason: str,
     ) -> BatchReviewResponse:
@@ -28,7 +28,7 @@ class BatchRejectProductsUseCase:
 
         Args:
             product_ids: List of product IDs to reject
-            tenant_id: Tenant ID for isolation
+            tenant_id: Tenant ID for isolation (None for Super Admin = no filter)
             user_id: User ID performing the rejection
             reason: Rejection reason (applied to all products)
 
@@ -45,6 +45,7 @@ class BatchRejectProductsUseCase:
         # Loop with per-item error handling
         for product_id in unique_ids:
             try:
+                # ponytail: Super Admin can access all tenants (tenant_id=None means no filter)
                 product = await self.product_repository.get_by_id(product_id, tenant_id)
                 if not product:
                     raise ValueError(f"Product not found: {product_id}")

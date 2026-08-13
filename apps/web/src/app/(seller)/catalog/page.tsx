@@ -430,7 +430,7 @@ export default function CatalogPage() {
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
                     className={cn(
-                      "h-9 w-full pl-8 pr-3 border rounded-lg bg-ps-input text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
+                      "h-9 w-full pl-8 pr-3 border rounded-lg bg-ps-input-bg text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
                       searchFocused
                         ? "border-ps-border-active shadow-input-focus"
                         : "border-ps-border-default",

@@ -970,6 +970,38 @@ async def update_product(
     return result
 
 
+@router.post("/batch/submit", response_model=BatchSubmitResponse)
+async def batch_submit_products(
+    request: BatchSubmitRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchSubmitResponse:
+    """
+    Batch submit products for approval.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Transitions draft/rejected products to pending status.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+
+    # Super Admin can access all tenants (no tenant filter)
+    # Regular users can only access their own tenant
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchSubmitProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=tenant_id,
+        user_id=current_user.id,
+    )
+
+
 @router.post("/{product_id}/submit", response_model=ProductResponse)
 async def submit_product_for_approval(
     product_id: UUID,
@@ -1063,7 +1095,11 @@ async def batch_approve_products(
     Returns per-product results with counts.
     """
     _require_marketplace_publish(current_user)
-    if current_user.tenant_id is None:
+
+    # Super Admin can access all tenants (no tenant filter)
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1071,7 +1107,7 @@ async def batch_approve_products(
 
     return await use_case.execute(
         product_ids=request.product_ids,
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         user_id=current_user.id,
     )
 
@@ -1089,7 +1125,11 @@ async def batch_reject_products(
     Returns per-product results with counts.
     """
     _require_marketplace_publish(current_user)
-    if current_user.tenant_id is None:
+
+    # Super Admin can access all tenants (no tenant filter)
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1097,36 +1137,9 @@ async def batch_reject_products(
 
     return await use_case.execute(
         product_ids=request.product_ids,
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         user_id=current_user.id,
         reason=request.reason,
-    )
-
-
-@router.post("/batch/submit", response_model=BatchSubmitResponse)
-async def batch_submit_products(
-    request: BatchSubmitRequest,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> BatchSubmitResponse:
-    """
-    Batch submit products for approval.
-
-    Requires MARKETPLACE_PUBLISH permission.
-    Transitions draft/rejected products to pending status.
-    Returns per-product results with counts.
-    """
-    _require_marketplace_publish(current_user)
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-
-    repo = SqlAlchemyProductRepository(db)
-    use_case = BatchSubmitProductsUseCase(repo)
-
-    return await use_case.execute(
-        product_ids=request.product_ids,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.id,
     )
 
 
