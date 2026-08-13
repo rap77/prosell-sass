@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Tag,
   CheckCircle2,
+  Send,
 } from "lucide-react";
 import {
   Dialog,
@@ -24,10 +25,12 @@ import {
   usePauseProduct,
   useReserveProduct,
   useResumeProduct,
+  useSubmitProductForApproval,
 } from "@/lib/api/products";
 import type { Product } from "@/types/product";
 
 const AVAILABILITY_ACTION = {
+  SUBMIT: "submit",
   RESERVE: "reserve",
   PAUSE: "pause",
   RESUME: "resume",
@@ -47,6 +50,15 @@ interface AvailabilityActionConfig {
 }
 
 const ACTIONS: Record<AvailabilityAction, AvailabilityActionConfig> = {
+  submit: {
+    id: AVAILABILITY_ACTION.SUBMIT,
+    label: "Enviar a revisión",
+    confirmLabel: "Confirmar envío",
+    title: "Enviar a revisión",
+    description:
+      "El producto será enviado a la cola de revisión. Un usuario con permisos MASTER o VERIFIER deberá aprobar el producto antes de que pueda ser publicado.",
+    Icon: Send,
+  },
   reserve: {
     id: AVAILABILITY_ACTION.RESERVE,
     label: "Apartar",
@@ -87,6 +99,8 @@ const ACTIONS: Record<AvailabilityAction, AvailabilityActionConfig> = {
 
 const LEGAL_ACTIONS: Partial<Record<Product["status"], AvailabilityAction[]>> =
   {
+    draft: [AVAILABILITY_ACTION.SUBMIT],
+    rejected: [AVAILABILITY_ACTION.SUBMIT],
     published: [
       AVAILABILITY_ACTION.RESERVE,
       AVAILABILITY_ACTION.PAUSE,
@@ -123,6 +137,7 @@ export function AvailabilityActions({
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [shareSale, setShareSale] = useState(true);
   const [soldWhatsAppUrl, setSoldWhatsAppUrl] = useState<string | null>(null);
+  const submitProduct = useSubmitProductForApproval();
   const reserveProduct = useReserveProduct();
   const pauseProduct = usePauseProduct();
   const resumeProduct = useResumeProduct();
@@ -138,11 +153,13 @@ export function AvailabilityActions({
 
   const selectedConfig = selectedAction ? ACTIONS[selectedAction] : null;
   const isPending =
+    submitProduct.isPending ||
     reserveProduct.isPending ||
     pauseProduct.isPending ||
     resumeProduct.isPending ||
     markProductSold.isPending;
   const mutationError =
+    submitProduct.error ??
     reserveProduct.error ??
     pauseProduct.error ??
     resumeProduct.error ??
@@ -152,7 +169,9 @@ export function AvailabilityActions({
     if (!selectedAction) return;
 
     try {
-      if (selectedAction === AVAILABILITY_ACTION.RESERVE) {
+      if (selectedAction === AVAILABILITY_ACTION.SUBMIT) {
+        await submitProduct.mutateAsync(id);
+      } else if (selectedAction === AVAILABILITY_ACTION.RESERVE) {
         await reserveProduct.mutateAsync(id);
       } else if (selectedAction === AVAILABILITY_ACTION.PAUSE) {
         await pauseProduct.mutateAsync(id);
@@ -179,7 +198,9 @@ export function AvailabilityActions({
           className="w-full border-ps-border-default bg-ps-elevated text-ps-text-secondary hover:bg-ps-bg-elevated hover:text-ps-text-primary sm:w-auto"
           onClick={() => setIsActionsOpen(true)}
         >
-          Cambiar disponibilidad
+          {status === "draft" || status === "rejected"
+            ? "Acciones"
+            : "Cambiar disponibilidad"}
           <ChevronDown aria-hidden="true" />
         </Button>
       </div>
@@ -188,10 +209,14 @@ export function AvailabilityActions({
         <DialogContent className="max-w-[480px] border-ps-border-default bg-ps-surface sm:rounded-[14px]">
           <DialogHeader>
             <DialogTitle className="text-ps-text-primary">
-              Cambiar disponibilidad
+              {status === "draft" || status === "rejected"
+                ? "Acciones"
+                : "Cambiar disponibilidad"}
             </DialogTitle>
             <DialogDescription className="text-ps-text-secondary">
-              Elegí una acción permitida para este vehículo.
+              {status === "draft" || status === "rejected"
+                ? "Elegí una acción para este producto."
+                : "Elegí una acción permitida para este vehículo."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
