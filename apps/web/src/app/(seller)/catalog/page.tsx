@@ -155,12 +155,7 @@ export function ErrorState({
         className="w-16 h-16 rounded-full bg-ps-error-bg border flex items-center justify-center"
         style={{ borderColor: "rgba(240,68,56,0.25)" }}
       >
-        <AlertCircle
-          size={28}
-          className="text-ps-tertiary"
-          style={{ color: "var(--ps-error)" }}
-          strokeWidth={1.5}
-        />
+        <AlertCircle size={28} className="text-ps-error" strokeWidth={1.5} />
       </div>
       <div className="max-w-[320px]">
         <p className="m-0 mb-[6px] text-[15px] font-semibold text-ps-text-primary">
@@ -336,6 +331,9 @@ export default function CatalogPage() {
   const handlePublish = (_id: string) =>
     toast.info("Publicación múltiple disponible en la Fase 4.");
 
+  // Navigate to detail view where AvailabilityActions handles the full flow
+  const handleSubmitForReview = (id: string) => router.push(`/catalog/${id}`);
+
   const handleBulkAssignBranch = (ids: string[]) => {
     setSelectedVehicleIds(ids);
     setShowBulkBranchAssign(true);
@@ -432,12 +430,11 @@ export default function CatalogPage() {
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
                     className={cn(
-                      "h-9 w-full pl-8 pr-3 border rounded-lg text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
+                      "h-9 w-full pl-8 pr-3 border rounded-lg bg-ps-input text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
                       searchFocused
                         ? "border-ps-border-active shadow-input-focus"
                         : "border-ps-border-default",
                     )}
-                    style={{ background: "var(--ps-input-bg)" }}
                   />
                 </div>
                 <button
@@ -542,6 +539,9 @@ export default function CatalogPage() {
                             onDelete={() =>
                               handleDeleteClick(vm.product.id, vm.product.title)
                             }
+                            onSubmitForReview={() =>
+                              handleSubmitForReview(vm.product.id)
+                            }
                           />
                         ))}
                       </div>
@@ -600,6 +600,9 @@ export default function CatalogPage() {
                                       vm.product.title,
                                     )
                                   }
+                                  onSubmitForReview={() =>
+                                    handleSubmitForReview(vm.product.id)
+                                  }
                                 />
                               ))}
                             </div>
@@ -616,13 +619,7 @@ export default function CatalogPage() {
                       >
                         {isFetchingNextPage && (
                           <>
-                            <div
-                              className="w-4 h-4 rounded-full border-2 border-transparent"
-                              style={{
-                                borderTopColor: "var(--ps-cyan)",
-                                animation: "spin 0.8s linear infinite",
-                              }}
-                            />
+                            <div className="w-4 h-4 rounded-full border-2 border-transparent border-t-ps-cyan animate-spin" />
                             <span className="text-[13px] text-ps-text-secondary">
                               Cargando más...
                             </span>

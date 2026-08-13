@@ -377,26 +377,34 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
+            {/* Availability actions (includes submit for review for draft/rejected) */}
             <AvailabilityActions
               id={product.id}
               title={product.title}
               description={product.description}
               status={product.status}
             />
-            <button
-              type="button"
-              disabled={!publishVehicleData}
-              onClick={() => setIsPublishModalOpen(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ps-elevated border border-ps-border-default text-ps-text-secondary text-[13px] font-medium cursor-pointer disabled:opacity-50"
-            >
-              <Send size={14} strokeWidth={2} />
-              Publicar
-            </button>
-            <ShareMenu
-              productTitle={product.title}
-              productSlug={product.slug}
-              isPublished={product.published_to_marketplace ?? false}
-            />
+
+            {/* Only show publish/share for non-draft/rejected products */}
+            {product.status !== "draft" && product.status !== "rejected" && (
+              <>
+                <button
+                  type="button"
+                  disabled={!publishVehicleData}
+                  onClick={() => setIsPublishModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ps-elevated border border-ps-border-default text-ps-text-secondary text-[13px] font-medium cursor-pointer disabled:opacity-50"
+                >
+                  <Send size={14} strokeWidth={2} />
+                  Publicar
+                </button>
+                <ShareMenu
+                  productTitle={product.title}
+                  productSlug={product.slug}
+                  isPublished={product.published_to_marketplace ?? false}
+                />
+              </>
+            )}
+
             <Link
               href={`/catalog/${product.id}/edit`}
               className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ps-cyan text-ps-base text-[13px] font-semibold no-underline"

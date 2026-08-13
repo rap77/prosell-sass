@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Send, RefreshCw } from "lucide-react";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
 import { ShareMenu } from "@/components/ui/ShareMenu";
 import type { Product } from "@/types/product";
@@ -39,6 +39,8 @@ export interface ProductCardProps {
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** Optional: callback to submit product for approval (draft/rejected only) */
+  onSubmitForReview?: () => void;
 }
 
 /**
@@ -75,8 +77,14 @@ export function ProductCard({
   onView,
   onEdit,
   onDelete,
+  onSubmitForReview,
 }: ProductCardProps) {
   const placeholder = placeholderForVertical(verticalSlug);
+
+  // Determine if product needs review submission (draft or rejected)
+  const needsReview =
+    product.status === "draft" || product.status === "rejected";
+  const isRejected = product.status === "rejected";
 
   // --- Subtitle (client-side, per §7) ---
   const subtitle = presentation
@@ -149,12 +157,8 @@ export function ProductCard({
               orgColor && isLightColor(orgColor)
                 ? "text-gray-900"
                 : "text-white"
-            }`}
-            style={
-              orgColor
-                ? { backgroundColor: orgColor }
-                : { backgroundColor: "var(--ps-primary)" }
-            }
+            } ${!orgColor ? "bg-ps-primary" : ""}`}
+            style={orgColor ? { backgroundColor: orgColor } : undefined}
           >
             {orgCode}
           </span>
@@ -198,37 +202,63 @@ export function ProductCard({
         data-testid="product-card-actions"
         role="toolbar"
         aria-label="Acciones del producto"
-        className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-border bg-card px-2 py-1.5 transition-opacity md:pointer-events-none md:bg-card/95 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100"
+        className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 border-t border-border bg-card px-2 py-1.5 transition-opacity md:pointer-events-none md:bg-card/95 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100"
       >
-        <button
-          type="button"
-          onClick={onView}
-          className="rounded p-1.5 hover:bg-muted"
-          aria-label="Ver detalle"
-        >
-          <Eye className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="rounded p-1.5 hover:bg-muted"
-          aria-label="Editar"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-        <ShareMenu
-          productTitle={product.title}
-          productSlug={product.slug}
-          isPublished={product.published_to_marketplace ?? false}
-        />
-        <button
-          type="button"
-          onClick={onDelete}
-          className="rounded p-1.5 text-destructive hover:bg-muted"
-          aria-label="Eliminar"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {/* Submit for review CTA — prominent for draft/rejected */}
+        {needsReview && onSubmitForReview ? (
+          <button
+            type="button"
+            onClick={onSubmitForReview}
+            className="flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            aria-label={
+              isRejected ? "Reenviar a revisión" : "Enviar a revisión"
+            }
+          >
+            {isRejected ? (
+              <RefreshCw className="h-3.5 w-3.5" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            {isRejected ? "Reenviar" : "Enviar a revisión"}
+          </button>
+        ) : (
+          <div />
+        )}
+
+        {/* Icon actions — right-aligned */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onView}
+            className="rounded p-1.5 hover:bg-muted"
+            aria-label="Ver detalle"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="rounded p-1.5 hover:bg-muted"
+            aria-label="Editar"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          {!needsReview && (
+            <ShareMenu
+              productTitle={product.title}
+              productSlug={product.slug}
+              isPublished={product.published_to_marketplace ?? false}
+            />
+          )}
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded p-1.5 text-destructive hover:bg-muted"
+            aria-label="Eliminar"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </article>
   );

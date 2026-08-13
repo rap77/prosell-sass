@@ -188,21 +188,52 @@ export function AvailabilityActions({
     }
   }
 
+  // For draft/rejected with single action, show direct CTA instead of dropdown
+  const isDraftOrRejected = status === "draft" || status === "rejected";
+  const singleAction = legalActions.length === 1 ? legalActions[0] : null;
+  const showDirectCTA =
+    isDraftOrRejected && singleAction === AVAILABILITY_ACTION.SUBMIT;
+
   return (
     <>
       <div className="w-full sm:w-auto">
-        <Button
-          type="button"
-          variant="outline"
-          size="touch"
-          className="w-full border-ps-border-default bg-ps-elevated text-ps-text-secondary hover:bg-ps-bg-elevated hover:text-ps-text-primary sm:w-auto"
-          onClick={() => setIsActionsOpen(true)}
-        >
-          {status === "draft" || status === "rejected"
-            ? "Acciones"
-            : "Cambiar disponibilidad"}
-          <ChevronDown aria-hidden="true" />
-        </Button>
+        {showDirectCTA ? (
+          // Direct "Enviar a revisión" button (primary CTA for draft/rejected)
+          <Button
+            type="button"
+            size="touch"
+            className="w-full bg-ps-cyan text-ps-base hover:bg-ps-cyan/90 sm:w-auto"
+            onClick={() => {
+              setSelectedAction(AVAILABILITY_ACTION.SUBMIT);
+            }}
+          >
+            {status === "rejected" ? (
+              <>
+                <RotateCcw aria-hidden="true" />
+                Reenviar a revisión
+              </>
+            ) : (
+              <>
+                <Send aria-hidden="true" />
+                Enviar a revisión
+              </>
+            )}
+          </Button>
+        ) : (
+          // Dropdown for multiple actions
+          <Button
+            type="button"
+            variant="outline"
+            size="touch"
+            className="w-full border-ps-border-default bg-ps-elevated text-ps-text-secondary hover:bg-ps-bg-elevated hover:text-ps-text-primary sm:w-auto"
+            onClick={() => setIsActionsOpen(true)}
+          >
+            {status === "draft" || status === "rejected"
+              ? "Acciones"
+              : "Cambiar disponibilidad"}
+            <ChevronDown aria-hidden="true" />
+          </Button>
+        )}
       </div>
 
       <Dialog open={isActionsOpen} onOpenChange={setIsActionsOpen}>
