@@ -22,6 +22,7 @@ import {
   FileUp,
   Layers,
   Facebook,
+  ClipboardCheck,
 } from "lucide-react";
 
 /**
@@ -78,6 +79,12 @@ const navigationItems: NavItem[] = [
     label: "Categorías",
     href: "/categories",
     icon: Layers,
+    group: "inventario",
+  },
+  {
+    label: "Revisión de inventario",
+    href: "/admin/review-queue",
+    icon: ClipboardCheck,
     group: "inventario",
   },
   // Ventas group
@@ -182,10 +189,12 @@ export function Sidebar({ groups }: SidebarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Filter navigation items based on user permissions only.
-  // ponytail: removed layout-based filtering (groups prop) — admins see all items
-  // regardless of which route group they're in.
+  // Filter navigation items: defense in depth (layout groups + permissions)
   const visibleItems = navigationItems.filter((item) => {
+    // Layer 1: Layout-based filtering (which groups to show)
+    if (!groups.includes(item.group)) return false;
+
+    // Layer 2: Permission-based gating (sensitive items)
     if (item.group === "concesionarios") {
       return hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
     }
