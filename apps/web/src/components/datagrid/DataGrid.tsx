@@ -11,11 +11,14 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Building2 } from "lucide-react";
+import { Building2, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useProductImageUrls } from "@/lib/api/products";
+import {
+  useProductImageUrls,
+  useSubmitProductsForApproval,
+} from "@/lib/api/products";
 import { StatusBadge } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
 
@@ -133,6 +136,7 @@ export function DataGrid({
   "use no memo"; // TanStack Table API is incompatible with React Compiler auto-memoization
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const submitProductsForApproval = useSubmitProductsForApproval();
 
   const stopRowNavigation = (
     event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>,
@@ -289,6 +293,19 @@ export function DataGrid({
     }
   };
 
+  // Filter selected products that are eligible for submit (draft/rejected)
+  const eligibleProductIds = selectedProductIds.filter((id) => {
+    const product = data.find((p) => p.id === id);
+    return product?.status === "draft" || product?.status === "rejected";
+  });
+
+  const handleBulkSubmit = () => {
+    if (eligibleProductIds.length > 0) {
+      submitProductsForApproval.mutate(eligibleProductIds);
+      setRowSelection({}); // Clear selection after submit
+    }
+  };
+
   // Row virtualization for 60fps performance
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
@@ -324,6 +341,19 @@ export function DataGrid({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {eligibleProductIds.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleBulkSubmit}
+                disabled={submitProductsForApproval.isPending}
+                className="flex items-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                Enviar a revisión ({eligibleProductIds.length})
+              </Button>
+            )}
             {onBulkAssignBranch && (
               <Button
                 type="button"

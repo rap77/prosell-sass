@@ -16,6 +16,11 @@ from prosell.application.dto.product.batch_review import (
     BatchReviewItemResult,
     BatchReviewResponse,
 )
+from prosell.application.dto.product.batch_submit import (
+    BatchSubmitItemResult,
+    BatchSubmitRequest,
+    BatchSubmitResponse,
+)
 from prosell.application.dto.product.bulk_upload import (
     BulkUploadPreviewResponse,
     BulkUploadVehiclesResponse,
@@ -42,6 +47,9 @@ __all__ = [
     "BatchRejectRequest",
     "BatchReviewItemResult",
     "BatchReviewResponse",
+    "BatchSubmitItemResult",
+    "BatchSubmitRequest",
+    "BatchSubmitResponse",
     "BulkUploadPreviewResponse",
     "BulkUploadRowError",
     "BulkUploadUploadResult",

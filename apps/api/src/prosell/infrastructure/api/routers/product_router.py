@@ -29,6 +29,8 @@ from prosell.application.dto.product import (
     BatchApproveRequest,
     BatchRejectRequest,
     BatchReviewResponse,
+    BatchSubmitRequest,
+    BatchSubmitResponse,
     BulkUploadPreviewResponse,
     BulkUploadRowError,
     BulkUploadUploadResult,
@@ -48,6 +50,9 @@ from prosell.application.use_cases.product.batch_approve_products import (
 )
 from prosell.application.use_cases.product.batch_reject_products import (
     BatchRejectProductsUseCase,
+)
+from prosell.application.use_cases.product.batch_submit_products import (
+    BatchSubmitProductsUseCase,
 )
 from prosell.application.use_cases.product.build_attribute_filters import (
     build_attribute_filters,
@@ -1095,6 +1100,33 @@ async def batch_reject_products(
         tenant_id=current_user.tenant_id,
         user_id=current_user.id,
         reason=request.reason,
+    )
+
+
+@router.post("/batch/submit", response_model=BatchSubmitResponse)
+async def batch_submit_products(
+    request: BatchSubmitRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchSubmitResponse:
+    """
+    Batch submit products for approval.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Transitions draft/rejected products to pending status.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchSubmitProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
     )
 
 

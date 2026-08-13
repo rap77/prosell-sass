@@ -204,26 +204,8 @@ export function ProductCard({
         aria-label="Acciones del producto"
         className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 border-t border-border bg-card px-2 py-1.5 transition-opacity md:pointer-events-none md:bg-card/95 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100"
       >
-        {/* Submit for review CTA — prominent for draft/rejected */}
-        {needsReview && onSubmitForReview ? (
-          <button
-            type="button"
-            onClick={onSubmitForReview}
-            className="flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-            aria-label={
-              isRejected ? "Reenviar a revisión" : "Enviar a revisión"
-            }
-          >
-            {isRejected ? (
-              <RefreshCw className="h-3.5 w-3.5" />
-            ) : (
-              <Send className="h-3.5 w-3.5" />
-            )}
-            {isRejected ? "Reenviar" : "Enviar a revisión"}
-          </button>
-        ) : (
-          <div />
-        )}
+        {/* Spacer for layout */}
+        <div />
 
         {/* Icon actions — right-aligned */}
         <div className="flex items-center gap-1">
@@ -243,6 +225,23 @@ export function ProductCard({
           >
             <Pencil className="h-4 w-4" />
           </button>
+          {needsReview && onSubmitForReview && (
+            <button
+              type="button"
+              onClick={onSubmitForReview}
+              className="rounded p-1.5 text-primary hover:bg-muted"
+              aria-label={
+                isRejected ? "Reenviar a revisión" : "Enviar a revisión"
+              }
+              title={isRejected ? "Reenviar a revisión" : "Enviar a revisión"}
+            >
+              {isRejected ? (
+                <RefreshCw className="h-4 w-4" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </button>
+          )}
           {!needsReview && (
             <ShareMenu
               productTitle={product.title}

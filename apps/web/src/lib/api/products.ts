@@ -1346,3 +1346,77 @@ export function useSetProductBrokers() {
     },
   });
 }
+
+// ─── Batch Submit ────────────────────────────────────────────────────────────
+
+/**
+ * Response type for batch submit operation
+ */
+export interface BatchSubmitResponse {
+  results: Array<{
+    product_id: string;
+    status: "submitted" | "failed";
+    error_code?: string;
+    message?: string;
+  }>;
+  submitted_count: number;
+  failed_count: number;
+}
+
+/**
+ * Submit multiple products for approval
+ */
+export async function submitProductsForApproval(
+  productIds: string[],
+): Promise<BatchSubmitResponse> {
+  const res = await fetch("/api/v1/products/batch/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ product_ids: productIds }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "Failed to submit products for approval"),
+    );
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for submitting multiple products for approval
+ */
+export function useSubmitProductsForApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: submitProductsForApproval,
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      const { submitted_count, failed_count } = data;
+
+      if (failed_count === 0) {
+        toast.success(
+          `${submitted_count} producto${submitted_count !== 1 ? "s" : ""} enviado${submitted_count !== 1 ? "s" : ""} a revisión`,
+        );
+      } else if (submitted_count === 0) {
+        toast.error(
+          `No se pudo enviar ningún producto a revisión (${failed_count} error${failed_count !== 1 ? "es" : ""})`,
+        );
+      } else {
+        toast.warning(
+          `${submitted_count} enviado${submitted_count !== 1 ? "s" : ""}, ${failed_count} con error${failed_count !== 1 ? "es" : ""}`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to submit products");
+    },
+  });
+}
