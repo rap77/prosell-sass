@@ -95,7 +95,9 @@ export function ReviewQueueTable({
                   )}
                   <div>
                     <p className="font-medium text-ps-text-primary">
-                      {product.title}
+                      {product.title.length > 5
+                        ? product.title
+                        : `${product.attributes?.year || ""} ${product.attributes?.model || product.title}`.trim()}
                     </p>
                     <p className="text-sm text-ps-text-tertiary">
                       {product.id.substring(0, 8)}
