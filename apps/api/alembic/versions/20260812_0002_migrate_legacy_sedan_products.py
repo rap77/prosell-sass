@@ -66,9 +66,31 @@ def _validate_category(category_id: str) -> None:
 
 
 def upgrade() -> None:
+    # ponytail: skip if target category doesn't exist (e.g. fresh staging DB)
+    connection = op.get_bind()
+    category_exists = connection.execute(
+        sa.text("SELECT EXISTS(SELECT 1 FROM categories WHERE id = CAST(:category_id AS uuid))"),
+        {"category_id": AUTOMOTIVE_CATEGORY_ID},
+    ).scalar_one()
+
+    if not category_exists:
+        return  # No categories in this environment, skip migration
+
+    # ponytail: skip if no legacy products exist (e.g. staging/test environments)
+    products_exist = connection.execute(
+        sa.text(
+            "SELECT EXISTS(SELECT 1 FROM products WHERE id = ANY(CAST(:product_ids AS uuid[])))"
+        ),
+        {"product_ids": list(LEGACY_PRODUCT_IDS)},
+    ).scalar_one()
+
+    if not products_exist:
+        return  # No legacy products to migrate, skip
+
+    # If we're here, both category and products exist - run strict validation
     _validate_category(AUTOMOTIVE_CATEGORY_ID)
     _validate_legacy_products(LEGACY_SEDAN_CATEGORY_ID)
-    op.get_bind().execute(
+    connection.execute(
         sa.text(
             "UPDATE products SET category_id = CAST(:category_id AS uuid) "
             "WHERE id = ANY(CAST(:product_ids AS uuid[]))"
