@@ -79,29 +79,58 @@ export function ReviewQueueTable({
               </td>
               <td className="p-4">
                 <div className="flex items-center gap-3">
-                  {product.image_urls?.[0] && (
-                    <Image
-                      src={
-                        product.image_urls[0].startsWith("http")
-                          ? product.image_urls[0]
-                          : `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9002/prosell-assets"}/${product.image_urls[0]}`
-                      }
-                      alt={product.title}
-                      width={48}
-                      height={48}
-                      className="rounded object-cover"
-                      unoptimized
-                    />
-                  )}
-                  <div>
-                    <p className="font-medium text-ps-text-primary">
+                  <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-ps-elevated">
+                    {product.image_urls?.[0] ? (
+                      <Image
+                        src={
+                          product.image_urls[0].startsWith("http")
+                            ? product.image_urls[0]
+                            : `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9002/prosell-assets"}/${product.image_urls[0]}`
+                        }
+                        alt={product.title}
+                        width={48}
+                        height={48}
+                        className="rounded object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <svg
+                          className="h-6 w-6 text-ps-text-tertiary"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ps-text-primary">
                       {product.title.length > 5
                         ? product.title
                         : `${product.attributes?.year || ""} ${product.attributes?.model || product.title}`.trim()}
                     </p>
-                    <p className="text-sm text-ps-text-tertiary">
-                      {product.id.substring(0, 8)}
-                    </p>
+                    {product.org_code && (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <div
+                          className="h-2 w-2 flex-shrink-0 rounded-full"
+                          style={{
+                            backgroundColor: product.org_color || "#64748b",
+                          }}
+                          aria-hidden="true"
+                        />
+                        <span className="text-xs font-medium uppercase tracking-wide text-ps-text-secondary">
+                          {product.org_code}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </td>
