@@ -43,13 +43,31 @@ from prosell.application.dto.product import (
     UpdateProductRequest,
     VehicleImportRowResponse,
 )
+from prosell.application.dto.product.batch_availability import (
+    BatchAvailabilityResponse,
+)
+from prosell.application.dto.product.batch_availability_request import (
+    BatchAvailabilityRequest,
+)
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.batch_approve_products import (
     BatchApproveProductsUseCase,
 )
+from prosell.application.use_cases.product.batch_mark_sold_products import (
+    BatchMarkSoldProductsUseCase,
+)
+from prosell.application.use_cases.product.batch_pause_products import (
+    BatchPauseProductsUseCase,
+)
 from prosell.application.use_cases.product.batch_reject_products import (
     BatchRejectProductsUseCase,
+)
+from prosell.application.use_cases.product.batch_reserve_products import (
+    BatchReserveProductsUseCase,
+)
+from prosell.application.use_cases.product.batch_resume_products import (
+    BatchResumeProductsUseCase,
 )
 from prosell.application.use_cases.product.batch_submit_products import (
     BatchSubmitProductsUseCase,
@@ -999,6 +1017,126 @@ async def batch_submit_products(
         product_ids=request.product_ids,
         tenant_id=tenant_id,
         user_id=current_user.id,
+    )
+
+
+@router.post("/batch/reserve", response_model=BatchAvailabilityResponse)
+async def batch_reserve_products(
+    request: BatchAvailabilityRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchAvailabilityResponse:
+    """
+    Batch reserve products.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Transitions published products to reserved status.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+
+    # Super Admin can access all tenants (no tenant filter)
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchReserveProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=tenant_id,
+    )
+
+
+@router.post("/batch/pause", response_model=BatchAvailabilityResponse)
+async def batch_pause_products(
+    request: BatchAvailabilityRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchAvailabilityResponse:
+    """
+    Batch pause products.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Transitions published products to paused status.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+
+    # Super Admin can access all tenants (no tenant filter)
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchPauseProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=tenant_id,
+    )
+
+
+@router.post("/batch/resume", response_model=BatchAvailabilityResponse)
+async def batch_resume_products(
+    request: BatchAvailabilityRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchAvailabilityResponse:
+    """
+    Batch resume products.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Transitions reserved/paused products back to published status.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+
+    # Super Admin can access all tenants (no tenant filter)
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchResumeProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=tenant_id,
+    )
+
+
+@router.post("/batch/sold", response_model=BatchAvailabilityResponse)
+async def batch_mark_sold_products(
+    request: BatchAvailabilityRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> BatchAvailabilityResponse:
+    """
+    Batch mark products as sold.
+
+    Requires MARKETPLACE_PUBLISH permission.
+    Transitions published/reserved products to sold status.
+    Returns per-product results with counts.
+    """
+    _require_marketplace_publish(current_user)
+
+    # Super Admin can access all tenants (no tenant filter)
+    tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
+
+    if tenant_id is not None and current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = BatchMarkSoldProductsUseCase(repo)
+
+    return await use_case.execute(
+        product_ids=request.product_ids,
+        tenant_id=tenant_id,
     )
 
 
