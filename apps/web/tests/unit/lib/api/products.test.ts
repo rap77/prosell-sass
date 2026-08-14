@@ -28,6 +28,7 @@ vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
+    warning: vi.fn(),
   },
 }));
 
@@ -546,5 +547,181 @@ describe("useCreateProduct", () => {
 
     // Verify generic error toast was shown
     expect(toast.error).toHaveBeenCalledWith("Failed to create product");
+  });
+});
+
+// Batch availability actions tests
+describe("Batch Availability Hooks", () => {
+  const wrapper = createWrapper();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("useReserveProducts", () => {
+    it("POSTs to /batch/reserve and shows success toast for all success", async () => {
+      const { toast } = await import("sonner");
+      const { useReserveProducts } = await import("@/lib/api/products");
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            { product_id: "p1", status: "reserved" },
+            { product_id: "p2", status: "reserved" },
+          ],
+          success_count: 2,
+          failed_count: 0,
+        }),
+      });
+
+      const { result } = renderHook(() => useReserveProducts(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync(["p1", "p2"]);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/products/batch/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ product_ids: ["p1", "p2"] }),
+      });
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          expect.stringContaining("2 producto"),
+        );
+      });
+    });
+  });
+
+  describe("usePauseProducts", () => {
+    it("POSTs to /batch/pause and shows warning toast for partial success", async () => {
+      const { toast } = await import("sonner");
+      const { usePauseProducts } = await import("@/lib/api/products");
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            { product_id: "p1", status: "paused" },
+            { product_id: "p2", status: "failed", error_code: "not_found" },
+          ],
+          success_count: 1,
+          failed_count: 1,
+        }),
+      });
+
+      const { result } = renderHook(() => usePauseProducts(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync(["p1", "p2"]);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/products/batch/pause", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ product_ids: ["p1", "p2"] }),
+      });
+
+      await waitFor(() => {
+        expect(toast.warning).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("useResumeProducts", () => {
+    it("POSTs to /batch/resume and shows error toast for all failed", async () => {
+      const { toast } = await import("sonner");
+      const { useResumeProducts } = await import("@/lib/api/products");
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              product_id: "p1",
+              status: "failed",
+              error_code: "invalid_transition",
+            },
+          ],
+          success_count: 0,
+          failed_count: 1,
+        }),
+      });
+
+      const { result } = renderHook(() => useResumeProducts(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync(["p1"]);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/products/batch/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ product_ids: ["p1"] }),
+      });
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("useMarkProductsSold", () => {
+    it("POSTs to /batch/sold and invalidates product queries", async () => {
+      const { toast } = await import("sonner");
+      const { useMarkProductsSold } = await import("@/lib/api/products");
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [{ product_id: "p1", status: "sold" }],
+          success_count: 1,
+          failed_count: 0,
+        }),
+      });
+
+      function TestWrapper({ children }: { children: React.ReactNode }) {
+        return createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          children,
+        );
+      }
+
+      const { result } = renderHook(() => useMarkProductsSold(), {
+        wrapper: TestWrapper,
+      });
+
+      await act(async () => {
+        await result.current.mutateAsync(["p1"]);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/products/batch/sold", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ product_ids: ["p1"] }),
+      });
+
+      await waitFor(() => {
+        expect(invalidateQueries).toHaveBeenCalledWith({
+          queryKey: ["products"],
+        });
+        expect(toast.success).toHaveBeenCalled();
+      });
+    });
   });
 });

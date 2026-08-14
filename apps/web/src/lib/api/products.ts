@@ -1364,6 +1364,20 @@ export interface BatchSubmitResponse {
 }
 
 /**
+ * Response type for batch availability actions (reserve, pause, resume, sold)
+ */
+export interface BatchAvailabilityResponse {
+  results: Array<{
+    product_id: string;
+    status: "reserved" | "paused" | "resumed" | "sold" | "failed";
+    error_code?: "not_found" | "invalid_transition";
+    message?: string;
+  }>;
+  success_count: number;
+  failed_count: number;
+}
+
+/**
  * Submit multiple products for approval
  */
 export async function submitProductsForApproval(
@@ -1418,6 +1432,237 @@ export function useSubmitProductsForApproval() {
 
     onError: (err) => {
       toast.error(err.message || "Failed to submit products");
+    },
+  });
+}
+// ==================== Batch Availability Actions ====================
+
+/**
+ * Batch reserve products (published → reserved)
+ */
+export async function reserveProducts(
+  productIds: string[],
+): Promise<BatchAvailabilityResponse> {
+  const payload = { product_ids: productIds };
+  const res = await fetch("/api/v1/products/batch/reserve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to reserve products"));
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for batch reserving products
+ */
+export function useReserveProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: reserveProducts,
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      const { success_count, failed_count } = data;
+
+      if (failed_count === 0) {
+        toast.success(
+          `${success_count} producto${success_count !== 1 ? "s" : ""} apartado${success_count !== 1 ? "s" : ""}`,
+        );
+      } else if (success_count === 0) {
+        toast.error(
+          `No se pudo apartar ningún producto (${failed_count} error${failed_count !== 1 ? "es" : ""})`,
+        );
+      } else {
+        toast.warning(
+          `${success_count} apartado${success_count !== 1 ? "s" : ""}, ${failed_count} con error${failed_count !== 1 ? "es" : ""}`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to reserve products");
+    },
+  });
+}
+
+/**
+ * Batch pause products (published → paused)
+ */
+export async function pauseProducts(
+  productIds: string[],
+): Promise<BatchAvailabilityResponse> {
+  const payload = { product_ids: productIds };
+  const res = await fetch("/api/v1/products/batch/pause", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to pause products"));
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for batch pausing products
+ */
+export function usePauseProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: pauseProducts,
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      const { success_count, failed_count } = data;
+
+      if (failed_count === 0) {
+        toast.success(
+          `${success_count} producto${success_count !== 1 ? "s" : ""} pausado${success_count !== 1 ? "s" : ""}`,
+        );
+      } else if (success_count === 0) {
+        toast.error(
+          `No se pudo pausar ningún producto (${failed_count} error${failed_count !== 1 ? "es" : ""})`,
+        );
+      } else {
+        toast.warning(
+          `${success_count} pausado${success_count !== 1 ? "s" : ""}, ${failed_count} con error${failed_count !== 1 ? "es" : ""}`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to pause products");
+    },
+  });
+}
+
+/**
+ * Batch resume products (reserved/paused → published)
+ */
+export async function resumeProducts(
+  productIds: string[],
+): Promise<BatchAvailabilityResponse> {
+  const payload = { product_ids: productIds };
+  const res = await fetch("/api/v1/products/batch/resume", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to resume products"));
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for batch resuming products
+ */
+export function useResumeProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: resumeProducts,
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      const { success_count, failed_count } = data;
+
+      if (failed_count === 0) {
+        toast.success(
+          `${success_count} producto${success_count !== 1 ? "s" : ""} reanudado${success_count !== 1 ? "s" : ""}`,
+        );
+      } else if (success_count === 0) {
+        toast.error(
+          `No se pudo reanudar ningún producto (${failed_count} error${failed_count !== 1 ? "es" : ""})`,
+        );
+      } else {
+        toast.warning(
+          `${success_count} reanudado${success_count !== 1 ? "s" : ""}, ${failed_count} con error${failed_count !== 1 ? "es" : ""}`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to resume products");
+    },
+  });
+}
+
+/**
+ * Batch mark products as sold (published/reserved → sold)
+ */
+export async function markProductsSold(
+  productIds: string[],
+): Promise<BatchAvailabilityResponse> {
+  const payload = { product_ids: productIds };
+  const res = await fetch("/api/v1/products/batch/sold", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "Failed to mark products as sold"),
+    );
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for batch marking products as sold
+ */
+export function useMarkProductsSold() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: markProductsSold,
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      const { success_count, failed_count } = data;
+
+      if (failed_count === 0) {
+        toast.success(
+          `${success_count} producto${success_count !== 1 ? "s" : ""} marcado${success_count !== 1 ? "s" : ""} como vendido${success_count !== 1 ? "s" : ""}`,
+        );
+      } else if (success_count === 0) {
+        toast.error(
+          `No se pudo marcar ningún producto como vendido (${failed_count} error${failed_count !== 1 ? "es" : ""})`,
+        );
+      } else {
+        toast.warning(
+          `${success_count} marcado${success_count !== 1 ? "s" : ""} como vendido${success_count !== 1 ? "s" : ""}, ${failed_count} con error${failed_count !== 1 ? "es" : ""}`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to mark products as sold");
     },
   });
 }
