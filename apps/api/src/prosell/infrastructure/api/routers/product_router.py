@@ -1029,59 +1029,6 @@ async def submit_product_for_approval(
     return ProductResponse.from_entity(product)
 
 
-@router.post("/{product_id}/approve", response_model=ProductResponse)
-async def approve_product(
-    product_id: UUID,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> ProductResponse:
-    """
-    Approve a product.
-
-    Transitions product from PENDING → PUBLISHED.
-    Requires MASTER or VERIFIER role.
-    """
-    _require_marketplace_publish(current_user)
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
-
-    repo = SqlAlchemyProductRepository(db)
-    use_case = ApproveProductUseCase(repo)
-
-    return await use_case.execute(product_id, tenant_id, current_user.id)
-
-
-@router.post("/{product_id}/reject", response_model=ProductResponse)
-async def reject_product(
-    product_id: UUID,
-    request: RejectProductRequest,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> ProductResponse:
-    """
-    Reject a product.
-
-    Transitions product from PENDING → REJECTED.
-    Requires MASTER or VERIFIER role.
-    """
-    _require_marketplace_publish(current_user)
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
-
-    repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
-
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    product.reject(current_user.id, request.reason)
-    product = await repo.update(product)
-
-    return ProductResponse.from_entity(product)
-
-
 @router.post("/batch/approve", response_model=BatchReviewResponse)
 async def batch_approve_products(
     request: BatchApproveRequest,
@@ -1141,6 +1088,59 @@ async def batch_reject_products(
         user_id=current_user.id,
         reason=request.reason,
     )
+
+
+@router.post("/{product_id}/approve", response_model=ProductResponse)
+async def approve_product(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> ProductResponse:
+    """
+    Approve a product.
+
+    Transitions product from PENDING → PUBLISHED.
+    Requires MASTER or VERIFIER role.
+    """
+    _require_marketplace_publish(current_user)
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = ApproveProductUseCase(repo)
+
+    return await use_case.execute(product_id, tenant_id, current_user.id)
+
+
+@router.post("/{product_id}/reject", response_model=ProductResponse)
+async def reject_product(
+    product_id: UUID,
+    request: RejectProductRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> ProductResponse:
+    """
+    Reject a product.
+
+    Transitions product from PENDING → REJECTED.
+    Requires MASTER or VERIFIER role.
+    """
+    _require_marketplace_publish(current_user)
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, tenant_id)
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    product.reject(current_user.id, request.reason)
+    product = await repo.update(product)
+
+    return ProductResponse.from_entity(product)
 
 
 @router.post("/{product_id}/publish", response_model=ProductResponse)

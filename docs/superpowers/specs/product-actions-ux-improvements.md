@@ -1,6 +1,6 @@
 # Product Actions UX Improvements
 
-**Status**: IN PROGRESS (Phase 1)
+**Status**: IMPLEMENTED (Phase 1, merged 2026-08-13)
 **Created**: 2026-08-13
 **Owner**: Engineering Team
 **Priority**: High (Phase 1), Medium (Phase 2)
@@ -301,16 +301,16 @@ Bulk toolbar shows:
 
 ## Implementation Plan
 
-### Phase 1 (Current Sprint)
+### Phase 1 (Current Sprint) ✅ COMPLETED
 
 **Week 1**:
 
-- [ ] Backend: `BatchSubmitProductsUseCase` + tests
-- [ ] Backend: `POST /api/v1/products/batch/submit` endpoint
-- [ ] Frontend: `useSubmitProductsForApproval` hook
-- [ ] Frontend: DataGrid bulk toolbar batch submit button
-- [ ] Frontend: ProductCard icon with tooltip
-- [ ] E2E test: Batch submit workflow
+- [x] Backend: `BatchSubmitProductsUseCase` + tests
+- [x] Backend: `POST /api/v1/products/batch/submit` endpoint
+- [x] Frontend: `useSubmitProductsForApproval` hook
+- [x] Frontend: DataGrid bulk toolbar batch submit button
+- [x] Frontend: ProductCard icon with tooltip
+- [x] E2E test: Batch submit workflow (tests/e2e/layer2/products-contract.spec.ts P-26 to P-29)
 
 **Acceptance Criteria**:
 

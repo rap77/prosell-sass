@@ -19,6 +19,7 @@
  * - POST /api/v1/products/{id}/pause (pause product)
  * - POST /api/v1/products/{id}/resume (resume product)
  * - POST /api/v1/products/{id}/mark-sold (mark as sold)
+ * - POST /api/v1/products/batch/submit (batch submit for approval)
  *
  * Contract Validation Rules:
  * - title: required, string, 1-500 chars
@@ -808,6 +809,203 @@ test.describe("Layer 2: Product Lifecycle - Contract Validation", () => {
 
       // Assert: Verify 404
       expect(response.status()).toBe(404);
+    });
+  });
+
+  // ============================================
+  // GROUP 7: Batch Operations
+  // ============================================
+  test.describe("POST /api/v1/products/batch/submit - Batch Submit for Approval", () => {
+    test("P-26: should batch submit multiple draft products successfully", async ({
+      authenticatedRequest,
+    }) => {
+      // Arrange: Create 3 draft products
+      const productIds: string[] = [];
+
+      for (let i = 0; i < 3; i++) {
+        const createResponse = await authenticatedRequest.post("/api/v1/products", {
+          data: {
+            title: `Draft Product ${i + 1}`,
+            price_cents: 1000000,
+            category_id: categoryId,
+            condition: "used",
+            attributes: {
+              year: 2020,
+              make: "toyota",
+              model: "camry",
+            },
+          },
+        });
+        expect(createResponse.status()).toBe(201);
+        const product = await createResponse.json();
+        productIds.push(product.id);
+
+        // Verify initial status is draft
+        expect(product.status).toBe("draft");
+      }
+
+      // Act: Batch submit all draft products
+      const batchResponse = await authenticatedRequest.post(
+        "/api/v1/products/batch/submit",
+        {
+          data: {
+            product_ids: productIds,
+          },
+        },
+      );
+
+      // Assert: Verify batch response
+      expect(batchResponse.status()).toBe(200);
+      const batchResult = await batchResponse.json();
+
+      expect(batchResult.success_count).toBe(3);
+      expect(batchResult.failed_count).toBe(0);
+      expect(batchResult.results).toHaveLength(3);
+
+      // Verify all products are now pending
+      for (const productId of productIds) {
+        const getResponse = await authenticatedRequest.get(
+          `/api/v1/products/${productId}`,
+        );
+        expect(getResponse.status()).toBe(200);
+        const product = await getResponse.json();
+        expect(product.status).toBe("pending");
+        expect(product.submitted_for_approval_at).toBeTruthy();
+      }
+    });
+
+    test("P-27: should handle partial success with mixed valid/invalid products", async ({
+      authenticatedRequest,
+    }) => {
+      // Arrange: Create 2 draft products + 1 published product
+      const draftIds: string[] = [];
+
+      // Create 2 draft products
+      for (let i = 0; i < 2; i++) {
+        const createResponse = await authenticatedRequest.post("/api/v1/products", {
+          data: {
+            title: `Draft for Batch ${i + 1}`,
+            price_cents: 1000000,
+            category_id: categoryId,
+            condition: "used",
+            attributes: { year: 2020, make: "honda", model: "civic" },
+          },
+        });
+        const product = await createResponse.json();
+        draftIds.push(product.id);
+      }
+
+      // Create 1 published product (not eligible for submit)
+      const publishedResponse = await authenticatedRequest.post("/api/v1/products", {
+        data: {
+          title: "Published Product",
+          price_cents: 1000000,
+          category_id: categoryId,
+          condition: "used",
+          status: "published",
+          attributes: { year: 2020, make: "ford", model: "focus" },
+        },
+      });
+      const publishedProduct = await publishedResponse.json();
+
+      // Act: Batch submit mixed products
+      const batchResponse = await authenticatedRequest.post(
+        "/api/v1/products/batch/submit",
+        {
+          data: {
+            product_ids: [...draftIds, publishedProduct.id],
+          },
+        },
+      );
+
+      // Assert: Verify partial success
+      expect(batchResponse.status()).toBe(200);
+      const batchResult = await batchResponse.json();
+
+      expect(batchResult.success_count).toBe(2);
+      expect(batchResult.failed_count).toBe(1);
+
+      // Verify draft products succeeded
+      for (const productId of draftIds) {
+        const result = batchResult.results.find((r: any) => r.product_id === productId);
+        expect(result.success).toBe(true);
+      }
+
+      // Verify published product failed
+      const failedResult = batchResult.results.find(
+        (r: any) => r.product_id === publishedProduct.id,
+      );
+      expect(failedResult.success).toBe(false);
+      expect(failedResult.error).toBeTruthy();
+    });
+
+    test("P-28: should handle non-existent product IDs gracefully", async ({
+      authenticatedRequest,
+    }) => {
+      // Arrange: Create 1 valid draft + 1 non-existent ID
+      const createResponse = await authenticatedRequest.post("/api/v1/products", {
+        data: {
+          title: "Valid Draft",
+          price_cents: 1000000,
+          category_id: categoryId,
+          condition: "used",
+          attributes: { year: 2020, make: "mazda", model: "cx5" },
+        },
+      });
+      const validProduct = await createResponse.json();
+      const nonExistentId = "00000000-0000-0000-0000-000000000000";
+
+      // Act: Batch submit with mixed IDs
+      const batchResponse = await authenticatedRequest.post(
+        "/api/v1/products/batch/submit",
+        {
+          data: {
+            product_ids: [validProduct.id, nonExistentId],
+          },
+        },
+      );
+
+      // Assert: Verify partial success
+      expect(batchResponse.status()).toBe(200);
+      const batchResult = await batchResponse.json();
+
+      expect(batchResult.success_count).toBe(1);
+      expect(batchResult.failed_count).toBe(1);
+
+      // Verify valid product succeeded
+      const validResult = batchResult.results.find(
+        (r: any) => r.product_id === validProduct.id,
+      );
+      expect(validResult.success).toBe(true);
+
+      // Verify non-existent ID failed
+      const failedResult = batchResult.results.find(
+        (r: any) => r.product_id === nonExistentId,
+      );
+      expect(failedResult.success).toBe(false);
+      expect(failedResult.error).toContain("not found");
+    });
+
+    test("P-29: should handle empty product_ids array", async ({
+      authenticatedRequest,
+    }) => {
+      // Act: Batch submit with empty array
+      const batchResponse = await authenticatedRequest.post(
+        "/api/v1/products/batch/submit",
+        {
+          data: {
+            product_ids: [],
+          },
+        },
+      );
+
+      // Assert: Verify successful response with zero counts
+      expect(batchResponse.status()).toBe(200);
+      const batchResult = await batchResponse.json();
+
+      expect(batchResult.success_count).toBe(0);
+      expect(batchResult.failed_count).toBe(0);
+      expect(batchResult.results).toHaveLength(0);
     });
   });
 });

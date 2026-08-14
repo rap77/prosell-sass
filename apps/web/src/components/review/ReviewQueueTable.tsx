@@ -118,18 +118,14 @@ export function ReviewQueueTable({
                         : `${product.attributes?.year || ""} ${product.attributes?.model || product.title}`.trim()}
                     </p>
                     {product.org_code && (
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <div
-                          className="h-2 w-2 flex-shrink-0 rounded-full"
-                          style={{
-                            backgroundColor: product.org_color || "#64748b",
-                          }}
-                          aria-hidden="true"
-                        />
-                        <span className="text-xs font-medium uppercase tracking-wide text-ps-text-secondary">
-                          {product.org_code}
-                        </span>
-                      </div>
+                      <span
+                        className="mt-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white"
+                        style={{
+                          backgroundColor: product.org_color || "#64748b",
+                        }}
+                      >
+                        {product.org_code}
+                      </span>
                     )}
                   </div>
                 </div>
