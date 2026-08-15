@@ -823,19 +823,22 @@ test.describe("Layer 2: Product Lifecycle - Contract Validation", () => {
       const productIds: string[] = [];
 
       for (let i = 0; i < 3; i++) {
-        const createResponse = await authenticatedRequest.post("/api/v1/products", {
-          data: {
-            title: `Draft Product ${i + 1}`,
-            price_cents: 1000000,
-            category_id: categoryId,
-            condition: "used",
-            attributes: {
-              year: 2020,
-              make: "toyota",
-              model: "camry",
+        const createResponse = await authenticatedRequest.post(
+          "/api/v1/products",
+          {
+            data: {
+              title: `Draft Product ${i + 1}`,
+              price_cents: 1000000,
+              category_id: categoryId,
+              condition: "used",
+              attributes: {
+                year: 2020,
+                make: "toyota",
+                model: "camry",
+              },
             },
           },
-        });
+        );
         expect(createResponse.status()).toBe(201);
         const product = await createResponse.json();
         productIds.push(product.id);
@@ -882,30 +885,36 @@ test.describe("Layer 2: Product Lifecycle - Contract Validation", () => {
 
       // Create 2 draft products
       for (let i = 0; i < 2; i++) {
-        const createResponse = await authenticatedRequest.post("/api/v1/products", {
-          data: {
-            title: `Draft for Batch ${i + 1}`,
-            price_cents: 1000000,
-            category_id: categoryId,
-            condition: "used",
-            attributes: { year: 2020, make: "honda", model: "civic" },
+        const createResponse = await authenticatedRequest.post(
+          "/api/v1/products",
+          {
+            data: {
+              title: `Draft for Batch ${i + 1}`,
+              price_cents: 1000000,
+              category_id: categoryId,
+              condition: "used",
+              attributes: { year: 2020, make: "honda", model: "civic" },
+            },
           },
-        });
+        );
         const product = await createResponse.json();
         draftIds.push(product.id);
       }
 
       // Create 1 published product (not eligible for submit)
-      const publishedResponse = await authenticatedRequest.post("/api/v1/products", {
-        data: {
-          title: "Published Product",
-          price_cents: 1000000,
-          category_id: categoryId,
-          condition: "used",
-          status: "published",
-          attributes: { year: 2020, make: "ford", model: "focus" },
+      const publishedResponse = await authenticatedRequest.post(
+        "/api/v1/products",
+        {
+          data: {
+            title: "Published Product",
+            price_cents: 1000000,
+            category_id: categoryId,
+            condition: "used",
+            status: "published",
+            attributes: { year: 2020, make: "ford", model: "focus" },
+          },
         },
-      });
+      );
       const publishedProduct = await publishedResponse.json();
 
       // Act: Batch submit mixed products
@@ -927,7 +936,9 @@ test.describe("Layer 2: Product Lifecycle - Contract Validation", () => {
 
       // Verify draft products succeeded
       for (const productId of draftIds) {
-        const result = batchResult.results.find((r: any) => r.product_id === productId);
+        const result = batchResult.results.find(
+          (r: any) => r.product_id === productId,
+        );
         expect(result.success).toBe(true);
       }
 
@@ -943,15 +954,18 @@ test.describe("Layer 2: Product Lifecycle - Contract Validation", () => {
       authenticatedRequest,
     }) => {
       // Arrange: Create 1 valid draft + 1 non-existent ID
-      const createResponse = await authenticatedRequest.post("/api/v1/products", {
-        data: {
-          title: "Valid Draft",
-          price_cents: 1000000,
-          category_id: categoryId,
-          condition: "used",
-          attributes: { year: 2020, make: "mazda", model: "cx5" },
+      const createResponse = await authenticatedRequest.post(
+        "/api/v1/products",
+        {
+          data: {
+            title: "Valid Draft",
+            price_cents: 1000000,
+            category_id: categoryId,
+            condition: "used",
+            attributes: { year: 2020, make: "mazda", model: "cx5" },
+          },
         },
-      });
+      );
       const validProduct = await createResponse.json();
       const nonExistentId = "00000000-0000-0000-0000-000000000000";
 
