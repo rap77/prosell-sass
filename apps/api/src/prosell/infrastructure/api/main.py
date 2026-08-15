@@ -36,6 +36,7 @@ from prosell.infrastructure.api.routers import (
     health_router,
     image_router,
     lead_router,
+    marketplace_access_router,
     notification_router,
     org_router,
     org_verticals_router,
@@ -365,6 +366,12 @@ app.include_router(
     admin_organizations_router,
     prefix="/api/v1/admin/organizations",
     tags=["Admin", "Organizations"],
+)
+
+app.include_router(
+    marketplace_access_router,
+    prefix="/api/v1",
+    tags=["Marketplace Access"],
 )
 
 app.include_router(

@@ -16,6 +16,9 @@ from prosell.infrastructure.api.routers.fb_sync_router import router as fb_sync_
 from prosell.infrastructure.api.routers.health_router import router as health_router
 from prosell.infrastructure.api.routers.image_router import router as image_router
 from prosell.infrastructure.api.routers.lead_router import router as lead_router
+from prosell.infrastructure.api.routers.marketplace_access_router import (
+    router as marketplace_access_router,
+)
 from prosell.infrastructure.api.routers.notification_router import router as notification_router
 from prosell.infrastructure.api.routers.org_router import router as org_router
 from prosell.infrastructure.api.routers.org_verticals_router import router as org_verticals_router
@@ -44,6 +47,7 @@ __all__ = [
     "health_router",
     "image_router",
     "lead_router",
+    "marketplace_access_router",
     "notification_router",
     "org_router",
     "org_verticals_router",

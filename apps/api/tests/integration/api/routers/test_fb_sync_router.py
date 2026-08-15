@@ -308,6 +308,136 @@ class TestPendingEndpointTenantScoping:
         ]
 
 
+class TestMarketplaceAccessGrantLifecycle:
+    """Tests for marketplace access grant status lifecycle in /pending."""
+
+    async def test_pending_grant_does_not_authorize_dealer_products(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """Products from dealers with pending grants should NOT appear in /pending."""
+        prosell = await _create_tenant(shared_session)
+        dealer = await _create_tenant(shared_session)
+        account = await _create_fb_account(shared_session, prosell.tenant_id, "bot@prosell.com")
+
+        category = await _create_category(shared_session, dealer.tenant_id)
+        product = await _create_product(
+            shared_session,
+            dealer.tenant_id,
+            category.id,
+            organization_id=dealer.id,
+        )
+        # Grant exists but status is "pending" (not yet approved)
+        shared_session.add(
+            OrganizationMarketplaceAccessModel(
+                inventory_owner_organization_id=dealer.id,
+                operator_organization_id=prosell.id,
+                can_manage_inventory=True,
+                can_publish_marketplace=True,
+                status="pending",  # NOT active
+            )
+        )
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [{"product_id": product.id, "fb_account_id": account.id}],
+        )
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/pending",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        # Product should NOT appear because grant is pending
+        assert response.json()["products"] == []
+
+    async def test_revoked_grant_blocks_dealer_products(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """Products from dealers with revoked grants should NOT appear in /pending."""
+        prosell = await _create_tenant(shared_session)
+        dealer = await _create_tenant(shared_session)
+        account = await _create_fb_account(shared_session, prosell.tenant_id, "bot@prosell.com")
+
+        category = await _create_category(shared_session, dealer.tenant_id)
+        product = await _create_product(
+            shared_session,
+            dealer.tenant_id,
+            category.id,
+            organization_id=dealer.id,
+        )
+        # Grant was active but now revoked
+        shared_session.add(
+            OrganizationMarketplaceAccessModel(
+                inventory_owner_organization_id=dealer.id,
+                operator_organization_id=prosell.id,
+                can_manage_inventory=True,
+                can_publish_marketplace=True,
+                status="revoked",  # Revoked access
+            )
+        )
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [{"product_id": product.id, "fb_account_id": account.id}],
+        )
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/pending",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        # Product should NOT appear because grant is revoked
+        assert response.json()["products"] == []
+
+    async def test_can_manage_inventory_without_publish_permission_blocks_products(
+        self, shared_session: AsyncSession, _setup_override: None
+    ) -> None:
+        """Active grants without can_publish_marketplace should NOT authorize publishing."""
+        prosell = await _create_tenant(shared_session)
+        dealer = await _create_tenant(shared_session)
+        account = await _create_fb_account(shared_session, prosell.tenant_id, "bot@prosell.com")
+
+        category = await _create_category(shared_session, dealer.tenant_id)
+        product = await _create_product(
+            shared_session,
+            dealer.tenant_id,
+            category.id,
+            organization_id=dealer.id,
+        )
+        # Grant is active and can manage inventory, but CANNOT publish to marketplace
+        shared_session.add(
+            OrganizationMarketplaceAccessModel(
+                inventory_owner_organization_id=dealer.id,
+                operator_organization_id=prosell.id,
+                can_manage_inventory=True,
+                can_publish_marketplace=False,  # No publish permission
+                status="active",
+            )
+        )
+        await shared_session.execute(
+            product_fb_account_assignments.insert(),
+            [{"product_id": product.id, "fb_account_id": account.id}],
+        )
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/fb-sync/pending",
+                params={"account_email": account.email},
+                headers={"X-Bot-Token": BOT_TOKEN},
+            )
+
+        assert response.status_code == 200
+        # Product should NOT appear because can_publish_marketplace is False
+        assert response.json()["products"] == []
+
+
 class TestOrganizationAndVerticalFilters:
     """Tests for dashboard filter options resolved from the selected account."""
 

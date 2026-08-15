@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prosell.infrastructure.database.base import Base
@@ -15,6 +15,12 @@ class OrganizationMarketplaceAccessModel(Base):
     The inventory owner remains the product tenant. The operator can act only
     within the capabilities the dealer granted, keeping cross-tenant access
     explicit and auditable.
+
+    Lifecycle states:
+    - pending: inventory owner requested, awaiting operator approval
+    - active: operator approved, grant is in effect
+    - rejected: operator rejected the request
+    - revoked: either party revoked an active grant
     """
 
     __tablename__ = "organization_marketplace_access"
@@ -39,7 +45,36 @@ class OrganizationMarketplaceAccessModel(Base):
     can_publish_marketplace: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
-    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="pending"
+    )  # pending, active, rejected, revoked
+
+    # Audit trail: who performed each action
+    requested_by_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    approved_by_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    rejected_by_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    revoked_by_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Rejection/revocation reasons
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    revocation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Timestamps for each state transition
+    requested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )

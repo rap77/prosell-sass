@@ -23,6 +23,7 @@ import {
   Layers,
   Facebook,
   ClipboardCheck,
+  ShieldCheck,
 } from "lucide-react";
 
 /**
@@ -111,6 +112,12 @@ const navigationItems: NavItem[] = [
     label: "Organizaciones",
     href: "/admin/organizations",
     icon: Building2,
+    group: "concesionarios",
+  },
+  {
+    label: "Marketplace Access",
+    href: "/admin/organizations/marketplace-access",
+    icon: ShieldCheck,
     group: "concesionarios",
   },
   {
