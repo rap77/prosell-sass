@@ -51,3 +51,13 @@ class RevokeRequest(BaseModel):
     """Request to revoke an active grant."""
 
     reason: str
+
+
+class CreateAccessAsAdminRequest(BaseModel):
+    """Request to create marketplace access grant as admin (bypass REQUEST flow)."""
+
+    inventory_owner_organization_id: UUID
+    operator_organization_id: UUID
+    can_publish_marketplace: bool = True
+    can_manage_inventory: bool = False
+    initial_status: str = "pending"  # "pending" or "active"

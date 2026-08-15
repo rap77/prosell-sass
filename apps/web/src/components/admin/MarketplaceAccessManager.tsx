@@ -31,6 +31,8 @@ import {
 } from "@/lib/api/marketplace-access";
 import { useOrganizations } from "@/lib/api/organizations";
 import type { MarketplaceAccessGrant } from "@/lib/api/schemas/marketplace-access";
+import { CreateMarketplaceAccessDialog } from "@/components/admin/CreateMarketplaceAccessDialog";
+import { useAuthStore } from "@/stores/authStore";
 
 // Status tabs configuration
 const STATUS_TABS = [
@@ -264,6 +266,7 @@ export function MarketplaceAccessManager() {
   const approveMutation = useApproveMarketplaceAccess();
   const rejectMutation = useRejectMarketplaceAccess();
   const revokeMutation = useRevokeMarketplaceAccess();
+  const user = useAuthStore((state) => state.user);
 
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -348,17 +351,29 @@ export function MarketplaceAccessManager() {
     );
   }
 
+  // ponytail: find ProSell org (operator) - use logged-in user's organization
+  const prosellOrg = user?.organization_id
+    ? organizations.find((o) => o.id === user.organization_id)
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Marketplace Access
-        </h2>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Gestiona autorizaciones cross-organization para publicar inventario
-          externo
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Marketplace Access
+          </h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Gestiona autorizaciones cross-organization para publicar inventario
+            externo
+          </p>
+        </div>
+        {prosellOrg && (
+          <CreateMarketplaceAccessDialog
+            operatorOrganizationId={prosellOrg.id}
+          />
+        )}
       </div>
 
       {/* Filters */}

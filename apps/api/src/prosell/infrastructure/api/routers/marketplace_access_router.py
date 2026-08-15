@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.marketplace_access import (
     AccessGrantResponse,
+    CreateAccessAsAdminRequest,
     RejectRequest,
     RequestAccessRequest,
     RevokeRequest,
@@ -74,6 +75,67 @@ async def request_access(
         can_publish_marketplace=request.can_publish_marketplace,
         can_manage_inventory=request.can_manage_inventory,
     )
+
+    created = await repo.create(grant)
+    await db.commit()
+
+    return _entity_to_dto(created)
+
+
+@router.post(
+    "/create-as-admin",
+    response_model=AccessGrantResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_access_as_admin(
+    request: CreateAccessAsAdminRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> AccessGrantResponse:
+    """Create marketplace access grant as admin (bypass REQUEST flow).
+
+    Allows ProSell admin to create grants directly without waiting for dealer request.
+    Can create grants in 'pending' or 'active' status.
+    """
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="User must belong to an organization")
+
+    # Verify current user is admin of operator organization
+    if request.operator_organization_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Can only create grants for your own organization",
+        )
+
+    # TODO: Add admin role check when roles are implemented
+    # if not current_user.has_role("admin"):
+    #     raise HTTPException(status_code=403, detail="Admin role required")
+
+    repo = SqlAlchemyMarketplaceAccessRepository(db)
+
+    # Check if grant already exists
+    existing = await repo.get_by_orgs(
+        request.inventory_owner_organization_id, request.operator_organization_id
+    )
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Grant already exists with status: {existing.status.value}",
+        )
+
+    # Create grant entity
+    grant = MarketplaceAccessGrant.create(
+        id=uuid4(),
+        inventory_owner_organization_id=request.inventory_owner_organization_id,
+        operator_organization_id=request.operator_organization_id,
+        requested_by_user_id=current_user.id,
+        can_publish_marketplace=request.can_publish_marketplace,
+        can_manage_inventory=request.can_manage_inventory,
+    )
+
+    # If initial_status is active, approve it immediately
+    if request.initial_status == "active":
+        grant.approve(approver_id=current_user.id)
 
     created = await repo.create(grant)
     await db.commit()

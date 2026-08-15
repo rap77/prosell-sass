@@ -31,3 +31,19 @@ export const MarketplaceAccessListResponseSchema = z.array(
 export type MarketplaceAccessGrant = z.infer<
   typeof MarketplaceAccessGrantSchema
 >;
+
+/**
+ * Request schema for creating marketplace access as admin.
+ * Maps to CreateAccessAsAdminRequest from marketplace_access.py
+ */
+export const CreateMarketplaceAccessAsAdminSchema = z.object({
+  inventory_owner_organization_id: z.string().uuid(),
+  operator_organization_id: z.string().uuid(),
+  can_publish_marketplace: z.boolean().default(true),
+  can_manage_inventory: z.boolean().default(false),
+  initial_status: z.enum(["pending", "active"]).default("pending"),
+});
+
+export type CreateMarketplaceAccessAsAdminRequest = z.infer<
+  typeof CreateMarketplaceAccessAsAdminSchema
+>;

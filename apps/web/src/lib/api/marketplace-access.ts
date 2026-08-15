@@ -3,6 +3,7 @@
  *
  * Endpoints:
  * - POST /api/v1/marketplace-access/request
+ * - POST /api/v1/marketplace-access/create-as-admin
  * - GET  /api/v1/marketplace-access/requests
  * - POST /api/v1/marketplace-access/{id}/approve
  * - POST /api/v1/marketplace-access/{id}/reject
@@ -16,8 +17,10 @@ import {
 } from "@tanstack/react-query";
 import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import {
+  CreateMarketplaceAccessAsAdminSchema,
   MarketplaceAccessGrantSchema,
   MarketplaceAccessListResponseSchema,
+  type CreateMarketplaceAccessAsAdminRequest,
   type MarketplaceAccessGrant,
 } from "@/lib/api/schemas/marketplace-access";
 
@@ -72,6 +75,27 @@ export function useRequestMarketplaceAccess() {
       input: RequestAccessInput,
     ): Promise<MarketplaceAccessGrant> => {
       const raw = await postJson("/api/v1/marketplace-access/request", input);
+      return MarketplaceAccessGrantSchema.parse(raw);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["marketplace-access-grants"],
+      });
+    },
+  });
+}
+
+/** Create marketplace access as admin (operator admin only - bypass REQUEST). */
+export function useCreateMarketplaceAccessAsAdmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      input: CreateMarketplaceAccessAsAdminRequest,
+    ): Promise<MarketplaceAccessGrant> => {
+      const raw = await postJson(
+        "/api/v1/marketplace-access/create-as-admin",
+        input,
+      );
       return MarketplaceAccessGrantSchema.parse(raw);
     },
     onSuccess: () => {
