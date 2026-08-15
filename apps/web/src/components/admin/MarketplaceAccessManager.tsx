@@ -351,9 +351,9 @@ export function MarketplaceAccessManager() {
     );
   }
 
-  // ponytail: find ProSell org (operator) - use logged-in user's organization
-  const prosellOrg = user?.organization_id
-    ? organizations.find((o) => o.id === user.organization_id)
+  // ponytail: find ProSell org (operator) - use logged-in user's tenant_id
+  const prosellOrg = user?.tenant_id
+    ? organizations.find((o) => o.id === user.tenant_id)
     : null;
 
   return (
