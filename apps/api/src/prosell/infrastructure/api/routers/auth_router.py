@@ -672,6 +672,7 @@ async def get_auth_state(
             role=current_user.get("roles", [None])[0],
             is_email_verified=user.email_verified,
             is_2fa_enabled=user.is_2fa_enabled,
+            tenant_id=str(user.tenant_id) if user.tenant_id else None,
         ),
     )
 

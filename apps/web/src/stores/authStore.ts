@@ -215,6 +215,7 @@ function toMigratedUser(user: PersistedAuthState["user"]): User | null {
     role: user.role ?? "Seller",
     is_email_verified: user.is_email_verified,
     is_2fa_enabled: user.is_2fa_enabled,
+    organization_id: (user as any).organization_id ?? null,
   };
 }
 
@@ -530,6 +531,7 @@ export const useAuthStore = create<AuthState>()(
               last_name: state.user.last_name,
               is_email_verified: state.user.is_email_verified,
               is_2fa_enabled: state.user.is_2fa_enabled,
+              organization_id: state.user.organization_id,
             }
           : null,
         isAuthenticated: state.isAuthenticated,

@@ -57,6 +57,7 @@ class AuthStateUserResponse(BaseModel):
     role: str | None = None
     is_email_verified: bool = False
     is_2fa_enabled: bool = False
+    tenant_id: str | None = None
 
 
 class AuthStateResponse(BaseModel):

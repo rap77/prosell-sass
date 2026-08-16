@@ -48,6 +48,19 @@ export function CreateMarketplaceAccessDialog({
   const inventoryOwnerOrgs =
     organizations?.filter((org) => org.id !== operatorOrganizationId) ?? [];
 
+  // ponytail: debug log - remove after fixing
+  console.log("DEBUG - Organizations:", {
+    total: organizations?.length ?? 0,
+    filtered: inventoryOwnerOrgs.length,
+    operatorId: operatorOrganizationId,
+    loadingOrgs,
+  });
+  console.log("DEBUG - Form state:", {
+    inventoryOwnerId,
+    initialStatus,
+    open,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -102,7 +115,10 @@ export function CreateMarketplaceAccessDialog({
             </Label>
             <Select
               value={inventoryOwnerId}
-              onValueChange={setInventoryOwnerId}
+              onValueChange={(value) => {
+                console.log("DEBUG - Inventory Owner selected:", value);
+                setInventoryOwnerId(value);
+              }}
             >
               <SelectTrigger id="inventory-owner">
                 <SelectValue placeholder="Seleccionar organización..." />
@@ -142,7 +158,7 @@ export function CreateMarketplaceAccessDialog({
               }}
             >
               <SelectTrigger id="initial-status">
-                <SelectValue />
+                <SelectValue placeholder="Seleccionar estado..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pending">
