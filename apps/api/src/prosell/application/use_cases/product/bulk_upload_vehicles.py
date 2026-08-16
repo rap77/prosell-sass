@@ -19,6 +19,7 @@ from typing import cast
 from uuid import UUID
 
 from prosell.application.dto.product.create import CreateProductRequest
+from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.product import Product
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
@@ -76,6 +77,7 @@ class BulkUploadVehiclesUseCase:
         product_repository: AbstractProductRepository,
         category_repository: AbstractCategoryRepository,
         organization_repository: AbstractOrganizationRepository,
+        do_spaces_service: IDOSpacesService,
         csv_image_mapper: CSVImageMapper | None = None,
     ) -> None:
         """
@@ -85,11 +87,13 @@ class BulkUploadVehiclesUseCase:
             product_repository: Product repository for upsert operations
             category_repository: Category repository for validation
             organization_repository: Organization repository for code resolution
+            do_spaces_service: DO Spaces service for image upload
             csv_image_mapper: Image mapper for ZIP-based image association
         """
         self.product_repository = product_repository
         self.category_repository = category_repository
         self.organization_repository = organization_repository
+        self.do_spaces_service = do_spaces_service
         self.csv_image_mapper = csv_image_mapper or CSVImageMapper()
 
     async def execute(
@@ -314,6 +318,24 @@ class BulkUploadVehiclesUseCase:
         status: str
         images_uploaded = 0
 
+        # Upload images to DO Spaces if mapping provided
+        uploaded_urls: list[str] = []
+        if image_mapping and vin:
+            vin_images = [m for m in image_mapping.mapped if m.vin == vin]
+            for img in vin_images:
+                try:
+                    # ponytail: upload_file returns public URL, use that
+                    await self.do_spaces_service.upload_file(
+                        file_path=img.do_spaces_key,
+                        file_bytes=img.file_bytes,
+                        content_type="image/jpeg",
+                        make_public=True,  # FB needs public URLs
+                    )
+                    uploaded_urls.append(img.do_spaces_key)
+                    images_uploaded += 1
+                except Exception as e:
+                    logger.error("Failed to upload image %s: %s", img.do_spaces_key, e)
+
         if existing:
             # Update existing product
             product_id = existing.id
@@ -326,12 +348,7 @@ class BulkUploadVehiclesUseCase:
             existing.attributes = request.attributes
             existing.location_city = request.location_city
             existing.location_state = request.location_state
-
-            # Forward image_urls from the ZIP mapping (filled in below)
-            if image_mapping and vin:
-                existing.image_urls = [
-                    m.do_spaces_key for m in image_mapping.mapped if m.vin == vin
-                ]
+            existing.image_urls = uploaded_urls
 
             await self.product_repository.update(existing)
         else:
@@ -347,23 +364,12 @@ class BulkUploadVehiclesUseCase:
                 attributes=request.attributes,
                 location_city=request.location_city,
                 location_state=request.location_state,
-                # Forward image_urls from the ZIP mapping (filled in below
-                # — we re-derive here to keep both branches colocated).
-                image_urls=(
-                    [m.do_spaces_key for m in image_mapping.mapped if m.vin == vin]
-                    if image_mapping and vin
-                    else []
-                ),
+                image_urls=uploaded_urls,
             )
 
             created = await self.product_repository.create(product)
             product_id = created.id
             status = "imported"
-
-        # Associate images if mapping provided and we have images for this VIN
-        if image_mapping and vin:
-            vin_images = [m for m in image_mapping.mapped if m.vin == vin]
-            images_uploaded = len(vin_images)
 
         return VehicleImportRowResult(
             row_number=mapped_row.row_number,

@@ -39,6 +39,7 @@ class TestBulkUploadVehiclesUseCase:
             product_repository=product_repository,
             category_repository=AsyncMock(),
             organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
         )
 
         with pytest.raises(ValueError, match="Unknown organization codes: DJ, RM"):
@@ -97,6 +98,7 @@ class TestBulkUploadVehiclesUseCase:
             product_repository=product_repository,
             category_repository=category_repository,
             organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
         )
 
         # Act
@@ -150,6 +152,7 @@ class TestBulkUploadVehiclesUseCase:
             product_repository=product_repository,
             category_repository=category_repository,
             organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
         )
 
         # Act
@@ -198,6 +201,7 @@ class TestBulkUploadVehiclesUseCase:
             product_repository=product_repository,
             category_repository=category_repository,
             organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
         )
 
         # Act

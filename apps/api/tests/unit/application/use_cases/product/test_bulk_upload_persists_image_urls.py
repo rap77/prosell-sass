@@ -106,6 +106,10 @@ class TestBulkUploadPersistsImageUrls:
         product_repo.create.side_effect = capture
         product_repo.update.side_effect = capture
 
+        # Mock DO Spaces service to verify upload calls
+        do_spaces_service = AsyncMock()
+        do_spaces_service.upload_file.return_value = "https://spaces.example.com/fake-url"
+
         # Act — pass the mocked mapper so we don't depend on the broken one
         organization_repo = AsyncMock()
         organization_repo.get_by_codes.return_value = [
@@ -115,6 +119,7 @@ class TestBulkUploadPersistsImageUrls:
             product_repository=product_repo,
             category_repository=category_repo,
             organization_repository=organization_repo,
+            do_spaces_service=do_spaces_service,
             csv_image_mapper=mocked_mapper,
         )
         result = await use_case.execute(
@@ -151,3 +156,19 @@ class TestBulkUploadPersistsImageUrls:
             assert vin in url, (
                 f"Each image_urls entry should reference the product's VIN, got: {url}"
             )
+
+        # Verify upload_file was called for each image with correct bytes
+        assert do_spaces_service.upload_file.call_count == 2, (
+            f"Expected upload_file to be called 2 times (one per image), "
+            f"got {do_spaces_service.upload_file.call_count}"
+        )
+        # Check first upload call
+        call_1 = do_spaces_service.upload_file.call_args_list[0]
+        assert call_1.kwargs["file_path"] == expected_keys[0]
+        assert call_1.kwargs["file_bytes"] == b"\xff\xd8\xff\xe0fake-jpeg"
+        assert call_1.kwargs["content_type"] == "image/jpeg"
+        assert call_1.kwargs["make_public"] is True
+        # Check second upload call
+        call_2 = do_spaces_service.upload_file.call_args_list[1]
+        assert call_2.kwargs["file_path"] == expected_keys[1]
+        assert call_2.kwargs["file_bytes"] == b"\xff\xd8\xff\xe0fake-jpeg-2"
