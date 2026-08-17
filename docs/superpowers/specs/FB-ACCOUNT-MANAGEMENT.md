@@ -1,8 +1,9 @@
 # FB Account Management & Marketplace Integration
 
-**Status**: DRAFT
+**Status**: IMPLEMENTED (merged 2026-07-29, latest commit eb379a90)
 **Author**: Claude + User
-**Date**: 2026-07-29
+**Created**: 2026-07-29
+**Merged**: 2026-07-29
 
 ---
 
