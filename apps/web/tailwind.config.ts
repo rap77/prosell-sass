@@ -132,6 +132,12 @@ const config: Config = {
         "input-focus": "0 0 0 3px var(--ps-input-focus-shadow)",
         "input-error": "0 0 0 3px var(--ps-input-error-shadow)",
       },
+      transitionDuration: {
+        180: "180ms",
+      },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

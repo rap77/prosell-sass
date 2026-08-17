@@ -210,7 +210,7 @@ function RecentLeadsList({
           <Link
             key={lead.id}
             href="/vendedor/leads"
-            className="flex items-center gap-3 py-[10px] px-3 rounded-lg no-underline transition-colors duration-[180ms] min-w-0 hover:bg-ps-table-row-hover"
+            className="flex items-center gap-3 py-[10px] px-3 rounded-lg no-underline transition-colors duration-180 min-w-0 hover:bg-ps-table-row-hover"
           >
             <div
               className="w-9 h-9 rounded-full inline-flex items-center justify-center text-xs font-bold tracking-[0.02em] text-ps-base flex-shrink-0"
@@ -408,7 +408,7 @@ export default function DashboardPage() {
 
         <Link
           href="/publications"
-          className="inline-flex items-center gap-2 bg-ps-cyan text-ps-base py-[9px] px-4 rounded-lg text-[13.5px] font-semibold no-underline transition-all duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0 hover:bg-ps-cyan-hover hover:shadow-[0_6px_20px_rgba(77,184,255,0.3)] hover:-translate-y-px"
+          className="inline-flex items-center gap-2 bg-ps-cyan text-ps-base py-[9px] px-4 rounded-lg text-[13.5px] font-semibold no-underline transition-all duration-180 ease-smooth flex-shrink-0 hover:bg-ps-cyan-hover hover:shadow-[0_6px_20px_rgba(77,184,255,0.3)] hover:-translate-y-px"
         >
           <Plus size={14} strokeWidth={2.5} />
           Nueva publicación
