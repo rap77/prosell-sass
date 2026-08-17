@@ -431,6 +431,46 @@ export interface BatchReviewResponse {
   failed_count: number;
 }
 
+const batchReviewItemResultSchema = z.object({
+  product_id: z.string(),
+  status: z.enum(["approved", "rejected", "failed"]),
+  error_code: z.enum(["not_found", "invalid_transition"]).nullable().optional(),
+  message: z.string().nullable().optional(),
+});
+
+const batchReviewResponseSchema = z.object({
+  results: z.array(batchReviewItemResultSchema),
+  approved_count: z.number(),
+  rejected_count: z.number(),
+  failed_count: z.number(),
+});
+
+const batchSubmitResponseSchema = z.object({
+  results: z.array(
+    z.object({
+      product_id: z.string(),
+      status: z.enum(["submitted", "failed"]),
+      error_code: z.string().optional(),
+      message: z.string().optional(),
+    }),
+  ),
+  submitted_count: z.number(),
+  failed_count: z.number(),
+});
+
+const batchAvailabilityResponseSchema = z.object({
+  results: z.array(
+    z.object({
+      product_id: z.string(),
+      status: z.enum(["reserved", "paused", "resumed", "sold", "failed"]),
+      error_code: z.enum(["not_found", "invalid_transition"]).optional(),
+      message: z.string().optional(),
+    }),
+  ),
+  success_count: z.number(),
+  failed_count: z.number(),
+});
+
 // ==================== Batch Review API Functions ====================
 
 /**
@@ -453,7 +493,7 @@ export async function batchApproveProducts(
     );
   }
 
-  return res.json();
+  return batchReviewResponseSchema.parse(await res.json());
 }
 
 /**
@@ -477,7 +517,7 @@ export async function batchRejectProducts(
     );
   }
 
-  return res.json();
+  return batchReviewResponseSchema.parse(await res.json());
 }
 
 /**
@@ -1398,7 +1438,7 @@ export async function submitProductsForApproval(
     );
   }
 
-  return res.json();
+  return batchSubmitResponseSchema.parse(await res.json());
 }
 
 /**
@@ -1456,7 +1496,7 @@ export async function reserveProducts(
     throw new Error(extractErrorMessage(body, "Failed to reserve products"));
   }
 
-  return res.json();
+  return batchAvailabilityResponseSchema.parse(await res.json());
 }
 
 /**
@@ -1513,7 +1553,7 @@ export async function pauseProducts(
     throw new Error(extractErrorMessage(body, "Failed to pause products"));
   }
 
-  return res.json();
+  return batchAvailabilityResponseSchema.parse(await res.json());
 }
 
 /**
@@ -1570,7 +1610,7 @@ export async function resumeProducts(
     throw new Error(extractErrorMessage(body, "Failed to resume products"));
   }
 
-  return res.json();
+  return batchAvailabilityResponseSchema.parse(await res.json());
 }
 
 /**
@@ -1629,7 +1669,7 @@ export async function markProductsSold(
     );
   }
 
-  return res.json();
+  return batchAvailabilityResponseSchema.parse(await res.json());
 }
 
 /**

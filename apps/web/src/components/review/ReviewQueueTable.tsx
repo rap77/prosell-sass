@@ -1,11 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Product } from "@/types/product";
+import { isVehicleProduct, type Product } from "@/types/product";
 
 interface ReviewQueueTableProps {
   products: Product[];
   selectedIds: Set<string>;
   onSelectionChange: (selectedIds: Set<string>) => void;
+}
+
+function getProductDisplayTitle(product: Product): string {
+  if (product.title.length > 5) return product.title;
+  if (!isVehicleProduct(product)) return product.title;
+  return `${product.attributes.year || ""} ${product.attributes.model || product.title}`.trim();
 }
 
 export function ReviewQueueTable({
@@ -44,7 +52,7 @@ export function ReviewQueueTable({
             <th className="w-12 p-4">
               <Checkbox
                 checked={allSelected}
-                onCheckedChange={handleToggleAll}
+                onCheckedChange={(checked) => handleToggleAll(checked === true)}
                 aria-label="Seleccionar todos"
                 className={
                   someSelected ? "data-[state=checked]:bg-ps-cyan" : ""
@@ -72,7 +80,7 @@ export function ReviewQueueTable({
                 <Checkbox
                   checked={selectedIds.has(product.id)}
                   onCheckedChange={(checked) =>
-                    handleToggle(product.id, checked as boolean)
+                    handleToggle(product.id, checked === true)
                   }
                   aria-label={`Seleccionar ${product.title}`}
                 />
@@ -113,16 +121,16 @@ export function ReviewQueueTable({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-ps-text-primary">
-                      {product.title.length > 5
-                        ? product.title
-                        : `${product.attributes?.year || ""} ${product.attributes?.model || product.title}`.trim()}
+                      {getProductDisplayTitle(product)}
                     </p>
                     {product.org_code && (
                       <span
-                        className="mt-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white"
-                        style={{
-                          backgroundColor: product.org_color || "#64748b",
-                        }}
+                        className={`mt-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white ${product.org_color ? "" : "bg-ps-tertiary"}`}
+                        style={
+                          product.org_color
+                            ? { backgroundColor: product.org_color }
+                            : undefined
+                        }
                       >
                         {product.org_code}
                       </span>
