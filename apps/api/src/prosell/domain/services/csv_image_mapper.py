@@ -144,9 +144,18 @@ class CSVImageMapper:
             if not csv_path:
                 continue
 
-            # Find all ZIP entries under this path prefix
+            # Try two matching strategies to handle both cases:
+            # 1. Full path match: "Ford/Explorer/2020" → "Ford/Explorer/2020/img1.jpg"
+            # 2. Last segment match: "Users/.../2016-KIA-OPTIMA" → "2016-KIA-OPTIMA/img1.jpg"
+
+            # Strategy 1: exact prefix match (original behavior)
             prefix = csv_path + "/"
             matching_keys = [k for k in zip_contents if k.startswith(prefix)]
+
+            # Strategy 2: if no match, try last segment (for client's long paths)
+            if not matching_keys:
+                last_segment = csv_path.rstrip("/").split("/")[-1]
+                matching_keys = [k for k in zip_contents if k.startswith(last_segment + "/")]
 
             if matching_keys:
                 for zip_key in matching_keys:

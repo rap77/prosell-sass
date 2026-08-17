@@ -231,6 +231,41 @@ class TestMapImages:
         assert result.matched_rows == 0
         assert result.unmatched_rows == 1
 
+    def test_matches_by_last_path_segment(self) -> None:
+        """Test that mapper matches by last segment of path, not full path.
+
+        CSV path: Users/juanl/.../DK/2016-KIA-OPTIMA-118K-BLANCO-DK
+        ZIP entry: 2016-KIA-OPTIMA-118K-BLANCO-DK/1.jpeg
+        Should match because last segment is identical.
+        """
+        zip_bytes = make_zip(
+            {
+                "2016-KIA-OPTIMA-118K-BLANCO-DK/1.jpeg": b"img1",
+                "2016-KIA-OPTIMA-118K-BLANCO-DK/2.jpeg": b"img2",
+                "2017-KIA-FORTE-131K-AZUL-DK/1.jpeg": b"img3",
+            }
+        )
+        rows = self._make_rows(
+            (
+                "Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/DK/"
+                "2016-KIA-OPTIMA-118K-BLANCO-DK",
+                "VIN001",
+            ),
+            (
+                "Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/DK/2017-KIA-FORTE-131K-AZUL-DK",
+                "VIN002",
+            ),
+        )
+        mapper = CSVImageMapper()
+        result = mapper.map_images(zip_bytes, rows, uuid4(), uuid4())
+
+        assert result.matched_rows == 2
+        assert result.total_images == 3
+        assert {m.vin for m in result.mapped} == {"VIN001", "VIN002"}
+        # VIN001 should have 2 images
+        vin001_images = [m for m in result.mapped if m.vin == "VIN001"]
+        assert len(vin001_images) == 2
+
     def test_matches_image_path_key_from_mapped_csv_row(self) -> None:
         """RED test (T8a): the mapper must read `image_path` (what
         `asdict(MappedCSVRow)` produces at `csv_field_mapper.py:355`)
