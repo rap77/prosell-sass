@@ -18,7 +18,7 @@ import { ArrowLeft, PencilLine, Send, AlertCircle } from "lucide-react";
 import { ShareMenu } from "@/components/ui/ShareMenu";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
-import type { ProductRow } from "@/components/datagrid/DataGrid";
+import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { PublishModal } from "@/components/publisher/PublishModal";
 import { useProduct, useProductImageUrls } from "@/lib/api/products";
 import type { Product } from "@/types/product";
@@ -44,7 +44,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isGridStatus(
   status: Product["status"],
-): status is Extract<Product["status"], ProductRow["status"]> {
+): status is "pending" | "published" | "sold" | "draft" {
   return status in SUPPORTED_STATUS;
 }
 
@@ -474,7 +474,9 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                   </h1>
                 </div>
                 {isGridStatus(product.status) ? (
-                  <StatusBadge status={product.status} />
+                  <StatusBadge
+                    status={mapProductStatusToVehicleStatus(product.status)}
+                  />
                 ) : (
                   <span className="inline-flex py-[3px] px-3 rounded-full bg-ps-elevated border border-ps-border-default text-xs font-medium text-ps-text-secondary">
                     {product.status}

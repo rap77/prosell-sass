@@ -6,7 +6,7 @@
  *     tracks. Includes the workflow-only literals `paused`, `reserved`,
  *     `rejected`, and `archived` that the catalog grid doesn't surface
  *     as separate display states.
- *   - `VehicleStatus` (7 display literals) — what the existing
+ *   - `VehicleStatus` (8 display literals) — what the existing
  *     `StatusBadge` knows how to render (icon + label + colors).
  *
  * The four workflow-only literals collapse to the nearest existing
@@ -17,11 +17,14 @@
  *   archived → expired (no longer active)
  *
  * The `satisfies` annotation makes the mapping **exhaustive at compile
- * time**: adding a new `Product.status` literal without updating this
- * map surfaces as a TypeScript error, not a runtime crash.
+ * time** for `Product["status"]`: adding a new literal without updating
+ * this map surfaces as a TypeScript error, not a runtime crash.
  *
- * Unknown values fall through to `draft` (the safe neutral default) so
- * a misbehaving backend never blows up the catalog grid.
+ * The function accepts `string` so callers holding the narrower
+ * `ProductStatus` (DataGrid row type) can pass through without
+ * a structural-nominal mismatch. Unknown values fall through to
+ * `draft` (the safe neutral default) so a misbehaving backend never
+ * blows up the catalog grid.
  *
  * Spec: docs/superpowers/specs/2026-06-09-subsystem-a-productcard-design.md
  *       (deferred from T1 per the comment in src/types/category.test.ts).
@@ -40,8 +43,7 @@ const MAP = {
   archived: "expired",
 } as const satisfies Record<Product["status"], VehicleStatus>;
 
-export function mapProductStatusToVehicleStatus(
-  status: Product["status"],
-): VehicleStatus {
-  return MAP[status] ?? "draft";
+export function mapProductStatusToVehicleStatus(status: string): VehicleStatus {
+  if (status in MAP) return MAP[status as keyof typeof MAP];
+  return "draft";
 }

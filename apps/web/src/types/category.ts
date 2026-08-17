@@ -64,6 +64,8 @@ export interface AttributeSchemaEntry {
   unit?: string;
   /** Optional human-readable label override (defaults to humanized key). */
   label?: string;
+  /** Optional helper text shown below the form input. */
+  description?: string;
   /** For `select` type: allowed values. Backend may return numbers. */
   options?: (string | number)[];
   /** Optional per-attribute constraints (e.g. Slider bounds for `range`). */

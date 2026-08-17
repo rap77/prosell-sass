@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
       {
         method: "POST",
         headers,
-        // @ts-expect-error - body can be ReadableStream in Node.js runtime
         body: request.body,
         // ponytail: duplex required for streaming request body
         // @ts-expect-error - duplex is valid but not in types

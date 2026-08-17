@@ -5,40 +5,62 @@ import { ReviewQueueTable } from "@/components/review/ReviewQueueTable";
 import type { Product } from "@/types/product";
 
 describe("ReviewQueueTable", () => {
+  function makeProduct(overrides: Partial<Product> = {}): Product {
+    return {
+      id: "product-x",
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
+      category_id: "cat-vehicle",
+      title: "Test Product",
+      price_cents: 0,
+      currency: "USD",
+      condition: "used",
+      status: "pending",
+      attributes: {
+        category: "vehicle",
+        vin: "1HGBH41JXMN109186",
+        make: "Test",
+        model: "Test",
+        year: 2020,
+        mileage: 0,
+      },
+      is_featured: false,
+      view_count: 0,
+      favorite_count: 0,
+      image_urls: [],
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z",
+      ...overrides,
+    };
+  }
+
   const mockProducts: Product[] = [
-    {
+    makeProduct({
       id: "product-1",
       title: "2020 Toyota Camry",
-      price_cents: 2500000, // $25,000
+      price_cents: 2500000,
       image_urls: ["https://example.com/image1.jpg"],
       submitted_for_approval_at: "2024-01-15T10:00:00Z",
-      status: "pending",
-      organization_id: "org-1",
       created_at: "2024-01-10T10:00:00Z",
       updated_at: "2024-01-15T10:00:00Z",
-    },
-    {
+    }),
+    makeProduct({
       id: "product-2",
       title: "2019 Honda Accord",
-      price_cents: 2200000, // $22,000
+      price_cents: 2200000,
       image_urls: ["https://example.com/image2.jpg"],
       submitted_for_approval_at: "2024-01-16T10:00:00Z",
-      status: "pending",
-      organization_id: "org-1",
       created_at: "2024-01-11T10:00:00Z",
       updated_at: "2024-01-16T10:00:00Z",
-    },
-    {
+    }),
+    makeProduct({
       id: "product-3",
       title: "2021 Ford F-150",
-      price_cents: 3500000, // $35,000
-      image_urls: [],
+      price_cents: 3500000,
       submitted_for_approval_at: "2024-01-17T10:00:00Z",
-      status: "pending",
-      organization_id: "org-1",
       created_at: "2024-01-12T10:00:00Z",
       updated_at: "2024-01-17T10:00:00Z",
-    },
+    }),
   ];
 
   let mockOnSelectionChange: ReturnType<typeof vi.fn>;

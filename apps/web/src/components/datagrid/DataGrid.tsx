@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/products";
 import { StatusBadge } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
+import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 
 /**
  * Renders a product thumbnail using a time-limited signed DO Spaces URL.
@@ -99,6 +100,7 @@ const PRODUCT_STATUS = {
   EXPIRED: "expired",
   ONLINE: "online",
   SOLD: "sold",
+  REJECTED: "rejected",
 } as const;
 
 type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
@@ -230,7 +232,11 @@ export function DataGrid({
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <StatusBadge
+          status={mapProductStatusToVehicleStatus(row.original.status)}
+        />
+      ),
     },
     {
       accessorKey: "branch_name",
