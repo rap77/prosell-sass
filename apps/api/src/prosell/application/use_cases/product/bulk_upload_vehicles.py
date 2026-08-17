@@ -130,18 +130,24 @@ class BulkUploadVehiclesUseCase:
         # ponytail: map images if (1) frontend provides org, OR (2) CSV has exactly one org code
         image_mapping: ImageMappingResult | None = None
         if zip_bytes:
-            # Determine org for image mapping: frontend selection OR single CSV org
+            # Determine org + tenant for image mapping: use the org resolved from
+            # the CSV row's cod_organization (the SAME tenant the product will
+            # be created under), NOT the JWT's tenant. Otherwise storage paths
+            # would be namespaced under the uploader's tenant while products
+            # belong to a different one — the image-urls endpoint then rejects
+            # the keys because the prefix doesn't match the product's tenant.
             mapping_org_id = organization_id
+            mapping_tenant_id = tenant_id
             if mapping_org_id is None and len(org_code_map) == 1:
                 # CSV has exactly one organization - use it for image mapping
-                mapping_org_id = next(iter(org_code_map.values()))[0]  # (org_id, tenant_id) tuple
+                mapping_org_id, mapping_tenant_id = next(iter(org_code_map.values()))
 
             if mapping_org_id is not None:
                 rows_as_dicts = [asdict(row) for row in parsed_rows]
                 image_mapping = self.csv_image_mapper.map_images(
                     zip_bytes=zip_bytes,
                     parsed_rows=rows_as_dicts,
-                    tenant_id=tenant_id,
+                    tenant_id=mapping_tenant_id,
                     organization_id=mapping_org_id,
                 )
 
