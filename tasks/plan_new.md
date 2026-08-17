@@ -2,8 +2,8 @@
 
 **Milestone**: Completar MVP de ProSell: publicación de vehículos en Facebook Marketplace, captura de leads y confirmación de citas
 **Version**: 1.0
-**Status**: Active
-**Last Updated**: 2026-04-26
+**Status**: Superseded by tasks/plan.md (Milestone C, closed 2026-05-21)
+**Last Updated**: 2026-04-26 (frozen as historical reference)
 
 ---
 

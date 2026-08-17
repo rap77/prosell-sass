@@ -11,7 +11,7 @@ ProSell SaaS is a **multi-tenant B2B SaaS** for vehicle dealerships. Vehicles is
 | Layer        | Tech                                                 |
 | ------------ | ---------------------------------------------------- |
 | Frontend     | Next.js 16 App Router + React 19 + TypeScript strict |
-| Styling      | TailwindCSS 4 (no `var()` in className)              |
+| Styling      | TailwindCSS 3.4.17 (no `var()` in className)         |
 | State        | TanStack Query v5 + Zustand 5                        |
 | Backend      | FastAPI + Python 3.13                                |
 | ORM          | SQLAlchemy 2.0 async (`Mapped[]`)                    |
@@ -57,7 +57,7 @@ This project has 4 layers of defense against hook bypass:
 
 **Why this matters:**
 
-- Pre-commit hooks enforce code quality (Ruff, Pyright, TailwindCSS 4 validation)
+- Pre-commit hooks enforce code quality (Ruff, Pyright, TailwindCSS validation)
 - Bypassing hooks with `--no-verify` introduces violations into the codebase
 - These violations break CI/CD and block other developers
 
@@ -349,7 +349,7 @@ scripts/mm/README.md
 
 - Server Actions over API routes for mutations
 
-### TailwindCSS 4 Rules
+### TailwindCSS Rules
 
 **REJECT if:**
 
