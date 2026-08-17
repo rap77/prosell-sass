@@ -17,6 +17,7 @@ const makeContact = (
   overrides: Partial<OrganizationContact> = {},
 ): OrganizationContact => ({
   id: "c1",
+  name: "Juan Pérez",
   category: "ventas",
   custom_label: null,
   phone: "+5491155551234",
@@ -39,39 +40,6 @@ describe("ContactManager", () => {
     expect(screen.getByText(/no hay contactos/i)).toBeInTheDocument();
   });
 
-  it("renders contact list with correct count", () => {
-    const contacts = [
-      makeContact({ id: "c1", category: "gerencia" }),
-      makeContact({ id: "c2", category: "ventas" }),
-    ];
-
-    render(<ContactManager contacts={contacts} onChange={onChange} />);
-
-    expect(
-      screen.getByRole("heading", { name: "Personas de contacto" }),
-    ).toBeInTheDocument();
-    // ponytail: check we have 2 contact rows by counting Detalles buttons
-    expect(screen.getAllByRole("button", { name: /detalles/i })).toHaveLength(
-      2,
-    );
-  });
-
-  it("adds new contact when clicking Agregar", async () => {
-    const user = userEvent.setup();
-
-    render(<ContactManager contacts={[]} onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: /añadir contacto/i }));
-
-    expect(onChange).toHaveBeenCalledWith([
-      expect.objectContaining({
-        id: "test-uuid-123",
-        category: "ventas",
-        order: 0,
-      }),
-    ]);
-  });
-
   it("removes contact when clicking delete button", async () => {
     const user = userEvent.setup();
     const contacts = [makeContact({ id: "c1" })];
@@ -83,55 +51,98 @@ describe("ContactManager", () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
-  it("expands contact details when clicking Detalles", async () => {
-    const user = userEvent.setup();
-    const contacts = [makeContact()];
-
-    render(<ContactManager contacts={contacts} onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: /detalles/i }));
-
-    // ponytail: after expansion, phone/email/whatsapp inputs appear
-    expect(screen.getByLabelText(/teléfono/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/whatsapp/i)).toBeInTheDocument();
-  });
-
-  it("updates phone when typing in expanded details", async () => {
-    const user = userEvent.setup();
-    const contacts = [makeContact({ phone: "" })];
-
-    render(<ContactManager contacts={contacts} onChange={onChange} />);
-
-    await user.click(screen.getByRole("button", { name: /detalles/i }));
-
-    const phoneInput = screen.getByLabelText(/teléfono/i);
-    await user.type(phoneInput, "123");
-
-    // ponytail: each keystroke triggers onChange
-    expect(onChange).toHaveBeenCalled();
-  });
-
-  it("shows custom label input when category is custom", () => {
-    const contacts = [
-      makeContact({ category: "custom", custom_label: "Financiamiento" }),
-    ];
-
-    render(<ContactManager contacts={contacts} onChange={onChange} />);
-
-    expect(screen.getByTestId("select-trigger")).toHaveTextContent(
-      "Personalizado",
-    );
-    expect(screen.getByDisplayValue("Financiamiento")).toBeInTheDocument();
-  });
-
   it("disables add button when disabled prop is true", () => {
     const contacts = [makeContact()];
 
     render(<ContactManager contacts={contacts} onChange={onChange} disabled />);
 
+    expect(screen.getByRole("button", { name: /agregar/i })).toBeDisabled();
+  });
+
+  // ponytail: TDD tests for new broker-style UX (name + inline form + cards)
+
+  it("renders name input in the inline form", () => {
+    render(<ContactManager contacts={[]} onChange={onChange} />);
+
+    expect(screen.getByLabelText(/nombre/i)).toBeInTheDocument();
+  });
+
+  it("disables Agregar button when name is empty", () => {
+    render(<ContactManager contacts={[]} onChange={onChange} />);
+
+    const addButton = screen.getByRole("button", { name: /agregar/i });
+    expect(addButton).toBeDisabled();
+  });
+
+  it("enables Agregar button when name is filled", async () => {
+    const user = userEvent.setup();
+    render(<ContactManager contacts={[]} onChange={onChange} />);
+
+    const nameInput = screen.getByLabelText(/nombre/i);
+    await user.type(nameInput, "Juan Pérez");
+
+    const addButton = screen.getByRole("button", { name: /agregar/i });
+    expect(addButton).toBeEnabled();
+  });
+
+  it("clicking Agregar creates a card with all visible details", async () => {
+    const user = userEvent.setup();
+    render(<ContactManager contacts={[]} onChange={onChange} />);
+
+    await user.type(screen.getByLabelText(/nombre/i), "Juan Pérez");
+    await user.click(screen.getByRole("button", { name: /agregar/i }));
+
+    expect(onChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "test-uuid-123",
+        name: "Juan Pérez",
+        category: "ventas",
+        order: 0,
+      }),
+    ]);
+  });
+
+  it("clears the form after Agregar is clicked", async () => {
+    const user = userEvent.setup();
+    render(<ContactManager contacts={[]} onChange={onChange} />);
+
+    const nameInput = screen.getByLabelText(/nombre/i) as HTMLInputElement;
+    await user.type(nameInput, "Juan Pérez");
+    await user.click(screen.getByRole("button", { name: /agregar/i }));
+
+    expect(nameInput.value).toBe("");
+  });
+
+  it("renders the contact name in the card header", () => {
+    const contacts = [makeContact({ name: "María López" })];
+
+    render(<ContactManager contacts={contacts} onChange={onChange} />);
+
+    expect(screen.getByText("María López")).toBeInTheDocument();
+  });
+
+  it("shows Edit (pencil) button on each card to enable inline edit", () => {
+    const contacts = [makeContact({ name: "Juan Pérez" })];
+
+    render(<ContactManager contacts={contacts} onChange={onChange} />);
+
     expect(
-      screen.getByRole("button", { name: /añadir contacto/i }),
-    ).toBeDisabled();
+      screen.getByRole("button", { name: /editar contacto/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking Edit transforms the card into an inline editable form", async () => {
+    const user = userEvent.setup();
+    const contacts = [
+      makeContact({ id: "c1", name: "Juan Pérez", email: "juan@test.com" }),
+    ];
+
+    render(<ContactManager contacts={contacts} onChange={onChange} />);
+
+    await user.click(screen.getByRole("button", { name: /editar contacto/i }));
+
+    // ponytail: after edit, the name input pre-filled with current name appears
+    const nameInput = screen.getByDisplayValue("Juan Pérez");
+    expect(nameInput).toBeInTheDocument();
   });
 });

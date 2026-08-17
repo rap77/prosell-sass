@@ -44,6 +44,32 @@ class TestOrganizationContact:
         contact = OrganizationContact(id="c3", category=ContactCategory.GERENCIA)
         assert contact.order == 0
 
+    def test_contact_name_is_optional_defaults_to_none(self):
+        # ponytail: name was added so contacts can be identified by person,
+        # not just by category. Backwards-compatible: existing contacts
+        # without name should still serialize correctly.
+        contact = OrganizationContact(id="c4", category=ContactCategory.VENTAS)
+        assert contact.name is None
+
+    def test_contact_with_name_preserves_value(self):
+        contact = OrganizationContact(
+            id="c5",
+            name="Juan Pérez",
+            category=ContactCategory.VENTAS,
+        )
+        assert contact.name == "Juan Pérez"
+
+    def test_contact_name_serializes_to_dict(self):
+        contact = OrganizationContact(
+            id="c6",
+            name="María López",
+            category=ContactCategory.GERENCIA,
+            email="maria@dealer.com",
+        )
+        data = contact.model_dump()
+        assert data["name"] == "María López"
+        assert data["category"] == "gerencia"
+
 
 class TestOrganizationContactsMethods:
     """Tests for Organization entity contact methods."""

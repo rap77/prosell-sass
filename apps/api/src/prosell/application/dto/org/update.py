@@ -9,6 +9,7 @@ class ContactInput(BaseModel):
     """Input for creating/updating a contact."""
 
     id: str
+    name: str | None = None
     category: ContactCategory
     custom_label: str | None = None
     phone: str | None = None

@@ -115,7 +115,11 @@ describe("AdminEditOrganizationPage — form structure", () => {
 
     const { container } = render(<AdminEditOrganizationPage />);
 
-    expect(screen.getByLabelText(/nombre/i)).toHaveValue("Acme Motors");
+    // ponytail: org-name input is the first "Nombre" labelled input; the
+    // ContactManager also renders a "Nombre" input for the new-contact
+    // form, so we use getAllByLabelText to disambiguate.
+    const nombreInputs = screen.getAllByLabelText(/nombre/i);
+    expect(nombreInputs[0]).toHaveValue("Acme Motors");
     expect(screen.getByLabelText(/siglas/i)).toHaveValue("ACME");
     // <input type="color"> exposes its value via the `value` attribute, not
     // via the accessible name — query the DOM directly.

@@ -25,6 +25,7 @@ export type ContactCategory = z.infer<typeof ContactCategorySchema>;
 
 export const OrganizationContactSchema = z.object({
   id: z.string(),
+  name: z.string().nullable().optional(),
   category: ContactCategorySchema,
   custom_label: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),

@@ -16,6 +16,7 @@ class OrganizationContactDTO(BaseModel):
     """DTO for organization contact in responses."""
 
     id: str
+    name: str | None = None
     category: ContactCategory
     custom_label: str | None = None
     phone: str | None = None
@@ -28,6 +29,7 @@ class OrganizationContactDTO(BaseModel):
         """Build from value object."""
         return cls(
             id=contact.id,
+            name=contact.name,
             category=contact.category,
             custom_label=contact.custom_label,
             phone=contact.phone,
