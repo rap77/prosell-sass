@@ -12,13 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useCreateMarketplaceAccessAsAdmin } from "@/lib/api/marketplace-access";
@@ -36,7 +29,7 @@ export function CreateMarketplaceAccessDialog({
   const createMutation = useCreateMarketplaceAccessAsAdmin();
 
   // Form state
-  const [inventoryOwnerId, setInventoryOwnerId] = useState<string>("");
+  const [inventoryOwnerId, setInventoryOwnerId] = useState<string | null>(null);
   const [canPublish, setCanPublish] = useState(true);
   const [canManage, setCanManage] = useState(false);
   const [initialStatus, setInitialStatus] = useState<"pending" | "active">(
@@ -47,19 +40,6 @@ export function CreateMarketplaceAccessDialog({
   // Filter out operator organization from inventory owner select
   const inventoryOwnerOrgs =
     organizations?.filter((org) => org.id !== operatorOrganizationId) ?? [];
-
-  // ponytail: debug log - remove after fixing
-  console.log("DEBUG - Organizations:", {
-    total: organizations?.length ?? 0,
-    filtered: inventoryOwnerOrgs.length,
-    operatorId: operatorOrganizationId,
-    loadingOrgs,
-  });
-  console.log("DEBUG - Form state:", {
-    inventoryOwnerId,
-    initialStatus,
-    open,
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +60,7 @@ export function CreateMarketplaceAccessDialog({
       });
 
       // Reset form
-      setInventoryOwnerId("");
+      setInventoryOwnerId(null);
       setCanPublish(true);
       setCanManage(false);
       setInitialStatus("pending");
@@ -113,34 +93,20 @@ export function CreateMarketplaceAccessDialog({
             <Label htmlFor="inventory-owner">
               Organización (Inventory Owner)
             </Label>
-            <Select
-              value={inventoryOwnerId}
-              onValueChange={(value) => {
-                console.log("DEBUG - Inventory Owner selected:", value);
-                setInventoryOwnerId(value);
-              }}
+            <select
+              id="inventory-owner"
+              value={inventoryOwnerId || ""}
+              onChange={(e) => setInventoryOwnerId(e.target.value)}
+              disabled={loadingOrgs}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SelectTrigger id="inventory-owner">
-                <SelectValue placeholder="Seleccionar organización..." />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingOrgs && (
-                  <SelectItem value="_loading" disabled>
-                    Cargando organizaciones...
-                  </SelectItem>
-                )}
-                {!loadingOrgs && inventoryOwnerOrgs.length === 0 && (
-                  <SelectItem value="_empty" disabled>
-                    No hay organizaciones disponibles
-                  </SelectItem>
-                )}
-                {inventoryOwnerOrgs.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="">Seleccionar organización...</option>
+              {inventoryOwnerOrgs.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Organización dueña del inventario que se va a publicar.
             </p>
@@ -149,26 +115,21 @@ export function CreateMarketplaceAccessDialog({
           {/* Initial Status */}
           <div className="space-y-2">
             <Label htmlFor="initial-status">Estado Inicial</Label>
-            <Select
+            <select
+              id="initial-status"
               value={initialStatus}
-              onValueChange={(v) => {
+              onChange={(e) => {
+                const v = e.target.value;
                 if (v === "pending" || v === "active") {
                   setInitialStatus(v);
                 }
               }}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SelectTrigger id="initial-status">
-                <SelectValue placeholder="Seleccionar estado..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">
-                  Pending (requiere aprobación)
-                </SelectItem>
-                <SelectItem value="active">
-                  Active (aprobado directamente)
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="">Seleccionar estado...</option>
+              <option value="pending">Pending (requiere aprobación)</option>
+              <option value="active">Active (aprobado directamente)</option>
+            </select>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Pending requiere aprobación posterior. Active está listo para
               publicar.
