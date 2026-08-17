@@ -75,8 +75,14 @@ class DOSpacesService(IDOSpacesService):
                 aws_secret_access_key=secret_access_key,
                 config=boto_config,
             )
+            # ponytail: public_endpoint is what the browser uses to fetch
+            # files; the docker-network endpoint is unreachable from outside
+            # the compose stack. Without this, public URLs saved in DB point
+            # at "prosell-staging-minio" and the browser can't resolve them.
+            self.public_endpoint = override_public_endpoint
         else:
             self.s3_signer = self.s3_client
+            self.public_endpoint = self.endpoint
 
     async def generate_presigned_url(
         self,
@@ -130,7 +136,7 @@ class DOSpacesService(IDOSpacesService):
             )
         )
 
-        public_url = f"{self.endpoint}/{self.bucket}/{key}"
+        public_url = f"{self.public_endpoint}/{self.bucket}/{key}"
 
         return {
             "upload_url": url,
@@ -215,7 +221,7 @@ class DOSpacesService(IDOSpacesService):
         await asyncio.to_thread(lambda: self.s3_client.put_object(**put_params))
 
         # Return public URL
-        public_url = f"{self.endpoint}/{self.bucket}/{key}"
+        public_url = f"{self.public_endpoint}/{self.bucket}/{key}"
         return public_url
 
     async def generate_download_url(self, key: str, expires_in: int = 3600) -> str:
@@ -255,7 +261,7 @@ class DOSpacesService(IDOSpacesService):
             Direct public URL (e.g., "https://region.digitaloceanspaces.com/bucket/key")
         """
         # ponytail: simple URL construction - works if file has public-read ACL
-        return f"{self.endpoint}/{self.bucket}/{key}"
+        return f"{self.public_endpoint}/{self.bucket}/{key}"
 
 
 # =============================================================================
