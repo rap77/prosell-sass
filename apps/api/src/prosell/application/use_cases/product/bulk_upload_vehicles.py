@@ -127,16 +127,23 @@ class BulkUploadVehiclesUseCase:
             raise ValueError(f"Unknown organization codes: {', '.join(unknown_codes)}")
 
         # 4. Map images if ZIP provided
-        # ponytail: skip image mapping if no global org — multi-org CSV needs per-row paths
+        # ponytail: map images if (1) frontend provides org, OR (2) CSV has exactly one org code
         image_mapping: ImageMappingResult | None = None
-        if zip_bytes and organization_id is not None:
-            rows_as_dicts = [asdict(row) for row in parsed_rows]
-            image_mapping = self.csv_image_mapper.map_images(
-                zip_bytes=zip_bytes,
-                parsed_rows=rows_as_dicts,
-                tenant_id=tenant_id,
-                organization_id=organization_id,
-            )
+        if zip_bytes:
+            # Determine org for image mapping: frontend selection OR single CSV org
+            mapping_org_id = organization_id
+            if mapping_org_id is None and len(org_code_map) == 1:
+                # CSV has exactly one organization - use it for image mapping
+                mapping_org_id = next(iter(org_code_map.values()))[0]  # (org_id, tenant_id) tuple
+
+            if mapping_org_id is not None:
+                rows_as_dicts = [asdict(row) for row in parsed_rows]
+                image_mapping = self.csv_image_mapper.map_images(
+                    zip_bytes=zip_bytes,
+                    parsed_rows=rows_as_dicts,
+                    tenant_id=tenant_id,
+                    organization_id=mapping_org_id,
+                )
 
         # 5. Process each row (upsert by VIN)
         results: list[VehicleImportRowResult] = []
