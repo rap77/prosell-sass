@@ -344,6 +344,7 @@ export default function AdminOrganizationDetailPage() {
                       className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-ps-bg-base text-sm"
                     >
                       <span className="font-medium text-ps-text-primary">
+                        {contact.name && <span>{contact.name} · </span>}
                         {contact.category === "custom" && contact.custom_label
                           ? contact.custom_label
                           : (CATEGORY_LABELS[contact.category] ??
@@ -375,8 +376,7 @@ export default function AdminOrganizationDetailPage() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-ps-text-secondary hover:text-ps-cyan border border-ps-border-default transition-colors"
-                style={{ background: "var(--ps-input-bg)" }}
+                className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-ps-input-bg text-ps-text-secondary hover:text-ps-cyan border border-ps-border-default transition-colors"
               >
                 <Share2 size={14} />
                 Compartir

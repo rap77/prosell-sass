@@ -178,4 +178,72 @@ describe("AdminOrganizationDetailPage", () => {
 
     expect(mockMutate).toHaveBeenCalledWith("organization-1");
   });
+
+  // ponytail: TDD tests for contact name display in detail view
+
+  it("renders the contact name alongside the category when present", async () => {
+    mockUseOrganization.mockReturnValue({
+      organization: {
+        id: "organization-1",
+        name: "Acme Motors",
+        status: "active",
+        contacts: [
+          {
+            id: "c1",
+            name: "Juan Pérez",
+            category: "ventas",
+            custom_label: null,
+            phone: "+5491155551234",
+            email: "juan@acme.com",
+            whatsapp: null,
+            order: 0,
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    const { container } = render(<AdminOrganizationDetailPage />);
+
+    await screen.findByText("Acme Motors");
+    // ponytail: name and category are in adjacent spans inside the same
+    // font-medium span; assert the combined textContent directly.
+    const contactHeader = Array.from(
+      container.querySelectorAll("span.font-medium"),
+    ).find((el) => el.textContent?.includes("Juan Pérez"));
+    expect(contactHeader).toBeDefined();
+    expect(contactHeader?.textContent).toContain("Juan Pérez");
+    expect(contactHeader?.textContent).toContain("Ventas");
+  });
+
+  it("renders only the category when the contact has no name", async () => {
+    mockUseOrganization.mockReturnValue({
+      organization: {
+        id: "organization-1",
+        name: "Acme Motors",
+        status: "active",
+        contacts: [
+          {
+            id: "c1",
+            name: null,
+            category: "gerencia",
+            custom_label: null,
+            phone: "+5491155551234",
+            email: null,
+            whatsapp: null,
+            order: 0,
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AdminOrganizationDetailPage />);
+
+    await screen.findByText("Acme Motors");
+    expect(screen.getByText("Gerencia")).toBeInTheDocument();
+    expect(screen.queryByText(/sin nombre/i)).not.toBeInTheDocument();
+  });
 });
