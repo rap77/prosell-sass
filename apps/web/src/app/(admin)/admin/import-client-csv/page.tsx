@@ -50,13 +50,22 @@ export default function ImportClientCSVPage() {
     id: o.id,
     name: o.name,
   }));
-  // ponytail: this importer is for "Carros y Camionetas" only
-  const categories = (categoryOptions ?? [])
-    .filter((c) => c.label === "Carros y Camionetas")
-    .map((c) => ({
-      id: c.value,
-      name: c.label,
-    }));
+  // ponytail: this importer is hardcoded to the vehicles vertical for now.
+  // The user sees the parent vertical's name ("Vehículos y Transporte") in
+  // the dropdown — not the technical leaf-category label — because the
+  // vertical is the human-readable unit. The UUID is the stable identifier
+  // we send to the backend; the display name is the user-facing string.
+  // When the multi-vertical importer is built, this lookup will move to
+  // the `/api/v1/organizations/{id}/verticals` endpoint and the dropdown
+  // will offer the full vertical → category tree.
+  const CARS_AND_TRUCKS_CATEGORY_ID = "dae89acf-7c69-4daa-bd64-75352053d014";
+  const VEHICLES_VERTICAL_DISPLAY_NAME = "Vehículos y Transporte";
+  const categories = [
+    {
+      id: CARS_AND_TRUCKS_CATEGORY_ID,
+      name: VEHICLES_VERTICAL_DISPLAY_NAME,
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
