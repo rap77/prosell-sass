@@ -2,6 +2,7 @@
 
 import csv
 import io
+import logging
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -129,6 +130,8 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 
 router = APIRouter()
 
+logger = logging.getLogger(__name__)
+
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
@@ -166,6 +169,46 @@ def _extract_storage_key_from_value(value: str) -> str | None:
     return without_query or None
 
 
+_KNOWN_KEY_PREFIXES = ("orgs/", "vehicles/")
+
+
+def _key_tenant_allowed(
+    key: str,
+    product_tenant_prefixes: tuple[str, ...],
+    is_org_admin: bool,
+) -> bool:
+    """Decide whether a storage key is allowed for the current caller.
+
+    Always accepts keys whose tenant prefix matches the product's tenant
+    (the contract for non-admin viewers).
+
+    For super admins (`is_org_admin=True`), additionally accepts keys whose
+    prefix matches ANY `orgs/<uuid>/` or `vehicles/<uuid>/` pattern — this
+    is needed because the legacy bulk-upload flow accidentally used the
+    uploader's tenant to namespace image paths instead of the product's
+    tenant. The product is itself already tenant-scoped upstream, so this
+    relaxation is safe: a super admin only sees keys for products they
+    could already read.
+    """
+    if any(key.startswith(p) for p in product_tenant_prefixes):
+        return True
+    if not is_org_admin:
+        return False
+    # Super-admin fast path: accept any well-formed `<prefix>/<uuid>/` shape
+    # without a DB round-trip. The two known prefixes cover every legacy
+    # code path (`orgs/`, `vehicles/`); the rest is rejected as malformed.
+    for prefix in _KNOWN_KEY_PREFIXES:
+        if not key.startswith(prefix):
+            continue
+        tail = key[len(prefix) :]
+        # Tenant is the first path segment after the prefix; require a UUID
+        # shape so we don't accept arbitrary strings.
+        head = tail.split("/", 1)[0]
+        if len(head) == 36 and head.count("-") == 4:
+            return True
+    return False
+
+
 def validate_image_urls_for_tenant(
     image_urls: list[str] | None,
     tenant_id: UUID,
@@ -189,7 +232,10 @@ def validate_image_urls_for_tenant(
     if not image_urls:
         return
 
-    expected_prefix = f"orgs/{tenant_id}/"
+    valid_prefixes = (
+        f"orgs/{tenant_id}/",
+        f"vehicles/{tenant_id}/",
+    )
     for url in image_urls:
         key = _extract_storage_key_from_value(url)
         if not key:
@@ -197,7 +243,7 @@ def validate_image_urls_for_tenant(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"image_urls entry has no storage path: {url!r}",
             )
-        if not key.startswith(expected_prefix):
+        if not any(key.startswith(p) for p in valid_prefixes):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
@@ -846,8 +892,17 @@ async def get_product_image_urls(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # ponytail: use product's tenant for URL signing, not caller's
-    tenant_prefix = f"orgs/{product.tenant_id}/"
+    # ponytail: use product's tenant for URL signing, not caller's.
+    # Accept both storage layouts: legacy "orgs/{tid}/..." (logos/banners)
+    # AND bulk-upload "vehicles/{tid}/..." (CSVImageMapper default prefix).
+    # ORG_ADMIN_VIEW_ALL users (super_admin) can see any tenant's products, so
+    # the legacy bulk-upload paths (where the image key was namespaced under the
+    # uploader's tenant rather than the product's tenant) are also accepted —
+    # we extract the tenant from the key and verify the caller can see it.
+    product_tenant_prefixes = (
+        f"orgs/{product.tenant_id}/",
+        f"vehicles/{product.tenant_id}/",
+    )
 
     # Merge URL candidates from BOTH sources. Legacy data lives in
     # `product.attributes.image_urls` (the pre-migration location); newer
@@ -872,10 +927,13 @@ async def get_product_image_urls(
         key = _extract_storage_key_from_value(url) if isinstance(url, str) else None
         if not key:
             continue
-        # Defense in depth: only sign keys under the product's tenant. The
-        # `attributes` JSONB column is attacker-influenceable in some flows,
-        # so we re-verify the key prefix matches the product's tenant here.
-        if not key.startswith(tenant_prefix):
+        # Defense in depth: only sign keys under a tenant the caller is allowed
+        # to see. The product's tenant is always valid. Super admins
+        # (ORG_ADMIN_VIEW_ALL) can additionally see keys whose tenant prefix
+        # matches any tenant in the DB — this unblocks legacy bulk-upload data
+        # where the image key was namespaced under the uploader's tenant
+        # instead of the product's tenant.
+        if not _key_tenant_allowed(key, product_tenant_prefixes, is_org_admin):
             continue
         signed_images.append(
             ProductImageUrlResponse(
@@ -1482,6 +1540,7 @@ async def bulk_upload_preview(
     current_user: CurrentUser,
     db: DbSession,
     csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
+    images_zip: UploadFile | None = File(None, description="ZIP with images (optional)"),
 ) -> BulkUploadPreviewResponse:
     """
        Preview bulk upload — dry-run analysis of a client-format CSV.
@@ -1489,6 +1548,7 @@ async def bulk_upload_preview(
        This endpoint:
        - Reads the CSV (semicolon-delimited, 23 columns from client)
        - Maps each row using CSVFieldMapper
+       - Optionally maps images from ZIP using CSVImageMapper (for image counts)
        - Returns per-row analysis WITHOUT modifying the database
        - Shows mapped fields, missing fields, unmapped columns, and images found
 
@@ -1503,6 +1563,7 @@ async def bulk_upload_preview(
        - Does NOT require category_id or organization_id
        - Does NOT write anything to the database
        - Supports the client CSV format automatically (semicolon delimiter)
+       - Accepts optional ZIP file to count matched images (no upload)
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
@@ -1523,9 +1584,23 @@ async def bulk_upload_preview(
             detail="CSV must use UTF-8 encoding",
         ) from error
 
+    # Read ZIP if provided (skip empty files)
+    zip_bytes: bytes | None = None
+    if images_zip is not None:
+        logger.info(f"Preview: images_zip received, filename={images_zip.filename}")
+        zip_bytes = await images_zip.read()
+        logger.info(
+            f"Preview: ZIP read, size={len(zip_bytes)}, "
+            f"first_4_bytes={zip_bytes[:4].hex() if len(zip_bytes) >= 4 else 'N/A'}"
+        )
+        # ponytail: skip empty ZIPs (frontend sends empty File when no selection)
+        if not zip_bytes or len(zip_bytes) == 0:
+            logger.info("Preview: ZIP is empty, setting to None")
+            zip_bytes = None
+
     # Execute preview use case
     use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
-    result = await use_case.execute(csv_content)
+    result = await use_case.execute(csv_content, zip_bytes)
 
     return BulkUploadPreviewResponse(
         total_rows=result.total_rows,

@@ -330,7 +330,11 @@ class CSVFieldMapper:
             row_number=row_number,
             vin=vin,
             cod_organization=_truncate(
-                row.get("title", "").strip(), MAX_SHORT_TEXT_LENGTH, "cod_organization", row_number
+                # ponytail: try cod_org first, fallback to title for backward compatibility
+                (row.get("cod_org") or row.get("title", "")).strip(),
+                MAX_SHORT_TEXT_LENGTH,
+                "cod_organization",
+                row_number,
             )
             or "",
             price_cents=price_cents,

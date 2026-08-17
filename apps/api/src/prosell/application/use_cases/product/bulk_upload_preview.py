@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from io import StringIO
 from typing import cast
+from uuid import uuid4
 
 from prosell.application.dto.product.bulk_upload import (
     PreviewRowResponse,
@@ -12,6 +13,7 @@ from prosell.application.dto.product.bulk_upload import (
 )
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
+from prosell.domain.services.csv_image_mapper import CSVImageMapper
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +50,14 @@ class BulkUploadPreviewUseCase:
         self._organization_repository = organization_repository
         self._required_fields = {"VIN", "price", "title"}
 
-    async def execute(self, csv_content: str) -> PreviewUseCaseResult:
+    async def execute(
+        self, csv_content: str, zip_bytes: bytes | None = None
+    ) -> PreviewUseCaseResult:
         """Analyze CSV content and produce a preview report.
 
         Args:
             csv_content: Raw CSV string (semicolon-delimited)
+            zip_bytes: Optional ZIP file bytes with images
 
         Returns:
             PreviewUseCaseResult with per-row analysis
@@ -61,6 +66,7 @@ class BulkUploadPreviewUseCase:
         importable_count = 0
         error_count = 0
         detected_org_codes: set[str] = set()
+        csv_rows_for_image_mapping: list[dict[str, str]] = []
 
         csv_file = StringIO(csv_content)
         reader = csv.DictReader(csv_file, delimiter=";")
@@ -75,7 +81,9 @@ class BulkUploadPreviewUseCase:
                 else:
                     error_count += 1
 
-                # ponytail: don't count images in preview — no ZIP to verify against
+                # ponytail: collect rows with image paths for ZIP mapping
+                if row_dict.get("path"):
+                    csv_rows_for_image_mapping.append(row_dict)
 
                 # ponytail: collect org codes from title field (cod_organization)
                 if preview_row.title and preview_row.title.strip():
@@ -99,7 +107,17 @@ class BulkUploadPreviewUseCase:
                 )
 
         total = len(rows)
-        # ponytail: images_count=0 in preview — can't verify without ZIP
+
+        # Map images from ZIP if provided
+        images_count = 0
+        if zip_bytes and csv_rows_for_image_mapping:
+            mapper = CSVImageMapper()
+            # ponytail: use dummy UUIDs for preview (no actual tenant/org needed)
+            mapping_result = mapper.map_images(
+                zip_bytes, csv_rows_for_image_mapping, uuid4(), uuid4()
+            )
+            images_count = mapping_result.total_images
+
         existing_org_codes = {
             org.code.strip().upper()
             for org in await self._organization_repository.get_by_codes(
@@ -113,7 +131,7 @@ class BulkUploadPreviewUseCase:
         summary = PreviewSummaryResponse(
             importable_count=importable_count,
             error_count=error_count,
-            images_count=0,
+            images_count=images_count,
             detected_org_codes=sorted(detected_org_codes),
             missing_org_codes=missing_org_codes,
         )
