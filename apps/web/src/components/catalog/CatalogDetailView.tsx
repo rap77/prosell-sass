@@ -76,6 +76,21 @@ export function getProductImages(
   const rawImages =
     isRecord(attrs) && Array.isArray(attrs.images) ? attrs.images : [];
 
+  // Resolve the signed URL for a value that may be a URL, a bare key, or a
+  // thumbnail URL. The map is keyed by STORAGE key (the backend contract
+  // returned by /image-urls), but the values stored in `product.image_urls`
+  // are FULL public URLs (`http://localhost:9002/prosell-assets/...`) since
+  // the bulk-upload flow writes the public URL directly. We try the bare
+  // value first, then fall back to the storage key extracted from the URL.
+  const resolveSigned = (value: string | undefined): string | null => {
+    if (!value || typeof value !== "string") return null;
+    const direct = signedUrlMap?.get(value);
+    if (direct) return direct;
+    const storageKey = extractStorageKeyFromPublicUrl(value);
+    if (storageKey) return signedUrlMap?.get(storageKey) ?? null;
+    return null;
+  };
+
   const normalizedImages = rawImages.flatMap((image, index) => {
     if (
       !isRecord(image) ||
@@ -88,7 +103,9 @@ export function getProductImages(
     // raw URLs (e.g. http://minio:9000/...) and the Next.js image allowlist
     // rejects unknown hostnames. Use `null` so the gallery shows its empty
     // state instead of feeding an unreachable URL to <Image>.
-    const signed = signedUrlMap?.get(image.url);
+    const signed = resolveSigned(image.url);
+    const thumbValue =
+      typeof image.thumbnail_url === "string" ? image.thumbnail_url : null;
     return [
       {
         id:
@@ -96,11 +113,8 @@ export function getProductImages(
             ? image.id
             : `${product.id}-image-${index}`,
         product_id: product.id,
-        url: signed ?? null,
-        thumbnail_url:
-          typeof image.thumbnail_url === "string"
-            ? (signedUrlMap?.get(image.thumbnail_url) ?? null)
-            : null,
+        url: signed,
+        thumbnail_url: thumbValue ? resolveSigned(thumbValue) : null,
         sort_order:
           typeof image.sort_order === "number" ? image.sort_order : index,
         is_primary: Boolean(image.is_primary),
@@ -116,13 +130,13 @@ export function getProductImages(
   }
 
   return fallbackUrls.map((url, index) => {
-    const signed = signedUrlMap?.get(url);
+    const signed = resolveSigned(url);
     return {
       id: `${product.id}-fallback-image-${index}`,
       product_id: product.id,
       // SECURITY: see note above — null when no signed match.
-      url: signed ?? null,
-      thumbnail_url: signed ?? null,
+      url: signed,
+      thumbnail_url: signed,
       sort_order: index,
       // The cover is the explicit `cover_image_key` (or the first
       // image when the cover is not set). The previous implementation
@@ -134,6 +148,30 @@ export function getProductImages(
       updated_at: product.updated_at,
     };
   });
+}
+
+/**
+ * Extract the S3/MinIO storage key from a public URL of the form
+ *   `http(s)://host/<bucket>/<key>`.
+ * Returns the key (without the bucket prefix), or `null` if the value
+ * is not a recognizable URL. Bare keys (no scheme) are returned as-is.
+ *
+ * Mirrors the backend `_extract_storage_key_from_value` in
+ * `apps/api/src/prosell/infrastructure/api/routers/product_router.py`
+ * so the frontend and backend agree on the canonical key shape.
+ */
+function extractStorageKeyFromPublicUrl(value: string): string | null {
+  if (!value || typeof value !== "string") return null;
+  if (!value.includes("://")) return value;
+  try {
+    const path = new URL(value).pathname.replace(/^\//, "");
+    const segments = path.split("/");
+    if (segments.length < 2) return null;
+    segments.shift(); // drop bucket
+    return segments.join("/") || null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────

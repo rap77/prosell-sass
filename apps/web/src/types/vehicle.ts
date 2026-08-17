@@ -92,15 +92,38 @@ export type ProductAttributes =
 
 /**
  * Type guard to check if attributes are vehicle attributes
+ *
+ * Two accepted shapes:
+ *  1. **Discriminated** (form-driven creation): `{ category: "vehicle", vin, make, ... }`
+ *  2. **Legacy / bulk-upload** (no discriminator): `{ vin, make, year, model, mileage, ... }`
+ *
+ * The bulk-upload CSV flow does NOT stamp `category: "vehicle"` on the
+ * attributes JSONB column, so the strict `category === "vehicle"` check would
+ * silently filter out every bulk-uploaded product from the vehicle attribute
+ * renderer. We treat the presence of the canonical vehicle core (`vin` + `make`
+ * + `year` + `model`) as a positive signal instead — the fields are
+ * `Required<VehicleAttributes>` minus the discriminator, so anything that
+ * has all four of them is unambiguously a vehicle record.
  */
 export function isVehicleAttributes(
   attrs: unknown,
 ): attrs is VehicleAttributes {
+  if (typeof attrs !== "object" || attrs === null) return false;
+  if ("category" in attrs) {
+    return (attrs as { category: unknown }).category === "vehicle";
+  }
+  // ponytail: bulk-upload fallback — accept any record that has the four
+  // canonical vehicle fields. Real-estate and generic schemas never carry
+  // `vin` + `make` + `year` + `model` together, so this is collision-free.
+  const a = attrs as Record<string, unknown>;
   return (
-    typeof attrs === "object" &&
-    attrs !== null &&
-    "category" in attrs &&
-    (attrs as VehicleAttributes).category === "vehicle"
+    typeof a.vin === "string" &&
+    a.vin.length > 0 &&
+    typeof a.make === "string" &&
+    a.make.length > 0 &&
+    typeof a.model === "string" &&
+    a.model.length > 0 &&
+    typeof a.year === "number"
   );
 }
 

@@ -209,8 +209,10 @@ export function ProductImageGallery({
                 onClick={() => selectImage(index)}
                 aria-label={`Ver imagen ${index + 1}${image.alt_text ? `: ${image.alt_text}` : ""}`}
                 aria-current={isActive ? "true" : undefined}
-                className="flex-shrink-0 w-19 h-19 rounded-lg overflow-hidden relative cursor-pointer p-0 border-none transition-outline transition-transform duration-150"
+                className="shrink-0 overflow-hidden rounded-lg relative cursor-pointer p-0 border-none transition-transform duration-150"
                 style={{
+                  width: 76,
+                  height: 76,
                   background: "var(--ps-bg-elevated)",
                   outline: isActive
                     ? "2px solid var(--ps-cyan)"
