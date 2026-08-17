@@ -297,9 +297,19 @@ class BulkUploadVehiclesUseCase:
         # Build attributes dict from mapped row
         attributes = self._build_attributes(mapped_row)
 
+        # Build title from vehicle attributes
+        title_parts = []
+        if mapped_row.year:
+            title_parts.append(str(mapped_row.year))
+        if mapped_row.make:
+            title_parts.append(mapped_row.make)
+        if mapped_row.model:
+            title_parts.append(mapped_row.model)
+        title = " ".join(title_parts) if title_parts else f"Vehicle {vin}"
+
         # Build CreateProductRequest
         request = CreateProductRequest(
-            title=mapped_row.cod_organization or f"Vehicle {vin}",
+            title=title,
             price_cents=mapped_row.price_cents,
             tenant_id=tenant_id,
             organization_id=organization_id,
@@ -324,14 +334,14 @@ class BulkUploadVehiclesUseCase:
             vin_images = [m for m in image_mapping.mapped if m.vin == vin]
             for img in vin_images:
                 try:
-                    # ponytail: upload_file returns public URL, use that
-                    await self.do_spaces_service.upload_file(
+                    # ponytail: upload_file returns public URL, capture it
+                    public_url = await self.do_spaces_service.upload_file(
                         file_path=img.do_spaces_key,
                         file_bytes=img.file_bytes,
                         content_type="image/jpeg",
                         make_public=True,  # FB needs public URLs
                     )
-                    uploaded_urls.append(img.do_spaces_key)
+                    uploaded_urls.append(public_url)
                     images_uploaded += 1
                 except Exception as e:
                     logger.error("Failed to upload image %s: %s", img.do_spaces_key, e)
@@ -430,5 +440,9 @@ class BulkUploadVehiclesUseCase:
             attributes["vin"] = mapped_row.vin
             # Auto-generate stock_number from last 6 digits of VIN
             attributes["stock_number"] = mapped_row.vin[-6:].upper()
+
+        # Include organization code from CSV
+        if mapped_row.cod_organization:
+            attributes["cod_org"] = mapped_row.cod_organization
 
         return attributes
