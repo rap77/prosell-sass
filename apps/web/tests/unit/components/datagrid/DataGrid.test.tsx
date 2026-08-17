@@ -45,6 +45,7 @@ vi.mock("@/lib/api/products", async () => {
       isLoading: false,
       error: null,
     }),
+    useSubmitProductsForApproval: () => ({ mutate: vi.fn(), isPending: false }),
   };
 });
 

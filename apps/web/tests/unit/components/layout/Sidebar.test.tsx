@@ -106,7 +106,7 @@ describe("Sidebar", () => {
 
   it("shows Inventario and Ventas for all users (no permission required)", () => {
     // ponytail: these groups are always visible regardless of groups prop
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar groups={["inventario", "ventas"]} />);
 
     expect(screen.getByText("Inventario")).toBeInTheDocument();
     expect(screen.getByText("Ventas")).toBeInTheDocument();

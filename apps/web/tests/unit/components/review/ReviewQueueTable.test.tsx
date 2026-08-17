@@ -289,7 +289,7 @@ describe("ReviewQueueTable", () => {
     expect(tbody?.children.length).toBe(0);
   });
 
-  it("displays product ID (first 8 chars) as subtitle", () => {
+  it("renders a checkbox with accessible label per product", () => {
     render(
       <ReviewQueueTable
         products={mockProducts}
@@ -298,9 +298,16 @@ describe("ReviewQueueTable", () => {
       />,
     );
 
-    // Should have 3 product ID subtitles (one per product)
-    const productIds = screen.getAllByText(/product-/);
-    expect(productIds).toHaveLength(3);
+    // Should have 3 selectable checkboxes (one per product), each labelled with its title
+    expect(
+      screen.getByLabelText("Seleccionar 2020 Toyota Camry"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Seleccionar 2019 Honda Accord"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Seleccionar 2021 Ford F-150"),
+    ).toBeInTheDocument();
   });
 
   it("displays dash when submitted_for_approval_at is null", () => {

@@ -13,6 +13,7 @@ vi.mock("next/image", () => ({
 // Mock useProductImageUrls hook
 vi.mock("@/lib/api/products", () => ({
   useProductImageUrls: () => ({ data: undefined }),
+  useSubmitProductsForApproval: () => ({ mutate: vi.fn() }),
 }));
 
 const mockData: ProductRow[] = [

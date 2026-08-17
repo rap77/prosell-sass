@@ -10,6 +10,7 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/lib/api/products", () => ({
+  useSubmitProductForApproval: vi.fn(),
   useReserveProduct: vi.fn(),
   usePauseProduct: vi.fn(),
   useResumeProduct: vi.fn(),
@@ -26,12 +27,18 @@ const reserveMutateAsync = vi.fn();
 const pauseMutateAsync = vi.fn();
 const resumeMutateAsync = vi.fn();
 const soldMutateAsync = vi.fn();
+const submitMutateAsync = vi.fn();
 
 // ponytail: partial mocks — only fields the component actually uses
 function mockHooks(hasPermission: boolean): void {
   vi.mocked(authHooks.useAuth).mockReturnValue({
     hasPermission: () => hasPermission,
   } as unknown as ReturnType<typeof authHooks.useAuth>);
+  vi.mocked(productsApi.useSubmitProductForApproval).mockReturnValue({
+    mutateAsync: submitMutateAsync,
+    isPending: false,
+    error: null,
+  } as unknown as ReturnType<typeof productsApi.useSubmitProductForApproval>);
   vi.mocked(productsApi.useReserveProduct).mockReturnValue({
     mutateAsync: reserveMutateAsync,
     isPending: false,

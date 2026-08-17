@@ -64,6 +64,11 @@ vi.mock("@/lib/api/products", () => ({
     isPending: false,
     error: null,
   })),
+  useSubmitProductForApproval: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
 }));
 
 // Mock breadcrumbStore with Zustand selector pattern
