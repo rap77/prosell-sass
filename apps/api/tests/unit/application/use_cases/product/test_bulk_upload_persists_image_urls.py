@@ -108,7 +108,8 @@ class TestBulkUploadPersistsImageUrls:
 
         # Mock DO Spaces service to verify upload calls
         do_spaces_service = AsyncMock()
-        do_spaces_service.upload_file.return_value = "https://spaces.example.com/fake-url"
+        uploaded_urls = [f"https://spaces.example.com/{key}" for key in expected_keys]
+        do_spaces_service.upload_file.side_effect = uploaded_urls
 
         # Act — pass the mocked mapper so we don't depend on the broken one
         organization_repo = AsyncMock()
@@ -151,11 +152,10 @@ class TestBulkUploadPersistsImageUrls:
             "image_urls must be at the top level of the entity, not in attributes. "
             f"Got attributes keys: {list(final_product.attributes.keys())}"
         )
-        # And every DO Spaces key in image_urls should belong to this VIN
-        for url in final_product.image_urls:
-            assert vin in url, (
-                f"Each image_urls entry should reference the product's VIN, got: {url}"
-            )
+        # The entity persists the public URLs returned by storage, not raw
+        # object keys. Their storage paths must still identify this VIN.
+        assert final_product.image_urls == uploaded_urls
+        assert all(vin in url for url in final_product.image_urls)
 
         # Verify upload_file was called for each image with correct bytes
         assert do_spaces_service.upload_file.call_count == 2, (
