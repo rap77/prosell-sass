@@ -574,6 +574,57 @@ async def test_admin_updates_organization_fb_account_defaults(
 
 
 @pytest.mark.asyncio
+async def test_admin_patch_persists_contact_name(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+) -> None:
+    """Ponytail: regression test for the bug where the admin router's
+    inline update_contacts block dropped the contact `name` field even
+    though the ContactInput request DTO accepted it. The router must
+    pass name=c.name into OrganizationContact, the same way the use case
+    does — otherwise the frontend's name silently disappears.
+    """
+    contact_id = "c-test-name-1"
+    patch = await async_client_as_admin.patch(
+        f"/api/v1/admin/organizations/{test_organization.id}",
+        json={
+            "contacts": [
+                {
+                    "id": contact_id,
+                    "name": "Juan Pérez",
+                    "category": "ventas",
+                    "custom_label": None,
+                    "phone": "+5491155551234",
+                    "email": "juan@acme.com",
+                    "whatsapp": None,
+                    "order": 0,
+                }
+            ]
+        },
+    )
+    assert patch.status_code == 200, patch.text
+
+    # ponytail: refresh the org and read the raw contacts JSONB column
+    # because OrganizationModel.contacts is a JSON column, not a relationship.
+    await db_session.refresh(test_organization)
+    contacts_jsonb = test_organization.contacts or []
+    assert len(contacts_jsonb) == 1
+    assert contacts_jsonb[0]["id"] == contact_id
+    assert contacts_jsonb[0]["name"] == "Juan Pérez"
+
+    # ponytail: also verify the GET returns the name so the frontend
+    # can read it back after invalidation.
+    get_resp = await async_client_as_admin.get(
+        f"/api/v1/admin/organizations/{test_organization.id}",
+    )
+    assert get_resp.status_code == 200
+    contacts_in_response = [c for c in get_resp.json().get("contacts", []) if c["id"] == contact_id]
+    assert len(contacts_in_response) == 1
+    assert contacts_in_response[0]["name"] == "Juan Pérez"
+
+
+@pytest.mark.asyncio
 async def test_create_dealer_accepts_brokers_with_phone(
     async_client_as_admin: AsyncClient,
     root_category: CategoryModel,

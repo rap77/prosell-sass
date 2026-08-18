@@ -403,6 +403,7 @@ async def update_organization(
             [
                 OrganizationContact(
                     id=contact.id,
+                    name=contact.name,
                     category=contact.category,
                     custom_label=contact.custom_label,
                     phone=contact.phone,
