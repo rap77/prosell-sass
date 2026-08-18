@@ -450,8 +450,10 @@ const batchSubmitResponseSchema = z.object({
     z.object({
       product_id: z.string(),
       status: z.enum(["submitted", "failed"]),
-      error_code: z.string().optional(),
-      message: z.string().optional(),
+      // ponytail: backend serializes these as explicit null on success.
+      // z.optional() rejects null; use .nullable().optional().
+      error_code: z.string().nullable().optional(),
+      message: z.string().nullable().optional(),
     }),
   ),
   submitted_count: z.number(),
@@ -463,8 +465,12 @@ const batchAvailabilityResponseSchema = z.object({
     z.object({
       product_id: z.string(),
       status: z.enum(["reserved", "paused", "resumed", "sold", "failed"]),
-      error_code: z.enum(["not_found", "invalid_transition"]).optional(),
-      message: z.string().optional(),
+      // ponytail: backend serializes these as explicit null on success.
+      error_code: z
+        .enum(["not_found", "invalid_transition"])
+        .nullable()
+        .optional(),
+      message: z.string().nullable().optional(),
     }),
   ),
   success_count: z.number(),
@@ -1396,8 +1402,8 @@ export interface BatchSubmitResponse {
   results: Array<{
     product_id: string;
     status: "submitted" | "failed";
-    error_code?: string;
-    message?: string;
+    error_code?: string | null;
+    message?: string | null;
   }>;
   submitted_count: number;
   failed_count: number;
@@ -1410,8 +1416,8 @@ export interface BatchAvailabilityResponse {
   results: Array<{
     product_id: string;
     status: "reserved" | "paused" | "resumed" | "sold" | "failed";
-    error_code?: "not_found" | "invalid_transition";
-    message?: string;
+    error_code?: "not_found" | "invalid_transition" | null;
+    message?: string | null;
   }>;
   success_count: number;
   failed_count: number;

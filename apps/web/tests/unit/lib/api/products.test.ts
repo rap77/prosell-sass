@@ -16,6 +16,7 @@ import {
   useCreateProduct,
   createProductWithVehicle,
   useSetProductBrokers,
+  useSubmitProductsForApproval,
 } from "@/lib/api/products";
 import type { CreateProductRequest, Product } from "@/types/product";
 
@@ -722,6 +723,59 @@ describe("Batch Availability Hooks", () => {
         });
         expect(toast.success).toHaveBeenCalled();
       });
+    });
+  });
+});
+
+// ponytail: TDD tests for batch response schema nullability.
+// The backend serializes error_code/message as `None` (not omitted)
+// when a result item succeeded; Zod's `.optional()` rejects `null`,
+// so the frontend must declare the fields as nullable too.
+
+describe("useSubmitProductsForApproval - null error_code/message", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it("parses the response when error_code and message are explicit null", async () => {
+    // ponytail: regression for the ZodError toast the user saw when
+    // the backend returned null for successful result items.
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            product_id: "p1",
+            status: "submitted",
+            error_code: null,
+            message: null,
+          },
+        ],
+        submitted_count: 1,
+        failed_count: 0,
+      }),
+    });
+
+    function TestWrapper({ children }: { children: React.ReactNode }) {
+      return createElement(
+        QueryClientProvider,
+        {
+          client: new QueryClient({
+            defaultOptions: { mutations: { retry: false } },
+          }),
+        },
+        children,
+      );
+    }
+
+    const { result } = renderHook(() => useSubmitProductsForApproval(), {
+      wrapper: TestWrapper,
+    });
+
+    // ponytail: must NOT throw a Zod parse error. The mutation resolves
+    // with the parsed payload.
+    await act(async () => {
+      await result.current.mutateAsync(["p1"]);
     });
   });
 });
