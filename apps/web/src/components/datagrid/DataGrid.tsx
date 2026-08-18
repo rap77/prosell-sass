@@ -29,7 +29,27 @@ import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToV
  * DO Spaces is private (403 on direct URLs), so the raw key from the
  * vehicle row must be resolved through the backend signed-URL endpoint.
  * Cache is shared with the catalog card view via TanStack query keys.
+ *
+ * The backend /image-urls endpoint returns `images: [{ key, url }]`
+ * where `key` is the storage key (path). The frontend product rows
+ * sometimes carry a FULL public URL instead of a storage key
+ * (legacy data written by the bulk-upload flow before the signing
+ * migration). To support both shapes we first try a direct match, then
+ * fall back to extracting the storage key from the public URL.
  */
+function extractStorageKeyFromPublicUrl(value: string): string | null {
+  if (!value || !value.includes("://")) return null;
+  try {
+    const path = new URL(value).pathname.replace(/^\//, "");
+    const segments = path.split("/");
+    if (segments.length < 2) return null;
+    segments.shift(); // drop bucket
+    return segments.join("/") || null;
+  } catch {
+    return null;
+  }
+}
+
 function SignedPhotoCell({
   productId,
   rawKey,
@@ -38,9 +58,14 @@ function SignedPhotoCell({
   rawKey?: string;
 }) {
   const { data } = useProductImageUrls(rawKey ? productId : undefined);
-  const signedUrl = rawKey
-    ? data?.images.find((img) => img.key === rawKey)?.url
-    : undefined;
+  const signedUrl =
+    rawKey && data
+      ? (data.images.find((img) => img.key === rawKey)?.url ??
+        data.images.find((img) => {
+          const storageKey = extractStorageKeyFromPublicUrl(rawKey);
+          return storageKey !== null && img.key === storageKey;
+        })?.url)
+      : undefined;
 
   if (!signedUrl) {
     return (

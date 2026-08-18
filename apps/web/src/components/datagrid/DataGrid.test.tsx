@@ -10,9 +10,14 @@ vi.mock("next/image", () => ({
   ),
 }));
 
-// Mock useProductImageUrls hook
+// ponytail: shared mock function the test suite can re-configure per case.
+// Default returns no data so consumers never crash; per-test
+// mockImplementation swaps in a signed-URL response.
+const mockUseProductImageUrls = vi.fn(
+  (_id: unknown) => ({ data: undefined }) as unknown,
+);
 vi.mock("@/lib/api/products", () => ({
-  useProductImageUrls: () => ({ data: undefined }),
+  useProductImageUrls: (id: unknown) => mockUseProductImageUrls(id) as never,
   useSubmitProductsForApproval: () => ({ mutate: vi.fn() }),
 }));
 
@@ -36,6 +41,11 @@ const mockData: ProductRow[] = [
     model: "Civic",
   },
 ];
+
+const PHOTO_KEY = "vehicles/tenant-1/1.jpeg";
+const PHOTO_FULL_URL = "http://localhost:9002/prosell-assets/" + PHOTO_KEY;
+const SIGNED_URL =
+  "http://localhost:9002/prosell-assets/" + PHOTO_KEY + "?signature=abc";
 
 describe("DataGrid Mobile Responsive (Minimum Viable)", () => {
   it("should have horizontal scroll container for mobile", () => {
@@ -128,5 +138,84 @@ describe("DataGrid Desktop Compatibility", () => {
     // Header should be sticky top
     expect(thead?.className).toContain("sticky");
     expect(thead?.className).toContain("top-0");
+  });
+});
+
+// ponytail: TDD tests for the SignedPhotoCell image-loading contract
+
+describe("DataGrid Photo Cell (SignedPhotoCell)", () => {
+  beforeEach(() => {
+    mockUseProductImageUrls.mockReset();
+    mockUseProductImageUrls.mockReturnValue({ data: undefined });
+  });
+
+  it("renders a No photo placeholder when the product has no photo_url", () => {
+    render(<DataGrid data={mockData} />);
+
+    // ponytail: mockData rows have no photo_url, so both should show No photo
+    expect(screen.getAllByText("No photo")).toHaveLength(2);
+  });
+
+  it("renders the <img> with the signed URL when photo_url is a storage key", () => {
+    mockUseProductImageUrls.mockReturnValue({
+      data: {
+        product_id: "1",
+        images: [{ key: PHOTO_KEY, url: SIGNED_URL, og_url: null }],
+        cover_image_key: PHOTO_KEY,
+      },
+    } as never);
+
+    const { container } = render(
+      <DataGrid
+        data={[
+          {
+            id: "1",
+            title: "With Photo",
+            price: 1000,
+            status: "published",
+            photo_url: PHOTO_KEY,
+          },
+        ]}
+      />,
+    );
+
+    // ponytail: SignedPhotoCell renders <Image alt=""/> which is
+    // decorative (per WCAG), so getByRole('img') excludes it. Query
+    // the DOM directly to assert the signed URL was wired through.
+    const img = container.querySelector("img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.src).toBe(SIGNED_URL);
+  });
+
+  it("renders the <img> when photo_url is a full public URL (legacy data)", () => {
+    // ponytail: the bulk-upload flow writes public URLs to image_urls,
+    // not storage keys. The SignedPhotoCell must derive the storage key
+    // from the URL and find the signed entry in the image-urls response,
+    // otherwise the cell falls back to "No photo" for every legacy product.
+    mockUseProductImageUrls.mockReturnValue({
+      data: {
+        product_id: "1",
+        images: [{ key: PHOTO_KEY, url: SIGNED_URL, og_url: null }],
+        cover_image_key: PHOTO_KEY,
+      },
+    } as never);
+
+    const { container } = render(
+      <DataGrid
+        data={[
+          {
+            id: "1",
+            title: "Legacy URL Photo",
+            price: 1000,
+            status: "published",
+            photo_url: PHOTO_FULL_URL,
+          },
+        ]}
+      />,
+    );
+
+    const img = container.querySelector("img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.src).toBe(SIGNED_URL);
   });
 });
