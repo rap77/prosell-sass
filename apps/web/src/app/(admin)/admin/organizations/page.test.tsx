@@ -253,5 +253,82 @@ describe("AdminDealersPage", () => {
       render(<AdminDealersPage />);
       expect(screen.getByText("Test Org")).toBeInTheDocument();
     });
+
+    // ponytail: TDD tests for contact phones/emails on the list card
+
+    it("renders every contact's phone on the organization card", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => false,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [
+          {
+            id: "org-1",
+            name: "Autos García",
+            contacts: [
+              {
+                id: "c1",
+                name: "Juan Pérez",
+                category: "ventas",
+                custom_label: null,
+                phone: "+5491155551111",
+                email: null,
+                whatsapp: null,
+                order: 0,
+              },
+              {
+                id: "c2",
+                name: "María López",
+                category: "gerencia",
+                custom_label: null,
+                phone: "+5491155552222",
+                email: null,
+                whatsapp: null,
+                order: 1,
+              },
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+      });
+
+      render(<AdminDealersPage />);
+
+      expect(screen.getByText("Juan Pérez")).toBeInTheDocument();
+      expect(screen.getByText("María López")).toBeInTheDocument();
+      expect(screen.getByText("+5491155551111")).toBeInTheDocument();
+      expect(screen.getByText("+5491155552222")).toBeInTheDocument();
+    });
+
+    it("falls back to org.phone/org.whatsapp when the organization has no contacts", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => false,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [
+          {
+            id: "org-1",
+            name: "Sin Contactos",
+            phone: "+5491100000000",
+            whatsapp: "+5491188887777",
+            contacts: [],
+          },
+        ],
+        isLoading: false,
+        error: null,
+      });
+
+      render(<AdminDealersPage />);
+
+      expect(screen.getByText("+5491100000000")).toBeInTheDocument();
+      expect(screen.getByText("+5491188887777")).toBeInTheDocument();
+    });
   });
 });

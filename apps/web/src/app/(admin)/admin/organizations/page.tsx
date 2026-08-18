@@ -7,6 +7,7 @@ import {
   Loader2,
   Search,
   Phone,
+  Mail,
   MapPin,
   Copy,
   Check,
@@ -187,18 +188,61 @@ export default function AdminOrganizationsPage() {
                   </div>
                 )}
 
-                {org.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone size={14} className="flex-shrink-0" />
-                    <span>{org.phone}</span>
-                  </div>
-                )}
-
-                {org.whatsapp && (
-                  <div className="flex items-center gap-2">
-                    <MessageCircle size={14} className="flex-shrink-0" />
-                    <span>{org.whatsapp}</span>
-                  </div>
+                {/* ponytail: list every contact's phone/email/whatsapp so the
+                    card surfaces the people, not just the org's main lines. */}
+                {org.contacts && org.contacts.length > 0 ? (
+                  org.contacts
+                    .slice()
+                    .sort((a, b) => a.order - b.order)
+                    .map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="flex flex-col gap-0.5 border-l-2 border-ps-border-subtle pl-2"
+                        data-testid="contact-row"
+                      >
+                        <span className="text-xs font-medium text-ps-text-primary">
+                          {contact.name ?? contact.category}
+                        </span>
+                        {contact.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone size={12} className="flex-shrink-0" />
+                            <span className="text-xs">{contact.phone}</span>
+                          </div>
+                        )}
+                        {contact.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail size={12} className="flex-shrink-0" />
+                            <span className="truncate text-xs">
+                              {contact.email}
+                            </span>
+                          </div>
+                        )}
+                        {contact.whatsapp && (
+                          <div className="flex items-center gap-2">
+                            <MessageCircle
+                              size={12}
+                              className="flex-shrink-0"
+                            />
+                            <span className="text-xs">{contact.whatsapp}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                ) : (
+                  <>
+                    {org.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} className="flex-shrink-0" />
+                        <span>{org.phone}</span>
+                      </div>
+                    )}
+                    {org.whatsapp && (
+                      <div className="flex items-center gap-2">
+                        <MessageCircle size={14} className="flex-shrink-0" />
+                        <span>{org.whatsapp}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
