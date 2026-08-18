@@ -12,11 +12,21 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useUpdateOrganization } from "./organizations";
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
+
+const { toast } = await import("sonner");
+const { useUpdateOrganization } = await import("./organizations");
+const { QueryClient, QueryClientProvider } =
+  await import("@tanstack/react-query");
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -33,10 +43,18 @@ const okResponse = (body: unknown = {}) =>
     headers: { "Content-Type": "application/json" },
   });
 
+const VALID_UPDATE_RESPONSE = {
+  id: "org-1",
+  name: "Autos García",
+  status: "active",
+};
+
 describe("useUpdateOrganization", () => {
   beforeEach(() => {
     mockFetch.mockReset();
-    mockFetch.mockResolvedValue(okResponse({}));
+    mockFetch.mockResolvedValue(okResponse(VALID_UPDATE_RESPONSE));
+    (toast.success as ReturnType<typeof vi.fn>).mockClear();
+    (toast.error as ReturnType<typeof vi.fn>).mockClear();
   });
 
   it("serializes contact.name in the PATCH body when present", async () => {
@@ -101,5 +119,45 @@ describe("useUpdateOrganization", () => {
     const [, init] = mockFetch.mock.calls[0];
     const body = JSON.parse(init.body);
     expect(body.contacts[0].name).toBeNull();
+  });
+
+  it("shows a success toast once the PATCH resolves", async () => {
+    const { result } = renderHook(() => useUpdateOrganization(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({
+      organizationId: "org-1",
+      data: { name: "Autos García" },
+    });
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(toast.success).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not show a success toast when the PATCH fails", async () => {
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue(
+      new Response(JSON.stringify({ detail: "boom" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(() => useUpdateOrganization(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({
+      organizationId: "org-1",
+      data: { name: "Autos García" },
+    });
+
+    // ponytail: wait for the request to settle before checking the toast mocks.
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    // give the failed onError a tick to fire
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });

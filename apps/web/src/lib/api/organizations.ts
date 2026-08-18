@@ -14,6 +14,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
+import { toast } from "sonner";
 import {
   BrokerListResponseSchema,
   BrokerSchema,
@@ -199,6 +200,7 @@ export function useUpdateOrganization() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-organizations"] });
+      toast.success("Organización actualizada");
     },
   });
 }
