@@ -189,54 +189,81 @@ export default function AdminOrganizationsPage() {
                 )}
 
                 {/* ponytail: list every contact's phone/email/whatsapp so the
-                    card surfaces the people, not just the org's main lines. */}
+                    card surfaces the people, not just the org's main lines.
+                    When phone and whatsapp are the same number we render
+                    one line with both icons so the data is not duplicated. */}
                 {org.contacts && org.contacts.length > 0 ? (
                   org.contacts
                     .slice()
                     .sort((a, b) => a.order - b.order)
-                    .map((contact) => (
-                      <div
-                        key={contact.id}
-                        className="flex flex-col gap-0.5 border-l-2 border-ps-border-subtle pl-2"
-                        data-testid="contact-row"
-                      >
-                        <span className="text-xs font-medium text-ps-text-primary">
-                          {contact.name ?? contact.category}
-                        </span>
-                        {contact.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone size={12} className="flex-shrink-0" />
-                            <span className="text-xs">{contact.phone}</span>
-                          </div>
-                        )}
-                        {contact.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail size={12} className="flex-shrink-0" />
-                            <span className="truncate text-xs">
-                              {contact.email}
-                            </span>
-                          </div>
-                        )}
-                        {contact.whatsapp && (
-                          <div className="flex items-center gap-2">
-                            <MessageCircle
-                              size={12}
-                              className="flex-shrink-0"
-                            />
-                            <span className="text-xs">{contact.whatsapp}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))
+                    .map((contact) => {
+                      const phoneAndWhatsappSame =
+                        contact.phone &&
+                        contact.whatsapp &&
+                        contact.phone === contact.whatsapp;
+                      return (
+                        <div
+                          key={contact.id}
+                          className="flex flex-col gap-0.5 border-l-2 border-ps-border-subtle pl-2"
+                          data-testid="contact-row"
+                        >
+                          <span className="text-xs font-medium text-ps-text-primary">
+                            {contact.name ?? contact.category}
+                          </span>
+                          {contact.phone &&
+                            (phoneAndWhatsappSame ? (
+                              <div className="flex items-center gap-1.5">
+                                <Phone size={12} className="flex-shrink-0" />
+                                <MessageCircle
+                                  size={12}
+                                  className="flex-shrink-0"
+                                />
+                                <span className="text-xs">{contact.phone}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Phone size={12} className="flex-shrink-0" />
+                                <span className="text-xs">{contact.phone}</span>
+                              </div>
+                            ))}
+                          {contact.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail size={12} className="flex-shrink-0" />
+                              <span className="truncate text-xs">
+                                {contact.email}
+                              </span>
+                            </div>
+                          )}
+                          {contact.whatsapp && !phoneAndWhatsappSame && (
+                            <div className="flex items-center gap-2">
+                              <MessageCircle
+                                size={12}
+                                className="flex-shrink-0"
+                              />
+                              <span className="text-xs">
+                                {contact.whatsapp}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
                 ) : (
                   <>
-                    {org.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone size={14} className="flex-shrink-0" />
-                        <span>{org.phone}</span>
-                      </div>
-                    )}
-                    {org.whatsapp && (
+                    {org.phone &&
+                      (org.phone === org.whatsapp ? (
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={14} className="flex-shrink-0" />
+                          <MessageCircle size={14} className="flex-shrink-0" />
+                          <span>{org.phone}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Phone size={14} className="flex-shrink-0" />
+                          <span>{org.phone}</span>
+                        </div>
+                      ))}
+                    {org.whatsapp && org.whatsapp !== org.phone && (
                       <div className="flex items-center gap-2">
                         <MessageCircle size={14} className="flex-shrink-0" />
                         <span>{org.whatsapp}</span>

@@ -330,5 +330,113 @@ describe("AdminDealersPage", () => {
       expect(screen.getByText("+5491100000000")).toBeInTheDocument();
       expect(screen.getByText("+5491188887777")).toBeInTheDocument();
     });
+
+    // ponytail: deduplicate phone === whatsapp on the same contact row
+
+    it("renders a single phone line with both icons when contact.phone === contact.whatsapp", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => false,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [
+          {
+            id: "org-1",
+            name: "Mismo Número",
+            contacts: [
+              {
+                id: "c1",
+                name: "Juan Pérez",
+                category: "ventas",
+                custom_label: null,
+                phone: "+5491155551111",
+                email: null,
+                whatsapp: "+5491155551111",
+                order: 0,
+              },
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+      });
+
+      render(<AdminDealersPage />);
+
+      // ponytail: phone and whatsapp are the same number, so the number
+      // appears once but is wrapped in a container with both icons.
+      const phoneEls = screen.getAllByText("+5491155551111");
+      expect(phoneEls).toHaveLength(1);
+      const contactRow = phoneEls[0].closest('[data-testid="contact-row"]');
+      expect(contactRow).not.toBeNull();
+      expect(contactRow?.querySelector("svg")).not.toBeNull();
+    });
+
+    it("renders two separate lines when contact.phone and contact.whatsapp differ", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => false,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [
+          {
+            id: "org-1",
+            name: "Números Distintos",
+            contacts: [
+              {
+                id: "c1",
+                name: "Juan Pérez",
+                category: "ventas",
+                custom_label: null,
+                phone: "+5491155551111",
+                email: null,
+                whatsapp: "+5491155559999",
+                order: 0,
+              },
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+      });
+
+      render(<AdminDealersPage />);
+
+      expect(screen.getByText("+5491155551111")).toBeInTheDocument();
+      expect(screen.getByText("+5491155559999")).toBeInTheDocument();
+    });
+
+    it("deduplicates org.phone === org.whatsapp fallback when no contacts", () => {
+      mockUseAuth.mockReturnValue({
+        isAdmin: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: () => false,
+      });
+      mockUseOrganizations.mockReturnValue({
+        data: [
+          {
+            id: "org-1",
+            name: "Mismo Tel Org",
+            phone: "+5491100000000",
+            whatsapp: "+5491100000000",
+            contacts: [],
+          },
+        ],
+        isLoading: false,
+        error: null,
+      });
+
+      render(<AdminDealersPage />);
+
+      // ponytail: org-level phone and whatsapp are the same number, so the
+      // number appears once with both icons (fallback branch).
+      const phoneEls = screen.getAllByText("+5491100000000");
+      expect(phoneEls).toHaveLength(1);
+    });
   });
 });
