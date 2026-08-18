@@ -977,7 +977,11 @@ export interface ProductFilters {
     | "draft"
     | "expired"
     | "online"
-    | "sold";
+    | "sold"
+    | "rejected"
+    | "paused"
+    | "reserved"
+    | "archived";
   search?: string;
   /** Scopes the list to one category; required for `attributes` to apply. */
   category_id?: string;
