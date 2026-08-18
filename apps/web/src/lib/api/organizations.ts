@@ -141,6 +141,7 @@ export function useResendOrganizationInvitation() {
 
 interface ContactInput {
   id: string;
+  name?: string | null;
   category: string;
   custom_label?: string | null;
   phone?: string | null;

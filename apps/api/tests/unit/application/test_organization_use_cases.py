@@ -9,6 +9,7 @@ from prosell.application.dto.org import (
     CreateOrganizationRequest,
     UpdateOrganizationRequest,
 )
+from prosell.application.dto.org.update import ContactInput
 from prosell.application.use_cases.org import (
     CreateOrganizationUseCase,
     GetOrganizationByTenantUseCase,
@@ -25,6 +26,9 @@ from prosell.domain.exceptions.org_exceptions import (
     OrganizationAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationVerificationException,
+)
+from prosell.domain.value_objects.organization_contact import (
+    ContactCategory,
 )
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 
@@ -265,6 +269,38 @@ class TestUpdateOrganizationUseCase:
             )
 
         org_repo.update.assert_not_awaited()
+
+    async def test_update_persists_contact_name(self) -> None:
+        """Contact name is persisted on the stored organization."""
+        # ponytail: regression test for the bug where the update use case
+        # dropped the `name` field by not passing it to OrganizationContact.
+        org = make_org()
+        org_repo = make_org_repo()
+        org_repo.get_by_id.return_value = org
+        # Echo the same org back so we can read the updated contacts field
+        org_repo.update.return_value = org
+
+        request = UpdateOrganizationRequest(
+            contacts=[
+                ContactInput(
+                    id="c1",
+                    name="Juan Pérez",
+                    category=ContactCategory.VENTAS,
+                    email="juan@acme.com",
+                )
+            ]
+        )
+
+        use_case = UpdateOrganizationUseCase(org_repo)
+        await use_case.execute(
+            org_id=org.id,
+            tenant_id=org.tenant_id,
+            request=request,
+        )
+
+        assert len(org.contacts) == 1
+        assert org.contacts[0].name == "Juan Pérez"
+        org_repo.update.assert_awaited_once()
 
 
 # =============================================================================

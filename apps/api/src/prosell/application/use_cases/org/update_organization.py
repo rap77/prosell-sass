@@ -71,6 +71,7 @@ class UpdateOrganizationUseCase:
             contacts = [
                 OrganizationContact(
                     id=c.id,
+                    name=c.name,
                     category=c.category,
                     custom_label=c.custom_label,
                     phone=c.phone,
