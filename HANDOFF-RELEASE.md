@@ -10,19 +10,48 @@
 
 ---
 
-## Estado real — 2026-08-18
+## Estado real — 2026-08-18 (actualizado 2026-08-19)
 
-- **HEAD:** `b8af2322` — trabajo activo reciente: review-queue (tabs de estado
-  Pendientes/Aprobados/Rechazados, TDD), fixes de `ProductFilters`, contact
-  cards de organizaciones.
-- **Working tree:** limpio salvo `.gga` (config del reviewer de IA,
-  `PROVIDER="codex"` → `"claude"`).
+- **HEAD:** `8bf14d2a` — encima de `ff3ebb61` (audit log) encima de `66a2af1c`
+  (hándicap handoff note) encima de `b8af2322` (review-queue status tabs).
+- **Working tree:** limpio.
+- **Cerrado en esta sesión (`ff3ebb61`):** `feat(products): add immutable audit
+log for status transitions` — 19 archivos, +537/-33. La fundación de
+  observabilidad para revertir decisiones de status ya está en main:
+  `ProductAuditLog` ValueObject, migración `20260818_0001`,
+  `SqlAlchemyProductRepository.update()` ahora acepta
+  `changed_by_user_id`/`reason` y graba un log inmutable cuando el status
+  cambia, y los 11 endpoints (6 batch + 5 single-item) propagan
+  `current_user.id`. Pyright 0 errors, ruff clean, 13/13 tests afectados
+  en verde.
 - **Gap conocido — máquina de estados de producto (`ProductStatus`) es de un
-  solo sentido:** no hay transición de reversión (`PUBLISHED → PENDING`,
-  `REJECTED → PENDING` directo, o salir de `ARCHIVED`). No hay endpoint
-  `/revert` ni `/unapprove` en `product_router.py`, ni botón de deshacer en
-  `ApproveConfirmDialog`/`RejectConfirmDialog`. Si el negocio necesita
-  "deshacer una aprobación", falta implementarlo.
+  solo sentido:** la fundación de audit log YA está, pero las transiciones
+  reversas en sí no. Sigue faltando:
+  - método `revert()` / `unapprove()` en `Product`
+  - endpoint `POST /products/{id}/revert` (PUBLISHED → PENDING)
+  - endpoint `POST /products/{id}/resubmit` (REJECTED → PENDING directo)
+  - endpoint `POST /products/{id}/restore` (sacado de ARCHIVED)
+  - botón "Deshacer" en `ApproveConfirmDialog`/`RejectConfirmDialog`
+  - UI: ver `apps/web/src/app/(admin)/admin/review-queue/page.tsx` (los
+    dialogs hoy no ofrecen undo)
+
+  Si el negocio necesita "deshacer una aprobación", la base de auditoría ya
+  está — falta solo construir encima los endpoints reversos.
+
+- **Tests rojos pre-existentes (NO introducidos por el audit log):**
+  - `tests/integration/use_cases/test_batch_approve_products.py` (3 fails)
+  - `tests/integration/use_cases/test_batch_submit_products.py` (4 fails)
+  - `tests/integration/api/test_batch_review_api.py` (3 fails)
+
+  Todos comparten el mismo bug de fixture: usan `category_id=uuid4()` que
+  genera FK inválido contra `categories`. El fix patrón es usar el fixture
+  `test_category` y `test_user` (que `test_batch_reserve_products.py` ya
+  demuestra en este commit). Pendiente como follow-up — no se tocó acá
+  para mantener el scope del audit log.
+
+- **GGA provider:** `claude` (config restaurada en `8bf14d2a`). Sesión de
+  Claude resetea a las 23:00 Caracas; planificar commits grandes para
+  horarios en que no esté al límite.
 
 ---
 
