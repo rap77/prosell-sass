@@ -106,3 +106,24 @@ class ProductStatus(StrEnum):
         """
         valid_transitions = self.transitions().get(self, [])
         return new_status in valid_transitions
+
+    @classmethod
+    def reverse_transitions(cls) -> dict["ProductStatus", list["ProductStatus"]]:
+        """Define valid reverse (undo) status transitions.
+
+        Gated separately from `transitions()` because reverse transitions
+        require super_admin role and carry side effects (e.g. FB unpublish).
+        ARCHIVED is not a key here: its restore target is the dynamic
+        `archived_from_status` field, not a fixed status.
+
+        Returns:
+            Dict mapping current status to list of valid reverse statuses
+        """
+        return {
+            cls.PUBLISHED: [cls.PENDING],
+            cls.REJECTED: [cls.PENDING],
+        }
+
+    def can_reverse(self) -> bool:
+        """Check if this status has a reverse (undo) transition available."""
+        return self in self.reverse_transitions()
