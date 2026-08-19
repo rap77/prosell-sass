@@ -15,7 +15,9 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 
 
 @pytest.mark.asyncio
-async def test_batch_reserve_multiple_published_products(db_session, test_organization):
+async def test_batch_reserve_multiple_published_products(
+    db_session, test_organization, test_user, test_category
+):
     """All published products should be reserved successfully."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
@@ -27,7 +29,7 @@ async def test_batch_reserve_multiple_published_products(db_session, test_organi
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Test Vehicle {i}",
             price_cents=1000000,
             currency="USD",
@@ -43,6 +45,7 @@ async def test_batch_reserve_multiple_published_products(db_session, test_organi
     result = await use_case.execute(
         product_ids=[p.id for p in products],
         tenant_id=tenant_id,
+        user_id=test_user.id,
     )
 
     # Assert counts (spec: reserved_count=5, failed_count=0)
@@ -63,7 +66,9 @@ async def test_batch_reserve_multiple_published_products(db_session, test_organi
 
 
 @pytest.mark.asyncio
-async def test_batch_reserve_partial_success_mixed_statuses(db_session, test_organization):
+async def test_batch_reserve_partial_success_mixed_statuses(
+    db_session, test_organization, test_user, test_category
+):
     """Mix of published/draft should return partial success."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
@@ -75,7 +80,7 @@ async def test_batch_reserve_partial_success_mixed_statuses(db_session, test_org
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Published {i}",
             price_cents=1000000,
             currency="USD",
@@ -92,7 +97,7 @@ async def test_batch_reserve_partial_success_mixed_statuses(db_session, test_org
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Draft {i}",
             price_cents=1000000,
             currency="USD",
@@ -109,6 +114,7 @@ async def test_batch_reserve_partial_success_mixed_statuses(db_session, test_org
     result = await use_case.execute(
         product_ids=all_ids,
         tenant_id=tenant_id,
+        user_id=test_user.id,
     )
 
     # Assert counts (spec: reserved_count=3, failed_count=2)
@@ -136,7 +142,7 @@ async def test_batch_reserve_partial_success_mixed_statuses(db_session, test_org
 
 
 @pytest.mark.asyncio
-async def test_batch_reserve_product_not_found(db_session, test_organization):
+async def test_batch_reserve_product_not_found(db_session, test_organization, test_user):
     """Nonexistent product should return error_code=not_found."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
@@ -147,6 +153,7 @@ async def test_batch_reserve_product_not_found(db_session, test_organization):
     result = await use_case.execute(
         product_ids=[fake_id],
         tenant_id=tenant_id,
+        user_id=test_user.id,
     )
 
     # Assert failure
@@ -163,7 +170,9 @@ async def test_batch_reserve_product_not_found(db_session, test_organization):
 
 
 @pytest.mark.asyncio
-async def test_batch_reserve_deduplicates_ids(db_session, test_organization):
+async def test_batch_reserve_deduplicates_ids(
+    db_session, test_organization, test_user, test_category
+):
     """Duplicate IDs should be processed only once (spec requirement)."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
@@ -173,7 +182,7 @@ async def test_batch_reserve_deduplicates_ids(db_session, test_organization):
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Test Vehicle",
         price_cents=1000000,
         currency="USD",
@@ -188,6 +197,7 @@ async def test_batch_reserve_deduplicates_ids(db_session, test_organization):
     result = await use_case.execute(
         product_ids=[product.id, product.id, product.id],  # 3 duplicates
         tenant_id=tenant_id,
+        user_id=test_user.id,
     )
 
     # Assert only processed once

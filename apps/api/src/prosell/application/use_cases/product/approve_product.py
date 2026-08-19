@@ -42,7 +42,7 @@ class ApproveProductUseCase:
         # 2. Approve (auto-publishes)
         product.approve(user_id)
 
-        # 3. Persist
-        product = await self.product_repository.update(product)
+        # 3. Persist (records the audit trail entry)
+        product = await self.product_repository.update(product, changed_by_user_id=user_id)
 
         return ProductResponse.from_entity(product)

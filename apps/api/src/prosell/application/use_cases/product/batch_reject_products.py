@@ -52,7 +52,9 @@ class BatchRejectProductsUseCase:
 
                 # Entity validates transition
                 product.reject(user_id, reason)
-                await self.product_repository.update(product)
+                await self.product_repository.update(
+                    product, changed_by_user_id=user_id, reason=reason
+                )
 
                 results.append(
                     BatchReviewItemResult(

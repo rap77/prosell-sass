@@ -39,7 +39,7 @@ from prosell.infrastructure.models.organization_vertical_model import (
     OrganizationVerticalModel,
 )
 from prosell.infrastructure.models.product_image_model import ProductImageModel
-from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.product_model import ProductAuditLogModel, ProductModel
 from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
 from prosell.infrastructure.models.publication_model import PublicationModel
 from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
@@ -80,6 +80,7 @@ __all__ = [
     "OrganizationMarketplaceAccessModel",
     "OrganizationModel",
     "OrganizationVerticalModel",
+    "ProductAuditLogModel",
     "ProductImageModel",
     "ProductModel",
     "ProductOwnershipModel",

@@ -20,6 +20,7 @@ class BatchMarkSoldProductsUseCase:
         self,
         product_ids: list[UUID],
         tenant_id: UUID | None,
+        user_id: UUID,
     ) -> BatchAvailabilityResponse:
         """
         Mark multiple products as sold.
@@ -27,6 +28,7 @@ class BatchMarkSoldProductsUseCase:
         Args:
             product_ids: List of product IDs to mark sold
             tenant_id: Tenant ID for isolation (None for Super Admin = no filter)
+            user_id: User ID performing the action, for the audit trail
 
         Returns:
             BatchAvailabilityResponse with per-product results and counts
@@ -47,7 +49,7 @@ class BatchMarkSoldProductsUseCase:
 
                 # Entity validates transition (published/reserved → sold)
                 product.mark_sold()
-                await self.product_repository.update(product)
+                await self.product_repository.update(product, changed_by_user_id=user_id)
 
                 results.append(
                     BatchAvailabilityItemResult(

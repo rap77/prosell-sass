@@ -172,3 +172,53 @@ class ProductModel(Base):
         back_populates="assigned_products",
         lazy="noload",
     )
+    audit_logs: Mapped[list["ProductAuditLogModel"]] = relationship(
+        "ProductAuditLogModel",
+        back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductAuditLogModel.created_at.desc()",
+        lazy="noload",
+    )
+
+
+class ProductAuditLogModel(Base):
+    """SQLAlchemy model for ProductAuditLog entity."""
+
+    __tablename__ = "product_audit_log"
+
+    # Identity
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=text("gen_random_uuid()"))
+    tenant_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[UUID] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Status change
+    old_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # Change metadata
+    changed_by_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Audit timestamp
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("now()"),
+        nullable=False,
+    )
+
+    # Relationships
+    product = relationship("ProductModel", back_populates="audit_logs", lazy="noload")
+
+    __table_args__ = (
+        Index("ix_product_audit_log_tenant_id_created_at", "tenant_id", "created_at"),
+    )

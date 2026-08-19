@@ -50,7 +50,7 @@ class BatchSubmitProductsUseCase:
 
                 # Entity validates transition (draft/rejected → pending)
                 product.submit_for_approval(user_id)
-                await self.product_repository.update(product)
+                await self.product_repository.update(product, changed_by_user_id=user_id)
 
                 results.append(
                     BatchSubmitItemResult(

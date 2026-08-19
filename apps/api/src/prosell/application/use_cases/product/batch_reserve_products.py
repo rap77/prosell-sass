@@ -20,6 +20,7 @@ class BatchReserveProductsUseCase:
         self,
         product_ids: list[UUID],
         tenant_id: UUID | None,
+        user_id: UUID,
     ) -> BatchAvailabilityResponse:
         """
         Reserve multiple published products.
@@ -27,6 +28,7 @@ class BatchReserveProductsUseCase:
         Args:
             product_ids: List of product IDs to reserve
             tenant_id: Tenant ID for isolation (None for Super Admin = no filter)
+            user_id: User ID performing the reserve, for the audit trail
 
         Returns:
             BatchAvailabilityResponse with per-product results and counts
@@ -48,7 +50,7 @@ class BatchReserveProductsUseCase:
 
                 # Entity validates transition (published → reserved)
                 product.reserve()
-                await self.product_repository.update(product)
+                await self.product_repository.update(product, changed_by_user_id=user_id)
 
                 results.append(
                     BatchAvailabilityItemResult(

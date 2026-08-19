@@ -20,6 +20,7 @@ class BatchResumeProductsUseCase:
         self,
         product_ids: list[UUID],
         tenant_id: UUID | None,
+        user_id: UUID,
     ) -> BatchAvailabilityResponse:
         """
         Resume multiple reserved or paused products.
@@ -27,6 +28,7 @@ class BatchResumeProductsUseCase:
         Args:
             product_ids: List of product IDs to resume
             tenant_id: Tenant ID for isolation (None for Super Admin = no filter)
+            user_id: User ID performing the resume, for the audit trail
 
         Returns:
             BatchAvailabilityResponse with per-product results and counts
@@ -47,7 +49,7 @@ class BatchResumeProductsUseCase:
 
                 # Entity validates transition (reserved/paused → published)
                 product.resume()
-                await self.product_repository.update(product)
+                await self.product_repository.update(product, changed_by_user_id=user_id)
 
                 results.append(
                     BatchAvailabilityItemResult(

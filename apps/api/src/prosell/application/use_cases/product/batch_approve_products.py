@@ -50,7 +50,7 @@ class BatchApproveProductsUseCase:
 
                 # Entity validates transition
                 product.approve(user_id)
-                await self.product_repository.update(product)
+                await self.product_repository.update(product, changed_by_user_id=user_id)
 
                 results.append(
                     BatchReviewItemResult(

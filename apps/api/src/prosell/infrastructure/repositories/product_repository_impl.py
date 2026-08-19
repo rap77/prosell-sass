@@ -7,12 +7,13 @@ from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
+from prosell.domain.entities.product_audit_log import ProductAuditLog
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.models.product_image_model import ProductImageModel
-from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.product_model import ProductAuditLogModel, ProductModel
 
 #: Single source of truth for the per-key cap on `distinct_attribute_values`.
 #: Enforced in SQL via `LIMIT cap + 1` so PostgreSQL never streams more than
@@ -291,8 +292,21 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def update(self, product: Product) -> Product:
-        """Update an existing product."""
+    async def update(
+        self,
+        product: Product,
+        *,
+        changed_by_user_id: UUID | None = None,
+        reason: str | None = None,
+    ) -> Product:
+        """Update an existing product.
+
+        If `product.status` differs from the persisted status, an immutable
+        ProductAuditLogModel row is written in the same flush — professional
+        state handling requires the write path to make it structurally
+        impossible to change status without leaving a trail, rather than
+        relying on every call site remembering to log it separately.
+        """
         # Defense in depth: filter by tenant_id even though the caller
         # (use case) already validated ownership. Prevents cross-tenant
         # updates if a product entity is incorrectly constructed.
@@ -305,6 +319,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if not model:
             raise ValueError(f"Product not found: {product.id}")
+
+        old_status = model.status
 
         model.title = product.title
         model.slug = product.slug
@@ -332,6 +348,18 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.published_at = product.published_at
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
+
+        if old_status != model.status:
+            self.session.add(
+                ProductAuditLogModel(
+                    product_id=product.id,
+                    tenant_id=product.tenant_id,
+                    old_status=old_status,
+                    new_status=model.status,
+                    changed_by_user_id=changed_by_user_id,
+                    reason=reason,
+                )
+            )
 
         # Manually update updated_at to avoid async greenlet issues with onupdate
         model.updated_at = datetime.now(UTC)
@@ -604,6 +632,29 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             out[key] = list(rows)
         return out
 
+    async def get_audit_logs(
+        self,
+        product_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[ProductAuditLog]:
+        """Get status-change audit history for a product, newest first."""
+        stmt = (
+            select(ProductAuditLogModel)
+            .where(
+                ProductAuditLogModel.product_id == product_id,
+                ProductAuditLogModel.tenant_id == tenant_id,
+            )
+            .order_by(ProductAuditLogModel.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return [self._audit_log_to_entity(model) for model in result.scalars().all()]
+
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""
         return Product.model_validate(model, from_attributes=True)
+
+    def _audit_log_to_entity(self, model: ProductAuditLogModel) -> ProductAuditLog:
+        """Convert ORM model to domain entity."""
+        return ProductAuditLog.model_validate(model, from_attributes=True)

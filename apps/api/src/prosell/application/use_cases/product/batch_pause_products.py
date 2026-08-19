@@ -20,6 +20,7 @@ class BatchPauseProductsUseCase:
         self,
         product_ids: list[UUID],
         tenant_id: UUID | None,
+        user_id: UUID,
     ) -> BatchAvailabilityResponse:
         """
         Pause multiple published products.
@@ -27,6 +28,7 @@ class BatchPauseProductsUseCase:
         Args:
             product_ids: List of product IDs to pause
             tenant_id: Tenant ID for isolation (None for Super Admin = no filter)
+            user_id: User ID performing the pause, for the audit trail
 
         Returns:
             BatchAvailabilityResponse with per-product results and counts
@@ -47,7 +49,7 @@ class BatchPauseProductsUseCase:
 
                 # Entity validates transition (published → paused)
                 product.pause()
-                await self.product_repository.update(product)
+                await self.product_repository.update(product, changed_by_user_id=user_id)
 
                 results.append(
                     BatchAvailabilityItemResult(

@@ -1105,6 +1105,7 @@ async def batch_reserve_products(
     return await use_case.execute(
         product_ids=request.product_ids,
         tenant_id=tenant_id,
+        user_id=current_user.id,
     )
 
 
@@ -1135,6 +1136,7 @@ async def batch_pause_products(
     return await use_case.execute(
         product_ids=request.product_ids,
         tenant_id=tenant_id,
+        user_id=current_user.id,
     )
 
 
@@ -1165,6 +1167,7 @@ async def batch_resume_products(
     return await use_case.execute(
         product_ids=request.product_ids,
         tenant_id=tenant_id,
+        user_id=current_user.id,
     )
 
 
@@ -1195,6 +1198,7 @@ async def batch_mark_sold_products(
     return await use_case.execute(
         product_ids=request.product_ids,
         tenant_id=tenant_id,
+        user_id=current_user.id,
     )
 
 
@@ -1220,7 +1224,7 @@ async def submit_product_for_approval(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.submit_for_approval(current_user.id)
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
 
     return ProductResponse.from_entity(product)
 
@@ -1334,7 +1338,7 @@ async def reject_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.reject(current_user.id, request.reason)
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id, reason=request.reason)
 
     return ProductResponse.from_entity(product)
 
@@ -1363,7 +1367,7 @@ async def publish_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.publish()
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
 
     return ProductResponse.from_entity(product)
 
@@ -1391,7 +1395,7 @@ async def pause_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.pause()
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
     await _enqueue_unpublish_requests(db, product)
 
     return ProductResponse.from_entity(product)
@@ -1420,7 +1424,7 @@ async def resume_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.resume()
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
 
     return ProductResponse.from_entity(product)
 
@@ -1443,7 +1447,7 @@ async def reserve_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.reserve()
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
     await _enqueue_unpublish_requests(db, product)
 
     return ProductResponse.from_entity(product)
@@ -1472,7 +1476,7 @@ async def mark_product_sold(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.mark_sold()
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
     await _enqueue_unpublish_requests(db, product)
 
     return ProductResponse.from_entity(product)
@@ -1530,7 +1534,7 @@ async def archive_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     product.archive()
-    product = await repo.update(product)
+    product = await repo.update(product, changed_by_user_id=current_user.id)
 
     return ProductResponse.from_entity(product)
 
@@ -1613,6 +1617,7 @@ async def bulk_upload_preview(
 async def bulk_upload_with_images(
     current_user: CurrentUser,
     db: DbSession,
+    spaces: SpacesService,
     csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
     images_zip: UploadFile | None = File(None, description="Optional ZIP file with vehicle images"),
     organization_id: UUID | None = Form(
@@ -1680,12 +1685,11 @@ async def bulk_upload_with_images(
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
     org_repo = SqlAlchemyOrganizationRepository(db)
-    spaces_service = get_spaces_service()
     use_case = BulkUploadVehiclesUseCase(
         product_repository=product_repo,
         category_repository=category_repo,
         organization_repository=org_repo,
-        do_spaces_service=spaces_service,
+        do_spaces_service=spaces,
     )
 
     result = await use_case.execute(

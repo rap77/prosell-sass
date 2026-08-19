@@ -8,6 +8,7 @@ from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 from prosell.domain.entities.product import Product
+from prosell.domain.entities.product_audit_log import ProductAuditLog
 from prosell.domain.entities.team import Team, TeamMember, TeamMemberRole
 from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
@@ -396,9 +397,25 @@ class StubProductRepository(AbstractProductRepository):
         products = [product for product in self.products.values() if product.tenant_id == tenant_id]
         return products[skip : skip + limit]
 
-    async def update(self, product: Product) -> Product:
+    async def update(
+        self,
+        product: Product,
+        *,
+        changed_by_user_id: UUID | None = None,
+        reason: str | None = None,
+    ) -> Product:
+        del changed_by_user_id, reason
         self.products[product.id] = product
         return product
+
+    async def get_audit_logs(
+        self,
+        product_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[ProductAuditLog]:
+        del product_id, tenant_id, limit
+        return []
 
     async def delete(self, product_id: UUID, tenant_id: UUID) -> bool:
         del tenant_id

@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from prosell.domain.entities.product import Product
+from prosell.domain.entities.product_audit_log import ProductAuditLog
 from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
@@ -169,15 +170,47 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def update(self, product: Product) -> Product:
+    async def update(
+        self,
+        product: Product,
+        *,
+        changed_by_user_id: UUID | None = None,
+        reason: str | None = None,
+    ) -> Product:
         """
         Update an existing product.
 
+        If the status actually changes, an immutable ProductAuditLog entry
+        is recorded automatically (old status, new status, who, why).
+
         Args:
             product: Product entity with updated fields
+            changed_by_user_id: User who made the change, for the audit
+                trail (optional — omit for system-initiated updates)
+            reason: Reason for the change, for the audit trail (optional)
 
         Returns:
             Updated product
+        """
+        pass
+
+    @abstractmethod
+    async def get_audit_logs(
+        self,
+        product_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[ProductAuditLog]:
+        """
+        Get status-change audit history for a product, newest first.
+
+        Args:
+            product_id: Product UUID
+            tenant_id: Tenant UUID for isolation
+            limit: Maximum number of entries to return
+
+        Returns:
+            List of audit log entries, newest first
         """
         pass
 
