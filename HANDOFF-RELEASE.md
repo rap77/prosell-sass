@@ -3,6 +3,27 @@
 **Última actualización:** 2026-05-25
 **Objetivo actual:** mover el proyecto de **NO-GO condicionado** a **GO controlado**
 
+> ⚠️ **Este documento es un log histórico del sprint de release-hardening de mayo 2026.**
+> El release-hardening cerró en GO (ver semáforo abajo). Desde entonces el proyecto
+> siguió con feature work normal; este archivo NO se actualizó en el camino y ya
+> no refleja gates activos. Para estado real, ver `git log` y la sección siguiente.
+
+---
+
+## Estado real — 2026-08-18
+
+- **HEAD:** `b8af2322` — trabajo activo reciente: review-queue (tabs de estado
+  Pendientes/Aprobados/Rechazados, TDD), fixes de `ProductFilters`, contact
+  cards de organizaciones.
+- **Working tree:** limpio salvo `.gga` (config del reviewer de IA,
+  `PROVIDER="codex"` → `"claude"`).
+- **Gap conocido — máquina de estados de producto (`ProductStatus`) es de un
+  solo sentido:** no hay transición de reversión (`PUBLISHED → PENDING`,
+  `REJECTED → PENDING` directo, o salir de `ARCHIVED`). No hay endpoint
+  `/revert` ni `/unapprove` en `product_router.py`, ni botón de deshacer en
+  `ApproveConfirmDialog`/`RejectConfirmDialog`. Si el negocio necesita
+  "deshacer una aprobación", falta implementarlo.
+
 ---
 
 ## Prompt sugerido para continuidad
