@@ -45,6 +45,7 @@ from prosell.application.dto.product import (
     UpdateProductRequest,
     VehicleImportRowResponse,
 )
+from prosell.application.dto.product.audit_log import ProductAuditLogResponse
 from prosell.application.dto.product.available_transitions import (
     AvailableTransitionResponse,
 )
@@ -1586,6 +1587,39 @@ async def get_available_transitions(
         raise HTTPException(status_code=404, detail="Product not found")
 
     return _available_transitions(product)
+
+
+@router.get(
+    "/{product_id}/audit-logs",
+    response_model=list[ProductAuditLogResponse],
+)
+async def get_product_audit_logs(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> list[ProductAuditLogResponse]:
+    """
+    Status-change history for a product (newest first). Powers the
+    Historial timeline on the product detail page.
+
+    super_admin and admin (tenant_admin) only -- the audit trail can
+    surface who rejected/reversed/restored a product and why, which
+    sellers and managers don't need visibility into.
+    """
+    if not current_user.has_role(["super_admin", "admin"]):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="super_admin or admin role required",
+        )
+
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    logs = await repo.get_audit_logs(product_id, product.tenant_id)
+    return [ProductAuditLogResponse.from_entity(log) for log in logs]
 
 
 @router.post("/{product_id}/reverse", response_model=ProductResponse)
