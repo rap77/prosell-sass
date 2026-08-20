@@ -14,6 +14,7 @@ from fastapi import (
     Depends,
     File,
     Form,
+    Header,
     HTTPException,
     Query,
     Request,
@@ -98,7 +99,12 @@ from prosell.domain.entities.product import Product
 from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
-from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
+from prosell.domain.exceptions.product_exceptions import (
+    ProductInvalidStatusTransitionError,
+    ProductNotFoundError,
+    ProductRestoreTargetMissingError,
+    ProductVersionConflictError,
+)
 from prosell.domain.services.csv_product_parser import CSVParseError, CSVProductParser
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
@@ -300,6 +306,35 @@ def _require_marketplace_publish(current_user: User) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Marketplace publish permission required",
+        )
+
+
+def _require_super_admin(current_user: User) -> None:
+    """Require super_admin for reverse-transition actions (undo approvals,
+    rejections, archives). Matches the in-memory has_role() check already
+    used elsewhere in this router, not the DB-backed require_role()
+    dependency used in org_router.py.
+    """
+    if not current_user.has_role("super_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="super_admin role required",
+        )
+
+
+def _require_matching_version(product: Product, if_match: int) -> None:
+    """Optimistic locking precondition check. repo.update() enforces this
+    too (belt-and-suspenders against a race between this check and the
+    write), but checking here first avoids running the transition logic
+    at all when the client's copy is already known to be stale.
+    """
+    if product.version != if_match:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            detail=(
+                f"Product was modified concurrently: expected version {if_match}, "
+                f"found {product.version}"
+            ),
         )
 
 
@@ -1478,6 +1513,122 @@ async def mark_product_sold(
     product.mark_sold()
     product = await repo.update(product, changed_by_user_id=current_user.id)
     await _enqueue_unpublish_requests(db, product)
+
+    return ProductResponse.from_entity(product)
+
+
+@router.post("/{product_id}/reverse", response_model=ProductResponse)
+async def reverse_product(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    if_match: Annotated[int, Header(alias="If-Match")],
+) -> ProductResponse:
+    """
+    Undo a wrong approval: PUBLISHED -> PENDING.
+
+    super_admin only. Queues durable FB removal work for any active
+    publications (same mechanism as reserve/mark_sold/pause) — no
+    synchronous FB call, no rollback if that removal eventually fails.
+    """
+    _require_super_admin(current_user)
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    _require_matching_version(product, if_match)
+
+    try:
+        product.reverse_publication()
+    except ProductInvalidStatusTransitionError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+
+    try:
+        product = await repo.update(product, changed_by_user_id=current_user.id)
+    except ProductVersionConflictError as e:
+        raise HTTPException(status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(e)) from e
+
+    await _enqueue_unpublish_requests(db, product)
+
+    return ProductResponse.from_entity(product)
+
+
+@router.post("/{product_id}/resubmit", response_model=ProductResponse)
+async def resubmit_product(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    if_match: Annotated[int, Header(alias="If-Match")],
+) -> ProductResponse:
+    """
+    Admin-forced resubmit: REJECTED -> PENDING, skipping the DRAFT round-trip.
+
+    super_admin only.
+    """
+    _require_super_admin(current_user)
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    _require_matching_version(product, if_match)
+
+    try:
+        product.resubmit(current_user.id)
+    except ProductInvalidStatusTransitionError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+
+    try:
+        product = await repo.update(product, changed_by_user_id=current_user.id)
+    except ProductVersionConflictError as e:
+        raise HTTPException(status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(e)) from e
+
+    return ProductResponse.from_entity(product)
+
+
+@router.post("/{product_id}/restore", response_model=ProductResponse)
+async def restore_product(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    if_match: Annotated[int, Header(alias="If-Match")],
+) -> ProductResponse:
+    """
+    Restore an archived product to the status it had before archiving.
+
+    super_admin only. Returns 409 if the product was archived before this
+    feature shipped (no archived_from_status recorded) — requires manual
+    admin fixup rather than a silent fallback to DRAFT.
+    """
+    _require_super_admin(current_user)
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    _require_matching_version(product, if_match)
+
+    try:
+        product.restore()
+    except ProductInvalidStatusTransitionError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except ProductRestoreTargetMissingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "archived_before_reverse_transitions_feature",
+                "message": str(e),
+            },
+        ) from e
+
+    try:
+        product = await repo.update(product, changed_by_user_id=current_user.id)
+    except ProductVersionConflictError as e:
+        raise HTTPException(status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(e)) from e
 
     return ProductResponse.from_entity(product)
 

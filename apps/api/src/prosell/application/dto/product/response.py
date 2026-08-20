@@ -73,6 +73,9 @@ class ProductResponse(BaseModel):
     archived_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+    # Optimistic locking. Clients must read this and echo it back via the
+    # If-Match header on reverse/resubmit/restore.
+    version: int
 
     @property
     def price_dollars(self) -> float:
@@ -125,6 +128,7 @@ class ProductResponse(BaseModel):
             archived_at=product.archived_at,
             created_at=product.created_at,
             updated_at=product.updated_at,
+            version=product.version,
         )
 
 

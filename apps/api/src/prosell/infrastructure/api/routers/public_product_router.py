@@ -101,6 +101,7 @@ async def get_public_product(
         archived_at=model.archived_at,
         created_at=model.created_at,
         updated_at=model.updated_at,
+        version=model.version,
     )
 
 
