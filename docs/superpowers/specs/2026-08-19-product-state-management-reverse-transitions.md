@@ -206,19 +206,33 @@ synchronously — it reuses the existing durable-queue mechanism:
 
 ## UI Changes
 
-### Confirm dialogs (post-action undo)
-
-`ApproveConfirmDialog` and `RejectConfirmDialog` get a 5-second "Deshacer" toast after success:
-
-> "Producto aprobado. [Deshacer]" (5s window, super_admin only)
-
-Clicking Deshacer calls `POST /reverse` or `POST /resubmit` with the captured `version`.
+> **Amendment (slice 10, 2026-08-20)**: the "Confirm dialogs" design below
+> assumed `ApproveConfirmDialog`/`RejectConfirmDialog` are per-product
+> dialogs the admin sees right after approving/rejecting ONE product. They
+> aren't — `apps/web/src/app/(admin)/admin/review-queue/page.tsx` only
+> exposes BATCH approve/reject (`ApproveConfirmDialog`/`RejectConfirmDialog`
+> confirm a multi-product batch, not one product), and there is no
+> single-product approve/reject/archive UI anywhere in the frontend to hang
+> a per-product 5s toast off of — building one would be new scope well
+> beyond this feature. It also wouldn't make sense for a batch action
+> anyway: `POST /reverse` operates on exactly one product with one
+> `If-Match` version, so a "Deshacer" after approving 40 products at once
+> has no single target. Dropped in favor of a persistent, discoverable
+> "Transiciones disponibles" section on the product detail page (see
+> below) — an always-available action beats a disappearing 5s window for
+> an admin who might not even be looking at the screen when the toast
+> fires.
 
 ### Product detail page
 
-New section: **Transiciones disponibles** — list of buttons populated from `GET /available-transitions`. Hidden if empty (current user can't reverse, or product in terminal state).
+The detail page is `apps/web/src/app/(seller)/catalog/[id]/page.tsx` →
+`CatalogDetailView.tsx` (not a page named "products" — the route is
+`/catalog/[id]`). Two new sections added to its right column, alongside
+the existing title/price/status and vehicle-attributes `SectionCard`s:
 
-New section: **Historial** — vertical timeline:
+New section: **Transiciones disponibles** — list of buttons populated from `GET /available-transitions`. Hidden if empty (current user can't reverse, or product in terminal state). Each button is disabled (with a tooltip) for a non-super_admin viewer instead of hidden, per the endpoint's `requires_role` field — matches the endpoint being readable by any authenticated user.
+
+New section: **Historial** — vertical timeline, visible only to super_admin/admin (hidden entirely for other roles, on top of the backend's own 403). Mirrors the existing `LeadAuditTrail.tsx` pattern: the "who" column shows the raw `changed_by_user_id`, not a resolved name — `LeadAuditTrail` does the same (no name-resolution mechanism exists in this codebase for audit "who" fields), so the spec's mockup below (`Juan Pérez (admin@prosell)`) is illustrative, not literal:
 
 ```
 [PUBLISHED → PENDING]    Juan Pérez (admin@prosell)
@@ -279,8 +293,8 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 9. **`feat(security): restrict archive() to super_admin`**
    Update `archive` use case + tests. Tenant_admins lose archive permission (breaking change).
 
-10. **`feat(web): add Deshacer button in confirm dialogs + Transiciones menu + Historial timeline`**
-    Frontend slice. Uses the new endpoints. Timeline component reads `GET /products/{id}/audit-logs` (need to add this endpoint if not present — verify during slice).
+10. **`feat(web): add Transiciones disponibles + Historial to the catalog detail page`** (revised 2026-08-20, see amendment)
+    Frontend slice, `apps/web/src/components/catalog/CatalogDetailView.tsx`. `GET /products/{id}/audit-logs` added as a prerequisite (commit before this slice). No Deshacer confirm-dialog toast — dropped per amendment, replaced by the persistent Transiciones disponibles section.
 
 ## Open Questions for Implementation Phase
 
@@ -302,7 +316,7 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 - Optimistic locking enforced (412 on stale version)
 - `reverse` enqueues durable FB removal work via the existing queue (no synchronous FB call, no 502 path)
 - ~~Domain events emitted on success~~ — revised: declared, not emitted (no event bus exists to emit through; see amendment in Domain Events section)
-- UI shows Deshacer in confirm dialogs (5s window) and Transiciones menu in detail page
+- ~~UI shows Deshacer in confirm dialogs (5s window)~~ — revised: persistent Transiciones disponibles section on the product detail page instead (no per-product confirm dialog exists to attach a toast to; see amendment in UI Changes)
 - Historial timeline visible to super_admin and tenant_admin in detail page
 - Archive permission restricted to super_admin
 - All hooks green (ruff, pyright, GGA, pytest)
