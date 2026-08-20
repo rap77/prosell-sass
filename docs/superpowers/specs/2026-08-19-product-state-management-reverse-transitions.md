@@ -26,20 +26,36 @@
 
 ## Decisions
 
-| Decision                               | Choice                                                           |
-| -------------------------------------- | ---------------------------------------------------------------- |
-| Who can reverse?                       | **super_admin only**                                             |
-| FB Marketplace on PUBLISHED → PENDING? | **Auto-unpublish**                                               |
-| If FB unpublish fails?                 | **Rollback completely** — do not change internal status          |
-| REJECTED → PENDING direct?             | **Yes, shortcut** (skip DRAFT)                                   |
-| ARCHIVED restore target?               | **Preserve previous status** (`archived_from_status` field)      |
-| Other reverse transitions?             | **No** — only the 3 above in this scope                          |
-| Concurrency?                           | **Optimistic locking with `version` column**                     |
-| Domain events?                         | **Only new reverse transitions**                                 |
-| API for available transitions?         | **Yes — `GET /available-transitions`**                           |
-| UI for Deshacer?                       | **Both**: confirm dialog + product detail page                   |
-| Audit log visible in UI?               | **Yes — timeline in product detail page**                        |
-| Who can ARCHIVE?                       | **super_admin only** (was tenant_admin; tightens to super_admin) |
+| Decision                               | Choice                                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| Who can reverse?                       | **super_admin only**                                                                   |
+| FB Marketplace on PUBLISHED → PENDING? | **Auto-unpublish, async** (reuses the existing durable queue)                          |
+| If FB unpublish fails?                 | **No rollback** — status already changed; queue retries up to 3x (see amendment below) |
+| REJECTED → PENDING direct?             | **Yes, shortcut** (skip DRAFT)                                                         |
+| ARCHIVED restore target?               | **Preserve previous status** (`archived_from_status` field)                            |
+| Other reverse transitions?             | **No** — only the 3 above in this scope                                                |
+| Concurrency?                           | **Optimistic locking with `version` column**                                           |
+| Domain events?                         | **Only new reverse transitions**                                                       |
+| API for available transitions?         | **Yes — `GET /available-transitions`**                                                 |
+| UI for Deshacer?                       | **Both**: confirm dialog + product detail page                                         |
+| Audit log visible in UI?               | **Yes — timeline in product detail page**                                              |
+| Who can ARCHIVE?                       | **super_admin only** (was tenant_admin; tightens to super_admin)                       |
+
+> **Amendment (slice 5, 2026-08-20)**: the original FB Unpublish Error
+> Handling design below (synchronous `IPublisherService.unpublish()` call,
+> 502 on failure, full rollback) was written without checking how this
+> codebase actually removes FB listings. It doesn't — every other status
+> transition that needs to pull a listing (`reserve`, `mark_sold`, `pause`)
+> enqueues a row in the existing durable `fb_unpublish_requests` queue via
+> `_enqueue_unpublish_requests()` and returns immediately; a separate bot
+> polls `GET /unpublish-pending` and reports back via
+> `POST /unpublish-callback`, retrying up to `MAX_UNPUBLISH_ATTEMPTS = 3`
+> with no effect on the product's status either way. `reverse_publication`
+> reuses that exact mechanism instead of introducing a second, parallel FB
+> integration pattern. See the corrected "FB Unpublish Handling" section
+> (replacing "FB Unpublish Error Handling") below for the concrete
+> behavior — the `IPublisherService.unpublish()` port method described
+> further down is **not implemented**; slice 6 is dropped.
 
 ## State Machine — Updated
 
@@ -94,10 +110,11 @@ POST /api/v1/products/{id}/reverse
   Headers: If-Match: <version>
   Effect: PUBLISHED → PENDING
   Steps:
-    1. Validate state machine + version
-    2. IPublisherService.unpublish(product_id)  ← network call
-    3. If unpublish returns success → entity.reverse_publication() → repo.update()
-    4. If unpublish raises → return 502 Bad Gateway, status unchanged
+    1. Fetch product, compare If-Match header to product.version → 412 on mismatch
+    2. entity.reverse_publication() → repo.update() (also enforces version, belt-and-suspenders)
+    3. _enqueue_unpublish_requests() — same durable queue reserve/mark_sold/pause use.
+       Fire-and-forget: the bot removes the listing later, retrying up to 3x. No
+       synchronous FB call, no 502 path, no rollback of the status change.
   Audit: ProductAuditLog row (auto via repo.update())
   Event:  ProductReversedEvent
 
@@ -147,7 +164,7 @@ class ProductReversedEvent(DomainEvent):
     reversed_by_user_id: UUID
     old_status: ProductStatus  # always PUBLISHED
     new_status: ProductStatus  # always PENDING
-    fb_unpublished: bool
+    fb_unpublish_queued: bool  # True if >=1 active publication got a queue row
 
 class ProductResubmittedEvent(DomainEvent): ...
 class ProductRestoredEvent(DomainEvent): ...
@@ -155,13 +172,27 @@ class ProductRestoredEvent(DomainEvent): ...
 
 No listeners in this scope (events are emitted, persisted for future use; consumers like notifications/webhooks add later).
 
-## FB Unpublish Error Handling
+## FB Unpublish Handling
 
-`IPublisherService.unpublish(product_id: UUID) -> None` must:
+Corrected per the amendment above. `reverse_publication` does **not** call FB
+synchronously — it reuses the existing durable-queue mechanism:
 
-- Raise `PublicationUnpublishError` on any failure (network, FB API error, timeout)
-- Caller (`reverse_publication` use case) catches, returns 502 with structured error
-- DB status is NOT changed if unpublish fails
+- After `entity.reverse_publication()` + `repo.update()` succeed, the endpoint
+  calls the same `_enqueue_unpublish_requests(db, product)` helper that
+  `reserve`, `mark_sold`, and `pause` already call — one idempotent
+  `FBUnpublishRequestModel` row per active `FBPublicationStatusModel`
+  (`ON CONFLICT DO NOTHING` on `(publication_status_id)`, so re-calling is safe)
+- A separate bot polls `GET /unpublish-pending` and reports outcomes via
+  `POST /unpublish-callback`; failures increment `attempt_count` and retry up
+  to `MAX_UNPUBLISH_ATTEMPTS = 3`, logging `last_error`
+- The product's status is **never rolled back** because of an FB failure —
+  it already changed to PENDING synchronously in the same request. This
+  matches how `reserve`/`mark_sold`/`pause` already behave: the internal
+  status and the FB listing state are allowed to be briefly inconsistent,
+  reconciled asynchronously by the bot
+- If the product had no active FB publications, no queue row is created and
+  `ProductReversedEvent.fb_unpublish_queued` is `False` — this is a normal
+  case (e.g. it was published but never actually pushed to any FB account)
 
 ## UI Changes
 
@@ -213,11 +244,21 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 4. **`feat(products): add optimistic locking with version column`**
    Migration `20260818_0002`. `Product.version: int`. `repo.update()` increments + rejects stale (412). All `If-Match: <version>` headers validated.
 
-5. **`feat(products): implement reverse/resubmit/restore endpoints + use cases`**
-   Three POST endpoints. TDD: tests mock `IPublisherService.unpublish` to simulate success/failure. 502 path verified.
+5. **`feat(api): implement reverse/resubmit/restore endpoints`** (revised 2026-08-20, see amendment)
+   Three POST endpoints, inline in `product_router.py` — matching the existing
+   `pause`/`reserve`/`mark_sold`/`reject` pattern in this router (fetch →
+   entity method → `repo.update()` → optional side effect), not standalone
+   use case classes; that pattern here is reserved for logic reused across
+   batch endpoints, which these three aren't. `/reverse` additionally calls
+   `_enqueue_unpublish_requests()` on success. Gated via
+   `current_user.has_role("super_admin")`, matching the in-memory role check
+   already used elsewhere in this router (not the DB-backed `require_role()`
+   dependency used in `org_router.py`, which needs no test-fixture changes
+   here). TDD: integration tests cover the happy path, 403 (non-super-admin),
+   404, 409 (invalid source status / missing `archived_from_status`), and 412
+   (If-Match mismatch). No 502 path — see FB Unpublish Handling above.
 
-6. **`feat(products): add IPublisherService.unpublish + transactional reverse`**
-   Domain port method, infrastructure implementation against FB Graph API. Use case wraps in try/except, rolls back status on failure.
+6. ~~`feat(products): add IPublisherService.unpublish + transactional reverse`~~ — **dropped** (see amendment above; folded into slice 5 as an `_enqueue_unpublish_requests()` call)
 
 7. **`feat(products): add ProductReversedEvent + ProductResubmittedEvent + ProductRestoredEvent`**
    New `domain/events/product_events.py`. Emitted from use cases. No listeners yet.
@@ -233,7 +274,7 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 
 ## Open Questions for Implementation Phase
 
-- **FB unpublish timeout**: 5s default? Configurable per tenant?
+- ~~**FB unpublish timeout**: 5s default? Configurable per tenant?~~ — moot after the amendment; the bot's polling/retry cadence is a pre-existing, out-of-scope concern, not something this endpoint controls.
 - **Audit log endpoint**: `GET /products/{id}/audit-logs` doesn't exist yet — add during slice 10.
 - **Bulk reverse**: not in this spec; revisit if operator demand emerges.
 - **Notifications**: should `ProductReversedEvent` trigger an email/notification to the original reviewer? Out of scope, deferred.
@@ -241,7 +282,7 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 ## Risk Assessment
 
 - **Race conditions**: Optimistic locking covers concurrent edits. Network-level races (two admins reverse same product simultaneously) → second loses with 412, retries.
-- **FB API reliability**: unpublish failures cause reverse to abort with 502. Admin must retry after FB recovers. No silent half-state.
+- **FB API reliability**: unpublish failures do NOT abort `reverse` — the status change already landed, and the queue retries removal up to 3x independently. This is a deliberate consistency trade-off shared with `reserve`/`mark_sold`/`pause`, not new risk introduced by this spec.
 - **Data migration**: existing archived products without `archived_from_status` → 409 on restore until manual fixup. Acceptable since archived products are rarely restored.
 - **Permission regression**: tenant_admins lose `archive` permission. Document in release notes, communicate to existing tenants before deploy.
 
@@ -249,7 +290,7 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 
 - All 3 reverse endpoints work end-to-end with TDD coverage
 - Optimistic locking enforced (412 on stale version)
-- FB unpublish failure → 502, status unchanged, audit log not written
+- `reverse` enqueues durable FB removal work via the existing queue (no synchronous FB call, no 502 path)
 - Domain events emitted on success
 - UI shows Deshacer in confirm dialogs (5s window) and Transiciones menu in detail page
 - Historial timeline visible to super_admin and tenant_admin in detail page
