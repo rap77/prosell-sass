@@ -55,3 +55,19 @@ class InvalidVINError(ProductError):
         self.vin = vin
         self.reason = reason
         super().__init__(f"Invalid VIN '{vin}': {reason}")
+
+
+class ProductRestoreTargetMissingError(ProductError):
+    """Raised when restoring an ARCHIVED product with no archived_from_status.
+
+    Products archived before the reverse-transitions feature shipped have no
+    restore target recorded and require manual admin fixup rather than a
+    silent fallback to DRAFT.
+    """
+
+    def __init__(self, product_id: str) -> None:
+        self.product_id = product_id
+        super().__init__(
+            f"Product {product_id} has no archived_from_status recorded; "
+            f"cannot restore automatically"
+        )

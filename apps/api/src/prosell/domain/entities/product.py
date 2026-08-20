@@ -5,6 +5,10 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from prosell.domain.base import DomainModel, Field
+from prosell.domain.exceptions.product_exceptions import (
+    ProductInvalidStatusTransitionError,
+    ProductRestoreTargetMissingError,
+)
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -77,6 +81,9 @@ class Product(DomainModel):
     published_at: datetime | None = None
     sold_at: datetime | None = None
     archived_at: datetime | None = None
+    # Status held before archiving, so restore() knows where to return to.
+    # None for products archived before the reverse-transitions feature.
+    archived_from_status: str | None = None
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -328,9 +335,71 @@ class Product(DomainModel):
                 f"ARCHIVED products cannot be archived again."
             )
 
-        # Store previous status for potential restore
+        self.archived_from_status = self.status.value
         self.status = ProductStatus.ARCHIVED
         self.archived_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
+
+    # ==================== Reverse Transition Methods ====================
+
+    def reverse_publication(self) -> None:
+        """
+        Reverse a published product back to PENDING (undo approval).
+
+        Who performed the reversal is recorded via repo.update()'s audit log,
+        not on the entity — there is no "reversed_by" field.
+
+        Raises:
+            ProductInvalidStatusTransitionError: If product is not PUBLISHED
+        """
+        if self.status != ProductStatus.PUBLISHED:
+            raise ProductInvalidStatusTransitionError(
+                self.status.value, ProductStatus.PENDING.value
+            )
+
+        self.status = ProductStatus.PENDING
+        self.published_at = None
+        self.updated_at = datetime.now(UTC)
+
+    def resubmit(self, user_id: UUID) -> None:
+        """
+        Force a rejected product back to PENDING (admin-initiated resubmit).
+
+        Args:
+            user_id: ID of the super_admin resubmitting
+
+        Raises:
+            ProductInvalidStatusTransitionError: If product is not REJECTED
+        """
+        if self.status != ProductStatus.REJECTED:
+            raise ProductInvalidStatusTransitionError(
+                self.status.value, ProductStatus.PENDING.value
+            )
+
+        self.status = ProductStatus.PENDING
+        self.submitted_for_approval_at = datetime.now(UTC)
+        self.submitted_by = user_id
+        self.updated_at = datetime.now(UTC)
+
+    def restore(self) -> None:
+        """
+        Restore an archived product to the status it had before archiving.
+
+        Who performed the restore is recorded via repo.update()'s audit log,
+        not on the entity — there is no "restored_by" field.
+
+        Raises:
+            ProductInvalidStatusTransitionError: If product is not ARCHIVED
+            ProductRestoreTargetMissingError: If no archived_from_status was
+                recorded (product archived before this feature shipped)
+        """
+        if self.status != ProductStatus.ARCHIVED:
+            raise ProductInvalidStatusTransitionError(self.status.value, "restored")
+        if self.archived_from_status is None:
+            raise ProductRestoreTargetMissingError(str(self.id))
+
+        self.status = ProductStatus(self.archived_from_status)
+        self.archived_from_status = None
         self.updated_at = datetime.now(UTC)
 
     # ==================== Update Methods ====================
