@@ -117,6 +117,9 @@ class ProductModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # Status held before archiving, so restore() knows where to return to.
+    # NULL for products archived before the reverse-transitions feature.
+    archived_from_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

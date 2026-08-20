@@ -60,6 +60,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             published_at=product.published_at,
             sold_at=product.sold_at,
             archived_at=product.archived_at,
+            archived_from_status=product.archived_from_status,
             created_at=product.created_at,
             updated_at=product.updated_at,
         )
@@ -348,6 +349,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.published_at = product.published_at
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
+        model.archived_from_status = product.archived_from_status
 
         if old_status != model.status:
             self.session.add(
