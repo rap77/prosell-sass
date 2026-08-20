@@ -170,7 +170,17 @@ class ProductResubmittedEvent(DomainEvent): ...
 class ProductRestoredEvent(DomainEvent): ...
 ```
 
-No listeners in this scope (events are emitted, persisted for future use; consumers like notifications/webhooks add later).
+> **Amendment (slice 7, 2026-08-20)**: these three classes are declared but
+> **not instantiated anywhere** — there is no `IDomainEventBus` in this
+> codebase at all (despite being named in CLAUDE.md's architecture
+> patterns), and the pre-existing `UserRegisteredEvent`/etc. in
+> `user_events.py` are never emitted either. Wiring an event through with
+> nothing to consume it (no bus, no log, no persistence) is pure noise, so
+> the endpoints from slice 5 do not construct these. They exist as
+> scaffolding for a future bus/listener. "No listeners in this scope" below
+> undersells it — there is no _emission_ in this scope either.
+
+No listeners in this scope (events are declared, persisted for future use; consumers like notifications/webhooks add later, at which point emission from the endpoints should be added too).
 
 ## FB Unpublish Handling
 
@@ -291,7 +301,7 @@ Each slice = TDD (red → green), 1 commit, hooks green:
 - All 3 reverse endpoints work end-to-end with TDD coverage
 - Optimistic locking enforced (412 on stale version)
 - `reverse` enqueues durable FB removal work via the existing queue (no synchronous FB call, no 502 path)
-- Domain events emitted on success
+- ~~Domain events emitted on success~~ — revised: declared, not emitted (no event bus exists to emit through; see amendment in Domain Events section)
 - UI shows Deshacer in confirm dialogs (5s window) and Transiciones menu in detail page
 - Historial timeline visible to super_admin and tenant_admin in detail page
 - Archive permission restricted to super_admin
