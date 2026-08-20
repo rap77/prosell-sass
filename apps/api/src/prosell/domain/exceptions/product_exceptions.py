@@ -57,6 +57,24 @@ class InvalidVINError(ProductError):
         super().__init__(f"Invalid VIN '{vin}': {reason}")
 
 
+class ProductVersionConflictError(ProductError):
+    """Raised when repo.update() sees an entity fetched at a stale version.
+
+    Optimistic locking: the caller must re-fetch and retry rather than
+    silently overwrite a concurrent change. Maps to HTTP 412 Precondition
+    Failed at the API layer.
+    """
+
+    def __init__(self, product_id: str, expected_version: int, actual_version: int) -> None:
+        self.product_id = product_id
+        self.expected_version = expected_version
+        self.actual_version = actual_version
+        super().__init__(
+            f"Product {product_id} was modified concurrently: expected version "
+            f"{expected_version}, found {actual_version}"
+        )
+
+
 class ProductRestoreTargetMissingError(ProductError):
     """Raised when restoring an ARCHIVED product with no archived_from_status.
 

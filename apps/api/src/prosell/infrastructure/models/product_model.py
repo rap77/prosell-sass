@@ -121,6 +121,10 @@ class ProductModel(Base):
     # NULL for products archived before the reverse-transitions feature.
     archived_from_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    # Optimistic locking. repo.update() rejects a write from an entity
+    # fetched at a stale version instead of silently overwriting it.
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

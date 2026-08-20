@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.product_audit_log import ProductAuditLog
+from prosell.domain.exceptions.product_exceptions import ProductVersionConflictError
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
@@ -61,6 +62,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             sold_at=product.sold_at,
             archived_at=product.archived_at,
             archived_from_status=product.archived_from_status,
+            version=product.version,
             created_at=product.created_at,
             updated_at=product.updated_at,
         )
@@ -307,6 +309,10 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         state handling requires the write path to make it structurally
         impossible to change status without leaving a trail, rather than
         relying on every call site remembering to log it separately.
+
+        Optimistic locking: `product.version` must match the persisted
+        version, or a ProductVersionConflictError is raised and nothing is
+        written. Callers must re-fetch and retry on conflict.
         """
         # Defense in depth: filter by tenant_id even though the caller
         # (use case) already validated ownership. Prevents cross-tenant
@@ -320,6 +326,9 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if not model:
             raise ValueError(f"Product not found: {product.id}")
+
+        if model.version != product.version:
+            raise ProductVersionConflictError(str(product.id), product.version, model.version)
 
         old_status = model.status
 
@@ -350,6 +359,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
         model.archived_from_status = product.archived_from_status
+        model.version += 1
 
         if old_status != model.status:
             self.session.add(

@@ -93,7 +93,9 @@ async def test_get_audit_logs_returns_every_transition(
     repo = SqlAlchemyProductRepository(db_session)
 
     pending_product.reject(test_user.id, reason="Missing VIN")
-    await repo.update(pending_product, changed_by_user_id=test_user.id, reason="Missing VIN")
+    pending_product = await repo.update(
+        pending_product, changed_by_user_id=test_user.id, reason="Missing VIN"
+    )
 
     pending_product.submit_for_approval(user_id=test_user.id)
     await repo.update(pending_product, changed_by_user_id=test_user.id)

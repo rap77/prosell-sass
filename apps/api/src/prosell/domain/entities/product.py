@@ -89,6 +89,11 @@ class Product(DomainModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    # Optimistic locking. Set from the value this entity was fetched at;
+    # repo.update() compares it against the persisted row and rejects a
+    # stale write instead of silently overwriting a concurrent change.
+    version: int = 1
+
     @classmethod
     def create(
         cls,
