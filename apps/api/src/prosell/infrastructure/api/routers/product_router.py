@@ -1294,10 +1294,10 @@ async def submit_product_for_approval(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -1384,12 +1384,19 @@ async def approve_product(
     _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
     use_case = ApproveProductUseCase(repo)
 
-    return await use_case.execute(product_id, tenant_id, current_user.id)
+    try:
+        return await use_case.execute(
+            product_id,
+            None if is_org_admin else current_user.tenant_id,
+            current_user.id,
+        )
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.post("/{product_id}/reject", response_model=ProductResponse)
@@ -1408,10 +1415,10 @@ async def reject_product(
     _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -1437,10 +1444,10 @@ async def publish_product(
     _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -1494,10 +1501,10 @@ async def resume_product(
     _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -1785,10 +1792,10 @@ async def archive_product(
     _require_super_admin(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")

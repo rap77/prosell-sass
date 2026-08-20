@@ -16,7 +16,7 @@ class ApproveProductUseCase:
     async def execute(
         self,
         product_id: UUID,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         user_id: UUID,
     ) -> ProductResponse:
         """
@@ -24,7 +24,8 @@ class ApproveProductUseCase:
 
         Args:
             product_id: Product UUID
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID, or None to bypass tenant scoping
+                (ORG_ADMIN_VIEW_ALL holders acting cross-tenant)
             user_id: User ID of approver
 
         Returns:
