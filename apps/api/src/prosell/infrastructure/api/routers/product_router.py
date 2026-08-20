@@ -1143,7 +1143,7 @@ async def batch_submit_products(
     # Regular users can only access their own tenant
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1174,7 +1174,7 @@ async def batch_reserve_products(
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1205,7 +1205,7 @@ async def batch_pause_products(
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1236,7 +1236,7 @@ async def batch_resume_products(
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1267,7 +1267,7 @@ async def batch_mark_sold_products(
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1324,7 +1324,7 @@ async def batch_approve_products(
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1354,7 +1354,7 @@ async def batch_reject_products(
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
-    if tenant_id is not None and current_user.tenant_id is None:
+    if current_user.tenant_id is None and not current_user.has_role("super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     repo = SqlAlchemyProductRepository(db)
@@ -1743,8 +1743,12 @@ async def archive_product(
     """
     Archive a product (soft delete).
 
-    Transitions any status → ARCHIVED.
+    Transitions any status → ARCHIVED. super_admin only (tightened from
+    unrestricted — see reverse-transitions spec, slice 9: restore() needs a
+    trustworthy archived_from_status trail, and archiving is the one action
+    that could otherwise erase a product from every non-admin view).
     """
+    _require_super_admin(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
