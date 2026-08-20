@@ -44,6 +44,7 @@ export const MOCK_PRODUCTS: Product[] = [
     published_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    version: 1,
   },
   {
     id: "mock-2",
@@ -84,6 +85,7 @@ export const MOCK_PRODUCTS: Product[] = [
     published_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    version: 1,
   },
   {
     id: "mock-3",
@@ -130,6 +132,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ).toISOString(),
     created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    version: 1,
   },
   {
     id: "mock-4",
@@ -169,6 +172,7 @@ export const MOCK_PRODUCTS: Product[] = [
     favorite_count: 0,
     created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    version: 1,
   },
   {
     id: "mock-5",
@@ -212,6 +216,7 @@ export const MOCK_PRODUCTS: Product[] = [
     published_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    version: 1,
   },
   {
     id: "mock-6",
@@ -253,5 +258,6 @@ export const MOCK_PRODUCTS: Product[] = [
     sold_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    version: 1,
   },
 ];

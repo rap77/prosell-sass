@@ -145,6 +145,7 @@ describe("createProductWithVehicle", () => {
       favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
+      version: 1,
     };
 
     const requestData: CreateProductRequest = {
@@ -211,6 +212,7 @@ describe("createProductWithVehicle", () => {
       favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
+      version: 1,
     };
 
     const requestData: CreateProductRequest = {
@@ -263,6 +265,7 @@ describe("createProductWithVehicle", () => {
       favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
+      version: 1,
     };
 
     const requestData: CreateProductRequest = {
@@ -332,6 +335,7 @@ describe("createProductWithVehicle", () => {
       favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
+      version: 1,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -444,6 +448,7 @@ describe("useCreateProduct", () => {
       favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
+      version: 1,
     };
 
     mockFetch.mockResolvedValueOnce({

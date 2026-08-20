@@ -98,6 +98,7 @@ const productSchema = z.object({
   archived_at: z.string().nullish(),
   created_at: z.string(),
   updated_at: z.string(),
+  version: z.number(),
 });
 
 function parseProductResponse(raw: unknown): Product {
@@ -412,6 +413,193 @@ export function useMarkProductSold(): UseMutationResult<
   return useProductAvailabilityAction(
     markProductSold,
     "Vehículo marcado como vendido",
+  );
+}
+
+// ==================== Reverse Transitions ====================
+//
+// super_admin-only undo actions (reverse a wrong approval, force-resubmit
+// a rejected product, restore an archived one). Each requires the
+// product's current `version` echoed back via the If-Match header —
+// mismatched version means someone else changed the product first (412).
+
+const availableTransitionSchema = z.object({
+  to_status: z.string(),
+  endpoint: z.string(),
+  requires_role: z.literal("super_admin"),
+  side_effects: z.array(z.literal("fb_unpublish")),
+  method: z.enum(["reverse_publication", "resubmit", "restore"]),
+});
+
+export type AvailableTransition = z.infer<typeof availableTransitionSchema>;
+
+async function fetchAvailableTransitions(
+  productId: string,
+): Promise<AvailableTransition[]> {
+  const res = await fetch(
+    `/api/v1/products/${productId}/available-transitions`,
+    { credentials: "include" },
+  );
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "No se pudieron cargar las transiciones"),
+    );
+  }
+
+  return z.array(availableTransitionSchema).parse(await res.json());
+}
+
+export function useAvailableTransitions(
+  productId: string | undefined,
+): UseQueryResult<AvailableTransition[], Error> {
+  return useQuery({
+    queryKey: ["products", productId, "available-transitions"],
+    queryFn: () => {
+      if (!productId) throw new Error("Product ID is required");
+      return fetchAvailableTransitions(productId);
+    },
+    enabled: !!productId,
+  });
+}
+
+const productAuditLogSchema = z.object({
+  id: z.string(),
+  old_status: z.string(),
+  new_status: z.string(),
+  changed_by_user_id: z.string().nullish(),
+  reason: z.string().nullish(),
+  created_at: z.string(),
+});
+
+export type ProductAuditLogEntry = z.infer<typeof productAuditLogSchema>;
+
+async function fetchProductAuditLogs(
+  productId: string,
+): Promise<ProductAuditLogEntry[]> {
+  const res = await fetch(`/api/v1/products/${productId}/audit-logs`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      extractErrorMessage(body, "No se pudo cargar el historial"),
+    );
+  }
+
+  return z.array(productAuditLogSchema).parse(await res.json());
+}
+
+/**
+ * `enabled` should be false for viewers who aren't super_admin/admin —
+ * the backend 403s them anyway, this just skips the doomed request.
+ */
+export function useProductAuditLogs(
+  productId: string | undefined,
+  enabled = true,
+): UseQueryResult<ProductAuditLogEntry[], Error> {
+  return useQuery({
+    queryKey: ["products", productId, "audit-logs"],
+    queryFn: () => {
+      if (!productId) throw new Error("Product ID is required");
+      return fetchProductAuditLogs(productId);
+    },
+    enabled: !!productId && enabled,
+  });
+}
+
+const REVERSE_TRANSITION_ENDPOINT = {
+  REVERSE: "reverse",
+  RESUBMIT: "resubmit",
+  RESTORE: "restore",
+} as const;
+
+type ReverseTransitionEndpoint =
+  (typeof REVERSE_TRANSITION_ENDPOINT)[keyof typeof REVERSE_TRANSITION_ENDPOINT];
+
+async function postReverseTransition(
+  productId: string,
+  endpoint: ReverseTransitionEndpoint,
+  version: number,
+): Promise<Product> {
+  const res = await fetch(`/api/v1/products/${productId}/${endpoint}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "If-Match": String(version) },
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "No se pudo revertir el estado"));
+  }
+
+  return parseProductResponse(await res.json());
+}
+
+interface ReverseTransitionVariables {
+  productId: string;
+  version: number;
+}
+
+function useReverseTransitionMutation(
+  endpoint: ReverseTransitionEndpoint,
+  successMessage: string,
+): UseMutationResult<Product, Error, ReverseTransitionVariables, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, version }: ReverseTransitionVariables) =>
+      postReverseTransition(productId, endpoint, version),
+    onSuccess: (product) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      queryClient.invalidateQueries({
+        queryKey: ["products", product.id, "available-transitions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["products", product.id, "audit-logs"],
+      });
+      toast.success(successMessage);
+    },
+    onError: (error) => toast.error(error.message),
+  });
+}
+
+export function useReverseProduct(): UseMutationResult<
+  Product,
+  Error,
+  ReverseTransitionVariables,
+  unknown
+> {
+  return useReverseTransitionMutation(
+    REVERSE_TRANSITION_ENDPOINT.REVERSE,
+    "Aprobación revertida",
+  );
+}
+
+export function useResubmitProduct(): UseMutationResult<
+  Product,
+  Error,
+  ReverseTransitionVariables,
+  unknown
+> {
+  return useReverseTransitionMutation(
+    REVERSE_TRANSITION_ENDPOINT.RESUBMIT,
+    "Producto reenviado a revisión",
+  );
+}
+
+export function useRestoreProduct(): UseMutationResult<
+  Product,
+  Error,
+  ReverseTransitionVariables,
+  unknown
+> {
+  return useReverseTransitionMutation(
+    REVERSE_TRANSITION_ENDPOINT.RESTORE,
+    "Producto restaurado",
   );
 }
 

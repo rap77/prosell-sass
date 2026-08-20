@@ -84,6 +84,10 @@ export interface Product {
   // Timestamps
   created_at: string;
   updated_at: string;
+
+  // Optimistic locking. Echo back via the If-Match header on
+  // reverse/resubmit/restore.
+  version: number;
 }
 
 /**

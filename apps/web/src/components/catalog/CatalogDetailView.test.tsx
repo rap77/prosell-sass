@@ -20,6 +20,7 @@ vi.mock("@/lib/api/products", () => ({
       published_to_marketplace: true,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
+      version: 1,
       attributes: {
         category: "vehicle",
         year: 2020,
@@ -65,6 +66,31 @@ vi.mock("@/lib/api/products", () => ({
     error: null,
   })),
   useSubmitProductForApproval: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  useProductAuditLogs: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useAvailableTransitions: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useReverseProduct: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  useResubmitProduct: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
+  useRestoreProduct: vi.fn(() => ({
     mutateAsync: vi.fn(),
     isPending: false,
     error: null,

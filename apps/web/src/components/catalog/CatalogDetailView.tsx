@@ -20,13 +20,21 @@ import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { PublishModal } from "@/components/publisher/PublishModal";
-import { useProduct, useProductImageUrls } from "@/lib/api/products";
+import {
+  useProduct,
+  useProductImageUrls,
+  useProductAuditLogs,
+} from "@/lib/api/products";
+import { useAuth } from "@/hooks/useAuth";
 import type { Product } from "@/types/product";
 import type { ProductImage } from "@/types/product-image";
 import { isVehicleAttributes, type VehicleAttributes } from "@/types/vehicle";
 import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
 import { ProductImageGallery } from "./ProductImageGallery";
 import { AvailabilityActions } from "./AvailabilityActions";
+import { AvailableTransitions } from "./AvailableTransitions";
+import { ProductAuditTrail } from "./ProductAuditTrail";
+import { SectionCard } from "./SectionCard";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers (preserved verbatim) ─────────────────────────────────────────────
@@ -241,27 +249,6 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ─── Section card ─────────────────────────────────────────────────────────────
-
-function SectionCard({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={cn(
-        "bg-ps-surface border border-ps-border-default rounded-[14px] p-6",
-        className,
-      )}
-    >
-      {children}
-    </section>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface CatalogDetailViewProps {
@@ -270,6 +257,7 @@ interface CatalogDetailViewProps {
 
 export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const { isAdmin } = useAuth();
   const {
     data: product,
     error,
@@ -278,6 +266,11 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   } = useProduct(productId, { internal: true });
   const { data: signedUrls, isPending: isPendingUrls } =
     useProductImageUrls(productId);
+  const {
+    data: auditLogs,
+    isLoading: isLoadingAuditLogs,
+    error: auditLogsError,
+  } = useProductAuditLogs(productId, isAdmin);
   const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
   const clearBreadcrumbLabel = useBreadcrumbStore((state) => state.clearLabel);
 
@@ -526,6 +519,34 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                 </p>
               )}
             </SectionCard>
+
+            {/* Transiciones disponibles — undo reverse_publication / resubmit / restore.
+                Owns its own SectionCard so it can render nothing at all
+                (not an empty card) when there are no transitions valid
+                from the current status. */}
+            <AvailableTransitions
+              productId={product.id}
+              version={product.version}
+            />
+
+            {/* Historial — audit trail, super_admin/admin only */}
+            {isAdmin && (
+              <SectionCard>
+                <div className="mb-3.5">
+                  <h2 className="m-0 text-sm font-semibold text-ps-text-primary">
+                    Historial
+                  </h2>
+                  <p className="mt-[3px] m-0 text-xs text-ps-text-secondary">
+                    Registro de cambios de estado de este producto.
+                  </p>
+                </div>
+                <ProductAuditTrail
+                  auditLogs={auditLogs ?? []}
+                  isLoading={isLoadingAuditLogs}
+                  error={auditLogsError}
+                />
+              </SectionCard>
+            )}
           </div>
         </div>
       </div>
