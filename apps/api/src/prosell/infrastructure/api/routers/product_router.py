@@ -45,6 +45,9 @@ from prosell.application.dto.product import (
     UpdateProductRequest,
     VehicleImportRowResponse,
 )
+from prosell.application.dto.product.available_transitions import (
+    AvailableTransitionResponse,
+)
 from prosell.application.dto.product.batch_availability import (
     BatchAvailabilityResponse,
 )
@@ -106,6 +109,7 @@ from prosell.domain.exceptions.product_exceptions import (
     ProductVersionConflictError,
 )
 from prosell.domain.services.csv_product_parser import CSVParseError, CSVProductParser
+from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
@@ -320,6 +324,45 @@ def _require_super_admin(current_user: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="super_admin role required",
         )
+
+
+def _available_transitions(product: Product) -> list[AvailableTransitionResponse]:
+    """List the reverse (undo) transitions valid from the product's current
+    status. ARCHIVED isn't in ProductStatus.reverse_transitions() because
+    its target is the dynamic archived_from_status field, not a fixed
+    status, so it's handled separately here.
+    """
+    if product.status == ProductStatus.PUBLISHED:
+        return [
+            AvailableTransitionResponse(
+                to_status=ProductStatus.PENDING.value,
+                endpoint=f"POST /products/{product.id}/reverse",
+                requires_role="super_admin",
+                side_effects=["fb_unpublish"],
+                method="reverse_publication",
+            )
+        ]
+    if product.status == ProductStatus.REJECTED:
+        return [
+            AvailableTransitionResponse(
+                to_status=ProductStatus.PENDING.value,
+                endpoint=f"POST /products/{product.id}/resubmit",
+                requires_role="super_admin",
+                side_effects=[],
+                method="resubmit",
+            )
+        ]
+    if product.status == ProductStatus.ARCHIVED and product.archived_from_status is not None:
+        return [
+            AvailableTransitionResponse(
+                to_status=product.archived_from_status,
+                endpoint=f"POST /products/{product.id}/restore",
+                requires_role="super_admin",
+                side_effects=[],
+                method="restore",
+            )
+        ]
+    return []
 
 
 def _require_matching_version(product: Product, if_match: int) -> None:
@@ -1515,6 +1558,34 @@ async def mark_product_sold(
     await _enqueue_unpublish_requests(db, product)
 
     return ProductResponse.from_entity(product)
+
+
+@router.get(
+    "/{product_id}/available-transitions",
+    response_model=list[AvailableTransitionResponse],
+)
+async def get_available_transitions(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> list[AvailableTransitionResponse]:
+    """
+    List the reverse (undo) transitions valid from this product's current
+    status. Available to any authenticated user, not just super_admin --
+    each entry's requires_role tells the UI what role is actually needed,
+    so a non-admin viewer can see a disabled action with an explanation
+    instead of it being silently hidden.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    return _available_transitions(product)
 
 
 @router.post("/{product_id}/reverse", response_model=ProductResponse)
