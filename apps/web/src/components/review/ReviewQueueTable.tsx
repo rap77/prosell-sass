@@ -10,6 +10,28 @@ interface ReviewQueueTableProps {
   onSelectionChange: (selectedIds: Set<string>) => void;
 }
 
+// ponytail: local label map, same pattern as ProductAuditTrail.tsx —
+// each surface that shows ProductStatus keeps its own small map rather
+// than sharing one, since the values needed differ per surface.
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  pending: "Pendiente",
+  published: "Publicado",
+  paused: "En mantenimiento",
+  reserved: "Apartado",
+  sold: "Vendido",
+  rejected: "Rechazado",
+  archived: "Archivado",
+};
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-ps-border-default bg-ps-elevated px-2.5 py-[3px] text-xs font-medium text-ps-text-secondary">
+      {STATUS_LABELS[status] ?? status}
+    </span>
+  );
+}
+
 function getProductDisplayTitle(product: Product): string {
   if (product.title.length > 5) return product.title;
   if (!isVehicleProduct(product)) return product.title;
@@ -64,6 +86,9 @@ export function ReviewQueueTable({
             </th>
             <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
               Precio
+            </th>
+            <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
+              Estado
             </th>
             <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
               Enviado
@@ -140,6 +165,9 @@ export function ReviewQueueTable({
               </td>
               <td className="p-4 text-ps-text-primary">
                 ${(product.price_cents / 100).toLocaleString()}
+              </td>
+              <td className="p-4">
+                <StatusPill status={product.status} />
               </td>
               <td className="p-4 text-ps-text-secondary">
                 {product.submitted_for_approval_at

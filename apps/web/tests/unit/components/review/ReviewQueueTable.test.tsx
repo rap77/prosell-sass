@@ -311,6 +311,38 @@ describe("ReviewQueueTable", () => {
     ).toBeInTheDocument();
   });
 
+  it("displays the product status as a badge", () => {
+    const products: Product[] = [
+      makeProduct({
+        id: "product-1",
+        title: "Pendiente Product",
+        status: "pending",
+      }),
+      makeProduct({
+        id: "product-2",
+        title: "Publicado Product",
+        status: "published",
+      }),
+      makeProduct({
+        id: "product-3",
+        title: "Rechazado Product",
+        status: "rejected",
+      }),
+    ];
+
+    render(
+      <ReviewQueueTable
+        products={products}
+        selectedIds={new Set()}
+        onSelectionChange={mockOnSelectionChange}
+      />,
+    );
+
+    expect(screen.getByText("Pendiente")).toBeInTheDocument();
+    expect(screen.getByText("Publicado")).toBeInTheDocument();
+    expect(screen.getByText("Rechazado")).toBeInTheDocument();
+  });
+
   it("displays dash when submitted_for_approval_at is null", () => {
     const productWithoutDate: Product = {
       ...mockProducts[0],
