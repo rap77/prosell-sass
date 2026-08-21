@@ -36,6 +36,7 @@ const VALID_STATUS_MAP = {
   expired: true,
   online: true,
   sold: true,
+  reserved: true,
 } as const satisfies Record<VehicleStatus, true>;
 
 /**

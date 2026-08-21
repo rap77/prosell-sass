@@ -81,6 +81,7 @@ const TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
 
 const STATUS_ORDER: VehicleStatus[] = [
   "published",
+  "reserved",
   "online",
   "pending",
   "draft",

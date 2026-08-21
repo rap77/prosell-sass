@@ -336,13 +336,12 @@ export function DataGrid({
     }
   };
 
-  // Filter selected products eligible for "mark sold". Scoped to
-  // "published" only — "reserved" (apartado) collapses to the display
-  // status "pending" via transformProductToVehicle, so it can't be told
-  // apart from an actual pending-review row here.
+  // Filter selected products eligible for "mark sold" — matches the
+  // per-product AvailabilityActions flow, which allows selling from
+  // either "published" or "reserved" (apartado).
   const soldEligibleProductIds = selectedProductIds.filter((id) => {
     const product = data.find((p) => p.id === id);
-    return product?.status === "published";
+    return product?.status === "published" || product?.status === "reserved";
   });
 
   const handleBulkMarkSold = () => {

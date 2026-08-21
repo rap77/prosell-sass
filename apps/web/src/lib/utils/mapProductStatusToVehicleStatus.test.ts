@@ -2,7 +2,7 @@
  * mapProductStatusToVehicleStatus — Subsystem A (Generic ProductCard).
  *
  * Pins the runtime mapping from `Product.status` (8 domain literals) to
- * `VehicleStatus` (7 display literals that the `StatusBadge` understands).
+ * `VehicleStatus` (8 display literals that the `StatusBadge` understands).
  * The shape mismatch is by design: `Product.status` is the workflow state
  * the backend cares about; `VehicleStatus` is the visual vocabulary the
  * legacy `StatusBadge` ships with. Subsystem A introduced this util so the
@@ -13,9 +13,10 @@
  *     A missing entry must surface as a TypeScript error (the impl
  *     declares `satisfies Record<Product["status"], VehicleStatus>`).
  *   - Stable: existing `Product.status` literals whose value already
- *     exists in `VehicleStatus` (draft / pending / published / sold) are
- *     pass-through. The 4 workflow-only literals (paused / reserved /
- *     rejected / archived) collapse to the nearest existing display slot.
+ *     exists in `VehicleStatus` (draft / pending / published / sold /
+ *     reserved) are pass-through. The 3 remaining workflow-only literals
+ *     (paused / rejected / archived) collapse to the nearest existing
+ *     display slot.
  *   - Safe: a malformed `Product.status` (defensive — should never happen
  *     but the type union is not sealed) is handled by the catch-all.
  */
@@ -39,15 +40,15 @@ describe("mapProductStatusToVehicleStatus — pass-through", () => {
   it("maps `sold` to `sold`", () => {
     expect(mapProductStatusToVehicleStatus("sold")).toBe("sold");
   });
+
+  it("maps `reserved` to `reserved`", () => {
+    expect(mapProductStatusToVehicleStatus("reserved")).toBe("reserved");
+  });
 });
 
 describe("mapProductStatusToVehicleStatus — workflow-only collapse", () => {
   it("maps `paused` to `draft` (paused is inactive, not visible)", () => {
     expect(mapProductStatusToVehicleStatus("paused")).toBe("draft");
-  });
-
-  it("maps `reserved` to `pending` (reserved is pending sale close)", () => {
-    expect(mapProductStatusToVehicleStatus("reserved")).toBe("pending");
   });
 
   it("maps `rejected` to `failed` (rejection is approval failure)", () => {

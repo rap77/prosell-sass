@@ -10,6 +10,7 @@ import {
   File,
   Globe,
   CheckCircle,
+  Tag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ export const VEHICLE_STATUS = {
   EXPIRED: "expired",
   ONLINE: "online",
   SOLD: "sold",
+  RESERVED: "reserved",
 } as const;
 
 export type VehicleStatus =
@@ -71,6 +73,11 @@ const STATUS_CONFIG: Record<VehicleStatus, StatusConfig> = {
     colorClass: "text-ps-violet",
     icon: CheckCircle,
     label: "Vendido",
+  },
+  reserved: {
+    colorClass: "text-ps-blue",
+    icon: Tag,
+    label: "Apartado",
   },
 };
 

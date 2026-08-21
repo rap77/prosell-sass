@@ -9,7 +9,7 @@ describe("StatusBadge", () => {
     expect(screen.getByText("Publicado")).toBeInTheDocument();
   });
 
-  it("renders all 7 status states correctly", () => {
+  it("renders all 8 status states correctly", () => {
     const statuses = [
       { status: "published", label: "Publicado" },
       { status: "pending", label: "Pendiente" },
@@ -18,6 +18,7 @@ describe("StatusBadge", () => {
       { status: "expired", label: "Expirado" },
       { status: "online", label: "Online" },
       { status: "sold", label: "Vendido" },
+      { status: "reserved", label: "Apartado" },
     ] as const;
 
     statuses.forEach(({ status, label }) => {

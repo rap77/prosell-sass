@@ -197,6 +197,31 @@ describe("DataGrid", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("counts a reserved (apartado) row as eligible for mark-as-sold", async () => {
+    // "reserved" now has its own display slot instead of collapsing into
+    // "pending" — AvailabilityActions already allows selling from either
+    // published or reserved, so the bulk table action should match.
+    const user = userEvent.setup();
+    render(
+      <DataGrid
+        data={[
+          {
+            id: "4",
+            title: "2019 Nissan Sentra",
+            price: 15000,
+            status: "reserved",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByLabelText("Select row 0"));
+
+    expect(
+      screen.getByRole("button", { name: /marcar vendido \(1\)/i }),
+    ).toBeInTheDocument();
+  });
+
   it("calls onRowClick when a row is clicked", async () => {
     const user = userEvent.setup();
     const onRowClick = vi.fn();

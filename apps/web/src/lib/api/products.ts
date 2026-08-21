@@ -23,6 +23,7 @@ import {
 import { extractErrorMessage } from "./extractErrorMessage";
 import { getCoverImageKey } from "./productImages";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import type { VehicleStatus } from "@/components/datagrid/StatusBadge";
 import { BulkUploadUploadResultSchema } from "@/lib/api/schemas/bulkUpload";
 import type { BulkUploadUploadResult } from "@/lib/api/schemas/bulkUpload";
 import {
@@ -1112,14 +1113,7 @@ export function transformProductToVehicle(product: Product): {
   id: string;
   title: string;
   price: number;
-  status:
-    | "published"
-    | "pending"
-    | "failed"
-    | "draft"
-    | "expired"
-    | "online"
-    | "sold";
+  status: VehicleStatus;
   photo_url?: string;
   year?: number;
   make?: string;
