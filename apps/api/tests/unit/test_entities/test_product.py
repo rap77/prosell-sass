@@ -145,6 +145,46 @@ class TestProduct:
         product.resume()
         assert product.status == ProductStatus.PUBLISHED
 
+    def test_resume_reserved_product(self) -> None:
+        """Bug: resume() only accepted PAUSED even though
+        ProductStatus.transitions()[RESERVED] already lists PUBLISHED as
+        a legal target -- "Volver a publicado" from an apartado product
+        raised a 500 in production. reserve() can only be reached from
+        PUBLISHED, so this seeds the status directly.
+        """
+        tenant_id = uuid4()
+        org_id = uuid4()
+        category_id = uuid4()
+
+        product = Product.create(
+            title="Test Product",
+            price_cents=10000,
+            tenant_id=tenant_id,
+            organization_id=org_id,
+            category_id=category_id,
+        )
+        product.status = ProductStatus.RESERVED
+
+        product.resume()
+        assert product.status == ProductStatus.PUBLISHED
+
+    def test_resume_rejects_invalid_status(self) -> None:
+        """resume() must still reject statuses that were never legal."""
+        tenant_id = uuid4()
+        org_id = uuid4()
+        category_id = uuid4()
+
+        product = Product.create(
+            title="Test Product",
+            price_cents=10000,
+            tenant_id=tenant_id,
+            organization_id=org_id,
+            category_id=category_id,
+        )
+
+        with pytest.raises(ValueError, match="Cannot resume product"):
+            product.resume()
+
     def test_mark_sold(self) -> None:
         """Test marking product as sold."""
         tenant_id = uuid4()

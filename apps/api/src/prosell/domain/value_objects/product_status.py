@@ -66,6 +66,15 @@ class ProductStatus(StrEnum):
         """Check if product can be paused."""
         return self == ProductStatus.PUBLISHED
 
+    def can_resume(self) -> bool:
+        """Check if product can be resumed back to published.
+
+        Covers both un-pausing (PAUSED) and un-reserving (RESERVED) —
+        `transitions()` already lists PUBLISHED as a legal target for
+        both, matching `can_mark_sold()`'s pattern below.
+        """
+        return self in (ProductStatus.PAUSED, ProductStatus.RESERVED)
+
     def can_mark_sold(self) -> bool:
         """Check if product can be marked as sold."""
         return self in (ProductStatus.PUBLISHED, ProductStatus.RESERVED)

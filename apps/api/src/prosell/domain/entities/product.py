@@ -280,15 +280,15 @@ class Product(DomainModel):
 
     def resume(self) -> None:
         """
-        Resume a paused product.
+        Resume a paused or reserved product back to published.
 
         Raises:
             ValueError: If product cannot be resumed
         """
-        if self.status != ProductStatus.PAUSED:
+        if not self.status.can_resume():
             raise ValueError(
                 f"Cannot resume product with status {self.status.value}. "
-                f"Only PAUSED products can be resumed."
+                f"Only PAUSED and RESERVED products can be resumed."
             )
 
         self.status = ProductStatus.PUBLISHED
