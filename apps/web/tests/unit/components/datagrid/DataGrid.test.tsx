@@ -90,6 +90,50 @@ describe("DataGrid", () => {
     expect(screen.getByTestId("status-published")).toBeInTheDocument();
   });
 
+  it("renders a rejected-in-review product as 'failed' instead of re-mapping it to 'draft'", () => {
+    // Bug: the container (catalog/page.tsx) already maps Product.status
+    // ("rejected") to VehicleStatus ("failed") via transformProductToVehicle
+    // before handing rows to DataGrid. The status cell used to re-run
+    // mapProductStatusToVehicleStatus on that already-mapped value; "failed"
+    // isn't a key in that map, so it silently fell back to "draft".
+    render(
+      <DataGrid
+        data={[
+          {
+            id: "3",
+            title: "2018 Ford Focus",
+            price: 12000,
+            status: "failed",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId("status-failed")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-draft")).not.toBeInTheDocument();
+  });
+
+  it("offers bulk submit-for-review for a selected rejected (failed) row", async () => {
+    // Same root cause as above: the eligibility filter compared
+    // row.status to raw "rejected", which never appears in these
+    // already-mapped rows (the value is "failed"), so a rejected
+    // product could never be re-submitted from the table view.
+    const user = userEvent.setup();
+    render(
+      <DataGrid
+        data={[
+          { id: "3", title: "2018 Ford Focus", price: 12000, status: "failed" },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByLabelText("Select row 0"));
+
+    expect(
+      screen.getByRole("button", { name: /enviar a revisión \(1\)/i }),
+    ).toBeInTheDocument();
+  });
+
   it("calls onRowClick when a row is clicked", async () => {
     const user = userEvent.setup();
     const onRowClick = vi.fn();

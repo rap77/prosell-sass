@@ -19,9 +19,8 @@ import {
   useProductImageUrls,
   useSubmitProductsForApproval,
 } from "@/lib/api/products";
-import { StatusBadge } from "./StatusBadge";
+import { StatusBadge, type VehicleStatus } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
-import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 
 /**
  * Renders a product thumbnail using a time-limited signed DO Spaces URL.
@@ -116,25 +115,14 @@ function getColumnMeta(meta: unknown): ColumnMeta | undefined {
   };
 }
 
-// GGA TypeScript const-types: derive type from const object
-const PRODUCT_STATUS = {
-  PUBLISHED: "published",
-  PENDING: "pending",
-  FAILED: "failed",
-  DRAFT: "draft",
-  EXPIRED: "expired",
-  ONLINE: "online",
-  SOLD: "sold",
-  REJECTED: "rejected",
-} as const;
-
-type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
-
 export interface ProductRow {
   id: string;
   title: string;
   price: number;
-  status: ProductStatus;
+  // ponytail: the container (catalog/page.tsx) already maps
+  // Product.status to VehicleStatus via transformProductToVehicle
+  // before building rows, so this is display-ready — never re-map it.
+  status: VehicleStatus;
   photo_url?: string;
   year?: number;
   make?: string;
@@ -257,11 +245,7 @@ export function DataGrid({
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <StatusBadge
-          status={mapProductStatusToVehicleStatus(row.original.status)}
-        />
-      ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       accessorKey: "branch_name",
@@ -324,10 +308,12 @@ export function DataGrid({
     }
   };
 
-  // Filter selected products that are eligible for submit (draft/rejected)
+  // Filter selected products that are eligible for submit (draft/failed).
+  // "failed" is the display status for a rejected product — see the
+  // ProductRow.status doc comment above.
   const eligibleProductIds = selectedProductIds.filter((id) => {
     const product = data.find((p) => p.id === id);
-    return product?.status === "draft" || product?.status === "rejected";
+    return product?.status === "draft" || product?.status === "failed";
   });
 
   const handleBulkSubmit = () => {
