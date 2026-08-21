@@ -51,6 +51,19 @@ export default function ReviewQueuePage() {
   // when the user changes tabs so a checkbox from the prior tab does not
   // silently ship into a new batch operation.
   const { data, isLoading } = useInfiniteProducts({ status: activeTab }, 100);
+
+  // ponytail: one cheap count-only query per tab (limit: 1, backend
+  // still returns the real `total`) so every tab label can show its
+  // count without loading full pages for tabs the admin isn't viewing.
+  const pendingCount = useInfiniteProducts({ status: "pending" }, 1);
+  const publishedCount = useInfiniteProducts({ status: "published" }, 1);
+  const rejectedCount = useInfiniteProducts({ status: "rejected" }, 1);
+  const tabCounts: Record<QueueTab, number> = {
+    pending: pendingCount.data?.pages[0]?.total ?? 0,
+    published: publishedCount.data?.pages[0]?.total ?? 0,
+    rejected: rejectedCount.data?.pages[0]?.total ?? 0,
+  };
+
   const approveMutation = useBatchApproveProducts();
   const rejectMutation = useBatchRejectProducts();
 
@@ -137,6 +150,7 @@ export default function ReviewQueuePage() {
         >
           {TABS.map((tab) => {
             const isActive = tab.id === activeTab;
+            const count = tabCounts[tab.id];
             return (
               <button
                 key={tab.id}
@@ -151,7 +165,7 @@ export default function ReviewQueuePage() {
                     : "border-b-2 border-transparent px-4 py-2 text-sm font-medium text-ps-text-secondary hover:text-ps-text-primary"
                 }
               >
-                {tab.label}
+                {count > 0 ? `${tab.label} (${count})` : tab.label}
               </button>
             );
           })}

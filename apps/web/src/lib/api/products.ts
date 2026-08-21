@@ -1244,6 +1244,7 @@ export function useInfiniteProducts(
 
         return {
           items,
+          total: filtered.length,
           next_cursor: nextOffset < filtered.length ? String(nextOffset) : null,
           has_more: nextOffset < filtered.length,
         } as const;
@@ -1269,6 +1270,7 @@ export function useInfiniteProducts(
 
       return {
         items: data.products,
+        total: data.total,
         // ponytail: backend uses offset pagination, not cursor — encode offset as string
         next_cursor: nextOffset < data.total ? String(nextOffset) : null,
         has_more: nextOffset < data.total,

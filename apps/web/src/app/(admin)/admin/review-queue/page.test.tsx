@@ -93,6 +93,35 @@ describe("ReviewQueuePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("appends the item count to a tab's label only when it has items", async () => {
+    // ponytail: one hook call per tab (counts) plus one for the active
+    // tab's full data — mock by status instead of call order.
+    mockUseInfiniteProducts.mockImplementation(
+      (filters?: { status?: string }) => {
+        if (filters?.status === "rejected") {
+          return {
+            data: { pages: [{ items: makeRejectedProducts(1), total: 1 }] },
+            isLoading: false,
+          };
+        }
+        return {
+          data: { pages: [{ items: [], total: 0 }] },
+          isLoading: false,
+        };
+      },
+    );
+
+    render(<ReviewQueuePage />);
+
+    expect(screen.getByRole("tab", { name: "Pendientes" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: "Rechazados (1)" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: /aprobados \(/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows pending products by default", async () => {
     mockUseInfiniteProducts.mockReturnValue({
       data: { pages: [{ items: makePendingProducts(2) }] },
@@ -112,17 +141,25 @@ describe("ReviewQueuePage", () => {
 
   it("queries published products when the Aprobados tab is active", async () => {
     const user = userEvent.setup();
-    // ponytail: the queries are issued lazily — first render triggers
-    // the active tab's query; switching tabs swaps the filter.
-    mockUseInfiniteProducts
-      .mockReturnValueOnce({
-        data: { pages: [{ items: makePendingProducts(1) }] },
-        isLoading: false,
-      })
-      .mockReturnValueOnce({
-        data: { pages: [{ items: makePublishedProducts(3) }] },
-        isLoading: false,
-      });
+    // ponytail: the page now also fires one count query per tab, so
+    // the mock keys off the requested status instead of call order.
+    mockUseInfiniteProducts.mockImplementation(
+      (filters?: { status?: string }) => {
+        if (filters?.status === "published") {
+          return {
+            data: { pages: [{ items: makePublishedProducts(3), total: 3 }] },
+            isLoading: false,
+          };
+        }
+        if (filters?.status === "pending") {
+          return {
+            data: { pages: [{ items: makePendingProducts(1), total: 1 }] },
+            isLoading: false,
+          };
+        }
+        return { data: { pages: [{ items: [], total: 0 }] }, isLoading: false };
+      },
+    );
 
     render(<ReviewQueuePage />);
 
@@ -139,15 +176,23 @@ describe("ReviewQueuePage", () => {
 
   it("queries rejected products when the Rechazados tab is active", async () => {
     const user = userEvent.setup();
-    mockUseInfiniteProducts
-      .mockReturnValueOnce({
-        data: { pages: [{ items: makePendingProducts(1) }] },
-        isLoading: false,
-      })
-      .mockReturnValueOnce({
-        data: { pages: [{ items: makeRejectedProducts(2) }] },
-        isLoading: false,
-      });
+    mockUseInfiniteProducts.mockImplementation(
+      (filters?: { status?: string }) => {
+        if (filters?.status === "rejected") {
+          return {
+            data: { pages: [{ items: makeRejectedProducts(2), total: 2 }] },
+            isLoading: false,
+          };
+        }
+        if (filters?.status === "pending") {
+          return {
+            data: { pages: [{ items: makePendingProducts(1), total: 1 }] },
+            isLoading: false,
+          };
+        }
+        return { data: { pages: [{ items: [], total: 0 }] }, isLoading: false };
+      },
+    );
 
     render(<ReviewQueuePage />);
 
