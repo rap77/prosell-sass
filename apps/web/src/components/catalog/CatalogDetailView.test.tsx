@@ -140,6 +140,45 @@ const renderWithQuery = (ui: React.ReactElement) => {
   );
 };
 
+describe("CatalogDetailView - rejection reason", () => {
+  it("shows the rejection reason banner when the product was rejected", () => {
+    vi.mocked(productsApi.useProduct).mockReturnValueOnce({
+      data: {
+        id: "test-product-id",
+        title: "Toyota Corolla 2020",
+        description: "Excelente estado",
+        price_cents: 2000000,
+        currency: "ARS",
+        status: "rejected",
+        rejection_reason: "Las fotos no muestran el odómetro con claridad.",
+        slug: "toyota-corolla-2020",
+        condition: "used",
+        published_to_marketplace: false,
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:00:00Z",
+        version: 1,
+        attributes: { category: "vehicle", images: [] },
+      },
+      error: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as any);
+
+    renderWithQuery(<CatalogDetailView productId="test-product-id" />);
+
+    expect(screen.getByText("Motivo del rechazo")).toBeInTheDocument();
+    expect(
+      screen.getByText("Las fotos no muestran el odómetro con claridad."),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show the rejection reason banner for a published product", () => {
+    renderWithQuery(<CatalogDetailView productId="test-product-id" />);
+
+    expect(screen.queryByText("Motivo del rechazo")).not.toBeInTheDocument();
+  });
+});
+
 describe("CatalogDetailView - Mobile-First", () => {
   it("main grid should be responsive: grid-cols-1 lg:grid-cols-[...]", () => {
     const { container } = renderWithQuery(

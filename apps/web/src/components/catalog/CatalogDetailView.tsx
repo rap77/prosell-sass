@@ -35,7 +35,6 @@ import { AvailabilityActions } from "./AvailabilityActions";
 import { AvailableTransitions } from "./AvailableTransitions";
 import { ProductAuditTrail } from "./ProductAuditTrail";
 import { SectionCard } from "./SectionCard";
-import { cn } from "@/lib/utils";
 
 // ─── Helpers (preserved verbatim) ─────────────────────────────────────────────
 
@@ -476,6 +475,17 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                   </span>
                 )}
               </div>
+
+              {product.status === "rejected" && product.rejection_reason && (
+                <div className="mb-3 rounded-[10px] border border-ps-error/25 bg-ps-error-bg px-3.5 py-3">
+                  <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.06em] text-ps-error">
+                    Motivo del rechazo
+                  </p>
+                  <p className="mt-1 m-0 text-[13px] text-ps-text-primary whitespace-pre-wrap">
+                    {product.rejection_reason}
+                  </p>
+                </div>
+              )}
 
               <p className="m-0 text-[28px] font-bold text-ps-cyan tracking-[-0.03em]">
                 {formatCurrency(product.price_cents, product.currency)}
