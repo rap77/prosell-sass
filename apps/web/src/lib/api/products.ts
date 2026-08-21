@@ -429,7 +429,7 @@ const availableTransitionSchema = z.object({
   endpoint: z.string(),
   requires_role: z.literal("super_admin"),
   side_effects: z.array(z.literal("fb_unpublish")),
-  method: z.enum(["reverse_publication", "resubmit", "restore"]),
+  method: z.enum(["reverse_publication", "resubmit", "restore", "revert_sale"]),
 });
 
 export type AvailableTransition = z.infer<typeof availableTransitionSchema>;
@@ -515,6 +515,7 @@ const REVERSE_TRANSITION_ENDPOINT = {
   REVERSE: "reverse",
   RESUBMIT: "resubmit",
   RESTORE: "restore",
+  REVERT_SALE: "revert-sale",
 } as const;
 
 type ReverseTransitionEndpoint =
@@ -601,6 +602,18 @@ export function useRestoreProduct(): UseMutationResult<
   return useReverseTransitionMutation(
     REVERSE_TRANSITION_ENDPOINT.RESTORE,
     "Producto restaurado",
+  );
+}
+
+export function useRevertSaleProduct(): UseMutationResult<
+  Product,
+  Error,
+  ReverseTransitionVariables,
+  unknown
+> {
+  return useReverseTransitionMutation(
+    REVERSE_TRANSITION_ENDPOINT.REVERT_SALE,
+    "Venta deshecha",
   );
 }
 

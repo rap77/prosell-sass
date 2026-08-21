@@ -17,6 +17,7 @@ import {
   useReverseProduct,
   useResubmitProduct,
   useRestoreProduct,
+  useRevertSaleProduct,
   type AvailableTransition,
 } from "@/lib/api/products";
 import { SectionCard } from "./SectionCard";
@@ -25,6 +26,7 @@ const METHOD_LABEL: Record<AvailableTransition["method"], string> = {
   reverse_publication: "Revertir aprobación",
   resubmit: "Reenviar a revisión",
   restore: "Restaurar",
+  revert_sale: "Deshacer venta",
 };
 
 const METHOD_DESCRIPTION: Record<AvailableTransition["method"], string> = {
@@ -32,6 +34,8 @@ const METHOD_DESCRIPTION: Record<AvailableTransition["method"], string> = {
     "El producto vuelve a Pendiente y se solicita el retiro de sus publicaciones activas en Facebook.",
   resubmit: "El producto vuelve a Pendiente para una nueva revisión.",
   restore: "El producto vuelve al estado que tenía antes de ser archivado.",
+  revert_sale:
+    "El producto vuelve a Publicado y queda disponible de nuevo en el catálogo.",
 };
 
 interface AvailableTransitionsProps {
@@ -60,6 +64,7 @@ export function AvailableTransitions({
   const reverseProduct = useReverseProduct();
   const resubmitProduct = useResubmitProduct();
   const restoreProduct = useRestoreProduct();
+  const revertSaleProduct = useRevertSaleProduct();
 
   if (!transitions || transitions.length === 0) return null;
 
@@ -70,11 +75,13 @@ export function AvailableTransitions({
     reverse_publication: reverseProduct,
     resubmit: resubmitProduct,
     restore: restoreProduct,
+    revert_sale: revertSaleProduct,
   };
   const isPending =
     reverseProduct.isPending ||
     resubmitProduct.isPending ||
-    restoreProduct.isPending;
+    restoreProduct.isPending ||
+    revertSaleProduct.isPending;
 
   async function confirm(): Promise<void> {
     if (!selected) return;

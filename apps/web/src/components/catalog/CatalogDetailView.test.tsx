@@ -95,6 +95,11 @@ vi.mock("@/lib/api/products", () => ({
     isPending: false,
     error: null,
   })),
+  useRevertSaleProduct: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  })),
 }));
 
 // Mock breadcrumbStore with Zustand selector pattern
@@ -176,6 +181,30 @@ describe("CatalogDetailView - rejection reason", () => {
     renderWithQuery(<CatalogDetailView productId="test-product-id" />);
 
     expect(screen.queryByText("Motivo del rechazo")).not.toBeInTheDocument();
+  });
+});
+
+describe("CatalogDetailView - revert sale transition", () => {
+  it("shows the 'Deshacer venta' action when the backend offers a revert_sale transition", () => {
+    vi.mocked(productsApi.useAvailableTransitions).mockReturnValueOnce({
+      data: [
+        {
+          to_status: "published",
+          endpoint: "POST /products/test-product-id/revert-sale",
+          requires_role: "super_admin",
+          side_effects: [],
+          method: "revert_sale",
+        },
+      ],
+      isLoading: false,
+      error: null,
+    } as any);
+
+    renderWithQuery(<CatalogDetailView productId="test-product-id" />);
+
+    expect(
+      screen.getByRole("button", { name: /deshacer venta/i }),
+    ).toBeInTheDocument();
   });
 });
 

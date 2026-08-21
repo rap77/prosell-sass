@@ -12,6 +12,7 @@ import {
   useReverseProduct,
   useResubmitProduct,
   useRestoreProduct,
+  useRevertSaleProduct,
   useAvailableTransitions,
   useProductAuditLogs,
 } from "@/lib/api/products";
@@ -140,6 +141,24 @@ describe("useResubmitProduct / useRestoreProduct", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/v1/products/prod-1/restore",
       expect.objectContaining({ headers: { "If-Match": "5" } }),
+    );
+  });
+
+  it("useRevertSaleProduct POSTs to /revert-sale", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockProductResponse({ status: "published" }),
+    });
+
+    const { result } = renderHook(() => useRevertSaleProduct(), {
+      wrapper: createWrapper(),
+    });
+    result.current.mutate({ productId: "prod-1", version: 7 });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/products/prod-1/revert-sale",
+      expect.objectContaining({ headers: { "If-Match": "7" } }),
     );
   });
 });
