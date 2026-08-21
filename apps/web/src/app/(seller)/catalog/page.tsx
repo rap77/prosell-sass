@@ -151,10 +151,7 @@ export function ErrorState({
 }) {
   return (
     <div className="flex flex-col items-center gap-4 p-12 text-center">
-      <div
-        className="w-16 h-16 rounded-full bg-ps-error-bg border flex items-center justify-center"
-        style={{ borderColor: "rgba(240,68,56,0.25)" }}
-      >
+      <div className="w-16 h-16 rounded-full bg-ps-error-bg border border-ps-error/25 flex items-center justify-center">
         <AlertCircle size={28} className="text-ps-error" strokeWidth={1.5} />
       </div>
       <div className="max-w-[320px]">
@@ -183,7 +180,6 @@ export default function CatalogPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const deleteProduct = useDeleteProduct();
-  const [viewMode, setViewMode] = useState<ViewMode>("grilla");
   const [showBulkBranchAssign, setShowBulkBranchAssign] = useState(false);
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
@@ -216,11 +212,28 @@ export default function CatalogPage() {
   const search = searchParams.get("search") ?? "";
   const status = getApiStatus(searchParams.get("status") ?? undefined);
 
+  // ponytail: view mode lives in the URL (not local state) so it survives
+  // navigating to a product's detail page and back — a plain useState
+  // reset to "grilla" on every remount.
+  const viewModeParam = searchParams.get("view");
+  const viewMode: ViewMode = (Object.values(VIEW_MODE) as string[]).includes(
+    viewModeParam ?? "",
+  )
+    ? (viewModeParam as ViewMode)
+    : "grilla";
+
   // ponytail: search param handler (separate from sidebar filters)
   const handleSearchChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
     if (value) params.set("search", value);
     else params.delete("search");
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    const params = new URLSearchParams(searchParams);
+    if (mode === "grilla") params.delete("view");
+    else params.set("view", mode);
     router.push(`?${params.toString()}`, { scroll: false });
   };
   const attributes: Record<string, string> = {};
@@ -341,11 +354,11 @@ export default function CatalogPage() {
 
   const handleBulkUploadSuccess = () => {
     toast.success("Carga completada");
-    setViewMode("grilla");
+    handleViewModeChange("grilla");
   };
 
   const handleBulkUploadCancel = () => {
-    setViewMode("grilla");
+    handleViewModeChange("grilla");
   };
 
   // Infinite scroll sentinel
@@ -458,7 +471,7 @@ export default function CatalogPage() {
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setViewMode(id)}
+                    onClick={() => handleViewModeChange(id)}
                     className={cn(
                       "inline-flex items-center gap-[6px] h-9 px-[14px] bg-transparent border-0 rounded-t-lg text-[13px] cursor-pointer border-b-2 transition-colors duration-150",
                       active
@@ -514,7 +527,7 @@ export default function CatalogPage() {
                   <EmptyState
                     hasFilters={hasFilters}
                     onAdd={() => router.push("/catalog/create")}
-                    onBulk={() => setViewMode("carga")}
+                    onBulk={() => handleViewModeChange("carga")}
                   />
                 )}
 

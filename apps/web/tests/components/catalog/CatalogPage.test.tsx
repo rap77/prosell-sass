@@ -92,6 +92,7 @@ vi.mock("@/lib/api/products", async (importOriginal) => {
       };
     },
     useDeleteProduct: () => ({ mutate: vi.fn() }),
+    useSubmitProductsForApproval: () => ({ mutate: vi.fn(), isPending: false }),
   };
 });
 
@@ -187,6 +188,29 @@ describe("CatalogPage — dynamic filters", () => {
     await user.click(screen.getByLabelText("Toyota"));
 
     expect(mockPush).toHaveBeenCalledWith("?make=Toyota", { scroll: false });
+  });
+
+  it("restores the Tabla view from the URL instead of always defaulting to Grilla", () => {
+    // Bug: viewMode lived only in local useState, so navigating to a
+    // product's detail page and coming back reset it to "grilla" —
+    // this pins the fix that reads it from the `view` search param.
+    mockSearchParams = new URLSearchParams("view=tabla");
+
+    render(<CatalogPage />);
+
+    const tablaTab = screen.getByRole("button", { name: /tabla/i });
+    expect(tablaTab.className).toContain("text-ps-cyan");
+    const grillaTab = screen.getByRole("button", { name: /grilla/i });
+    expect(grillaTab.className).not.toContain("text-ps-cyan");
+  });
+
+  it("pushes ?view=tabla to the URL when the Tabla tab is clicked", async () => {
+    const user = userEvent.setup();
+    render(<CatalogPage />);
+
+    await user.click(screen.getByRole("button", { name: /tabla/i }));
+
+    expect(mockPush).toHaveBeenCalledWith("?view=tabla", { scroll: false });
   });
 
   it("passes range bounds through useInfiniteProducts as attr.<key>_min/_max", () => {
