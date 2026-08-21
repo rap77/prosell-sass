@@ -244,6 +244,63 @@ class TestResubmitEndpoint:
         assert response.status_code == 409
 
 
+class TestRevertSaleEndpoint:
+    @pytest.mark.asyncio
+    async def test_revert_sale_sold_product_returns_published(
+        self,
+        async_client_as_admin: AsyncClient,
+        db_session: AsyncSession,
+        test_organization: OrganizationModel,
+        test_category: CategoryModel,
+    ) -> None:
+        product = await _create_product(db_session, test_organization, test_category, status="sold")
+
+        response = await async_client_as_admin.post(
+            f"/api/v1/products/{product.id}/revert-sale",
+            headers={"If-Match": "1"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "published"
+        assert response.json()["sold_at"] is None
+
+    @pytest.mark.asyncio
+    async def test_revert_sale_from_published_returns_409(
+        self,
+        async_client_as_admin: AsyncClient,
+        db_session: AsyncSession,
+        test_organization: OrganizationModel,
+        test_category: CategoryModel,
+    ) -> None:
+        product = await _create_product(
+            db_session, test_organization, test_category, status="published"
+        )
+
+        response = await async_client_as_admin.post(
+            f"/api/v1/products/{product.id}/revert-sale",
+            headers={"If-Match": "1"},
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.asyncio
+    async def test_revert_sale_requires_super_admin(
+        self,
+        async_client_as_seller: AsyncClient,
+        db_session: AsyncSession,
+        test_organization: OrganizationModel,
+        test_category: CategoryModel,
+    ) -> None:
+        product = await _create_product(db_session, test_organization, test_category, status="sold")
+
+        response = await async_client_as_seller.post(
+            f"/api/v1/products/{product.id}/revert-sale",
+            headers={"If-Match": "1"},
+        )
+
+        assert response.status_code == 403
+
+
 class TestRestoreEndpoint:
     @pytest.mark.asyncio
     async def test_restore_archived_product_returns_previous_status(

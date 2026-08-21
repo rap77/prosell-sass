@@ -147,6 +147,32 @@ async def test_archived_without_recorded_status_shows_no_transitions(
 
 
 @pytest.mark.asyncio
+async def test_sold_product_shows_revert_sale_transition(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    test_category: CategoryModel,
+) -> None:
+    product = await _create_product(db_session, test_organization, test_category, status="sold")
+
+    response = await async_client_as_admin.get(
+        f"/api/v1/products/{product.id}/available-transitions"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body == [
+        {
+            "to_status": "published",
+            "endpoint": f"POST /products/{product.id}/revert-sale",
+            "requires_role": "super_admin",
+            "side_effects": [],
+            "method": "revert_sale",
+        }
+    ]
+
+
+@pytest.mark.asyncio
 async def test_pending_product_shows_no_transitions(
     async_client_as_admin: AsyncClient,
     db_session: AsyncSession,

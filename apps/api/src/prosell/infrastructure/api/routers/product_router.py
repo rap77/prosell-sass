@@ -353,6 +353,16 @@ def _available_transitions(product: Product) -> list[AvailableTransitionResponse
                 method="resubmit",
             )
         ]
+    if product.status == ProductStatus.SOLD:
+        return [
+            AvailableTransitionResponse(
+                to_status=ProductStatus.PUBLISHED.value,
+                endpoint=f"POST /products/{product.id}/revert-sale",
+                requires_role="super_admin",
+                side_effects=[],
+                method="revert_sale",
+            )
+        ]
     if product.status == ProductStatus.ARCHIVED and product.archived_from_status is not None:
         return [
             AvailableTransitionResponse(
@@ -1690,6 +1700,42 @@ async def resubmit_product(
 
     try:
         product.resubmit(current_user.id)
+    except ProductInvalidStatusTransitionError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+
+    try:
+        product = await repo.update(product, changed_by_user_id=current_user.id)
+    except ProductVersionConflictError as e:
+        raise HTTPException(status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(e)) from e
+
+    return ProductResponse.from_entity(product)
+
+
+@router.post("/{product_id}/revert-sale", response_model=ProductResponse)
+async def revert_sale_product(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    if_match: Annotated[int, Header(alias="If-Match")],
+) -> ProductResponse:
+    """
+    Undo a sale (e.g. the buyer returned it): SOLD -> PUBLISHED.
+
+    super_admin only. No FB side effects to enqueue — mark_sold already
+    queued removal of any active publications when the product was sold;
+    re-listing on Facebook is a separate, manual publish action.
+    """
+    _require_super_admin(current_user)
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, None)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    _require_matching_version(product, if_match)
+
+    try:
+        product.revert_sale()
     except ProductInvalidStatusTransitionError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
 

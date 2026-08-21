@@ -17,4 +17,4 @@ class AvailableTransitionResponse(BaseModel):
     endpoint: str
     requires_role: Literal["super_admin"]
     side_effects: list[Literal["fb_unpublish"]]
-    method: Literal["reverse_publication", "resubmit", "restore"]
+    method: Literal["reverse_publication", "resubmit", "restore", "revert_sale"]

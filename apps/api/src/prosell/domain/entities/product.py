@@ -386,6 +386,29 @@ class Product(DomainModel):
         self.submitted_by = user_id
         self.updated_at = datetime.now(UTC)
 
+    def revert_sale(self) -> None:
+        """
+        Revert a sold product back to PUBLISHED (e.g. the buyer returned it).
+
+        `ProductStatus.transitions()[SOLD]` only allows ARCHIVED, and
+        `restore()` just puts an archived-sold product back to SOLD — this
+        is the only path that makes a returned product available again.
+
+        Who performed the reversal is recorded via repo.update()'s audit
+        log, not on the entity — there is no "reverted_by" field.
+
+        Raises:
+            ProductInvalidStatusTransitionError: If product is not SOLD
+        """
+        if self.status != ProductStatus.SOLD:
+            raise ProductInvalidStatusTransitionError(
+                self.status.value, ProductStatus.PUBLISHED.value
+            )
+
+        self.status = ProductStatus.PUBLISHED
+        self.sold_at = None
+        self.updated_at = datetime.now(UTC)
+
     def restore(self) -> None:
         """
         Restore an archived product to the status it had before archiving.

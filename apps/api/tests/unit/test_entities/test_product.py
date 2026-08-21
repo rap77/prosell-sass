@@ -5,6 +5,9 @@ from uuid import uuid4
 import pytest
 
 from prosell.domain.entities.product import Product
+from prosell.domain.exceptions.product_exceptions import (
+    ProductInvalidStatusTransitionError,
+)
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -204,6 +207,48 @@ class TestProduct:
 
         assert product.status == ProductStatus.SOLD
         assert product.sold_at is not None
+
+    def test_revert_sale(self) -> None:
+        """A sold product can be undone (e.g. the buyer returned it) back
+        to PUBLISHED — there was previously no way to do this at all:
+        ProductStatus.transitions()[SOLD] only allows ARCHIVED, and
+        restore() just puts an archived-sold product back to SOLD.
+        """
+        tenant_id = uuid4()
+        org_id = uuid4()
+        category_id = uuid4()
+
+        product = Product.create(
+            title="Test Product",
+            price_cents=10000,
+            tenant_id=tenant_id,
+            organization_id=org_id,
+            category_id=category_id,
+        )
+        product.status = ProductStatus.PUBLISHED
+        product.mark_sold()
+
+        product.revert_sale()
+
+        assert product.status == ProductStatus.PUBLISHED
+        assert product.sold_at is None
+
+    def test_revert_sale_rejects_invalid_status(self) -> None:
+        """revert_sale() only applies to SOLD products."""
+        tenant_id = uuid4()
+        org_id = uuid4()
+        category_id = uuid4()
+
+        product = Product.create(
+            title="Test Product",
+            price_cents=10000,
+            tenant_id=tenant_id,
+            organization_id=org_id,
+            category_id=category_id,
+        )
+
+        with pytest.raises(ProductInvalidStatusTransitionError):
+            product.revert_sale()
 
     def test_archive_product(self) -> None:
         """Test archiving a product."""
