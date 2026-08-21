@@ -400,6 +400,24 @@ describe("ReviewQueueTable", () => {
     expect(dialog).toHaveTextContent(longReason);
   });
 
+  it("hides all checkboxes when selectable is false", () => {
+    render(
+      <ReviewQueueTable
+        products={mockProducts}
+        selectedIds={new Set()}
+        onSelectionChange={mockOnSelectionChange}
+        selectable={false}
+      />,
+    );
+
+    expect(
+      screen.queryByLabelText("Seleccionar todos"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Seleccionar 2020 Toyota Camry"),
+    ).not.toBeInTheDocument();
+  });
+
   it("displays dash when submitted_for_approval_at is null", () => {
     const productWithoutDate: Product = {
       ...mockProducts[0],

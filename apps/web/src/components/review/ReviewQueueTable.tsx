@@ -15,6 +15,8 @@ interface ReviewQueueTableProps {
   products: Product[];
   selectedIds: Set<string>;
   onSelectionChange: (selectedIds: Set<string>) => void;
+  /** Hide the checkbox column entirely for tabs with no bulk action. */
+  selectable?: boolean;
 }
 
 // ponytail: local label map, same pattern as ProductAuditTrail.tsx —
@@ -76,6 +78,7 @@ export function ReviewQueueTable({
   products,
   selectedIds,
   onSelectionChange,
+  selectable = true,
 }: ReviewQueueTableProps) {
   const handleToggleAll = (checked: boolean) => {
     if (checked) {
@@ -106,16 +109,20 @@ export function ReviewQueueTable({
       <table className="w-full">
         <thead className="border-b border-ps-border-default bg-ps-elevated">
           <tr>
-            <th className="w-12 p-4">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={(checked) => handleToggleAll(checked === true)}
-                aria-label="Seleccionar todos"
-                className={
-                  someSelected ? "data-[state=checked]:bg-ps-cyan" : ""
-                }
-              />
-            </th>
+            {selectable && (
+              <th className="w-12 p-4">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={(checked) =>
+                    handleToggleAll(checked === true)
+                  }
+                  aria-label="Seleccionar todos"
+                  className={
+                    someSelected ? "data-[state=checked]:bg-ps-cyan" : ""
+                  }
+                />
+              </th>
+            )}
             <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
               Producto
             </th>
@@ -141,15 +148,17 @@ export function ReviewQueueTable({
               key={product.id}
               className="border-b border-ps-border-default last:border-0 hover:bg-ps-elevated"
             >
-              <td className="p-4">
-                <Checkbox
-                  checked={selectedIds.has(product.id)}
-                  onCheckedChange={(checked) =>
-                    handleToggle(product.id, checked === true)
-                  }
-                  aria-label={`Seleccionar ${product.title}`}
-                />
-              </td>
+              {selectable && (
+                <td className="p-4">
+                  <Checkbox
+                    checked={selectedIds.has(product.id)}
+                    onCheckedChange={(checked) =>
+                      handleToggle(product.id, checked === true)
+                    }
+                    aria-label={`Seleccionar ${product.title}`}
+                  />
+                </td>
+              )}
               <td className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-ps-elevated">

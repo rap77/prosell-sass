@@ -5,11 +5,13 @@ import { useInfiniteProducts } from "@/lib/api/products";
 import {
   useBatchApproveProducts,
   useBatchRejectProducts,
+  useSubmitProductsForApproval,
   type BatchReviewResponse,
 } from "@/lib/api/products";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { BatchActionBar } from "@/components/review/BatchActionBar";
+import { ResubmitActionBar } from "@/components/review/ResubmitActionBar";
 import { ApproveConfirmDialog } from "@/components/review/ApproveConfirmDialog";
 import { RejectConfirmDialog } from "@/components/review/RejectConfirmDialog";
 import { BatchResultsPanel } from "@/components/review/BatchResultsPanel";
@@ -30,12 +32,14 @@ const TABS: { id: QueueTab; label: string }[] = [
   { id: "rejected", label: "Rechazados" },
 ];
 
-// ponytail: only the "Pendientes" tab exposes batch approve/reject
-// actions. The other tabs are read-only history views. The
-// ProductStatus.can_approve() / can_reject() predicates already
-// enforce this server-side; the tab structure mirrors that contract
-// so the UI never offers an action that the backend will reject.
-const ACTIONABLE_TABS: ReadonlySet<QueueTab> = new Set<QueueTab>(["pending"]);
+// ponytail: "Pendientes" exposes batch approve/reject and "Rechazados"
+// exposes batch resubmit-to-review (ProductStatus.can_submit_for_approval()
+// allows REJECTED -> PENDING). "Aprobados" stays read-only history — the
+// backend has no bulk action defined from PUBLISHED in this queue's flow.
+const ACTIONABLE_TABS: ReadonlySet<QueueTab> = new Set<QueueTab>([
+  "pending",
+  "rejected",
+]);
 
 export default function ReviewQueuePage() {
   const { hasPermission } = useAuth();
@@ -66,6 +70,7 @@ export default function ReviewQueuePage() {
 
   const approveMutation = useBatchApproveProducts();
   const rejectMutation = useBatchRejectProducts();
+  const resubmitMutation = useSubmitProductsForApproval();
 
   const isActionable = ACTIONABLE_TABS.has(activeTab);
 
@@ -86,7 +91,7 @@ export default function ReviewQueuePage() {
   }
 
   const handleBatchApprove = async () => {
-    if (!isActionable) return;
+    if (activeTab !== "pending") return;
     const ids = Array.from(selectedIds);
     const result = await approveMutation.mutateAsync(ids);
     setLastResults(result);
@@ -100,7 +105,7 @@ export default function ReviewQueuePage() {
   };
 
   const handleBatchReject = async (reason: string) => {
-    if (!isActionable) return;
+    if (activeTab !== "pending") return;
     const ids = Array.from(selectedIds);
     const result = await rejectMutation.mutateAsync({
       productIds: ids,
@@ -114,6 +119,13 @@ export default function ReviewQueuePage() {
       .map((r) => r.product_id);
     setSelectedIds(new Set(failedIds));
     setShowRejectDialog(false);
+  };
+
+  const handleBulkResubmit = () => {
+    if (activeTab !== "rejected") return;
+    const ids = Array.from(selectedIds);
+    resubmitMutation.mutate(ids);
+    setSelectedIds(new Set());
   };
 
   const handleTabChange = (tab: QueueTab) => {
@@ -140,9 +152,10 @@ export default function ReviewQueuePage() {
           Cola de revisión
         </h1>
 
-        {/* ponytail: status tabs. Pending is actionable; Published and
-            Rejected are read-only history so the admin can see what
-            happened to each product after it left the queue. */}
+        {/* ponytail: status tabs. Pending and Rejected are actionable
+            (approve/reject, resubmit); Published stays read-only history
+            so the admin can see what happened after a product left the
+            queue. */}
         <div
           role="tablist"
           aria-label="Estado de revisión"
@@ -191,22 +204,32 @@ export default function ReviewQueuePage() {
               products={products}
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
+              selectable={isActionable}
             />
           )}
         </div>
       </div>
 
-      {/* ponytail: the BatchActionBar is only rendered for actionable
-          tabs so the admin never sees Approve/Reject buttons next to
-          products in published/rejected state. The handler also
-          early-returns as a defense-in-depth check. */}
-      {isActionable && selectedIds.size > 0 && (
+      {/* ponytail: each actionable tab gets its own action bar so the
+          admin never sees an action next to a product it doesn't apply
+          to. The handlers also early-return per tab as a defense-in-depth
+          check. */}
+      {activeTab === "pending" && selectedIds.size > 0 && (
         <BatchActionBar
           selectedCount={selectedIds.size}
           onClear={() => setSelectedIds(new Set())}
           onApprove={() => setShowApproveDialog(true)}
           onReject={() => setShowRejectDialog(true)}
           isLoading={approveMutation.isPending || rejectMutation.isPending}
+        />
+      )}
+
+      {activeTab === "rejected" && selectedIds.size > 0 && (
+        <ResubmitActionBar
+          selectedCount={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onResubmit={handleBulkResubmit}
+          isLoading={resubmitMutation.isPending}
         />
       )}
 

@@ -20,10 +20,12 @@ vi.mock("@/hooks/useAuth", () => ({
 const mockUseInfiniteProducts = vi.fn();
 const mockUseBatchApproveProducts = vi.fn();
 const mockUseBatchRejectProducts = vi.fn();
+const mockUseSubmitProductsForApproval = vi.fn();
 vi.mock("@/lib/api/products", () => ({
   useInfiniteProducts: (...args: unknown[]) => mockUseInfiniteProducts(...args),
   useBatchApproveProducts: () => mockUseBatchApproveProducts(),
   useBatchRejectProducts: () => mockUseBatchRejectProducts(),
+  useSubmitProductsForApproval: () => mockUseSubmitProductsForApproval(),
 }));
 
 const mockReplace = vi.fn();
@@ -72,6 +74,10 @@ describe("ReviewQueuePage", () => {
     });
     mockUseBatchRejectProducts.mockReturnValue({
       mutateAsync: vi.fn(),
+      isPending: false,
+    });
+    mockUseSubmitProductsForApproval.mockReturnValue({
+      mutate: vi.fn(),
       isPending: false,
     });
   });
@@ -222,5 +228,66 @@ describe("ReviewQueuePage", () => {
     expect(
       screen.queryByRole("button", { name: /aprobar/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("does not render checkboxes in the read-only Aprobados tab", async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteProducts.mockImplementation(
+      (filters?: { status?: string }) => {
+        if (filters?.status === "published") {
+          return {
+            data: { pages: [{ items: makePublishedProducts(1), total: 1 }] },
+            isLoading: false,
+          };
+        }
+        return { data: { pages: [{ items: [], total: 0 }] }, isLoading: false };
+      },
+    );
+
+    render(<ReviewQueuePage />);
+    await user.click(screen.getByRole("tab", { name: /aprobados/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Published Product 0")).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByLabelText("Seleccionar todos"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("allows resubmitting selected rejected products for review", async () => {
+    const user = userEvent.setup();
+    const mutate = vi.fn();
+    mockUseSubmitProductsForApproval.mockReturnValue({
+      mutate,
+      isPending: false,
+    });
+    mockUseInfiniteProducts.mockImplementation(
+      (filters?: { status?: string }) => {
+        if (filters?.status === "rejected") {
+          return {
+            data: { pages: [{ items: makeRejectedProducts(1), total: 1 }] },
+            isLoading: false,
+          };
+        }
+        return { data: { pages: [{ items: [], total: 0 }] }, isLoading: false };
+      },
+    );
+
+    render(<ReviewQueuePage />);
+    await user.click(screen.getByRole("tab", { name: /rechazados/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rejected Product 0")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByLabelText("Seleccionar Rejected Product 0"));
+
+    const resubmitButton = screen.getByRole("button", {
+      name: /reenviar a revisión/i,
+    });
+    await user.click(resubmitButton);
+
+    expect(mutate).toHaveBeenCalledWith(["rejected-0"]);
   });
 });
