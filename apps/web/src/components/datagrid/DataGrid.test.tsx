@@ -19,6 +19,7 @@ const mockUseProductImageUrls = vi.fn(
 vi.mock("@/lib/api/products", () => ({
   useProductImageUrls: (id: unknown) => mockUseProductImageUrls(id) as never,
   useSubmitProductsForApproval: () => ({ mutate: vi.fn() }),
+  useMarkProductsSold: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 const mockData: ProductRow[] = [

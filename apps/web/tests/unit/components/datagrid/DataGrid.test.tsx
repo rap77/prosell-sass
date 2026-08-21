@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DataGrid, type ProductRow } from "@/components/datagrid/DataGrid";
@@ -16,6 +16,8 @@ vi.mock("@/components/datagrid/ActionMenu", () => ({
     </button>
   ),
 }));
+
+const mockMarkProductsSold = vi.fn();
 
 // Mock signed-URL hook so the photo cell renders deterministically without a QueryClient.
 // Returns a signed URL for whatever key was passed in (matches the cell's lookup by key).
@@ -46,6 +48,10 @@ vi.mock("@/lib/api/products", async () => {
       error: null,
     }),
     useSubmitProductsForApproval: () => ({ mutate: vi.fn(), isPending: false }),
+    useMarkProductsSold: () => ({
+      mutate: mockMarkProductsSold,
+      isPending: false,
+    }),
   };
 });
 
@@ -73,6 +79,10 @@ describe("DataGrid", () => {
       model: "Accord",
     },
   ];
+
+  beforeEach(() => {
+    mockMarkProductsSold.mockClear();
+  });
 
   it("renders an empty table when no data is provided", () => {
     render(<DataGrid data={[]} />);
@@ -132,6 +142,59 @@ describe("DataGrid", () => {
     expect(
       screen.getByRole("button", { name: /enviar a revisión \(1\)/i }),
     ).toBeInTheDocument();
+  });
+
+  it("offers bulk mark-as-sold for a selected published row, gated by a confirm dialog", async () => {
+    const user = userEvent.setup();
+    render(
+      <DataGrid
+        data={[
+          {
+            id: "1",
+            title: "2020 Toyota Camry",
+            price: 25000,
+            status: "published",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByLabelText("Select row 0"));
+
+    const soldButton = screen.getByRole("button", {
+      name: /marcar vendido \(1\)/i,
+    });
+    await user.click(soldButton);
+
+    // The action is final, so it's gated behind a confirm step instead
+    // of firing on the toolbar button click.
+    expect(mockMarkProductsSold).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /^confirmar$/i }));
+
+    expect(mockMarkProductsSold).toHaveBeenCalledWith(["1"]);
+  });
+
+  it("does not count a pending-review row as eligible for mark-as-sold", async () => {
+    const user = userEvent.setup();
+    render(
+      <DataGrid
+        data={[
+          {
+            id: "2",
+            title: "2021 Honda Accord",
+            price: 28000,
+            status: "pending",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByLabelText("Select row 0"));
+
+    expect(
+      screen.queryByRole("button", { name: /marcar vendido/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onRowClick when a row is clicked", async () => {

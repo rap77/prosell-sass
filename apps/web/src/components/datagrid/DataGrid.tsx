@@ -11,11 +11,22 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Building2, Send } from "lucide-react";
+import { Building2, CheckCircle2, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
+  useMarkProductsSold,
   useProductImageUrls,
   useSubmitProductsForApproval,
 } from "@/lib/api/products";
@@ -68,7 +79,7 @@ function SignedPhotoCell({
 
   if (!signedUrl) {
     return (
-      <div className="w-15 h-15 rounded-md bg-muted flex items-center justify-center">
+      <div className="w-[60px] h-[60px] rounded-md bg-muted flex items-center justify-center">
         <span className="text-xs text-muted-foreground">No photo</span>
       </div>
     );
@@ -80,7 +91,7 @@ function SignedPhotoCell({
       alt=""
       width={60}
       height={60}
-      className="w-15 h-15 rounded-md object-cover"
+      className="w-[60px] h-[60px] rounded-md object-cover"
       unoptimized
     />
   );
@@ -151,7 +162,9 @@ export function DataGrid({
   "use no memo"; // TanStack Table API is incompatible with React Compiler auto-memoization
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [showSoldConfirm, setShowSoldConfirm] = useState(false);
   const submitProductsForApproval = useSubmitProductsForApproval();
+  const markProductsSold = useMarkProductsSold();
 
   const stopRowNavigation = (
     event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>,
@@ -323,6 +336,23 @@ export function DataGrid({
     }
   };
 
+  // Filter selected products eligible for "mark sold". Scoped to
+  // "published" only — "reserved" (apartado) collapses to the display
+  // status "pending" via transformProductToVehicle, so it can't be told
+  // apart from an actual pending-review row here.
+  const soldEligibleProductIds = selectedProductIds.filter((id) => {
+    const product = data.find((p) => p.id === id);
+    return product?.status === "published";
+  });
+
+  const handleBulkMarkSold = () => {
+    if (soldEligibleProductIds.length > 0) {
+      markProductsSold.mutate(soldEligibleProductIds);
+      setRowSelection({});
+    }
+    setShowSoldConfirm(false);
+  };
+
   // Row virtualization for 60fps performance
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
@@ -369,6 +399,19 @@ export function DataGrid({
               >
                 <Send className="h-4 w-4" />
                 Enviar a revisión ({eligibleProductIds.length})
+              </Button>
+            )}
+            {soldEligibleProductIds.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSoldConfirm(true)}
+                disabled={markProductsSold.isPending}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Marcar vendido ({soldEligibleProductIds.length})
               </Button>
             )}
             {onBulkAssignBranch && (
@@ -479,6 +522,27 @@ export function DataGrid({
           </tbody>
         </table>
       </div>
+
+      <AlertDialog open={showSoldConfirm} onOpenChange={setShowSoldConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar vendido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción es final. {soldEligibleProductIds.length} vehículo
+              {soldEligibleProductIds.length !== 1 ? "s" : ""} dejará
+              {soldEligibleProductIds.length !== 1 ? "n" : ""} de estar
+              disponible{soldEligibleProductIds.length !== 1 ? "s" : ""} y se
+              solicitará el retiro de sus publicaciones activas en Facebook.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkMarkSold}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
