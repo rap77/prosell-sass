@@ -2,6 +2,13 @@
 
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { isVehicleProduct, type Product } from "@/types/product";
 
 interface ReviewQueueTableProps {
@@ -29,6 +36,33 @@ function StatusPill({ status }: { status: string }) {
     <span className="inline-flex items-center rounded-full border border-ps-border-default bg-ps-elevated px-2.5 py-[3px] text-xs font-medium text-ps-text-secondary">
       {STATUS_LABELS[status] ?? status}
     </span>
+  );
+}
+
+// ponytail: click-to-expand instead of a hover tooltip — rejection
+// reasons are free text with no length cap, so a hover-only tooltip
+// would clip long text and never work on touch devices.
+function RejectionReasonCell({ reason }: { reason: string }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          title={reason}
+          className="block max-w-[220px] truncate text-left text-ps-text-secondary underline decoration-dotted underline-offset-2 hover:text-ps-text-primary"
+        >
+          {reason}
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Motivo del rechazo</DialogTitle>
+        </DialogHeader>
+        <p className="whitespace-pre-wrap text-sm text-ps-text-secondary">
+          {reason}
+        </p>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -65,6 +99,7 @@ export function ReviewQueueTable({
     products.length > 0 && selectedIds.size === products.length;
   const someSelected =
     selectedIds.size > 0 && selectedIds.size < products.length;
+  const showReasonColumn = products.some((p) => p.rejection_reason);
 
   return (
     <div className="overflow-x-auto rounded-lg border border-ps-border-default bg-ps-surface">
@@ -90,6 +125,11 @@ export function ReviewQueueTable({
             <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
               Estado
             </th>
+            {showReasonColumn && (
+              <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
+                Motivo
+              </th>
+            )}
             <th className="p-4 text-left text-sm font-semibold text-ps-text-primary">
               Enviado
             </th>
@@ -169,6 +209,15 @@ export function ReviewQueueTable({
               <td className="p-4">
                 <StatusPill status={product.status} />
               </td>
+              {showReasonColumn && (
+                <td className="p-4">
+                  {product.rejection_reason ? (
+                    <RejectionReasonCell reason={product.rejection_reason} />
+                  ) : (
+                    <span className="text-ps-text-tertiary">—</span>
+                  )}
+                </td>
+              )}
               <td className="p-4 text-ps-text-secondary">
                 {product.submitted_for_approval_at
                   ? new Date(

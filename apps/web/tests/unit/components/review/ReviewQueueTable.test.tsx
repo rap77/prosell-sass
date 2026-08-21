@@ -343,6 +343,63 @@ describe("ReviewQueueTable", () => {
     expect(screen.getByText("Rechazado")).toBeInTheDocument();
   });
 
+  it("does not render a Motivo column when no product has a rejection reason", () => {
+    render(
+      <ReviewQueueTable
+        products={mockProducts}
+        selectedIds={new Set()}
+        onSelectionChange={mockOnSelectionChange}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("columnheader", { name: "Motivo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the rejection reason as a truncated trigger that opens the full text in a dialog", async () => {
+    const user = userEvent.setup();
+    const longReason =
+      "Las fotos no muestran el odómetro con claridad y falta la ficha técnica completa del vehículo.";
+    const products: Product[] = [
+      makeProduct({
+        id: "product-1",
+        title: "2020 Toyota Camry",
+        status: "rejected",
+        rejection_reason: longReason,
+      }),
+      makeProduct({
+        id: "product-2",
+        title: "2019 Honda Accord",
+        status: "pending",
+        rejection_reason: null,
+      }),
+    ];
+
+    render(
+      <ReviewQueueTable
+        products={products}
+        selectedIds={new Set()}
+        onSelectionChange={mockOnSelectionChange}
+      />,
+    );
+
+    expect(
+      screen.getByRole("columnheader", { name: "Motivo" }),
+    ).toBeInTheDocument();
+
+    // Second row has no reason: shows a dash, not a trigger.
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+
+    const trigger = screen.getByRole("button", { name: longReason });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent(longReason);
+  });
+
   it("displays dash when submitted_for_approval_at is null", () => {
     const productWithoutDate: Product = {
       ...mockProducts[0],
