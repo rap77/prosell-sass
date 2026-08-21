@@ -65,7 +65,7 @@ const STATUS_CONFIG: Record<VehicleStatus, StatusConfig> = {
   failed: {
     colorClass: "text-ps-error",
     icon: XCircle,
-    label: "Fallido",
+    label: "Rechazado",
   },
   sold: {
     colorClass: "text-ps-violet",
@@ -80,7 +80,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <span
       data-testid="vehicle-status"
-      className={`inline-flex items-center gap-1 rounded-full bg-black/85 px-2.5 py-0.75 text-xs font-medium whitespace-nowrap shadow-sm ${colorClass}`}
+      className={`inline-flex items-center gap-1 rounded-full bg-black/85 px-2.5 py-[3px] text-xs font-medium whitespace-nowrap shadow-sm ${colorClass}`}
     >
       <Icon size={12} strokeWidth={2.5} aria-hidden="true" />
       <span className="sr-only">{status}:</span>

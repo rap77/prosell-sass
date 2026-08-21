@@ -13,7 +13,7 @@ describe("StatusBadge", () => {
     const statuses = [
       { status: "published", label: "Publicado" },
       { status: "pending", label: "Pendiente" },
-      { status: "failed", label: "Fallido" },
+      { status: "failed", label: "Rechazado" },
       { status: "draft", label: "Borrador" },
       { status: "expired", label: "Expirado" },
       { status: "online", label: "Online" },
