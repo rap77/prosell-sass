@@ -75,6 +75,15 @@ async function proxyRequest(request: NextRequest, path: string[]) {
       headers["Cookie"] = cookieHeader;
     }
 
+    // Bug: If-Match was silently dropped, 422'ing every optimistic-locking
+    // endpoint (reverse/resubmit/restore/revert-sale) when called from the
+    // browser through this proxy — direct API calls never hit this file,
+    // so it went unnoticed. Forward it whenever the caller sent one.
+    const ifMatchHeader = request.headers.get("if-match");
+    if (ifMatchHeader) {
+      headers["If-Match"] = ifMatchHeader;
+    }
+
     // Prepare request options
     const options: RequestInit = {
       method: request.method,
