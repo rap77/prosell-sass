@@ -203,7 +203,10 @@ class Product(DomainModel):
 
     def approve(self, user_id: UUID) -> None:
         """
-        Approve product (auto-publishes).
+        Approve product (auto-publishes, including to the FB marketplace).
+
+        Approval is the single moment products become eligible for the FB
+        sync bot — see reverse_publication() for the symmetric undo.
 
         Args:
             user_id: ID of user approving
@@ -221,6 +224,7 @@ class Product(DomainModel):
         self.approved_at = datetime.now(UTC)
         self.approved_by = user_id
         self.published_at = datetime.now(UTC)
+        self.published_to_marketplace = True
         self.updated_at = datetime.now(UTC)
 
     def reject(self, user_id: UUID, reason: str) -> None:

@@ -102,6 +102,7 @@ class TestProduct:
         assert product.approved_by == approver_id
         assert product.approved_at is not None
         assert product.published_at is not None
+        assert product.published_to_marketplace is True
 
     def test_reject_product(self) -> None:
         """Test rejecting a product."""
