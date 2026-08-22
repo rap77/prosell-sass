@@ -195,8 +195,6 @@ export function UnifiedProductForm({
   const [pendingTransferOrgId, setPendingTransferOrgId] = useState<
     string | null
   >(null);
-  // Facebook Marketplace toggle - use existing value as initial, track local override
-  const [fbOverride, setFbOverride] = useState<boolean | null>(null);
   // FB accounts multi-select: null=unchanged, []=any, [ids]=specific
   const [fbAccountsOverride, setFbAccountsOverride] = useState<string[] | null>(
     null,
@@ -277,15 +275,15 @@ export function UnifiedProductForm({
     mode === "edit" ? productId : undefined,
   );
 
-  // Derived FB state (must be after existingProduct declaration)
-  const publishToFB =
-    fbOverride ?? existingProduct?.published_to_marketplace ?? false;
-  const { data: fbAccounts = [] } = useFBAccounts({}, publishToFB);
+  // Derived FB state (must be after existingProduct declaration).
+  // published_to_marketplace is now a read-only consequence of approve() —
+  // no local override, see docs/superpowers/specs/2026-08-21-marketplace-publish-fusion-design.md
+  const isPublishedToFB = existingProduct?.published_to_marketplace ?? false;
+  const { data: fbAccounts = [] } = useFBAccounts({}, isPublishedToFB);
   // Derived FB accounts: null=not dirty, []=any account, [ids]=specific
   const selectedFbAccounts =
     fbAccountsOverride ?? existingProduct?.fb_account_ids ?? [];
   const fbAccountsDirty = fbAccountsOverride !== null;
-  const fbDirty = fbOverride !== null;
 
   // Build schema from category (React 19 Compiler handles memoization)
   const attrSchema = buildZodSchema(category.attribute_schema);
@@ -335,7 +333,6 @@ export function UnifiedProductForm({
       /* eslint-disable react-hooks/set-state-in-effect -- intentional reset on mode change */
       setPendingBrokers([]);
       setSelectedOrgId(null);
-      setFbOverride(null);
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [mode]);
@@ -350,7 +347,6 @@ export function UnifiedProductForm({
       setSelectedOrgId(null);
       setOrgDirty(false);
       setBrokersDirty(false);
-      setFbOverride(null);
     }
   }, [mode, productId]);
 
@@ -507,8 +503,6 @@ export function UnifiedProductForm({
       attributes,
       image_urls: imageKeys,
       ...(coverKey ? { cover_image_key: coverKey } : {}),
-      // ponytail: FB marketplace toggle only sent when dirty
-      ...(fbDirty ? { published_to_marketplace: publishToFB } : {}),
       // ponytail: FB account assignments only sent when dirty
       ...(fbAccountsDirty ? { fb_account_ids: selectedFbAccounts } : {}),
     };
@@ -751,26 +745,26 @@ export function UnifiedProductForm({
           <Facebook className="h-5 w-5 text-ps-cyan" />
           Facebook Marketplace
         </h2>
-        <label className="flex cursor-pointer items-center gap-3 text-ps-text-primary">
-          <input
-            type="checkbox"
-            checked={publishToFB}
-            onChange={(e) => setFbOverride(e.target.checked)}
-            disabled={isDisabled}
-            className="h-5 w-5 cursor-pointer rounded border-ps-border-default accent-ps-cyan focus:ring-ps-cyan"
+        <div className="flex items-center gap-3 text-ps-text-primary">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${isPublishedToFB ? "bg-ps-cyan" : "bg-ps-border-default"}`}
           />
           <div>
             <span className="font-medium">
-              Publicar en Facebook Marketplace
+              {isPublishedToFB
+                ? "Publicado en Facebook Marketplace"
+                : "No publicado en Facebook Marketplace"}
             </span>
             <p className="text-sm text-ps-text-secondary">
-              El bot publicará este producto en los grupos de FB configurados
+              {isPublishedToFB
+                ? "El bot publica este producto en los grupos de FB configurados. Se activa automáticamente al aprobar el producto."
+                : "Se activa automáticamente al aprobar el producto — no requiere ninguna acción acá."}
             </p>
           </div>
-        </label>
+        </div>
 
-        {/* FB Account multi-select — only visible when publishing */}
-        {publishToFB && fbAccounts.length > 0 && (
+        {/* FB Account multi-select — only visible once published to FB */}
+        {isPublishedToFB && fbAccounts.length > 0 && (
           <div className="ml-8 mt-2 space-y-3 rounded-lg border border-ps-border-subtle bg-ps-elevated p-3">
             <p className="text-sm font-medium text-ps-text-primary">
               Cuentas que publicarán este producto:
