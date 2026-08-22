@@ -77,8 +77,9 @@ class ProductModel(Base):
 
     # Visibility and search
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
-    # Subsystem D: marketplace visibility flag. Toggled by users with
-    # `MARKETPLACE_PUBLISH` permission; default False (opt-in).
+    # Subsystem D: marketplace visibility flag. Set automatically by
+    # Product.approve() (cleared by reverse_publication()), not directly
+    # PATCHable — see docs/superpowers/specs/2026-08-21-marketplace-publish-fusion-design.md.
     published_to_marketplace: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False, index=True
     )

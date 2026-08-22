@@ -339,7 +339,7 @@ def _available_transitions(product: Product) -> list[AvailableTransitionResponse
                 to_status=ProductStatus.PENDING.value,
                 endpoint=f"POST /products/{product.id}/reverse",
                 requires_role="super_admin",
-                side_effects=["fb_unpublish"],
+                side_effects=["fb_unpublish", "marketplace_publish_reset"],
                 method="reverse_publication",
             )
         ]

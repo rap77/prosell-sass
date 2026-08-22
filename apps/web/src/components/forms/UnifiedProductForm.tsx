@@ -279,7 +279,7 @@ export function UnifiedProductForm({
   // published_to_marketplace is now a read-only consequence of approve() —
   // no local override, see docs/superpowers/specs/2026-08-21-marketplace-publish-fusion-design.md
   const isPublishedToFB = existingProduct?.published_to_marketplace ?? false;
-  const { data: fbAccounts = [] } = useFBAccounts({}, isPublishedToFB);
+  const { data: fbAccounts = [] } = useFBAccounts({});
   // Derived FB accounts: null=not dirty, []=any account, [ids]=specific
   const selectedFbAccounts =
     fbAccountsOverride ?? existingProduct?.fb_account_ids ?? [];
@@ -763,8 +763,9 @@ export function UnifiedProductForm({
           </div>
         </div>
 
-        {/* FB Account multi-select — only visible once published to FB */}
-        {isPublishedToFB && fbAccounts.length > 0 && (
+        {/* FB Account multi-select — independent of publish-to-FB status;
+            assignable before approval, per the design's Non-Goals */}
+        {fbAccounts.length > 0 && (
           <div className="ml-8 mt-2 space-y-3 rounded-lg border border-ps-border-subtle bg-ps-elevated p-3">
             <p className="text-sm font-medium text-ps-text-primary">
               Cuentas que publicarán este producto:

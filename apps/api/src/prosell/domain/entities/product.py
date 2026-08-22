@@ -54,8 +54,9 @@ class Product(DomainModel):
     # product with no images has no cover.
     cover_image_key: str | None = None
 
-    # Subsystem D: cross-organization marketplace visibility. Toggled by users
-    # with `MARKETPLACE_PUBLISH` permission (ProSell vendors, admins).
+    # Subsystem D: cross-organization marketplace visibility. Set
+    # automatically by approve() (and cleared by reverse_publication()) —
+    # see docs/superpowers/specs/2026-08-21-marketplace-publish-fusion-design.md.
     # When true, the product is visible to marketplace consumers across
     # all organizations (future marketplace endpoint).
     published_to_marketplace: bool = False

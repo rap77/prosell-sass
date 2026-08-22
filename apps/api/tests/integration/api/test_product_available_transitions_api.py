@@ -59,7 +59,7 @@ async def test_published_product_shows_reverse_transition(
             "to_status": "pending",
             "endpoint": f"POST /products/{product.id}/reverse",
             "requires_role": "super_admin",
-            "side_effects": ["fb_unpublish"],
+            "side_effects": ["fb_unpublish", "marketplace_publish_reset"],
             "method": "reverse_publication",
         }
     ]

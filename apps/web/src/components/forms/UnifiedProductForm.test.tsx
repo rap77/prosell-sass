@@ -8,6 +8,28 @@ import {
   getSelectableBrokers,
 } from "./UnifiedProductForm";
 import type { Broker } from "@/lib/api/schemas/organizations";
+import * as productsApi from "@/lib/api/products";
+import * as fbAccountsApi from "@/lib/api/fb-accounts";
+
+// ponytail: partial mock — only override useProduct/useFBAccounts so the
+// existing Wizard tests keep exercising the real (unmocked) hooks below,
+// matching the pattern used in tests/components/catalog/CatalogPage.test.tsx
+vi.mock("@/lib/api/products", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/products")>();
+  return {
+    ...actual,
+    useProduct: vi.fn(actual.useProduct),
+    useProductOwnership: vi.fn(actual.useProductOwnership),
+  };
+});
+
+vi.mock("@/lib/api/fb-accounts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/fb-accounts")>();
+  return {
+    ...actual,
+    useFBAccounts: vi.fn(actual.useFBAccounts),
+  };
+});
 
 // ponytail: minimal test wrapper for TanStack Query
 function TestWrapper({ children }: { children: React.ReactNode }) {
@@ -185,5 +207,102 @@ describe("UnifiedProductForm Wizard (Desktop)", () => {
 
     // ponytail: testing exact desktop tabs requires complex DOM queries after useEffect
     // sufficient to verify form renders and wizard is enabled
+  });
+});
+
+describe("UnifiedProductForm Facebook Marketplace indicator", () => {
+  const baseProduct = {
+    id: "test-product-id",
+    title: "Test Vehicle",
+    description: "",
+    price_cents: 1_000_000,
+    currency: "ARS",
+    status: "published",
+    slug: "test-vehicle",
+    condition: "used",
+    organization_id: "org-1",
+    fb_account_ids: [],
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    version: 1,
+    attributes: {
+      category: "vehicle",
+      year: 2020,
+      make: "Toyota",
+      model: "Corolla",
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // FB account selector is independent of publish status (Fix 3) — keep
+    // it empty here so these tests focus on the read-only indicator only.
+    vi.mocked(fbAccountsApi.useFBAccounts).mockReturnValue({
+      data: [],
+      error: null,
+      isLoading: false,
+    } as any);
+    // Real useProductOwnership would hit the network and stay isLoading
+    // forever in jsdom, keeping the component on its loading-spinner branch.
+    vi.mocked(productsApi.useProductOwnership).mockReturnValue({
+      data: { owners: [] },
+      isLoading: false,
+    } as any);
+  });
+
+  it("renders the published indicator with no checkbox, when published_to_marketplace is true", () => {
+    vi.mocked(productsApi.useProduct).mockReturnValue({
+      data: { ...baseProduct, published_to_marketplace: true },
+      error: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as any);
+
+    render(
+      <UnifiedProductForm
+        category={mockCategory}
+        mode="edit"
+        productId="test-product-id"
+      />,
+      { wrapper: TestWrapper },
+    );
+
+    expect(
+      screen.getByText("Publicado en Facebook Marketplace"),
+    ).toBeInTheDocument();
+
+    const section = screen
+      .getByRole("heading", { name: "Facebook Marketplace" })
+      .closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelector("input")).not.toBeInTheDocument();
+  });
+
+  it("renders the not-published indicator with no checkbox, when published_to_marketplace is false", () => {
+    vi.mocked(productsApi.useProduct).mockReturnValue({
+      data: { ...baseProduct, published_to_marketplace: false },
+      error: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as any);
+
+    render(
+      <UnifiedProductForm
+        category={mockCategory}
+        mode="edit"
+        productId="test-product-id"
+      />,
+      { wrapper: TestWrapper },
+    );
+
+    expect(
+      screen.getByText("No publicado en Facebook Marketplace"),
+    ).toBeInTheDocument();
+
+    const section = screen
+      .getByRole("heading", { name: "Facebook Marketplace" })
+      .closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelector("input")).not.toBeInTheDocument();
   });
 });

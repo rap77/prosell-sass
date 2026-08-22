@@ -85,7 +85,7 @@ const productSchema = z.object({
   location_state: z.string().nullish(),
   location_zip: z.string().nullish(),
   is_featured: z.boolean(),
-  published_to_marketplace: z.boolean().optional(),
+  published_to_marketplace: z.boolean(),
   fb_account_ids: z.array(z.string()).optional(),
   view_count: z.number(),
   favorite_count: z.number(),
@@ -428,7 +428,10 @@ const availableTransitionSchema = z.object({
   to_status: z.string(),
   endpoint: z.string(),
   requires_role: z.literal("super_admin"),
-  side_effects: z.array(z.literal("fb_unpublish")),
+  // "reverse" also resets published_to_marketplace (see
+  // docs/superpowers/specs/2026-08-21-marketplace-publish-fusion-design.md);
+  // side_effects is passed through opaquely, not rendered to the user.
+  side_effects: z.array(z.enum(["fb_unpublish", "marketplace_publish_reset"])),
   method: z.enum(["reverse_publication", "resubmit", "restore", "revert_sale"]),
 });
 
