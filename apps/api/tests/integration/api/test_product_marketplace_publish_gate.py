@@ -1,8 +1,11 @@
-"""Integration tests -- Subsystem D Phase 3: marketplace publish permission gate.
+"""Integration tests -- published_to_marketplace is no longer PATCHable.
 
-Task 3.1 (RED): vendor with MARKETPLACE_PUBLISH can PATCH
-    published_to_marketplace=true on any product.
-Task 3.3 (RED): seller WITHOUT MARKETPLACE_PUBLISH cannot toggle the field (403).
+Marketplace-publish fusion (2026-08-21): the flag is now a pure consequence
+of Product.approve()/reverse_publication() (see
+docs/superpowers/specs/2026-08-21-marketplace-publish-fusion-design.md).
+A client still sending the field on PATCH gets it silently ignored --
+Pydantic drops unknown fields by default on this DTO (no `extra="forbid"`),
+so this is NOT a breaking 422 for stale integrations.
 """
 
 from uuid import uuid4
@@ -22,7 +25,7 @@ async def own_tenant_product(
     test_organization: OrganizationModel,
     test_category: CategoryModel,
 ) -> ProductModel:
-    """Product belonging to the default test tenant."""
+    """Product belonging to the default test tenant, already published."""
     product = ProductModel(
         id=uuid4(),
         tenant_id=test_organization.tenant_id,
@@ -30,6 +33,8 @@ async def own_tenant_product(
         category_id=test_category.id,
         title="Marketplace Gate Product",
         price_cents=1_000_000,
+        status="published",
+        published_to_marketplace=False,
     )
     db_session.add(product)
     await db_session.flush()
@@ -37,29 +42,15 @@ async def own_tenant_product(
 
 
 @pytest.mark.asyncio
-async def test_admin_with_marketplace_publish_can_toggle_flag(
+async def test_patch_published_to_marketplace_is_ignored(
     async_client_as_admin: AsyncClient,
     own_tenant_product: ProductModel,
 ) -> None:
-    """Task 3.1: vendor with MARKETPLACE_PUBLISH can publish any product."""
+    """PATCH no longer accepts published_to_marketplace -- silently dropped."""
     response = await async_client_as_admin.patch(
         f"/api/v1/products/{own_tenant_product.id}",
         json={"published_to_marketplace": True},
     )
 
     assert response.status_code == 200
-    assert response.json()["published_to_marketplace"] is True
-
-
-@pytest.mark.asyncio
-async def test_seller_without_marketplace_publish_cannot_toggle_flag(
-    async_client_as_seller: AsyncClient,
-    own_tenant_product: ProductModel,
-) -> None:
-    """Task 3.3: seller without MARKETPLACE_PUBLISH cannot toggle the flag."""
-    response = await async_client_as_seller.patch(
-        f"/api/v1/products/{own_tenant_product.id}",
-        json={"published_to_marketplace": True},
-    )
-
-    assert response.status_code == 403
+    assert response.json()["published_to_marketplace"] is False

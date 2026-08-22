@@ -30,10 +30,6 @@ class UpdateProductRequest(BaseModel):
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
-    # Gated behind Permission.MARKETPLACE_PUBLISH at the router boundary —
-    # the DTO accepts the field unconditionally; the permission check
-    # depends on the auth context, not the request shape.
-    published_to_marketplace: bool | None = None
     # ponytail: tenant cascade — ProSell transfers a product to another
     # organization by sending a new organization_id. The router enforces
     # ORG_ADMIN_VIEW_ALL; the use case clears broker shares on change

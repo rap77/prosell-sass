@@ -1073,16 +1073,6 @@ async def update_product(
     if request.image_urls is not None:
         validate_image_urls_for_tenant(request.image_urls, product.tenant_id)
 
-    # Gate `published_to_marketplace` behind MARKETPLACE_PUBLISH. Checked at
-    # the router boundary (depends on the auth context, not the entity).
-    if request.published_to_marketplace is not None and not current_user.has_permission(
-        Permission.MARKETPLACE_PUBLISH
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User lacks permission to publish products to the marketplace",
-        )
-
     # Tenant cascade: only ProSell can transfer a product to another
     # organization. Reject 403 at the router boundary before the use case
     # even sees the request. The use case still re-checks as defense in
