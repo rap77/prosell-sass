@@ -29,6 +29,7 @@ async def _create_product(
     *,
     status: str,
     archived_from_status: str | None = None,
+    published_to_marketplace: bool = False,
 ) -> ProductModel:
     product = ProductModel(
         id=uuid4(),
@@ -39,6 +40,7 @@ async def _create_product(
         price_cents=1_000_000,
         status=status,
         archived_from_status=archived_from_status,
+        published_to_marketplace=published_to_marketplace,
     )
     db_session.add(product)
     await db_session.flush()
@@ -201,6 +203,30 @@ class TestReverseEndpoint:
         )
 
         assert response.status_code == 412
+
+    @pytest.mark.asyncio
+    async def test_reverse_published_product_clears_marketplace_flag(
+        self,
+        async_client_as_admin: AsyncClient,
+        db_session: AsyncSession,
+        test_organization: OrganizationModel,
+        test_category: CategoryModel,
+    ) -> None:
+        product = await _create_product(
+            db_session,
+            test_organization,
+            test_category,
+            status="published",
+            published_to_marketplace=True,
+        )
+
+        response = await async_client_as_admin.post(
+            f"/api/v1/products/{product.id}/reverse",
+            headers={"If-Match": "1"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["published_to_marketplace"] is False
 
 
 class TestResubmitEndpoint:
