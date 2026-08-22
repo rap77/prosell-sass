@@ -22,6 +22,7 @@ def _create_product(
     published_at: datetime | None = None,
     rejection_reason: str | None = None,
     archived_from_status: str | None = None,
+    published_to_marketplace: bool = False,
 ) -> Product:
     """Helper to create a product with given status."""
     return Product(
@@ -37,6 +38,7 @@ def _create_product(
         published_at=published_at,
         rejection_reason=rejection_reason,
         archived_from_status=archived_from_status,
+        published_to_marketplace=published_to_marketplace,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
@@ -68,6 +70,17 @@ class TestReversePublication:
             product.reverse_publication()
 
         assert product.status == ProductStatus.PENDING
+
+    def test_reverse_publication_clears_marketplace_flag(self):
+        product = _create_product(
+            ProductStatus.PUBLISHED,
+            published_at=datetime.now(UTC),
+            published_to_marketplace=True,
+        )
+
+        product.reverse_publication()
+
+        assert product.published_to_marketplace is False
 
 
 class TestResubmit:

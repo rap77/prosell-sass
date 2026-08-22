@@ -355,6 +355,8 @@ class Product(DomainModel):
         """
         Reverse a published product back to PENDING (undo approval).
 
+        Symmetric counterpart to approve(): resets published_to_marketplace
+        so a later re-approval is a fresh decision, not a stale leftover.
         Who performed the reversal is recorded via repo.update()'s audit log,
         not on the entity — there is no "reversed_by" field.
 
@@ -368,6 +370,7 @@ class Product(DomainModel):
 
         self.status = ProductStatus.PENDING
         self.published_at = None
+        self.published_to_marketplace = False
         self.updated_at = datetime.now(UTC)
 
     def resubmit(self, user_id: UUID) -> None:
