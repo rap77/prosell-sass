@@ -33,7 +33,7 @@
 - Consumes: nothing new — `Product.approve(user_id: UUID) -> None` keeps its existing signature.
 - Produces: after `approve()`, `product.published_to_marketplace is True`. Task 3 (batch/single integration tests) and Task 5 (frontend) rely on this.
 
-- [ ] **Step 1: Extend the failing test**
+- [x] **Step 1: Extend the failing test**
 
 In `apps/api/tests/unit/test_entities/test_product.py`, extend `test_approve_product` (do not duplicate a new test — same action, same setup):
 
@@ -64,12 +64,12 @@ In `apps/api/tests/unit/test_entities/test_product.py`, extend `test_approve_pro
         assert product.published_to_marketplace is True
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_entities/test_product.py::TestProduct::test_approve_product -v`
 Expected: FAIL — `assert False is True` (the field still defaults to `False`).
 
-- [ ] **Step 3: Implement — set the flag in `approve()`**
+- [x] **Step 3: Implement — set the flag in `approve()`**
 
 In `apps/api/src/prosell/domain/entities/product.py`, replace:
 
@@ -127,12 +127,12 @@ with:
         self.updated_at = datetime.now(UTC)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_entities/test_product.py::TestProduct::test_approve_product -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/prosell/domain/entities/product.py apps/api/tests/unit/test_entities/test_product.py
@@ -153,7 +153,7 @@ git commit -m "feat(products): approve() auto-enables marketplace publish"
 - Consumes: `Product.reverse_publication() -> None` (no signature change).
 - Produces: after `reverse_publication()`, `product.published_to_marketplace is False`. Task 3's reverse-transitions API test relies on this.
 
-- [ ] **Step 1: Extend the test helper and write the failing test**
+- [x] **Step 1: Extend the test helper and write the failing test**
 
 In `apps/api/tests/unit/domain/test_product_reverse_transitions.py`, extend `_create_product` with an optional param:
 
@@ -200,12 +200,12 @@ Add a new test inside `class TestReversePublication`:
         assert product.published_to_marketplace is False
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/domain/test_product_reverse_transitions.py::TestReversePublication::test_reverse_publication_clears_marketplace_flag -v`
 Expected: FAIL — `assert True is False`
 
-- [ ] **Step 3: Implement — reset the flag in `reverse_publication()`**
+- [x] **Step 3: Implement — reset the flag in `reverse_publication()`**
 
 In `apps/api/src/prosell/domain/entities/product.py`, replace:
 
@@ -256,12 +256,12 @@ with:
         self.updated_at = datetime.now(UTC)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/api && uv run pytest tests/unit/domain/test_product_reverse_transitions.py -v`
 Expected: PASS (all tests in the file, including the new one)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/prosell/domain/entities/product.py apps/api/tests/unit/domain/test_product_reverse_transitions.py
@@ -282,7 +282,7 @@ git commit -m "feat(products): reverse_publication() clears marketplace publish 
 - Consumes: `Product.approve()`/`reverse_publication()` from Tasks 1-2 (already wired into `ApproveProductUseCase`, `BatchApproveProductsUseCase`, and `reverse_product` router endpoint — no use-case or router code changes needed here).
 - Produces: nothing new consumed downstream — this task is pure verification.
 
-- [ ] **Step 1: Write the failing integration tests (new file)**
+- [x] **Step 1: Write the failing integration tests (new file)**
 
 Create `apps/api/tests/integration/api/test_product_approve_marketplace_fusion.py`:
 
@@ -365,17 +365,17 @@ async def test_batch_approve_enables_marketplace_publish(
     assert approved.published_to_marketplace is True
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_product_approve_marketplace_fusion.py -v`
 Expected: FAIL on both — `published_to_marketplace` still `False` if Task 1 wasn't applied. If Task 1 IS already applied (this task runs after it), this step instead confirms they already PASS — in that case skip straight to Step 3's verification, no separate red state exists for this specific test file since the domain change already landed. Run it anyway to confirm current status before moving on.
 
-- [ ] **Step 3: Run tests to verify they pass**
+- [x] **Step 3: Run tests to verify they pass**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_product_approve_marketplace_fusion.py -v`
 Expected: PASS (Task 1 already made this true; this step is the verification that the whole stack — router, use case, repository round-trip — agrees)
 
-- [ ] **Step 4: Extend the reverse-transitions API test file**
+- [x] **Step 4: Extend the reverse-transitions API test file**
 
 In `apps/api/tests/integration/api/test_product_reverse_transitions_api.py`, extend the local `_create_product` helper with the same optional param used in Task 2, and add a test to `class TestReverseEndpoint`:
 
@@ -431,12 +431,12 @@ async def _create_product(
         assert response.json()["published_to_marketplace"] is False
 ```
 
-- [ ] **Step 5: Run the full reverse-transitions test file**
+- [x] **Step 5: Run the full reverse-transitions test file**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_product_reverse_transitions_api.py -v`
 Expected: PASS (all tests, including the new one)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/api/tests/integration/api/test_product_approve_marketplace_fusion.py apps/api/tests/integration/api/test_product_reverse_transitions_api.py
@@ -459,7 +459,7 @@ git commit -m "test(products): verify approve/batch-approve/reverse marketplace 
 - Consumes: nothing from earlier tasks.
 - Produces: `UpdateProductRequest` no longer has a `published_to_marketplace` field. Nothing later in this plan depends on it still existing.
 
-- [ ] **Step 1: Rewrite the failing test file**
+- [x] **Step 1: Rewrite the failing test file**
 
 Replace the full contents of `apps/api/tests/integration/api/test_product_marketplace_publish_gate.py`:
 
@@ -522,12 +522,12 @@ async def test_patch_published_to_marketplace_is_ignored(
     assert response.json()["published_to_marketplace"] is False
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_product_marketplace_publish_gate.py -v`
 Expected: FAIL — the current code still applies the field, so `published_to_marketplace` comes back `True`.
 
-- [ ] **Step 3: Remove the field from the DTO**
+- [x] **Step 3: Remove the field from the DTO**
 
 In `apps/api/src/prosell/application/dto/product/update.py`, delete these lines entirely:
 
@@ -540,7 +540,7 @@ In `apps/api/src/prosell/application/dto/product/update.py`, delete these lines 
 
 (Leave `organization_id` and `fb_account_ids`, which follow immediately after, untouched.)
 
-- [ ] **Step 4: Remove the field application in the use case**
+- [x] **Step 4: Remove the field application in the use case**
 
 In `apps/api/src/prosell/application/use_cases/product/update_product.py`, delete:
 
@@ -549,7 +549,7 @@ In `apps/api/src/prosell/application/use_cases/product/update_product.py`, delet
             product.published_to_marketplace = request.published_to_marketplace
 ```
 
-- [ ] **Step 5: Remove the permission gate in the router**
+- [x] **Step 5: Remove the permission gate in the router**
 
 In `apps/api/src/prosell/infrastructure/api/routers/product_router.py`, delete:
 
@@ -568,22 +568,22 @@ In `apps/api/src/prosell/infrastructure/api/routers/product_router.py`, delete:
 
 (Keep the blank line separating the previous `image_urls` tenant check from the next `organization_id` cascade check.)
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_product_marketplace_publish_gate.py -v`
 Expected: PASS
 
-- [ ] **Step 7: Run the full product test suite to catch any other regression**
+- [x] **Step 7: Run the full product test suite to catch any other regression**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_entities/test_product.py tests/unit/application/dto/product/test_update_dto.py tests/integration/use_cases/test_update_product_use_case.py tests/integration/api/ -v`
 Expected: PASS. If `test_update_dto.py` or `test_update_product_use_case.py` reference `published_to_marketplace` anywhere (they didn't at plan-writing time — verify with `grep -n "published_to_marketplace"` on both files first), fix inline: those references would be testing a field that no longer exists.
 
-- [ ] **Step 8: Typecheck**
+- [x] **Step 8: Typecheck**
 
 Run: `cd apps/api && uv run pyright`
 Expected: no new errors (the field removal shouldn't be referenced anywhere else — Task 3's new test files never reference it either).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/api/src/prosell/application/dto/product/update.py apps/api/src/prosell/application/use_cases/product/update_product.py apps/api/src/prosell/infrastructure/api/routers/product_router.py apps/api/tests/integration/api/test_product_marketplace_publish_gate.py
@@ -605,12 +605,12 @@ approve()/reverse_publication() are now the only way this flag changes."
 - Consumes: nothing from earlier tasks (pure data migration).
 - Produces: nothing consumed later in this plan.
 
-- [ ] **Step 1: Confirm the current migration head**
+- [x] **Step 1: Confirm the current migration head**
 
 Run: `cd apps/api && uv run alembic heads`
 Expected output: `20260818_0002 (head)` — if a different revision id shows up, use that exact string as `down_revision` in Step 2 instead of `20260818_0002`.
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `apps/api/alembic/versions/20260821_0001-backfill_published_to_marketplace.py`:
 
@@ -659,7 +659,7 @@ def downgrade() -> None:
     pass
 ```
 
-- [ ] **Step 2: Apply it locally against the dev DB and verify**
+- [x] **Step 2: Apply it locally against the dev DB and verify**
 
 Run: `cd apps/api && uv run alembic upgrade head`
 Expected: migration `20260821_0001` runs with no errors.
@@ -673,7 +673,7 @@ docker exec prosell-staging-db psql -U postgres -d prosell_staging -c \
 
 Expected: no row with `status='published'` and `published_to_marketplace=f` remains. (Staging needs this same migration applied there too — that's a deploy step, not part of this task; note it for the deploy checklist.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/api/alembic/versions/20260821_0001-backfill_published_to_marketplace.py
@@ -693,7 +693,7 @@ git commit -m "fix(products): backfill published_to_marketplace for pre-fusion a
 - Consumes: `existingProduct.published_to_marketplace` (already on the `Product` type, `apps/web/src/types/product.ts:66`) — read-only now, no local override state.
 - Produces: nothing new consumed elsewhere. `ProductCard`/`CatalogDetailView` already read `product.published_to_marketplace` directly from the API response — untouched by this task.
 
-- [ ] **Step 1: Remove `fbOverride` state and its resets**
+- [x] **Step 1: Remove `fbOverride` state and its resets**
 
 In `apps/web/src/components/forms/UnifiedProductForm.tsx`, delete line 199:
 
@@ -729,7 +729,7 @@ useEffect(() => {
 }, [mode, productId]);
 ```
 
-- [ ] **Step 2: Replace the derived `publishToFB`/`fbDirty` with a plain read**
+- [x] **Step 2: Replace the derived `publishToFB`/`fbDirty` with a plain read**
 
 Replace (~line 280-288):
 
@@ -759,7 +759,7 @@ const selectedFbAccounts =
 const fbAccountsDirty = fbAccountsOverride !== null;
 ```
 
-- [ ] **Step 3: Stop sending the field in the PATCH payload**
+- [x] **Step 3: Stop sending the field in the PATCH payload**
 
 Delete (~line 511):
 
@@ -768,7 +768,7 @@ Delete (~line 511):
       ...(fbDirty ? { published_to_marketplace: publishToFB } : {}),
 ```
 
-- [ ] **Step 4: Replace the checkbox with a read-only indicator**
+- [x] **Step 4: Replace the checkbox with a read-only indicator**
 
 Replace (~line 748-773):
 
@@ -832,12 +832,12 @@ with:
         {isPublishedToFB && fbAccounts.length > 0 && (
 ```
 
-- [ ] **Step 5: Lint and typecheck**
+- [x] **Step 5: Lint and typecheck**
 
 Run: `cd apps/web && pnpm lint && pnpm typecheck`
 Expected: no errors — `fbOverride`, `setFbOverride`, `publishToFB`, `fbDirty` must have zero remaining references (verify with `grep -rn "fbOverride\|publishToFB\|fbDirty" apps/web/src` from repo root — expect no output).
 
-- [ ] **Step 6: Manual verification in the browser**
+- [x] **Step 6: Manual verification in the browser**
 
 This component has no existing render-level test (the co-located `UnifiedProductForm.test.tsx` only tests two pure exported helpers — no mocking scaffold exists for the full form's hooks). Per project convention, verify manually:
 
@@ -847,7 +847,7 @@ This component has no existing render-level test (the co-located `UnifiedProduct
 4. Open a `PENDING` or `DRAFT` product's edit form — confirm it shows "No publicado..." with no checkbox.
 5. Confirm the FB-account multi-select still renders under the indicator when the product is already published to FB.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/components/forms/UnifiedProductForm.tsx

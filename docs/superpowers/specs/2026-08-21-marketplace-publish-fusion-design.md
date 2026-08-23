@@ -1,6 +1,6 @@
 # Marketplace Publish Fusion — Design
 
-**Status**: APPROVED (pending implementation)
+**Status**: IMPLEMENTED (merged to main 2026-08-22, latest commit 7315fdf2, no PR — direct commits)
 **Date**: 2026-08-21
 **Owner**: backend + frontend (ProSell SaaS)
 **Prerequisite**: reverse-transitions feature (`2026-08-19-product-state-management-reverse-transitions.md`, merged this session) — this spec relies on `_enqueue_unpublish_requests()` and `reverse_publication()` already existing.

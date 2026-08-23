@@ -1,6 +1,6 @@
 # Product State Management — Reverse Transitions Spec
 
-**Status**: APPROVED (pending implementation)
+**Status**: IMPLEMENTED (merged to main 2026-08-21, latest commit 957059c5, no PR — direct commits)
 **Date**: 2026-08-19
 **Owner**: backend (ProSell SaaS)
 **Prerequisite**: audit log (commit `ff3ebb61`)
