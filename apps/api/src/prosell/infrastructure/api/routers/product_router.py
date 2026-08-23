@@ -6,7 +6,6 @@ import logging
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal
-from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -116,6 +115,7 @@ from prosell.infrastructure.api.dependencies import (
     get_spaces_service,
 )
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.images.storage_keys import extract_storage_key_from_value
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
 from prosell.infrastructure.models.fb_account_model import (
     FBPublicationHistoryModel,
@@ -146,38 +146,6 @@ logger = logging.getLogger(__name__)
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
-
-
-def _extract_storage_key_from_value(value: str) -> str | None:
-    """Extract the storage key from a value that may be a URL, a signed URL,
-    or a bare key. Returns None if the value is malformed (no usable key).
-
-    Two accepted shapes:
-      1. **URL** (legacy / external form): `scheme://host/<bucket>/<key>`.
-         The bucket is the first path segment; everything after `<bucket>/`
-         is the storage key.
-      2. **Bare key** (canonical, post-migration form):
-         `orgs/<tenant-uuid>/<rest>`. The whole value is the key.
-
-    For URLs we also drop any `?X-Amz-...` query string (signed URLs) so the
-    extraction works for the legacy buggy data too.
-    """
-    if not value or not isinstance(value, str):
-        return None
-    # Drop query string (signed URLs embed their signature there).
-    without_query = value.split("?", 1)[0]
-    # Heuristic: bare keys start with `orgs/` and contain no scheme. URLs
-    # always have a scheme separator (`://`).
-    if "://" in without_query:
-        parsed = urlparse(without_query)
-        path = parsed.path.lstrip("/")
-        if not path:
-            return None
-        # Strip the first path segment (the bucket) — what remains is the key.
-        _, _, key = path.partition("/")
-        return key or None
-    # Bare key form: the whole (querystripped) value is the key.
-    return without_query or None
 
 
 _KNOWN_KEY_PREFIXES = ("orgs/", "vehicles/")
@@ -230,7 +198,7 @@ def validate_image_urls_for_tenant(
     fail-closed is the third). Ensures cross-tenant image URLs never
     reach the DB in the first place.
 
-    Accepts both shapes (see `_extract_storage_key_from_value`):
+    Accepts both shapes (see `extract_storage_key_from_value`):
       - URL: `scheme://host/<bucket>/<key>` where `<key>` starts with
         `orgs/{tenant_id}/`. The bucket name is intentionally not
         compared — the substring `orgs/{tenant_id}/` is the security
@@ -248,7 +216,7 @@ def validate_image_urls_for_tenant(
         f"vehicles/{tenant_id}/",
     )
     for url in image_urls:
-        key = _extract_storage_key_from_value(url)
+        key = extract_storage_key_from_value(url)
         if not key:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -1013,7 +981,7 @@ async def get_product_image_urls(
         # `scheme://host/<bucket>/<key>`) and bare-key form (post-migration,
         # `orgs/<tenant>/<rest>`). Anything that doesn't reduce to a usable
         # key is dropped — fail-closed, never echo an unsigned URL.
-        key = _extract_storage_key_from_value(url) if isinstance(url, str) else None
+        key = extract_storage_key_from_value(url) if isinstance(url, str) else None
         if not key:
             continue
         # Defense in depth: only sign keys under a tenant the caller is allowed

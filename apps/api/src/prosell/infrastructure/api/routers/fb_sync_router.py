@@ -26,6 +26,7 @@ from prosell.infrastructure.api.dependencies import (
     verify_bot_token,
 )
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.images.storage_keys import extract_storage_key_from_value
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.fb_account_model import (
     FBAccountGroupModel,
@@ -548,12 +549,23 @@ async def get_pending_products(
     # Build response with signed URLs
     pending = []
     for p, org_code, org_color in rows:
-        # Sign image URLs
+        # Sign image URLs. `image_urls` entries may be a bare storage key
+        # (`orgs/<uuid>/...`) or a legacy full URL (`http://host/<bucket>/<key>`,
+        # possibly already signed) — normalize to the bare key first. Feeding
+        # a full URL straight into generate_download_url treats it as the S3
+        # object key and produces a doubled, invalid presigned URL.
         signed_urls = []
-        for url in p.image_urls or []:
-            # ponytail: assume URLs are storage keys, sign them
+        for raw_url in p.image_urls or []:
+            key = extract_storage_key_from_value(raw_url)
+            if not key:
+                logger.warning(
+                    "Skipping image URL for product %s: no usable storage key in %r",
+                    p.id,
+                    raw_url,
+                )
+                continue
             try:
-                signed = await spaces.generate_download_url(url, expires_in=SIGNED_URL_TTL)
+                signed = await spaces.generate_download_url(key, expires_in=SIGNED_URL_TTL)
                 signed_urls.append(signed)
             except (ValueError, OSError, KeyError) as exc:
                 # Storage client can fail in many ways (missing key, network,
