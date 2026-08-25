@@ -166,3 +166,13 @@ council-*.html
 council-*.md
 .planning/
 .atl/
+
+# AI-DLC per-user cursors and machine-local runtime (per CLAUDE.md § Git Integration)
+aidlc/active-space
+aidlc/spaces/*/intents/active-intent
+aidlc/.aidlc-clone-id
+aidlc/.aidlc-sessions/
+aidlc/spaces/*/intents/.aidlc-*
+aidlc/spaces/*/intents/*/runtime-graph.json
+aidlc/spaces/*/intents/*/.aidlc-*
+.claude/settings.local.json
