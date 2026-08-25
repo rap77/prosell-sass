@@ -58,7 +58,7 @@ export default function ImportClientCSVPage() {
   // When the multi-vertical importer is built, this lookup will move to
   // the `/api/v1/organizations/{id}/verticals` endpoint and the dropdown
   // will offer the full vertical → category tree.
-  const CARS_AND_TRUCKS_CATEGORY_ID = "dae89acf-7c69-4daa-bd64-75352053d014";
+  const CARS_AND_TRUCKS_CATEGORY_ID = "b26f93ac-2d21-4849-9a1f-2a7df6b32de2";
   const VEHICLES_VERTICAL_DISPLAY_NAME = "Vehículos y Transporte";
   const categories = [
     {
