@@ -455,6 +455,39 @@ describe("ReviewQueueTable", () => {
     });
   });
 
+  // FR1.1 regression: BUG-1's root cause was reading `product.image_urls`
+  // directly instead of the shared `getCoverImageKey` resolver, which also
+  // merges the legacy `attributes.image_urls` location (see
+  // lib/api/productImages.ts). A product whose images only live in the
+  // legacy location must still show its thumbnail.
+  it("renders the thumbnail for a product with images only in the legacy attributes.image_urls location", () => {
+    const legacyProduct = makeProduct({
+      id: "product-legacy",
+      title: "Legacy Location Product",
+      image_urls: [],
+      attributes: {
+        category: "vehicle",
+        vin: "1HGBH41JXMN109187",
+        make: "Legacy",
+        model: "Legacy",
+        year: 2018,
+        mileage: 1000,
+        image_urls: ["legacy/cover.jpg"],
+      } as unknown as Product["attributes"],
+    });
+
+    const { container } = render(
+      <ReviewQueueTable
+        products={[legacyProduct]}
+        selectedIds={new Set()}
+        onSelectionChange={mockOnSelectionChange}
+      />,
+    );
+
+    const images = container.querySelectorAll("img");
+    expect(images.length).toBe(1);
+  });
+
   it("applies hover styles to table rows", () => {
     const { container } = render(
       <ReviewQueueTable

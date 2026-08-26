@@ -9,7 +9,12 @@ GIT_DIR="$(git rev-parse --git-dir)"
 MAX_FILES_PER_BATCH="${GGA_BATCH_MAX_FILES:-8}"
 MAX_BYTES_PER_BATCH="${GGA_BATCH_MAX_BYTES:-50000}"
 # ponytail: hardcode claude — sed parsing was unreliable, codex times out
-PRIMARY_PROVIDER="${GGA_PRIMARY_PROVIDER:-claude}"
+# Read provider from .gga, fallback to env, then claude
+if [[ -f ".gga" ]]; then
+  _GGA_PROVIDER="$(sed -n 's/^PROVIDER="\([^"]*\)"/\1/p' .gga)"
+fi
+PRIMARY_PROVIDER="${GGA_PRIMARY_PROVIDER:-${_GGA_PROVIDER:-claude}}"
+echo "DEBUG: PRIMARY_PROVIDER=$PRIMARY_PROVIDER _GGA_PROVIDER=$_GGA_PROVIDER" >&2
 FALLBACK_PROVIDERS="${GGA_FALLBACK_PROVIDERS:-}"
 
 FILE_PATTERNS=""

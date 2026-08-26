@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectControlled } from "@/components/ui/select-controlled";
 import type { DecodedVehicle } from "@/lib/api/vehicles";
+import { tLabel } from "@/lib/translations/vehicle-values";
+import { toTitleCase } from "@/lib/utils/toTitleCase";
 import type { AttributeSchemaEntry } from "@/types/category";
 
 import { mapDecodedToForm, VinDecodeField } from "./VinDecodeField";
@@ -42,7 +44,15 @@ export function SchemaFieldRenderer({
   schema,
   disabled,
 }: SchemaFieldRendererProps) {
-  const label = entry.label ?? humanize(fieldKey);
+  // FR7.1: prefer a schema-provided label, then the Spanish field-name
+  // dictionary (vehicle-values.ts — existed but was never wired into any
+  // form renderer, which was the actual root cause of English labels like
+  // "make"/"trim"/"mileage" mixed into an otherwise-Spanish form), and
+  // fall back to a humanized key for categories outside that dictionary.
+  const translatedLabel = tLabel(fieldKey);
+  const label =
+    entry.label ??
+    (translatedLabel !== fieldKey ? translatedLabel : humanize(fieldKey));
   const inputId = `field-${fieldKey}`;
 
   // VIN decode field
@@ -179,6 +189,8 @@ export function SchemaFieldRenderer({
   }
 
   // Default: string input
+  // FR6.1: Title Case free-text fields on every change — VIN-decoded values
+  // are normalized in mapDecodedToForm(); this covers manual typing too.
   return (
     <Controller
       name={fieldKey}
@@ -193,7 +205,7 @@ export function SchemaFieldRenderer({
             id={inputId}
             type="text"
             value={String(field.value ?? "")}
-            onChange={field.onChange}
+            onChange={(e) => field.onChange(toTitleCase(e.target.value))}
             disabled={disabled}
           />
           {fieldState.error && (

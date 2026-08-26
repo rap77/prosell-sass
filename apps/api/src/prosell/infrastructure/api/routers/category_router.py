@@ -38,7 +38,10 @@ from prosell.domain.exceptions.category_exceptions import (
     SchemaMigrationRequiresForceError,
 )
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
-from prosell.domain.services.csv_product_parser import ALL_KNOWN_COLUMNS, UNIVERSAL_COLUMNS
+from prosell.domain.services.csv_product_parser import (
+    ALL_KNOWN_COLUMNS,
+    UNIVERSAL_COLUMNS_ORDERED,
+)
 from prosell.infrastructure.api.dependencies import (
     get_async_session,
     get_current_auth_user_from_cookie,
@@ -378,7 +381,7 @@ async def get_category_schema_template(
         "location_zip",
     ]
     headers = (
-        list(UNIVERSAL_COLUMNS)
+        list(UNIVERSAL_COLUMNS_ORDERED)
         + extra_cols
         + [k for k in schema_keys if k not in ALL_KNOWN_COLUMNS]
     )

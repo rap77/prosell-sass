@@ -1505,6 +1505,32 @@ export async function downloadSchemaTemplate(
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Export this category's catalog to CSV (FEAT-1). Same trigger pattern as
+ * `downloadSchemaTemplate` — plain async function, caller invokes on click.
+ * `imageFolderPath` is informational only (browsers cannot write to an
+ * arbitrary local path from JS) — the CSV's `image_folder_path` column
+ * already carries each product's relative folder name; the caller uses this
+ * value to know where under their local filesystem to place those folders.
+ */
+export async function exportCatalogCsv(categoryId: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/products/export.csv?category_id=${categoryId}`,
+    {
+      credentials: "include",
+    },
+  );
+  if (!res.ok) return;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `catalog-export-${categoryId}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Product Ownership ─────────────────────────────────────────────────────────
 
 export interface OwnerShare {

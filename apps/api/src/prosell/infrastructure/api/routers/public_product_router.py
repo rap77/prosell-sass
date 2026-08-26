@@ -11,10 +11,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prosell.application.dto.product import (
     ProductImageUrlResponse,
     ProductImageUrlsResponse,
-    ProductResponse,
+    PublicProductResponse,
 )
 from prosell.application.ports.ido_spaces import IDOSpacesService
-from prosell.infrastructure.api.dependencies import get_spaces_service
+from prosell.domain.entities.organization import Organization
+from prosell.domain.repositories.organization_repository import (
+    AbstractOrganizationRepository,
+)
+from prosell.domain.value_objects.organization_contact import OrganizationContact
+from prosell.infrastructure.api.dependencies import (
+    get_organization_repository,
+    get_spaces_service,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.product_model import ProductModel
 
@@ -22,6 +30,33 @@ router = APIRouter()
 
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
+OrgRepository = Annotated[AbstractOrganizationRepository, Depends(get_organization_repository)]
+
+
+def _compose_address(org: Organization) -> str | None:
+    """Join an organization's address fields into one display string.
+
+    FR5.1/FR5.2: the public WhatsApp message needs a full address, not
+    individual fields — and this composition happens ONLY for the public
+    response, never touching the phone.
+    """
+    parts = [org.street_address, org.city, org.state, org.postal_code, org.country]
+    joined = ", ".join(p for p in parts if p)
+    return joined or None
+
+
+def _pick_contact(org: Organization) -> OrganizationContact | None:
+    """Pick the organization contact to expose publicly (FR5.1).
+
+    Prefers the first contact that has a whatsapp number set — that is
+    the one actually usable for the "message the seller" flow. Falls
+    back to the first contact overall so a name still shows even when
+    no contact has whatsapp configured.
+    """
+    if not org.contacts:
+        return None
+    return next((c for c in org.contacts if c.whatsapp), org.contacts[0])
+
 
 # Max expiration for signed URLs (7 days - S3 SigV4 protocol limit)
 # URLs renew automatically when page is re-scraped (share again in WhatsApp)
@@ -42,15 +77,21 @@ async def _increment_view_count(product_id: UUID, db: AsyncSession) -> None:
         pass  # ponytail: analytics failure should not break the page
 
 
-@router.get("/{slug}", response_model=ProductResponse)
+@router.get("/{slug}", response_model=PublicProductResponse)
 async def get_public_product(
     slug: str,
     db: DbSession,
-) -> ProductResponse:
+    org_repository: OrgRepository,
+) -> PublicProductResponse:
     """Get a product by slug. No authentication required.
 
     Returns any product with a slug (draft, published, etc.). The slug acts as
     a secret link — only people who have the link can access the product.
+
+    Includes the organization's public WhatsApp contact (FR5): a contact
+    name, its whatsapp number, and the organization's full address. The
+    organization's phone is intentionally never included — see
+    `PublicProductResponse`.
 
     Increments view_count for analytics.
     """
@@ -69,7 +110,13 @@ async def get_public_product(
     view_count_to_return = model.view_count + 1
     await _increment_view_count(model.id, db)
 
-    return ProductResponse(
+    org = await org_repository.get_by_id(model.organization_id, model.tenant_id)
+    contact = _pick_contact(org) if org else None
+
+    return PublicProductResponse(
+        contact_name=contact.name if contact else None,
+        contact_whatsapp=contact.whatsapp if contact else None,
+        contact_address=_compose_address(org) if org else None,
         id=model.id,
         tenant_id=model.tenant_id,
         organization_id=model.organization_id,

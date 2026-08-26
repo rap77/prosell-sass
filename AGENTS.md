@@ -171,7 +171,7 @@ file:line - rule_category - issue - fix
 
 ---
 
-## MasterMind Codex Compatibility
+## AI-DLC Codex Compatibility
 
 For Codex sessions, the canonical compatibility entry point is:
 
@@ -483,3 +483,39 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+---
+
+## AI-DLC Workflow Integration
+
+This project uses **AI-DLC v2** (AI-Driven Development Life Cycle) as its sole development methodology.
+
+### Commands (Claude Code)
+
+- `/aidlc <intent>` — Start a new workflow (feature, bugfix, mvp, etc.)
+- `/aidlc --status` — Check current workflow state
+- `/aidlc --jump --stage <slug>` — Jump to a specific stage
+
+### Commands (opencode)
+
+- `$aidlc <intent>` — Same as above
+
+### Key Directories
+
+- `aidlc/` — Workflow spaces, intents, and state
+- `Product-Definition/` — Discovery output (vision, tech environment, open questions)
+- `.aidlc-rule-details/` — Detailed workflow rules (loaded conditionally)
+
+### Cross-Project Context
+
+This project is part of the **ProSell Ecosystem**:
+
+- **prosell-sass**: SaaS platform (backend API + frontend web app)
+- **fb-autopost**: Desktop publishing client (consumes prosell-sass API)
+
+See `aidlc/spaces/default/knowledge/prosell-ecosystem.md` for full system context.
+
+### NOTE: MasterMind has been removed from this project.
+
+AIDLC is the sole development methodology. MasterMind exists as a separate
+project (~/proy/mastermind) but does NOT guide this repo.

@@ -120,7 +120,7 @@ _CAR_SCHEMA: dict = {
     },
     "clean_title": {
         "type": "boolean",
-        "label": "Clean Title",
+        "label": "Título limpio",
         "required": False,
         "filterable": True,
         "filter_type": "boolean",

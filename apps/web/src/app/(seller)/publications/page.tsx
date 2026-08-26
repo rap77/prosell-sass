@@ -12,6 +12,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import type { ElementType } from "react";
 import {
   Plus,
   Rocket,
@@ -29,7 +30,11 @@ import {
   type PublicationResponse,
 } from "@/lib/api/publisherApi";
 import { useProducts } from "@/lib/api/products";
-import { getProductImageKeys } from "@/lib/api/productImages";
+import {
+  getCoverImageKey,
+  getProductImageKeys,
+  resolveStorageImageUrl,
+} from "@/lib/api/productImages";
 import type { Product, ProductWithVehicle } from "@/types/product";
 
 // Local category check for the publications view (the only remaining
@@ -58,6 +63,8 @@ interface PublicationRow {
   updatedAt: string;
   platform: "Facebook Marketplace";
   status: PublicationListStatus;
+  /** Cover image storage key/URL, or undefined when the product has none. */
+  imageKey?: string;
 }
 
 interface PublishableVehicleData {
@@ -67,8 +74,7 @@ interface PublishableVehicleData {
   price_cents: number;
   zip_code: string;
   image_urls: string[];
-  // tenant_id is derived from current_user server-side. Optional, kept for legacy callers.
-  tenant_id?: string;
+  // tenant_id is derived from current_user server-side — never sent from client
   year?: number;
   make?: string;
   model?: string;
@@ -88,7 +94,7 @@ interface PublishableVehicleData {
 
 type ViewMode = "lista" | "grilla";
 
-const VIEW_TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
+const VIEW_TABS: { id: ViewMode; label: string; icon: ElementType }[] = [
   { id: "lista", label: "Lista", icon: TableIcon },
   { id: "grilla", label: "Grilla", icon: LayoutGrid },
 ];
@@ -155,7 +161,6 @@ function toPublishableVehicleData(
     price_cents: product.price_cents,
     zip_code: product.location_zip ?? "",
     image_urls: getProductImageUrls(product),
-    tenant_id: product.tenant_id,
     year: a.year,
     make: a.make,
     model: a.model,
@@ -171,7 +176,7 @@ function toPublishableVehicleData(
     vehicle_type: "car_truck",
   };
 }
-function buildPublicationRows(products: Product[]): PublicationRow[] {
+export function buildPublicationRows(products: Product[]): PublicationRow[] {
   return products.flatMap((product) => {
     const status = mapProductStatusToPublicationStatus(product);
     if (!status || !isVehicleCategory(product)) return [];
@@ -184,6 +189,7 @@ function buildPublicationRows(products: Product[]): PublicationRow[] {
         updatedAt: product.updated_at,
         platform: "Facebook Marketplace",
         status,
+        imageKey: getCoverImageKey(product),
       },
     ];
   });
@@ -200,7 +206,7 @@ function formatDate(v: string): string {
 function FbBadge() {
   return (
     <span className="inline-flex items-center gap-1.25 text-xs text-ps-text-secondary">
-      <span className="flex h-4 w-4 items-center justify-center rounded bg-[#1877F2]">
+      <span className="flex h-4 w-4 items-center justify-center rounded bg-ps-cyan">
         <Facebook size={10} strokeWidth={2.5} className="text-white" />
       </span>
       Facebook Marketplace
@@ -259,7 +265,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-ps-border-medium bg-ps-surface px-6 py-14 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[rgba(77,184,255,0.25)] bg-ps-info-bg">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-ps-cyan/25 bg-ps-info-bg">
         <Rocket size={28} className="text-ps-cyan" strokeWidth={1.8} />
       </div>
       <div className="max-w-sm">
@@ -280,7 +286,7 @@ function EmptyState({
             "inline-flex h-9.5 items-center gap-1.5 rounded-lg border-0 px-4.5 text-xs font-semibold",
             canPublish
               ? "cursor-pointer bg-ps-cyan text-ps-base"
-              : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base",
+              : "cursor-not-allowed bg-ps-cyan/35 text-ps-base",
           )}
         >
           <Plus size={14} strokeWidth={2.5} />
@@ -299,26 +305,15 @@ function EmptyState({
 
 // ─── Card (grilla view) ───────────────────────────────────────────────────────
 
-function PublicationCard({
+export function PublicationCard({
   pub,
   image,
 }: {
   pub: PublicationRow;
   image?: string;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
-    <article
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="flex flex-col overflow-hidden rounded-xl border border-ps-border-default bg-ps-surface transition-all duration-180"
-      style={{
-        borderColor: hovered
-          ? "var(--ps-border-medium)"
-          : "var(--ps-border-default)",
-        boxShadow: hovered ? "0 4px 20px rgba(6,13,36,0.35)" : "none",
-      }}
-    >
+    <article className="flex flex-col overflow-hidden rounded-xl border border-ps-border-default bg-ps-surface transition-all duration-180 hover:border-ps-border-medium hover:shadow-ps-card-hover">
       {/* Image */}
       <div
         className="relative bg-ps-bg-elevated"
@@ -428,7 +423,7 @@ export default function PublicationsPage() {
     return (
       <div className="flex min-h-60vh items-center justify-center">
         <div className="w-full max-w-md rounded-2xl border border-ps-border-default bg-ps-surface p-10 text-center">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(240,68,56,0.25)] bg-ps-error-bg">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-ps-error/25 bg-ps-error-bg">
             <AlertCircle
               size={26}
               className="text-ps-error"
@@ -492,14 +487,9 @@ export default function PublicationsPage() {
                       className={cn(
                         "inline-flex h-7 items-center gap-1.25 rounded px-2.5 text-xs transition-all duration-150",
                         active
-                          ? "bg-ps-surface font-semibold text-ps-cyan shadow-sm"
+                          ? "bg-ps-surface font-semibold text-ps-cyan shadow-sm shadow-ps-tab-hover"
                           : "font-normal text-ps-text-secondary",
                       )}
-                      style={{
-                        boxShadow: active
-                          ? "0 1px 4px rgba(6,13,36,0.3)"
-                          : "none",
-                      }}
                     >
                       <Icon size={13} strokeWidth={active ? 2.5 : 2} />
                       {label}
@@ -517,7 +507,7 @@ export default function PublicationsPage() {
                 "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border-0 px-3.5 text-xs font-semibold",
                 canCreatePublication
                   ? "cursor-pointer bg-ps-cyan text-ps-base"
-                  : "cursor-not-allowed bg-[rgba(77,184,255,0.35)] text-ps-base",
+                  : "cursor-not-allowed bg-ps-cyan/35 text-ps-base",
               )}
             >
               <Plus size={14} strokeWidth={2.5} />
@@ -528,7 +518,7 @@ export default function PublicationsPage() {
 
         {/* Facebook pages warning */}
         {facebookPages && facebookPages.length === 0 && (
-          <div className="flex gap-2.5 rounded-xl border border-[rgba(245,166,35,0.25)] bg-ps-warning-bg p-3">
+          <div className="flex gap-2.5 rounded-xl border border-ps-warning/25 bg-ps-warning-bg p-3">
             <AlertTriangle
               size={15}
               className="mt-0.25 flex-shrink-0 text-ps-warning"
@@ -554,6 +544,7 @@ export default function PublicationsPage() {
               <thead>
                 <tr className="border-b border-ps-border-subtle bg-ps-bg-elevated">
                   {[
+                    "",
                     "Vehículo",
                     "Plataforma",
                     "Estado",
@@ -573,15 +564,31 @@ export default function PublicationsPage() {
                 {publicationRows.map((pub) => (
                   <tr
                     key={pub.id}
-                    className="border-b border-ps-table-divider transition-colors duration-150"
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background =
-                        "var(--ps-table-row-hover)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
+                    className="border-b border-ps-table-divider transition-colors duration-150 hover:bg-ps-table-row-hover"
                   >
+                    {/* Thumbnail */}
+                    <td className="w-16 p-5 align-top">
+                      <div className="relative h-10 w-10 overflow-hidden rounded bg-ps-bg-elevated">
+                        {pub.imageKey ? (
+                          <Image
+                            src={resolveStorageImageUrl(pub.imageKey)}
+                            alt={pub.title}
+                            width={40}
+                            height={40}
+                            className="h-full w-full object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Rocket
+                              size={16}
+                              className="text-ps-text-tertiary"
+                              strokeWidth={1.5}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     {/* Vehicle */}
                     <td className="p-5 align-top">
                       <p className="mb-0.75 text-sm font-semibold text-ps-text-primary">
@@ -620,7 +627,15 @@ export default function PublicationsPage() {
             }}
           >
             {publicationRows.map((pub) => (
-              <PublicationCard key={pub.id} pub={pub} />
+              <PublicationCard
+                key={pub.id}
+                pub={pub}
+                image={
+                  pub.imageKey
+                    ? resolveStorageImageUrl(pub.imageKey)
+                    : undefined
+                }
+              />
             ))}
           </div>
         )}

@@ -9,6 +9,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  getCoverImageKey,
+  resolveStorageImageUrl,
+} from "@/lib/api/productImages";
 import { isVehicleProduct, type Product } from "@/types/product";
 
 interface ReviewQueueTableProps {
@@ -143,99 +147,98 @@ export function ReviewQueueTable({
           </tr>
         </thead>
         <tbody>
-          {products.map((product) => (
-            <tr
-              key={product.id}
-              className="border-b border-ps-border-default last:border-0 hover:bg-ps-elevated"
-            >
-              {selectable && (
+          {products.map((product) => {
+            const coverKey = getCoverImageKey(product);
+            return (
+              <tr
+                key={product.id}
+                className="border-b border-ps-border-default last:border-0 hover:bg-ps-elevated"
+              >
+                {selectable && (
+                  <td className="p-4">
+                    <Checkbox
+                      checked={selectedIds.has(product.id)}
+                      onCheckedChange={(checked) =>
+                        handleToggle(product.id, checked === true)
+                      }
+                      aria-label={`Seleccionar ${product.title}`}
+                    />
+                  </td>
+                )}
                 <td className="p-4">
-                  <Checkbox
-                    checked={selectedIds.has(product.id)}
-                    onCheckedChange={(checked) =>
-                      handleToggle(product.id, checked === true)
-                    }
-                    aria-label={`Seleccionar ${product.title}`}
-                  />
-                </td>
-              )}
-              <td className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-ps-elevated">
-                    {product.image_urls?.[0] ? (
-                      <Image
-                        src={
-                          product.image_urls[0].startsWith("http")
-                            ? product.image_urls[0]
-                            : `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9002/prosell-assets"}/${product.image_urls[0]}`
-                        }
-                        alt={product.title}
-                        width={48}
-                        height={48}
-                        className="rounded object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <svg
-                          className="h-6 w-6 text-ps-text-tertiary"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-ps-elevated">
+                      {coverKey ? (
+                        <Image
+                          src={resolveStorageImageUrl(coverKey)}
+                          alt={product.title}
+                          width={48}
+                          height={48}
+                          className="rounded object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <svg
+                            className="h-6 w-6 text-ps-text-tertiary"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-ps-text-primary">
+                        {getProductDisplayTitle(product)}
+                      </p>
+                      {product.org_code && (
+                        <span
+                          className={`mt-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white ${product.org_color ? "" : "bg-ps-tertiary"}`}
+                          style={
+                            product.org_color
+                              ? { backgroundColor: product.org_color }
+                              : undefined
+                          }
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                    )}
+                          {product.org_code}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-ps-text-primary">
-                      {getProductDisplayTitle(product)}
-                    </p>
-                    {product.org_code && (
-                      <span
-                        className={`mt-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white ${product.org_color ? "" : "bg-ps-tertiary"}`}
-                        style={
-                          product.org_color
-                            ? { backgroundColor: product.org_color }
-                            : undefined
-                        }
-                      >
-                        {product.org_code}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </td>
-              <td className="p-4 text-ps-text-primary">
-                ${(product.price_cents / 100).toLocaleString()}
-              </td>
-              <td className="p-4">
-                <StatusPill status={product.status} />
-              </td>
-              {showReasonColumn && (
-                <td className="p-4">
-                  {product.rejection_reason ? (
-                    <RejectionReasonCell reason={product.rejection_reason} />
-                  ) : (
-                    <span className="text-ps-text-tertiary">—</span>
-                  )}
                 </td>
-              )}
-              <td className="p-4 text-ps-text-secondary">
-                {product.submitted_for_approval_at
-                  ? new Date(
-                      product.submitted_for_approval_at,
-                    ).toLocaleDateString()
-                  : "—"}
-              </td>
-            </tr>
-          ))}
+                <td className="p-4 text-ps-text-primary">
+                  ${(product.price_cents / 100).toLocaleString()}
+                </td>
+                <td className="p-4">
+                  <StatusPill status={product.status} />
+                </td>
+                {showReasonColumn && (
+                  <td className="p-4">
+                    {product.rejection_reason ? (
+                      <RejectionReasonCell reason={product.rejection_reason} />
+                    ) : (
+                      <span className="text-ps-text-tertiary">—</span>
+                    )}
+                  </td>
+                )}
+                <td className="p-4 text-ps-text-secondary">
+                  {product.submitted_for_approval_at
+                    ? new Date(
+                        product.submitted_for_approval_at,
+                      ).toLocaleDateString()
+                    : "—"}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

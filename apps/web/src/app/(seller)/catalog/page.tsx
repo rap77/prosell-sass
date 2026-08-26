@@ -27,6 +27,7 @@ import {
   Package,
   AlertCircle,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import { DataGrid } from "@/components/datagrid/DataGrid";
 import { DataGridSkeleton } from "@/components/datagrid/DataGridSkeleton";
@@ -46,6 +47,7 @@ import {
   useInfiniteProducts,
   useDeleteProduct,
   transformProductToVehicle,
+  exportCatalogCsv,
 } from "@/lib/api/products";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
@@ -60,6 +62,7 @@ import type {
   CategoryPresentation,
   AttributeSchemaEntry,
 } from "@/types/category";
+import type { ElementType } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,7 +75,7 @@ const VIEW_MODE = {
 
 type ViewMode = (typeof VIEW_MODE)[keyof typeof VIEW_MODE];
 
-const TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
+const TABS: { id: ViewMode; label: string; icon: ElementType }[] = [
   { id: VIEW_MODE.GRID, label: "Grilla", icon: LayoutGrid },
   { id: VIEW_MODE.TABLE, label: "Tabla", icon: TableIcon },
   { id: VIEW_MODE.STATUS, label: "Por estado", icon: Layers },
@@ -207,7 +210,7 @@ export default function CatalogPage() {
     allCategories.find((c) => c.id === selectedCategoryId) ?? null;
   const filterFields = selectedCategory?.filter_fields ?? [];
 
-  const { values, setFilter } = useCatalogFilters(filterFields);
+  const { values } = useCatalogFilters(filterFields);
   const { data: facetValues = {} } = useFilterValues(selectedCategoryId);
 
   const search = searchParams.get("search") ?? "";
@@ -217,10 +220,18 @@ export default function CatalogPage() {
   // navigating to a product's detail page and back — a plain useState
   // reset to "grilla" on every remount.
   const viewModeParam = searchParams.get("view");
-  const viewMode: ViewMode = (Object.values(VIEW_MODE) as string[]).includes(
-    viewModeParam ?? "",
-  )
-    ? (viewModeParam as ViewMode)
+
+  function isViewMode(v: string | null): v is ViewMode {
+    return (
+      v === VIEW_MODE.GRID ||
+      v === VIEW_MODE.TABLE ||
+      v === VIEW_MODE.STATUS ||
+      v === VIEW_MODE.BULK
+    );
+  }
+
+  const viewMode: ViewMode = isViewMode(viewModeParam)
+    ? viewModeParam
     : "grilla";
 
   // ponytail: search param handler (separate from sidebar filters)
@@ -362,6 +373,26 @@ export default function CatalogPage() {
     handleViewModeChange("grilla");
   };
 
+  const handleExportCsv = async () => {
+    if (!selectedCategoryId) {
+      toast.error("Elegí una categoría para exportar su catálogo a CSV");
+      return;
+    }
+    // FR8.3 — the browser cannot write to an arbitrary local path; this is
+    // only shown back to the seller so they know where to place the image
+    // folders named by the CSV's `image_folder_path` column.
+    const destinationFolderPath = window.prompt(
+      "Carpeta destino para las imágenes (referencia — no se usa para escribir archivos):",
+    );
+    if (destinationFolderPath === null) return;
+    await exportCatalogCsv(selectedCategoryId);
+    toast.success(
+      destinationFolderPath
+        ? `CSV exportado. Guardá las carpetas de imágenes en: ${destinationFolderPath}`
+        : "CSV exportado",
+    );
+  };
+
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -451,6 +482,22 @@ export default function CatalogPage() {
                     )}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  disabled={!selectedCategoryId}
+                  className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-transparent text-ps-text-primary border border-ps-border-default rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Exportar catálogo a CSV"
+                  data-testid="export-catalog-csv-button"
+                  title={
+                    selectedCategoryId
+                      ? undefined
+                      : "Elegí una categoría para exportar"
+                  }
+                >
+                  <Download size={14} strokeWidth={2.5} />
+                  <span className="hidden md:inline">Exportar CSV</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => router.push("/catalog/create")}

@@ -22,6 +22,10 @@ interface ProductData {
   location_city: string | null;
   location_state: string | null;
   organization_id: string;
+  /** Organization WhatsApp contact (FR5) — never includes a phone. */
+  contact_name: string | null;
+  contact_whatsapp: string | null;
+  contact_address: string | null;
 }
 
 interface ImageUrlItem {
@@ -96,9 +100,12 @@ export async function generateMetadata({
     `${product.title} disponible en ProSell`;
 
   // Get brand/model/year from attributes if available
-  const brand = product.attributes?.brand as string | undefined;
-  const model = product.attributes?.model as string | undefined;
-  const year = product.attributes?.year as number | undefined;
+  const brandValue = product.attributes?.brand;
+  const modelValue = product.attributes?.model;
+  const yearValue = product.attributes?.year;
+  const brand = typeof brandValue === "string" ? brandValue : undefined;
+  const model = typeof modelValue === "string" ? modelValue : undefined;
+  const year = typeof yearValue === "number" ? yearValue : undefined;
 
   const fullTitle =
     brand && model ? `${brand} ${model} ${year || ""}`.trim() : product.title;

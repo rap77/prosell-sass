@@ -11,7 +11,7 @@
  *   - Sticky "Share on WhatsApp" button
  */
 
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import JSZip from "jszip";
 import {
@@ -39,6 +39,10 @@ interface ProductData {
   location_city: string | null;
   location_state: string | null;
   organization_id: string;
+  /** Organization WhatsApp contact (FR5) — never includes a phone. */
+  contact_name: string | null;
+  contact_whatsapp: string | null;
+  contact_address: string | null;
 }
 
 interface ProductPublicViewProps {
@@ -83,13 +87,9 @@ export function ProductPublicView({
   const [sharing, setSharing] = useState(false);
 
   // Build image list: cover first if available, then rest
-  const images = useMemo(
-    () =>
-      coverImageUrl
-        ? [coverImageUrl, ...imageUrls.filter((u) => u !== coverImageUrl)]
-        : imageUrls,
-    [coverImageUrl, imageUrls],
-  );
+  const images = coverImageUrl
+    ? [coverImageUrl, ...imageUrls.filter((u) => u !== coverImageUrl)]
+    : imageUrls;
 
   const hasPrevious = currentImageIndex > 0;
   const hasNext = currentImageIndex < images.length - 1;
@@ -112,14 +112,28 @@ export function ProductPublicView({
     .filter(Boolean)
     .join(", ");
 
+  // FR5.3: the message includes the organization contact's name + full
+  // address (never a phone — the DTO the backend sends never carries one).
+  // The whatsapp number itself routes the wa.me link to that contact
+  // directly instead of a generic "share to anyone" link.
+  const contactLines = [
+    product.contact_name ? `Contacto: ${product.contact_name}` : "",
+    product.contact_address || "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   // ponytail: plain text — emojis break on some WhatsApp clients
   const whatsappText = `${vehicleName}
 ${price}
 ${location ? location : ""}
+${contactLines ? `\n${contactLines}` : ""}
 
 ${shareUrl}`.trim();
 
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+  // wa.me requires digits only (no +, spaces, or dashes) in the phone segment.
+  const whatsappDigits = product.contact_whatsapp?.replace(/\D/g, "") ?? "";
+  const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(whatsappText)}`;
 
   // Filter attributes that have values
   const displayAttrs = VEHICLE_ATTRS.filter(
@@ -127,7 +141,7 @@ ${shareUrl}`.trim();
   );
 
   // Build structured text for clipboard
-  const buildClipboardText = useCallback(() => {
+  function buildClipboardText() {
     let text = `${vehicleName}\n${price}`;
     if (location) text += `\n${location}`;
     text += "\n";
@@ -144,9 +158,9 @@ ${shareUrl}`.trim();
     }
     text += `\n\n${shareUrl}`;
     return text;
-  }, [vehicleName, price, location, displayAttrs, product, shareUrl]);
+  }
 
-  const copyText = useCallback(async () => {
+  async function copyText() {
     try {
       await navigator.clipboard.writeText(buildClipboardText());
       setCopiedText(true);
@@ -162,10 +176,10 @@ ${shareUrl}`.trim();
       setCopiedText(true);
       setTimeout(() => setCopiedText(false), 2000);
     }
-  }, [buildClipboardText]);
+  }
 
   // Fetch all images as blobs
-  const fetchAllImages = useCallback(async (): Promise<File[]> => {
+  async function fetchAllImages(): Promise<File[]> {
     const files: File[] = [];
     for (let i = 0; i < images.length; i++) {
       const response = await fetch(images[i]);
@@ -176,10 +190,10 @@ ${shareUrl}`.trim();
       );
     }
     return files;
-  }, [images]);
+  }
 
   // Share all images + text (mobile) or download ZIP (desktop)
-  const shareOrDownloadAll = useCallback(async () => {
+  async function shareOrDownloadAll() {
     if (images.length === 0) return;
     setSharing(true);
     try {
@@ -206,15 +220,12 @@ ${shareUrl}`.trim();
       // ponytail: user cancelled share or download failed — silent fail
     }
     setSharing(false);
-  }, [images, fetchAllImages, buildClipboardText, vehicleName]);
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28">
       {/* Image Gallery */}
-      <div
-        className="relative mt-6 w-full overflow-hidden rounded-2xl bg-ps-bg-muted"
-        style={{ aspectRatio: "16/10" }}
-      >
+      <div className="relative mt-6 w-full overflow-hidden rounded-2xl bg-ps-bg-muted aspect-[16/10]">
         {images.length > 0 ? (
           <>
             <Image
@@ -280,12 +291,11 @@ ${shareUrl}`.trim();
               key={idx}
               onClick={() => setCurrentImageIndex(idx)}
               className={cn(
-                "shrink-0 overflow-hidden rounded border-2 bg-ps-bg-muted p-0 cursor-pointer",
+                "shrink-0 overflow-hidden rounded border-2 bg-ps-bg-muted p-0 cursor-pointer w-16 h-12",
                 idx === currentImageIndex
                   ? "border-ps-accent"
                   : "border-transparent",
               )}
-              style={{ width: 64, height: 48 }}
             >
               <Image
                 src={url}

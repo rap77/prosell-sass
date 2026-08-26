@@ -37,7 +37,7 @@ export async function DELETE(
 
 async function proxyRequest(request: NextRequest, path: string[]) {
   try {
-    const pathStr = path.join("/");
+    const pathStr = path.map(encodeURIComponent).join("/");
     const url = new URL(`${BACKEND_URL}/api/v1/categories/${pathStr}`);
 
     request.nextUrl.searchParams.forEach((value, key) => {
@@ -79,20 +79,33 @@ async function proxyRequest(request: NextRequest, path: string[]) {
       return nextResponse;
     }
 
-    const nextResponse = NextResponse.json(await response.json(), {
-      status: response.status,
-      statusText: response.statusText,
-    });
+    const contentType = response.headers.get("Content-Type") || "";
+
+    // Bug (same class as products/[...path]/route.ts's If-Match fix): this
+    // proxy used to force `response.json()` on every backend response, which
+    // throws on a non-JSON body (e.g. downloadSchemaTemplate's CSV) and masks
+    // it as a generic 502. Non-JSON responses are passed through as a raw
+    // blob instead, preserving Content-Disposition so file downloads work.
+    const nextResponse = contentType.includes("application/json")
+      ? NextResponse.json(await response.json(), {
+          status: response.status,
+          statusText: response.statusText,
+        })
+      : new NextResponse(await response.blob(), {
+          status: response.status,
+          statusText: response.statusText,
+        });
 
     setCookieHeaders.forEach((cookie) => {
       nextResponse.headers.append("Set-Cookie", cookie);
     });
 
-    if (response.headers.get("Content-Type")) {
-      nextResponse.headers.set(
-        "Content-Type",
-        response.headers.get("Content-Type")!,
-      );
+    if (contentType) {
+      nextResponse.headers.set("Content-Type", contentType);
+    }
+    const contentDisposition = response.headers.get("Content-Disposition");
+    if (contentDisposition) {
+      nextResponse.headers.set("Content-Disposition", contentDisposition);
     }
 
     return nextResponse;
