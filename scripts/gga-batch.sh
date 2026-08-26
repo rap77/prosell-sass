@@ -38,7 +38,7 @@ is_reviewable_file() {
 
   IFS=',' read -r -a exclude_patterns <<< "$EXCLUDE_PATTERNS"
   for pattern in "${exclude_patterns[@]}"; do
-    if [[ "$file_path" == $pattern ]]; then
+    if [[ "$file_path" == $pattern ]] || [[ "$file_path" == "${pattern//\*\*/}"* ]]; then
       return 1
     fi
   done
