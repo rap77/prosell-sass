@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Check,
   X,
@@ -74,7 +74,11 @@ function StatusBadge({ status }: { status: string }) {
     },
   } as const;
 
-  const style = config[status as keyof typeof config] || config.revoked;
+  function isStatusKey(key: string): key is keyof typeof config {
+    return key in config;
+  }
+
+  const style = isStatusKey(status) ? config[status] : config.revoked;
   const Icon = style.icon;
 
   return (
@@ -285,8 +289,8 @@ export function MarketplaceAccessManager() {
   const getOrgName = (id: string) =>
     organizations.find((o) => o.id === id)?.name || id.slice(0, 8);
 
-  // Filtered grants
-  const filteredGrants = useMemo(() => {
+  // Filtered grants — React Compiler handles memoization
+  const filteredGrants = (() => {
     let result = grants;
 
     // Status filter
@@ -307,7 +311,7 @@ export function MarketplaceAccessManager() {
     }
 
     return result;
-  }, [grants, activeTab, searchQuery, organizations]);
+  })();
 
   const handleApprove = (grantId: string) => {
     approveMutation.mutate(grantId);
