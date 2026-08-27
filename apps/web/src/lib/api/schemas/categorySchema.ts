@@ -55,6 +55,8 @@ export const AttributeFieldSchema = z.object({
   render_as: RenderAsSchema.optional(),
   /** For render_as="vin_decode": which decoded field to map to */
   vin_decode_key: z.string().optional(),
+  /** For render_as="select": the selectable values. Mirrors AttributeSchemaEntry.options. */
+  options: z.array(z.union([z.string(), z.number()])).optional(),
 });
 
 /**

@@ -85,6 +85,62 @@ function Harness({ fieldKey, entry }: HarnessProps) {
   );
 }
 
+// FR7.1: labels for known vehicle fields must render in Spanish via the
+// (previously unwired) vehicle-values.ts dictionary, not the raw
+// humanized English field key.
+describe("SchemaFieldRenderer field labels", () => {
+  it("shows the Spanish label for a known vehicle field with no explicit label", () => {
+    function Harness() {
+      const { control, setValue } = useForm<Record<string, unknown>>({
+        defaultValues: { mileage: "" },
+      });
+      return (
+        <SchemaFieldRenderer
+          fieldKey="mileage"
+          entry={{ type: "number", filter_type: "text" }}
+          control={control as unknown as Control<Record<string, unknown>>}
+          setValue={
+            setValue as unknown as UseFormSetValue<Record<string, unknown>>
+          }
+          schema={{}}
+          disabled={false}
+        />
+      );
+    }
+
+    render(<Harness />);
+    expect(screen.getByText("Kilometraje")).toBeInTheDocument();
+    expect(screen.queryByText("Mileage")).not.toBeInTheDocument();
+  });
+
+  it("still prefers an explicit schema label when one is set", () => {
+    function Harness() {
+      const { control, setValue } = useForm<Record<string, unknown>>({
+        defaultValues: { custom_field: "" },
+      });
+      return (
+        <SchemaFieldRenderer
+          fieldKey="custom_field"
+          entry={{
+            type: "string",
+            filter_type: "text",
+            label: "Campo Personalizado",
+          }}
+          control={control as unknown as Control<Record<string, unknown>>}
+          setValue={
+            setValue as unknown as UseFormSetValue<Record<string, unknown>>
+          }
+          schema={{}}
+          disabled={false}
+        />
+      );
+    }
+
+    render(<Harness />);
+    expect(screen.getByText("Campo Personalizado")).toBeInTheDocument();
+  });
+});
+
 describe("SchemaFieldRenderer select fields", () => {
   it("persists the selected option value into the form state", async () => {
     const user = userEvent.setup();

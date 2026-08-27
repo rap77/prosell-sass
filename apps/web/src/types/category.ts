@@ -75,7 +75,7 @@ export interface AttributeSchemaEntry {
   /** Maps to a field in VIN decode response (e.g. "make", "model", "year"). */
   vin_decode_key?: string;
   /** Special renderer type for form fields. */
-  render_as?: "vin_decode" | "textarea";
+  render_as?: "vin_decode" | "textarea" | "select";
   /** Allow extra fields from backend (pydantic extra="allow"). */
   [key: string]: unknown;
 }

@@ -69,6 +69,17 @@ function filterStrings(values: unknown): string[] {
   );
 }
 
+function hasImageUrls(
+  obj: unknown,
+): obj is Record<string, unknown> & { image_urls: unknown } {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    !Array.isArray(obj) &&
+    "image_urls" in obj
+  );
+}
+
 /**
  * Returns the list of image keys (or signed URLs) for a product, in
  * display order, deduped, with empty/non-string entries removed.
@@ -84,10 +95,9 @@ export function getProductImageKeys(
   const productLevel = filterStrings(product.image_urls);
 
   const attrs = product.attributes;
-  const attributeLevel =
-    attrs && typeof attrs === "object" && !Array.isArray(attrs)
-      ? filterStrings((attrs as Record<string, unknown>).image_urls)
-      : [];
+  const attributeLevel = hasImageUrls(attrs)
+    ? filterStrings(attrs.image_urls)
+    : [];
 
   // Deduped, order-preserving merge. Top-level wins (it's the
   // post-migration canonical location). The backend endpoint does
@@ -140,4 +150,17 @@ export function getCoverImageKey(
     return cover;
   }
   return images[0];
+}
+
+/**
+ * Resolve an image key/URL (as returned by `getCoverImageKey` /
+ * `getProductImageKeys`) into a displayable `src`. Entries that are
+ * already absolute URLs pass through; bare storage keys are prefixed
+ * with the object-storage base URL.
+ */
+export function resolveStorageImageUrl(key: string): string {
+  if (key.startsWith("http")) return key;
+  const base =
+    process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9002/prosell-assets";
+  return `${base}/${key}`;
 }

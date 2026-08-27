@@ -54,7 +54,7 @@ export async function DELETE(
 async function proxyRequest(request: NextRequest, path: string[]) {
   try {
     // Build backend URL
-    const pathStr = path.join("/");
+    const pathStr = path.map(encodeURIComponent).join("/");
     const url = new URL(`${BACKEND_URL}/api/v1/products/${pathStr}`);
 
     // Copy query parameters
@@ -103,10 +103,22 @@ async function proxyRequest(request: NextRequest, path: string[]) {
 
     // Get response cookies and set them in the Next.js response
     const setCookieHeaders = response.headers.getSetCookie();
-    const nextResponse = NextResponse.json(await response.json(), {
-      status: response.status,
-      statusText: response.statusText,
-    });
+    const contentType = response.headers.get("Content-Type") || "";
+
+    // Bug (same class as the If-Match fix above): this proxy used to force
+    // `response.json()` on every backend response, which throws on a
+    // non-JSON body (e.g. the export.csv StreamingResponse) and masks it as
+    // a generic 502. Non-JSON responses are passed through as a raw blob
+    // instead, preserving Content-Disposition so file downloads still work.
+    const nextResponse = contentType.includes("application/json")
+      ? NextResponse.json(await response.json(), {
+          status: response.status,
+          statusText: response.statusText,
+        })
+      : new NextResponse(await response.blob(), {
+          status: response.status,
+          statusText: response.statusText,
+        });
 
     // Forward Set-Cookie headers to browser
     setCookieHeaders.forEach((cookie) => {
@@ -114,16 +126,17 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     });
 
     // Forward other relevant headers
-    if (response.headers.get("Content-Type")) {
-      nextResponse.headers.set(
-        "Content-Type",
-        response.headers.get("Content-Type")!,
-      );
+    if (contentType) {
+      nextResponse.headers.set("Content-Type", contentType);
+    }
+    const contentDisposition = response.headers.get("Content-Disposition");
+    if (contentDisposition) {
+      nextResponse.headers.set("Content-Disposition", contentDisposition);
     }
 
     return nextResponse;
   } catch (error) {
-    console.error("Proxy error:", error);
+    // Error propagated via response status
     return NextResponse.json(
       { detail: "Proxy error: Failed to reach backend" },
       { status: 502 },

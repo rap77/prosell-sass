@@ -132,6 +132,23 @@ class ProductResponse(BaseModel):
         )
 
 
+class PublicProductResponse(ProductResponse):
+    """DTO for the public (unauthenticated) product page.
+
+    Adds the organization contact fields needed for the "message the
+    seller on WhatsApp" flow (FR5). Deliberately does NOT include a
+    phone field — the organization's phone must never reach this DTO,
+    by construction, regardless of what `OrganizationContact.phone`
+    holds. Built only by `public_product_router.get_public_product`;
+    the shared `ProductResponse` used by authenticated endpoints is
+    untouched.
+    """
+
+    contact_name: str | None = None
+    contact_whatsapp: str | None = None
+    contact_address: str | None = None
+
+
 class ProductListResponse(BaseModel):
     """DTO for paginated product list."""
 

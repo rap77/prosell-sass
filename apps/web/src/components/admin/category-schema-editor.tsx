@@ -13,7 +13,7 @@
  * used for tenant admins who can see but not modify the schema.
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -123,7 +123,74 @@ export function buildGroupsWithFieldOrder(
     });
 }
 
+/**
+ * Build the PATCH payload's attribute_schema map from the editor's local
+ * field rows. `options` is only persisted for render_as="select" fields —
+ * FR3.1/FR3.2: the unified contract carries options through the editor.
+ */
+export function toSchemaMap(
+  fields: ReadonlyArray<
+    Pick<
+      FieldRow,
+      | "key"
+      | "type"
+      | "required"
+      | "label"
+      | "description"
+      | "group"
+      | "render_as"
+      | "vin_decode_key"
+      | "options"
+    >
+  >,
+  validGroupKeys: ReadonlySet<string>,
+): Record<string, AttributeField> {
+  return Object.fromEntries(
+    fields
+      .filter((r) => r.key.trim())
+      .map(
+        ({
+          key,
+          type,
+          required,
+          label,
+          description,
+          group,
+          render_as,
+          vin_decode_key,
+          options,
+        }) => {
+          const trimmedKey = key.trim();
+          const normalizedGroup =
+            group && validGroupKeys.has(group) ? group : undefined;
+          return [
+            trimmedKey,
+            {
+              type,
+              required,
+              label,
+              description,
+              group: normalizedGroup,
+              render_as,
+              vin_decode_key,
+              options: render_as === "select" ? options : undefined,
+            },
+          ];
+        },
+      ),
+  );
+}
+
 const RENDER_AS_OPTIONS: readonly RenderAs[] = RenderAsSchema.options;
+
+function isRenderAs(v: string): v is RenderAs {
+  return RENDER_AS_OPTIONS.some((opt) => opt === v);
+}
+
+function getRenderAsValue(v: string): RenderAs | undefined {
+  if (v === "__auto__") return undefined;
+  return isRenderAs(v) ? v : undefined;
+}
 
 function SortableRow({
   row,
@@ -205,6 +272,13 @@ function SortableRow({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {/* FR3.4: a legacy/out-of-enum value (e.g. "select") must still
+                    show as selected instead of rendering the trigger empty. */}
+                {!isFieldType(row.type) && (
+                  <SelectItem key={row.type} value={row.type}>
+                    {row.type}
+                  </SelectItem>
+                )}
                 {FIELD_TYPE_ORDER.map((t) => (
                   <SelectItem key={t} value={t}>
                     {t}
@@ -241,6 +315,14 @@ function SortableRow({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">No group</SelectItem>
+                {/* FR3.4: a group reference that no longer matches a live
+                    group (deleted/renamed group) must still show as selected
+                    instead of rendering the trigger empty. */}
+                {row.group && !groups.some((g) => g.key === row.group) && (
+                  <SelectItem key={row.group} value={row.group}>
+                    {row.group} (missing)
+                  </SelectItem>
+                )}
                 {groups.map((g) => (
                   <SelectItem key={g.key} value={g.key}>
                     {g.label}
@@ -332,8 +414,7 @@ function SortableRow({
                     value={row.render_as ?? "__auto__"}
                     onValueChange={(v) =>
                       onUpdate(row._id, {
-                        render_as:
-                          v === "__auto__" ? undefined : (v as RenderAs),
+                        render_as: getRenderAsValue(v),
                       })
                     }
                   >
@@ -351,6 +432,35 @@ function SortableRow({
                   </Select>
                 )}
               </div>
+              {/* Options — only when render_as = select. FR3.2: the editor
+                  must be able to populate the values a select field offers,
+                  not just declare that it renders as one. */}
+              {row.render_as === "select" && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Options (comma-separated)
+                  </label>
+                  {isReadOnly ? (
+                    <p className="text-sm">
+                      {(row.options ?? []).join(", ") || "—"}
+                    </p>
+                  ) : (
+                    <Input
+                      placeholder="e.g. Sedan, Hatchback, SUV"
+                      value={(row.options ?? []).join(", ")}
+                      onChange={(e) =>
+                        onUpdate(row._id, {
+                          options: e.target.value
+                            .split(",")
+                            .map((o) => o.trim())
+                            .filter((o) => o.length > 0),
+                        })
+                      }
+                      className="h-8"
+                    />
+                  )}
+                </div>
+              )}
               {/* VIN Decode Key — only when render_as = vin_decode */}
               {row.render_as === "vin_decode" && (
                 <div className="space-y-1">
@@ -515,7 +625,7 @@ export function CategorySchemaEditor({
   const [isDirty, setIsDirty] = useState(false);
 
   // ponytail: detect duplicate keys for validation
-  const duplicateKeys = useMemo(() => {
+  const duplicateKeys = (() => {
     const seen = new Map<string, number>();
     for (const row of rows) {
       const k = row.key.trim().toLowerCase();
@@ -524,14 +634,13 @@ export function CategorySchemaEditor({
     return new Set(
       [...seen.entries()].filter(([, c]) => c > 1).map(([k]) => k),
     );
-  }, [rows]);
+  })();
 
-  const hasValidationErrors = useMemo(() => {
-    return duplicateKeys.size > 0 || rows.some((r) => !r.key.trim());
-  }, [duplicateKeys, rows]);
+  const hasValidationErrors =
+    duplicateKeys.size > 0 || rows.some((r) => !r.key.trim());
 
   // ponytail: group fields by their group key for visual sectioning
-  const fieldsByGroup = useMemo(() => {
+  const fieldsByGroup = (() => {
     const UNGROUPED = "__ungrouped__";
     const grouped: Record<string, FieldRow[]> = { [UNGROUPED]: [] };
     for (const g of groups) {
@@ -549,7 +658,7 @@ export function CategorySchemaEditor({
       (grouped[key] ??= grouped[UNGROUPED]).push(row);
     }
     return grouped;
-  }, [rows, groups, searchQuery]);
+  })();
 
   const toggleGroupCollapse = (key: string) => {
     setCollapsedGroups((prev) => {
@@ -562,43 +671,6 @@ export function CategorySchemaEditor({
 
   const patchSchema = usePatchCategorySchema();
   const sensors = useSensors(useSensor(PointerSensor));
-
-  const toSchemaMap = (
-    fields: FieldRow[],
-    validGroupKeys: ReadonlySet<string>,
-  ): Record<string, AttributeField> =>
-    Object.fromEntries(
-      fields
-        .filter((r) => r.key.trim())
-        .map(
-          ({
-            key,
-            type,
-            required,
-            label,
-            description,
-            group,
-            render_as,
-            vin_decode_key,
-          }) => {
-            const trimmedKey = key.trim();
-            const normalizedGroup =
-              group && validGroupKeys.has(group) ? group : undefined;
-            return [
-              trimmedKey,
-              {
-                type,
-                required,
-                label,
-                description,
-                group: normalizedGroup,
-                render_as,
-                vin_decode_key,
-              },
-            ];
-          },
-        ),
-    );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -615,12 +687,6 @@ export function CategorySchemaEditor({
 
       setIsDirty(true);
       setRows((prev) => {
-        // Find indices within the SAME group's section for proper ordering
-        const groupRows = prev.filter(
-          (r) => (r.group?.trim() || "__ungrouped__") === overGroup,
-        );
-        const overIndexInGroup = groupRows.findIndex((r) => r._id === over.id);
-
         // Remove active from its position
         const withoutActive = prev.filter((r) => r._id !== active.id);
 
@@ -655,14 +721,6 @@ export function CategorySchemaEditor({
       }
       return prev;
     });
-  };
-
-  const handleAdd = () => {
-    setIsDirty(true);
-    setRows((prev) => [
-      ...prev,
-      { _id: newId(), key: "", type: "string", required: false },
-    ]);
   };
 
   const handleUpdate = (id: string, patch: Partial<FieldRow>) => {

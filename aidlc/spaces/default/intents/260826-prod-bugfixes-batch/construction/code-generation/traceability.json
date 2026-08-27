@@ -1,0 +1,139 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR2.1",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR4",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR6.1",
+    "FR6.2",
+    "FR7.1",
+    "FR7.2",
+    "FR8.1",
+    "FR8.2",
+    "FR8.3",
+    "FR8.4",
+    "FR8.5",
+    "NFR1",
+    "NFR2",
+    "NFR3"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/components/review/ReviewQueueTable.tsx"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/publications/page.tsx"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/categorySchema.ts"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "apps/web/src/types/category.ts"
+    },
+    {
+      "id": "FR3.3",
+      "status": "GAP",
+      "target": "apps/web/src/components/forms/schema/SchemaFieldRenderer.tsx — NOT changed: reverting to render_as-based decision broke 2 existing tests (regression, see code-summary.md Decision 1); the actual root cause (editor had no options input) was fixed instead"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "apps/web/src/components/admin/category-schema-editor.tsx"
+    },
+    {
+      "id": "FR4",
+      "status": "OK",
+      "target": "apps/web/src/components/admin/category-schema-editor.tsx"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/public_product_router.py"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "apps/api/tests/unit/api/routers/test_public_product_router_contact.py"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "apps/web/src/components/public/ProductPublicView.tsx"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/utils/toTitleCase.ts"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/services/nhtsa_normalizer.py — reinterpreted with code evidence: controlled-vocabulary fields (options-backed) unchanged, free-text fields Title-Cased in apps/web/src/components/forms/schema/VinDecodeField.tsx and SchemaFieldRenderer.tsx — see code-summary.md Decision 4, flagged for human confirmation"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "apps/web/src/components/forms/schema/SchemaFieldRenderer.tsx"
+    },
+    {
+      "id": "FR7.2",
+      "status": "N/A",
+      "target": "explicitly out of scope per requirements.md — no full i18n migration performed"
+    },
+    {
+      "id": "FR8.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py — scoped to one category per export, see code-summary.md Decision 6, flagged for human confirmation"
+    },
+    {
+      "id": "FR8.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_product_parser.py"
+    },
+    {
+      "id": "FR8.3",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "FR8.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py — pattern includes MARCA per literal spec, differs from intent's own worked example, flagged for human confirmation"
+    },
+    {
+      "id": "FR8.5",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/api/tests/unit/services/test_csv_export.py, apps/api/tests/unit/api/routers/test_public_product_router_contact.py, apps/web/src/lib/utils/toTitleCase.test.ts, and per-component *.test.tsx files listed in code-summary.md"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "full suites run green (1278/1278 backend, 1238/1251 frontend — the 13 failing tests are pre-existing per git-stash verification, unrelated to this batch, documented in memory.md)"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/entities/category.py — verified unchanged, validate_attributes() already supports the fix"
+    }
+  ]
+}

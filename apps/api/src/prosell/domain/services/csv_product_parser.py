@@ -15,7 +15,14 @@ from uuid import UUID
 if TYPE_CHECKING:
     from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 
-UNIVERSAL_COLUMNS = {"title", "price", "category_id"}
+# FR8.2: an ordered tuple is the single source of truth for column ORDER
+# (the import template and the catalog CSV export both derive their column
+# order from this); `UNIVERSAL_COLUMNS` stays a set for membership/difference
+# checks (unchanged call sites) — CPython's per-process string hashing does
+# not guarantee `list(a_set)` order across restarts, which is exactly the
+# fragility this tuple removes.
+UNIVERSAL_COLUMNS_ORDERED: tuple[str, ...] = ("title", "price", "category_id")
+UNIVERSAL_COLUMNS: frozenset[str] = frozenset(UNIVERSAL_COLUMNS_ORDERED)
 KNOWN_PRODUCT_COLUMNS = {
     "description",
     "condition",
@@ -90,7 +97,7 @@ class CSVProductParser:
         self,
         csv_content: str,
         tenant_id: UUID,
-        organization_id: UUID,  # noqa: ARG002 — kept for interface compat
+        _organization_id: UUID,  # kept for interface compat
     ) -> CSVParseResult:
         csv_file = StringIO(csv_content)
 

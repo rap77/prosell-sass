@@ -38,7 +38,11 @@ from prosell.application.dto.product.image_urls_response import (
     ProductImageUrlsResponse,
 )
 from prosell.application.dto.product.reject import RejectProductRequest
-from prosell.application.dto.product.response import ProductListResponse, ProductResponse
+from prosell.application.dto.product.response import (
+    ProductListResponse,
+    ProductResponse,
+    PublicProductResponse,
+)
 from prosell.application.dto.product.update import UpdateProductRequest
 
 __all__ = [
@@ -64,6 +68,7 @@ __all__ = [
     "ProductImageUrlsResponse",
     "ProductListResponse",
     "ProductResponse",
+    "PublicProductResponse",
     "RealEstateAttributes",
     "RejectProductRequest",
     "UpdateProductRequest",

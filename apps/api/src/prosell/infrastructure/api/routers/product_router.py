@@ -108,7 +108,16 @@ from prosell.domain.exceptions.product_exceptions import (
     ProductRestoreTargetMissingError,
     ProductVersionConflictError,
 )
-from prosell.domain.services.csv_product_parser import CSVParseError, CSVProductParser
+from prosell.domain.services.csv_export import (
+    build_export_headers,
+    build_export_row,
+    build_image_folder_name,
+)
+from prosell.domain.services.csv_product_parser import (
+    ALL_KNOWN_COLUMNS,
+    CSVParseError,
+    CSVProductParser,
+)
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
@@ -505,7 +514,7 @@ async def bulk_upload_products(
         parse_result = await csv_parser.parse_csv(
             csv_content=csv_content,
             tenant_id=current_user.tenant_id,
-            organization_id=current_user.tenant_id,
+            _organization_id=current_user.tenant_id,
         )
     except CSVParseError as exc:
         raise HTTPException(
@@ -620,6 +629,92 @@ async def download_bulk_upload_errors_csv(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=bulk-upload-errors-{upload_id}.csv"},
+    )
+
+
+@router.get("/export.csv", response_model=None)
+async def export_catalog_csv(
+    current_user: CurrentUser,
+    db: DbSession,
+    category_id: UUID = Query(
+        ..., description="Category to export — the importer accepts exactly one category per file"
+    ),
+) -> StreamingResponse:
+    """Export this category's catalog to CSV (FEAT-1).
+
+    Mirrors the column set/order of the bulk-upload CSV template for the same
+    category (same `UNIVERSAL_COLUMNS_ORDERED` source of truth), plus one
+    extra column with each product's image folder path, so the file can be
+    edited and round-tripped through the existing importer. Scoped to one
+    category because `CSVProductParser` only accepts a single `category_id`
+    per import file.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    category_repo = SqlAlchemyCategoryRepository(db)
+    category = await category_repo.get_by_id_or_global(category_id, current_user.tenant_id)
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    schema_keys = list((category.attribute_schema or {}).keys())
+    headers = build_export_headers(schema_keys, ALL_KNOWN_COLUMNS)
+
+    product_repo = SqlAlchemyProductRepository(db)
+    use_case = ListProductsUseCase(product_repo)
+
+    rows: list[list[str]] = []
+    skip = 0
+    page_size = 200
+    max_rows = 5000  # same safety cap CSVProductParser enforces on import
+    while len(rows) < max_rows:
+        page = await use_case.execute(
+            tenant_id=current_user.tenant_id,
+            category_id=category_id,
+            skip=skip,
+            limit=page_size,
+        )
+        if not page.products:
+            break
+        for product in page.products:
+            attrs = product.attributes or {}
+            image_folder_path = build_image_folder_name(
+                year=attrs.get("year"),
+                make=attrs.get("make"),
+                model=attrs.get("model"),
+                mileage=attrs.get("mileage"),
+                color=attrs.get("color"),
+                org_code=product.org_code,
+            )
+            rows.append(
+                build_export_row(
+                    headers=headers,
+                    title=product.title,
+                    price_cents=product.price_cents,
+                    category_id=product.category_id,
+                    description=product.description,
+                    condition=product.condition,
+                    currency=product.currency,
+                    location_city=product.location_city,
+                    location_state=product.location_state,
+                    location_zip=product.location_zip,
+                    attributes=attrs,
+                    image_folder_path=image_folder_path,
+                )
+            )
+        if len(page.products) < page_size:
+            break
+        skip += page_size
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    writer.writerows(rows)
+
+    return StreamingResponse(
+        iter([output.getvalue().encode("utf-8")]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="catalog-export-{category_id}.csv"'},
     )
 
 

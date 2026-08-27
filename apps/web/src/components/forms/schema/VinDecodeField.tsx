@@ -2,11 +2,13 @@
 
 import { Loader2 } from "lucide-react";
 import type { UseFormSetValue } from "react-hook-form";
+import type { ChangeEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDecodeVin, type DecodedVehicle } from "@/lib/api/vehicles";
+import { toTitleCase } from "@/lib/utils/toTitleCase";
 import type { AttributeSchemaEntry } from "@/types/category";
 
 interface VinDecodeFieldProps {
@@ -42,7 +44,7 @@ export function VinDecodeField({
   const { mutate: decodeVin, isPending } = useDecodeVin();
 
   // React 19 Compiler handles memoization
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     // Uppercase, strip invalid chars (I, O, Q)
     const cleaned = e.target.value
       .toUpperCase()
@@ -126,9 +128,24 @@ export function mapDecodedToForm(
     const decodeKey = entry.vin_decode_key;
     if (!decodeKey) continue;
 
+    // Type guard: ensure decodeKey is a valid key of DecodedVehicle
+    // decodeKey comes from the schema's vin_decode_key which is validated
+    // to match DecodedVehicle keys at schema definition time.
+    if (!(decodeKey in decoded)) continue;
     const value = decoded[decodeKey as keyof DecodedVehicle];
     if (value !== undefined && value !== null) {
-      setValue(key, value);
+      // FR6.1: Title Case free-text fields (no `options` — e.g. model, trim).
+      // Select-backed fields (options present, e.g. make/body_type/drivetrain,
+      // already normalized to Facebook's controlled vocabulary) are left
+      // exactly as decoded so their value keeps matching the schema's options.
+      const isSelectField =
+        Array.isArray(entry.options) && entry.options.length > 0;
+      setValue(
+        key,
+        typeof value === "string" && !isSelectField
+          ? toTitleCase(value)
+          : value,
+      );
     }
   }
 }
