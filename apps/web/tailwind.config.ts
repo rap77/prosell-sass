@@ -129,6 +129,11 @@ const config: Config = {
       backgroundImage: {
         "ps-avatar": "var(--ps-avatar-gradient)",
       },
+      spacing: {
+        "4.5": "1.125rem",
+        "8.5": "2.125rem",
+        "9.5": "2.375rem",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

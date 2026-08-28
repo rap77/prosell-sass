@@ -69,7 +69,7 @@ prosell-sass/
 | Frontend      | Next.js                    | 16.1+ (Turbopack)                     |
 | Frontend      | React                      | 19.2 (Server Components)              |
 | Frontend      | TypeScript                 | 5.5+ (strict)                         |
-| Styling       | TailwindCSS                | 4.0                                   |
+| Styling       | TailwindCSS                | 3.4.17                                |
 | State         | Zustand                    | 5.x                                   |
 | Data Fetching | TanStack Query             | v5                                    |
 | Forms         | React Hook Form + Zod      | 3.x                                   |
