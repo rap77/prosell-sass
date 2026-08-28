@@ -176,3 +176,8 @@ aidlc/spaces/*/intents/.aidlc-*
 aidlc/spaces/*/intents/*/runtime-graph.json
 aidlc/spaces/*/intents/*/.aidlc-*
 .claude/settings.local.json
+
+# opencode harness support for AI-DLC (generated mirror + vendored deps)
+.aidlc/
+.opencode/
+opencode.json
