@@ -12,5 +12,19 @@
     "dirName": "260826-prod-bugfixes-batch",
     "scope": "express",
     "status": "in-flight"
+  },
+  {
+    "uuid": "01a04131-de7f-7647-bd96-0b146bf44552",
+    "slug": "react-doctor-cleanup",
+    "dirName": "260827-react-doctor-cleanup",
+    "scope": "refactor",
+    "status": "complete"
+  },
+  {
+    "uuid": "01a04977-de79-740c-a444-d90a72b2a692",
+    "slug": "useeffect-to-react-query",
+    "dirName": "260828-useeffect-to-react-query",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]

@@ -1,0 +1,81 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR2.6",
+    "FR2.7",
+    "FR2.8",
+    "FR3",
+    "FR4"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/app/onboarding/page.tsx"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/web/src/components/forms/UnifiedProductForm.tsx"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "apps/web/src/components/upload/BulkUploadCSV.tsx"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/extractErrorMessage.ts"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260827-react-doctor-cleanup/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "apps/web/src/app/(admin)/admin/fb-accounts/[id]/page.tsx"
+    },
+    {
+      "id": "FR2.4",
+      "status": "N/A",
+      "target": "rejected as unconfirmed performance hypothesis — see code-summary.md"
+    },
+    {
+      "id": "FR2.5",
+      "status": "Deferred",
+      "target": "aidlc/spaces/default/intents/260827-react-doctor-cleanup/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR2.6",
+      "status": "OK",
+      "target": "apps/web/src/app/(admin)/admin/fb-accounts/page.tsx"
+    },
+    {
+      "id": "FR2.7",
+      "status": "N/A",
+      "target": "rejected as false positive — see code-summary.md"
+    },
+    { "id": "FR2.8", "status": "OK", "target": "apps/web/package.json" },
+    {
+      "id": "FR3",
+      "status": "OK",
+      "target": "existing suite verified green (1240 passed, 13 pre-existing baseline failures unrelated to this batch)"
+    },
+    {
+      "id": "FR4",
+      "status": "OK",
+      "target": "per-file rescan evidence recorded in memory.md and code-summary.md"
+    }
+  ]
+}

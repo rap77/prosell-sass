@@ -66,6 +66,15 @@ Regla de dependencia (`CLAUDE.md`): `Infrastructure → Application → Domain`.
 - **Frontend**: `camelCase` para funciones/variables, `PascalCase` para componentes React, archivos de componente en `PascalCase.tsx` (`SchemaFieldRenderer.tsx`, `ContactManager.tsx`) y archivos de utilidad en `camelCase.ts` (`composeSubtitle.ts`).
 - **Testing frontend — dos convenciones coexistiendo**: `tests/components/{module}/X.test.tsx` (no co-localizado, patrón más antiguo) y `page.test.tsx` co-localizado junto a la página (patrón más nuevo, usado en páginas admin T12-T18 según memoria de sesión previa). Ambos funcionan; no hay una migración forzada de uno a otro.
 
+## Componentes grandes detectados por `react-doctor` (intent `260827-react-doctor-cleanup`)
+
+Confirmado en vivo por conteo de líneas — los dos componentes más grandes del frontend cargan simultáneamente **dos categorías distintas de diagnóstico** (bailout de React Compiler por `try/finally` + `no-giant-component`/`only-export-components`), lo que implica arreglarlos en una sola pasada combinada en vez de dos pasadas separadas por categoría:
+
+- `apps/web/src/components/forms/UnifiedProductForm.tsx` — 1226 líneas
+- `apps/web/src/components/admin/category-schema-editor.tsx` — 1156 líneas
+
+Siguiente nivel (solo `no-giant-component`, sin bailout de compiler): `app/(seller)/categories/page.tsx` (836), `app/(seller)/catalog/page.tsx` (731), `components/auth/dynamic/TwoFactorSetupForm.tsx` (659), `components/admin/BulkImportClientCSV.tsx` (658), `app/(seller)/publications/page.tsx` (655), `app/(admin)/admin/organizations/[id]/page.tsx` (631), `components/admin/ContactManager.tsx` (629), `components/layout/Sidebar.tsx` (611 — ya corregido esta sesión, tamaño post-fix), `components/publisher/PublishForm.tsx` (596).
+
 ## Archivos/artefactos de tech-debt visibles en el árbol
 
 - `apps/api/src/prosell/infrastructure/api/routers/auth_router.py.backup2` — archivo de respaldo suelto, no debería estar versionado.

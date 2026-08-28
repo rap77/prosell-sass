@@ -17,9 +17,13 @@ Un cuarto pilar (predicciones ML de precio y recomendaciones) está descrito en 
 - **Cola de revisión (review queue)**: los productos publicados por un vendedor pasan por un flujo de aprobación/rechazo antes de quedar visibles en el catálogo público, con trazabilidad completa vía `ProductAuditLog` (tabla `product_audit_log`, migración `20260818_0001`).
 - **Contacto de organización**: cada organización puede registrar contactos nombrados (incluyendo WhatsApp) a través de `ContactManager.tsx`/`OrganizationContact`, pensados para que el comprador final pueda contactar al vendedor — aunque, como se detalla en `architecture.md`, ese contacto aún no llega a la página pública de producto.
 
-## Alcance de este pase de reverse engineering
+## Alcance de este pase de reverse engineering (actualizado — intent `260827-react-doctor-cleanup`)
 
-Este pase fue disparado por un intent de **bugfixes de producción** (scope `express`, intent `260826-prod-bugfixes-batch`), no por una exploración exhaustiva del dominio. El foco de la lectura profunda fueron las áreas de código detrás de 7 bugs reportados y 1 feature pequeña:
+Este pase fue disparado por un intent de **refactor de salud de código frontend** (scope `refactor`, intent `260827-react-doctor-cleanup`), no por exploración de dominio de negocio ni por bugfixing. El disparador es la herramienta `react-doctor` (análisis estático de React), instalada esta sesión como devDependency + hook de pre-commit + workflow de CI en `apps/web`, que reportó un score de **53/100** con **371 diagnósticos** (9 errores, 362 warnings) tras un primer batch de 7 archivos ya corregidos y verificados (sin commitear). Este pase de RE no toca reglas de negocio ni flujos de usuario — su lectura profunda se concentra en la configuración de tooling (`package.json`, `eslint.config.js`, `next.config.ts`, `vitest.config.ts`, `pyproject.toml`, workflows de CI) y en evidencia de grep en vivo sobre los patrones de diagnóstico del intent (bailouts del React Compiler, APIs deprecadas de Zod v3→v4, tamaño de componentes, imports dinámicos). El resto de este documento (actores, riesgos de negocio, alcance previo) describe el estado del dominio tal como lo dejó el pase anterior (`260826-prod-bugfixes-batch`) — no revalidado en este pase porque está fuera de su alcance. Ver `## Scope of Analysis` en `reverse-engineering-timestamp.md` para el detalle exacto.
+
+### Alcance del pase anterior (`260826-prod-bugfixes-batch`, preservado como contexto de dominio)
+
+Ese pase fue disparado por un intent de **bugfixes de producción** (scope `express`), no por una exploración exhaustiva del dominio. El foco de la lectura profunda fueron las áreas de código detrás de 7 bugs reportados y 1 feature pequeña:
 
 1. Cola de revisión — imágenes no se muestran en los registros
 2. Lista de publicaciones (catálogo) — falta thumbnail

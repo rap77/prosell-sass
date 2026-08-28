@@ -62,6 +62,10 @@ Confianza por componente: **profundo** (archivos leídos y entendidos en este pa
 - **Confianza**: profundo en `SchemaFieldRenderer.tsx`, `VinDecodeField.tsx`, `category-schema-editor.tsx`, `ReviewQueueTable.tsx`, `ShareMenu.tsx`, `ContactManager.tsx`, `ProductPublicView.tsx`, `ProductCard.tsx` (sección título/subtítulo), `LocaleSwitcher.tsx`; superficial en el resto de las 23 subcarpetas enumeradas bajo `components/`.
 - **Hallazgo notable**: `SchemaFieldRenderer.tsx` decide renderizar un `<Select>` únicamente inspeccionando si `entry.options` es un array no vacío — nunca inspecciona `render_as` (comentario propio en el código: "check options array, not type — schema uses filter_type for select"). Ver root cause completo en `architecture.md`.
 
+### Actualización — intent `260827-react-doctor-cleanup`
+
+`react-doctor` confirma en vivo que dos componentes de este grupo cargan simultáneamente bailout del React Compiler (`try/finally`) y el diagnóstico de componente gigante: `UnifiedProductForm.tsx` (1226 líneas) y `category-schema-editor.tsx` (1156 líneas). Ver `code-structure.md` § "Componentes grandes detectados por `react-doctor`" para el ranking completo y `code-quality-assessment.md` para el desglose de categorías de diagnóstico.
+
 ## Cliente API y Contratos Zod
 
 - **Responsabilidad**: tipado y validación runtime de las respuestas del backend en el frontend (patrón "Zod-mirror" — cada endpoint backend tiene un schema Zod espejo).

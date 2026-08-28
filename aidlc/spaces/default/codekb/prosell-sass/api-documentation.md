@@ -83,6 +83,10 @@ Backend REST (FastAPI) en `apps/api/src/prosell/infrastructure/api/routers/` —
 
 `apps/web/src/lib/api/` — 30 módulos enumerados por nombre de archivo (no leídos en este pase, salvo `schemas/categorySchema.ts`). Patrón confirmado por memoria de sesión y por el archivo leído: cada endpoint backend tiene un schema Zod espejo bajo `lib/api/schemas/`, usado con `parse()`/`safeParse()` en el `queryFn` del hook correspondiente — "cero casts `as X` no validados sobre respuestas del backend" es la convención declarada del equipo.
 
+## Nota — intent `260827-react-doctor-cleanup`
+
+Este intent es un refactor de tooling de análisis estático frontend (`react-doctor`); no toca ni re-audita la superficie de API. El contenido de este documento no fue revalidado en este pase — se preserva tal cual del pase anterior (`260826-prod-bugfixes-batch`). El riesgo abierto de headers descartados en los proxies BFF (`organizations`, `categories`) sigue sin auditar.
+
 ## Nota sobre completitud
 
 Este documento cubre a fondo únicamente los 4 routers/flujos tocados por los bugs del intent activo (`public_product_router`, `category_router` en su porción de schema/template, `vehicle_router`, y la porción de `product_router` de bulk-upload). Los 21 routers restantes están enumerados por nombre pero sus endpoints, parámetros y contratos de request/response **no fueron leídos** en este pase — no asumir cobertura completa de la superficie REST del sistema a partir de este documento.

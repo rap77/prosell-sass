@@ -71,7 +71,7 @@ El flujo típico de una acción de negocio (p. ej. crear un producto vehículo) 
 
 ## Interaction Diagrams
 
-Diagramas de secuencia mostrando cómo se implementan (o fallan en implementarse) las transacciones de negocio detrás de los bugs del intent activo, trazadas a nivel de archivo por el scan del desarrollador.
+Diagramas de secuencia mostrando cómo se implementan (o fallan en implementarse) las transacciones de negocio detrás de los bugs del intent `260826-prod-bugfixes-batch` (diagramas #1-5, preservados como contexto de dominio), más un diagrama nuevo (#6) para el intent activo `260827-react-doctor-cleanup`, trazado a nivel de archivo por el scan del desarrollador.
 
 ### 1. BUG-3 / BUG-6 — Schema de categoría: select pierde su valor / se renderiza como texto
 
@@ -189,6 +189,37 @@ sequenceDiagram
 
 **Fallback de texto**: el endpoint existente que genera la plantilla CSV de importación (`category_router.get_category_schema_template`) construye el orden de columnas como `list(UNIVERSAL_COLUMNS) + extra_cols + [schema keys]`, donde `UNIVERSAL_COLUMNS = {"title", "price", "category_id"}` es un **set** de Python, no una lista/tupla ordenada. `list()` sobre un set de strings no garantiza orden estable entre reinicios de proceso (CPython aleatoriza el hash de strings por proceso). El nuevo endpoint de exportación (FEAT-1), para "espejar los mismos campos/orden que el importador actual" de forma confiable, debe importar `UNIVERSAL_COLUMNS` directamente y aplicar su propio orden fijo — o mejor, la constante fuente debería convertirse en una secuencia ordenada (`tuple`/`list`) para que ambos endpoints (import template y export) compartan una única fuente de verdad estable.
 
+### 6. Pipeline de diagnósticos `react-doctor` — pre-commit y CI, y el mecanismo de bailout del React Compiler
+
+```mermaid
+flowchart TB
+    Dev["Developer edita .tsx/.ts"]
+    Stage["git add (staged files)"]
+    PreCommit[".pre-commit-config.yaml\nhook local react-doctor --staged --blocking warning"]
+    Wrapper["shell wrapper del hook"]
+    Commit["git commit"]
+    CI[".github/workflows/react-doctor.yml\nmillionco/react-doctor@v2"]
+    PR["Pull Request"]
+
+    Dev --> Stage --> PreCommit
+    PreCommit --> Wrapper
+    Wrapper -->|findings a stderr\nexit code SIEMPRE 0| Commit
+    Commit -->|push| CI
+    CI -->|blocking: comentado\nsolo advisory| PR
+
+    subgraph Compiler["React Compiler (babel-plugin-react-compiler)"]
+        direction TB
+        Source["Componente fuente"]
+        TryFinally["try { ... } finally { ... }\ndetectado en el componente"]
+        Bailout["Compiler NO memoiza\n(bailout silencioso)"]
+        Runtime["Re-renders manuales\nsin memoización automática"]
+    end
+
+    Source --> TryFinally --> Bailout --> Runtime
+```
+
+**Fallback de texto**: `react-doctor` corre en dos puntos del pipeline, ninguno bloqueante hoy. En pre-commit, `.pre-commit-config.yaml` declara un hook local `react-doctor --staged --blocking warning`, pero el wrapper de shell que lo invoca no propaga el exit code — los hallazgos se escriben a stderr y el commit siempre tiene éxito (confirmado por el scan del desarrollador). En CI, `.github/workflows/react-doctor.yml` (nuevo este pase) usa la action `millionco/react-doctor@v2` con su input `blocking:` comentado — es puramente advisorio, no falla el job ni bloquea el merge del PR. Resultado: hoy **ningún gate local ni de CI puede impedir una regresión** de score/diagnósticos — solo una corrida manual o una revisión humana del output de CI lo detecta. Por separado, el diagrama de la derecha ilustra el patrón de bailout más frecuente detectado (`react-hooks-js/todo`, 9 ocurrencias): un componente con `try { ... } finally { ... }` hace que el React Compiler (`babel-plugin-react-compiler`, activado vía `reactCompiler: true` en `next.config.ts`) deje de memoizar automáticamente ese componente — el componente sigue funcionando, pero pierde la optimización de re-render que el resto de la base de código obtiene gratis del compiler.
+
 ## Key Design Decisions
 
 - **Clean Architecture estricta en backend, con dominio cero-dependencias** — facilita testear reglas de negocio sin infraestructura, a costa de más indirección (DTOs, puertos, mapeos) en cada feature.
@@ -196,6 +227,8 @@ sequenceDiagram
 - **BFF liviano en Next.js (Proxy API Routes)** — centraliza el manejo de cookies httpOnly, pero cada proxy debe reenviar manualmente los headers necesarios; un bug histórico confirmado (sesión 2026-08-21, fuera de este intent) mostró que un proxy descartaba silenciosamente `If-Match`, rompiendo 4 endpoints de "deshacer" solo quando se usaban desde el navegador real.
 - **Normalización de valores decodificados hacia minúsculas/snake_case (NHTSA → estilo Facebook)** — decisión correcta para el pipeline de scraping/publicación, pero reutilizada sin transformación en el endpoint humano de decode-vin — mezcla dos audiencias (máquina vs. humano) en un solo endpoint sin diferenciación de presentación.
 - **next-intl adoptado solo parcialmente** — decisión de alcance (probablemente priorización de tiempo) documentada en `docs/AUDIT-UI-UX-I18N-2026-07-21.md`, con el 95% del UI todavía hardcodeado.
+- **React Compiler activado (`reactCompiler: true`)** — confirmado en vivo en `next.config.ts`, junto con `babel-plugin-react-compiler` + `eslint-plugin-react-hooks` conscientes del compiler. Decisión coherente con "no `useMemo`/`useCallback` manuales" (regla zero-tolerance del equipo), pero exige que el código evite patrones que fuerzan bailout (p. ej. `try/finally` dentro de un componente) — de ahí el foco del intent `260827-react-doctor-cleanup` en esos 9 casos confirmados.
+- **`react-doctor` adoptado como advisory-only en ambos gates (pre-commit y CI)** — decisión implícita (o pendiente, no confirmada como deliberada) de no bloquear commits/merges todavía mientras se reduce el backlog inicial de 371 diagnósticos. Ver diagrama #6 arriba y `code-quality-assessment.md` para el detalle completo.
 
 ## Improvement Opportunities
 
@@ -207,3 +240,5 @@ sequenceDiagram
 6. **Eliminar el archivo de respaldo** `auth_router.py.backup2` del árbol versionado.
 7. **Convertir `UNIVERSAL_COLUMNS` a una secuencia ordenada** antes de construir FEAT-1 sobre ella.
 8. **Corregir el drift de documentación de Tailwind**: `CLAUDE.md` y `docs/AUDIT-UI-UX-I18N-2026-07-21.md` afirman "TailwindCSS 4.0" / "Tailwind 4 configurado", pero el `package.json` real fija `3.4.17` con `tailwind.config.ts` + directivas `@tailwind base/components/utilities` de estilo v3 (Tailwind v4 usa `@import "tailwindcss"` sin archivo de config JS). Ver `technology-stack.md`.
+9. **Convertir al menos uno de los dos gates de `react-doctor` (pre-commit o CI) en bloqueante** una vez que el backlog inicial de 371 diagnósticos baje a un nivel manejable — hoy ninguno de los dos puede impedir una regresión de score. Ver `code-quality-assessment.md` para el detalle del pipeline advisory-only.
+10. **Resolver los archivos con múltiples categorías de diagnóstico simultáneas en una sola pasada** (`UnifiedProductForm.tsx` y `category-schema-editor.tsx` cargan a la vez bailout de React Compiler por `try/finally` y el diagnóstico de componente gigante `no-giant-component`/`only-export-components`) — arreglarlos en pasadas separadas por categoría desperdicia el mismo archivo tocado dos veces.

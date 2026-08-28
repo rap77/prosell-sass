@@ -42,6 +42,15 @@ flowchart LR
 - **`public_product_router.py` NO depende de `OrganizationContact`** (value object) ni de ningún repositorio de contactos — la ausencia de esa dependencia es, literalmente, la causa de que BUG-4 sea un vacío de plomería y no solo un bug visual.
 - **`category_router.get_category_schema_template` depende de `UNIVERSAL_COLUMNS`** (un `set`) para construir el orden de columnas del CSV — dependencia frágil que FEAT-1 (export CSV) heredará si reutiliza la misma constante sin normalizarla primero a una secuencia ordenada.
 
+## Dependencia de tooling nueva — `react-doctor` (intent activo)
+
+`react-doctor ^0.9.12` se agregó esta sesión como devDependency raíz, sin archivo de configuración propio (corre con sus defaults). Se cablea en dos puntos:
+
+- `.pre-commit-config.yaml` — hook local `react-doctor --staged --blocking warning`, pero el wrapper de shell no propaga el exit code: el commit siempre pasa, los hallazgos van a stderr.
+- `.github/workflows/react-doctor.yml` (nuevo) — usa la action `millionco/react-doctor@v2`; su input `blocking:` está comentado, así que el job es puramente advisorio.
+
+**Riesgo de dependencia**: no hay una segunda herramienta de análisis de código muerto (`knip`, `ts-prune`, `depcheck`) en `apps/web/package.json` para cruzar contra los hallazgos `unused-export`/`unused-file`/`unused-dependency` de `react-doctor` — sus 60 diagnósticos de deslop (31 + 29) dependen de la exactitud de un único analizador estático, sin verificación cruzada, antes de borrar código en masa.
+
 ## Dependencias de build/CI
 
 - pnpm workspaces + Turborepo orquestan el fan-out de scripts entre `apps/web`, `apps/api` (via wrappers) y el resto del monorepo.
