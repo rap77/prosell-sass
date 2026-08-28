@@ -4231,3 +4231,25 @@
 **Duration ms**: 14712
 
 ---
+
+## Human Turn
+
+**Timestamp**: 2026-08-28T17:49:26Z
+**Event**: HUMAN_TURN
+
+---
+
+## Human Turn
+
+**Timestamp**: 2026-08-28T17:52:16Z
+**Event**: HUMAN_TURN
+
+---
+
+## Session End
+
+**Timestamp**: 2026-08-28T17:53:48Z
+**Event**: SESSION_ENDED
+**Reason**: clear
+
+---

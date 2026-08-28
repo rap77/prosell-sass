@@ -1,100 +1,90 @@
-# Component Inventory — prosell-sass
+# Component Inventory — ProSell SaaS
 
-Confianza por componente: **profundo** (archivos leídos y entendidos en este pase) vs **superficial** (solo listado de directorio/nombres de archivo, vía `fd`/enumeración — no leído). Un componente puede mezclar ambos: se indica por sub-área.
+Nombres de componente en este documento son los que `reverse-engineering-timestamp.md` § Scope of Analysis referencia literalmente.
+
+## prosell-api (FastAPI backend)
+
+- **Responsabilidad**: lógica de negocio, orquestación de scraping/ML, persistencia, auth.
+- **Dependencias**: PostgreSQL 17, Redis 7.4+, Playwright (scraping FB Marketplace), Stripe, Anthropic SDK, boto3 (storage).
+- **Subcomponentes** (Clean Architecture):
+  - `domain/` — 24 entidades, zero deps externas.
+  - `application/` — 20 grupos de use cases.
+  - `infrastructure/` — 31 routers (190 endpoints), repositorios SQLAlchemy 2.0 async, 71 migraciones Alembic, tareas Taskiq+Redis, webhooks, i18n, procesamiento de imágenes.
+- **Tests**: 272 archivos `.py` en `apps/api/tests/{contract,integration,unit,stubs,utils}/` + `apps/api/src/prosell/tests/unit/`.
+
+## prosell-web (Next.js frontend)
+
+- **Responsabilidad**: UI admin/vendedor SaaS + frontend de marketplace público.
+- **Dependencias**: prosell-api (vía BFF proxy), ninguna dependencia de build-time de `packages/*` (no existe).
+- **Subcomponentes**:
+  - `app/` — App Router, 28 subcarpetas de componentes bajo `components/`.
+  - `lib/api/` — 27 módulos de cliente API.
+  - `lib/api/schemas/` — 18 módulos Zod-mirror.
+  - `stores/` (Zustand), `hooks/`, `domain/`.
+- **Tests**: 93 archivos en `apps/web/tests/` + 70 co-localizados `*.test.tsx`/`.test.ts`.
+
+## BFF proxy routes
+
+- **Responsabilidad**: intermediar entre navegador y `prosell-api`, centralizando cookies httpOnly y auth.
+- **Ubicación**: `apps/web/src/app/api/{auth,v1}/**/route.ts`, 33 archivos.
+- **Dependencias**: `prosell-api` (destino de reenvío).
+- **Defecto activo**: `response.json()` sin chequeo de `content-type` en los 4 proxies dinámicos (`products`, `categories`, `organizations`, `vehicles`) — ver `api-documentation.md`.
+
+## apps/app (orphan micro-app)
+
+- **Responsabilidad**: desconocida/no wireada — contiene únicamente `privacy/page.tsx`.
+- **Dependencias**: ninguna confirmada al grafo de build activo del workspace pnpm.
+- **Estado**: candidato a deuda técnica (ver `code-quality-assessment.md` signal #3).
+
+## tests/e2e (Playwright suite)
+
+- **Responsabilidad**: pruebas end-to-end del flujo completo (navegador real contra stack levantado).
+- **Ubicación**: `tests/e2e/specs/`, 34 archivos (conteo confirmado, contenido no leído en este pase).
 
 ---
 
-## API Layer (FastAPI Routers)
+## Inventario de bug — clases Tailwind inválidas (intent `260828-fix-invalid-tailwind-spa`)
 
-- **Responsabilidad**: exponer la superficie REST del backend; validación de entrada, autenticación/autorización, orquestación hacia el Application Layer.
-- **Ubicación**: `apps/api/src/prosell/infrastructure/api/routers/` (25 archivos de router, 30 `include_router()` en `main.py`).
-- **Confianza**: profundo en `public_product_router.py`, `vehicle_router.py`, `category_router.py`; superficial (solo nombre) en los otros 22 routers (`admin_organizations_router`, `admin_router`, `appointment_router`, `auth_router`, `branch_router`, `category_inference_router`, `facebook_router`, `fb_account_router`, `fb_credential_migration_router`, `fb_sync_router`, `health_router`, `image_router`, `lead_router`, `marketplace_access_router`, `notification_router`, `org_router`, `org_verticals_router`, `product_router`, `publisher_router`, `team_router`, `test_cleanup_router`, `test_router`, `user_branch_router`, `user_router`, `vendedor_router`, `wallet_router`, `webhook_router`).
-- **Dependencias**: Application Layer (use cases), Pydantic DTOs.
-- **Hallazgo notable**: `auth_router.py.backup2` — archivo de respaldo suelto en el árbol del repo, no debería estar versionado.
+**Causa raíz confirmada**: `apps/web/tailwind.config.ts` (leído completo) NO extiende la escala `spacing` — el proyecto usa `tailwindcss: 3.4.17` (confirmado en `apps/web/package.json`, **no** Tailwind 4 como afirma la tabla de stack del `CLAUDE.md` raíz). La escala default de spacing de Tailwind 3 incluye half-steps solo hasta `3.5` (`0.5, 1.5, 2.5, 3.5`) — cualquier `*-<n>.5` con `n > 3` no existe en la escala y compila a **CSS vacío** (la clase se emite en el HTML pero no genera ninguna regla).
 
-## Domain Layer (Entidades y Value Objects)
+**Verificación de scope**: un barrido repo-wide de todo patrón `*-<n>.5` confirmó que la mayoría de las clases (`gap-1.5`, `px-2.5`, `mt-0.5`, `w-3.5`, etc.) **SON válidas** — el bug real se limita a las instancias por encima de `3.5`, listadas abajo con número de línea exacto.
 
-- **Responsabilidad**: reglas de negocio puras, sin dependencias externas (regla explícita de `CLAUDE.md`: "Domain layer has ZERO external dependencies").
-- **Ubicación**: `apps/api/src/prosell/domain/{entities,value_objects,services,exceptions}/`.
-- **Confianza**: profundo en `entities/category.py` (sección de validación de atributos), `value_objects/organization_contact.py`, `services/template_composer.py`; superficial en el resto del subárbol (~421 archivos Python en todo `apps/api/src/prosell/` según conteo total, no desglosado por capa).
-- **Dependencias**: ninguna (por diseño).
-- **Hallazgo notable**: `Category.validate_attributes()` SÍ implementa la validación de pertenencia a `options` cuando el campo trae opciones — el backend de dominio ya soporta selects con opciones; el bug de BUG-3/6 está aguas abajo, en la UI de edición de schema (ver `architecture.md` § Interaction Diagrams #1).
+### Inventario completo — 7 archivos, 13 instancias
 
-## Application Layer (Use Cases y DTOs)
+| #   | Archivo                                                    | Línea(s)      | Clase inválida | Nota                                                                    |
+| --- | ---------------------------------------------------------- | ------------- | -------------- | ----------------------------------------------------------------------- |
+| 1   | `apps/web/src/components/onboarding/OnboardingStep3.tsx`   | 167, 181, 196 | `h-9.5`        | 3× — en el file list original del intent                                |
+| 2   | `apps/web/src/app/(seller)/publications/page.tsx`          | 286, 297      | `h-9.5`        | 2× — en el file list original del intent                                |
+| 3   | `apps/web/src/app/(seller)/publications/page.tsx`          | 443, 450      | `h-9.5`        | 2× — en el file list original del intent                                |
+| 4   | `apps/web/src/app/(seller)/publications/page.tsx`          | 286, 297      | `px-4.5`       | 2× (mismas líneas que #2, clases combinadas) — en el file list original |
+| 5   | `apps/web/src/components/publisher/PublishForm.tsx`        | 573, 583      | `h-9.5`        | 2× — **NO estaba en el file list original del intent**                  |
+| 6   | `apps/web/src/app/privacy/page.tsx`                        | 89            | `px-4.5`       | 1× — en el file list original del intent                                |
+| 7   | `apps/web/src/app/terms/page.tsx`                          | 89            | `px-4.5`       | 1× — en el file list original del intent                                |
+| 8   | `apps/web/src/components/appointments/AppointmentForm.tsx` | 529           | `px-4.5`       | 1× — en el file list original del intent                                |
+| 9   | `apps/web/src/components/pipeline/KanbanBoard.tsx`         | 291           | `h-8.5`        | 1× — **NO estaba en el file list original del intent**                  |
 
-- **Responsabilidad**: orquestación de casos de uso, DTOs de transferencia, puertos hacia infraestructura.
-- **Ubicación**: `apps/api/src/prosell/application/{use_cases,dto,ports}/`.
-- **Confianza**: profundo en `dto/category/response.py`; superficial en el resto.
-- **Dependencias**: Domain Layer (hacia adentro), implementado por Infrastructure (puertos).
-- **Hallazgo notable — duplicación de caso de uso**: existen dos clases `CreateOrganizationUseCase` distintas en directorios hermanos —`application/use_cases/org/create_organization.py` (usado por `org_router.py`, auto-registro) y `application/use_cases/organization/create_organization.py` (usado por `admin_organizations_router.py`, creación por admin). Ambas están cableadas y en uso simultáneo; la partición `org/` vs `organization/` (con solapamiento adicional en `get_organization.py`/`update_organization.py` vs `invite_organization_owner.py`/`approve_marketplace_access.py`) es deuda de claridad arquitectónica, fuera del alcance de los bugs actuales pero digna de una unidad de refactor futura.
+**Totales por archivo** (7 archivos):
 
-## Infraestructura de Persistencia (SQLAlchemy + Alembic)
+| Archivo                 | Instancias                                 |
+| ----------------------- | ------------------------------------------ |
+| `OnboardingStep3.tsx`   | 3 (`h-9.5`)                                |
+| `publications/page.tsx` | 6 (`h-9.5` ×4, `px-4.5` ×2)                |
+| `PublishForm.tsx`       | 2 (`h-9.5`) — **fuera del scope original** |
+| `privacy/page.tsx`      | 1 (`px-4.5`)                               |
+| `terms/page.tsx`        | 1 (`px-4.5`)                               |
+| `AppointmentForm.tsx`   | 1 (`px-4.5`)                               |
+| `KanbanBoard.tsx`       | 1 (`h-8.5`) — **fuera del scope original** |
+| **Total**               | **13 instancias, 7 archivos**              |
 
-- **Responsabilidad**: mapeo objeto-relacional, migraciones de esquema.
-- **Ubicación**: `apps/api/src/prosell/infrastructure/{models,repositories}/`, `apps/api/alembic/versions/` (71 migraciones).
-- **Confianza**: superficial (conteo de migraciones, no leídas individualmente).
-- **Dependencias**: PostgreSQL 17, asyncpg.
+### ⚠️ Brecha de alcance frente al intent original
 
-## Infraestructura de Servicios e Integraciones
+El intent `260828-fix-invalid-tailwind-spa` fue registrado originalmente citando 5 archivos (`privacy/page.tsx`, `terms/page.tsx`, `publications/page.tsx`, `OnboardingStep3.tsx`, `AppointmentForm.tsx`). Este rescan encontró **2 archivos y 3 instancias adicionales** no listados originalmente:
 
-- **Responsabilidad**: adaptadores hacia servicios externos — decodificación VIN (NHTSA), storage de imágenes (Spaces/S3 vía boto3), pagos (Stripe), scraping/publicación (Facebook via `facebook-sdk` + Playwright server-side), 2FA (pyotp/qrcode), tareas asíncronas (taskiq+redis), i18n backend.
-- **Ubicación**: `apps/api/src/prosell/infrastructure/services/`, `apps/api/src/prosell/infrastructure/i18n/`.
-- **Confianza**: profundo en `nhtsa_vin_service.py`, `nhtsa_normalizer.py` (sección de mapeo MAKE/BODY_TYPE), `i18n/translator.py`; superficial en el resto.
-- **Hallazgo notable**: `Translator`/`translator` singleton (`i18n/translator.py`) no es importado por nada fuera de su propio `__init__.py` — **código muerto**, confirmado por búsqueda de referencias. El backend no traduce ningún mensaje en runtime pese a tener la infraestructura montada.
+- `apps/web/src/components/publisher/PublishForm.tsx` (2× `h-9.5`, líneas 573 y 583)
+- `apps/web/src/components/pipeline/KanbanBoard.tsx` (1× `h-8.5`, línea 291)
 
-## App Router (Next.js UI)
+Esta brecha se traslada explícitamente a `code-quality-assessment.md` y debe considerarse en Requirements Analysis para decidir si el fix cubre los 7 archivos o se mantiene acotado a los 5 originales con un follow-up separado para los 2 nuevos.
 
-- **Responsabilidad**: enrutamiento de páginas, layouts, server components.
-- **Ubicación**: `apps/web/src/app/` — grupos de rutas `(admin)`, `(seller)`, `api`, `auth`, `branch`, `invite`, `manager`, `onboarding`, `p`, `privacy`, `profile`, `terms`, `vendedor`.
-- **Confianza**: profundo en `(admin)/admin/review-queue/page.tsx`, `(seller)/catalog/page.tsx`, `p/[slug]/page.tsx`; superficial (solo estructura de grupos) en el resto.
-- **Dependencias**: Proxy API Routes (BFF), Componentes UI.
+### Fix ya aplicado como precedente (referencia, no parte de este intent)
 
-## Proxy API Routes (BFF)
-
-- **Responsabilidad**: reenvío de requests del navegador hacia el backend FastAPI, con manejo de cookies httpOnly.
-- **Ubicación**: `apps/web/src/app/api/v1/`.
-- **Confianza**: superficial en este pase (no se abrió ningún archivo de proxy) — **riesgo conocido de memoria de sesión previa**: `api/v1/products/[...path]/route.ts` tenía un bug confirmado (corregido en sesión 2026-08-21, no verificado si aplica a otros proxys) donde solo reenviaba `Content-Type`/`Cookie` y descartaba silenciosamente `If-Match`, rompiendo endpoints de "deshacer". Ese hallazgo queda fuera del scan de este intent (no está entre los 7 bugs) pero es relevante para `dependencies.md` y para una auditoría futura de `organizations`/`categories` proxies con el mismo patrón.
-
-## Componentes UI (React) — Formularios, Admin, Catálogo, Público
-
-- **Responsabilidad**: presentación y lógica de interacción; formularios dinámicos guiados por schema, editor de schema de categorías, tabla de cola de revisión, vista pública de producto.
-- **Ubicación**: `apps/web/src/components/{forms,admin,review,catalog,public,ui,i18n}/`.
-- **Confianza**: profundo en `SchemaFieldRenderer.tsx`, `VinDecodeField.tsx`, `category-schema-editor.tsx`, `ReviewQueueTable.tsx`, `ShareMenu.tsx`, `ContactManager.tsx`, `ProductPublicView.tsx`, `ProductCard.tsx` (sección título/subtítulo), `LocaleSwitcher.tsx`; superficial en el resto de las 23 subcarpetas enumeradas bajo `components/`.
-- **Hallazgo notable**: `SchemaFieldRenderer.tsx` decide renderizar un `<Select>` únicamente inspeccionando si `entry.options` es un array no vacío — nunca inspecciona `render_as` (comentario propio en el código: "check options array, not type — schema uses filter_type for select"). Ver root cause completo en `architecture.md`.
-
-### Actualización — intent `260827-react-doctor-cleanup`
-
-`react-doctor` confirma en vivo que dos componentes de este grupo cargan simultáneamente bailout del React Compiler (`try/finally`) y el diagnóstico de componente gigante: `UnifiedProductForm.tsx` (1226 líneas) y `category-schema-editor.tsx` (1156 líneas). Ver `code-structure.md` § "Componentes grandes detectados por `react-doctor`" para el ranking completo y `code-quality-assessment.md` para el desglose de categorías de diagnóstico.
-
-## Cliente API y Contratos Zod
-
-- **Responsabilidad**: tipado y validación runtime de las respuestas del backend en el frontend (patrón "Zod-mirror" — cada endpoint backend tiene un schema Zod espejo).
-- **Ubicación**: `apps/web/src/lib/api/` (30 módulos, enumerados por nombre de archivo, no leídos), `apps/web/src/lib/api/schemas/categorySchema.ts` (leído), `apps/web/src/types/category.ts` (leído).
-- **Confianza**: profundo solo en los dos archivos de tipos de categoría.
-- **Hallazgo notable — raíz de BUG-3/6**: dos definiciones de tipo paralelas e inconsistentes para el mismo concepto backend (JSONB `attribute_schema`):
-  - `AttributeField` (Zod, `categorySchema.ts`) — usado por el editor de admin. `type` no incluye `"select"`, no tiene campo `options`. `render_as` SÍ incluye `"select"`.
-  - `AttributeSchemaEntry` (`types/category.ts`) — usado por el renderer de formulario runtime y los filtros de catálogo. `type` SÍ incluye `"select"`, tiene `options?: (string|number)[]`. `render_as` solo admite `"vin_decode"|"textarea"` — NO incluye `"select"`.
-  - El DTO backend (`CategoryResponse.attribute_schema: dict[str, dict[str, object]]`) es JSONB libre y persiste cualquier forma sin validar contra ninguno de los dos tipos frontend — por eso el admin puede elegir "Render As → select" sin que exista ningún control para poblar `options`, y el dato se guarda igual.
-
-## Componente Legal — apps/app (micro-app)
-
-- **Responsabilidad**: no confirmada con certeza — solo se encontró una página `privacy/` (`apps/app/privacy/page.tsx`). Hipótesis razonable: micro-app de páginas legales (privacidad/términos), posiblemente separada del dominio principal para servir contenido estático sin el bundle completo de `apps/web`. **No leído** — presencia confirmada, contenido no verificado.
-- **Ubicación**: `apps/app/`.
-- **Confianza**: superficial (solo enumeración de archivos).
-- **Nota**: `CLAUDE.md` describe la estructura del monorepo como `apps/api` + `apps/web` únicamente — `apps/app` no está documentado ahí. Posible drift de documentación o app agregada después de escribir `CLAUDE.md`.
-
-## Paquete `packages/shared-types`
-
-- **Estado**: **NO ENCONTRADO en este pase**. `CLAUDE.md` lo describe bajo `## Monorepo Structure` como "Shared code (future)", y la carpeta `packages/` no existe en el árbol actual (verificado con `fd . packages -d 2`, sin resultados). Se documenta como **aspiracional, no implementado** — corrige la entrada equivalente de cualquier store previo que lo listara como presente.
-
-## Suite E2E (Playwright)
-
-- **Responsabilidad**: pruebas end-to-end de flujos de usuario reales.
-- **Ubicación**: `tests/e2e/{specs,fixtures}/` — 88 archivos.
-- **Confianza**: superficial (conteo, no leído).
-
-## Infraestructura Docker y CI/CD
-
-- **Responsabilidad**: empaquetado y despliegue — 3 variantes de `docker-compose` (dev/staging/prod), 4 Dockerfiles, Caddyfile; 6 pipelines de GitHub Actions.
-- **Ubicación**: `docker/` (11 archivos), `.github/workflows/` (`ci.yml`, `deploy.yml`, `e2e.yml`, `graphify.yml`, `promote-prod.yml`, `recover-prod.yml`).
-- **Confianza**: profundo en la primera mitad de `ci.yml` (jobs `lint-python`, `test-python`, inicio de `lint-node`); superficial (no abiertos) en `deploy.yml`, `e2e.yml`, `graphify.yml`, `promote-prod.yml`, `recover-prod.yml` y en todo `docker/`.
+Memoria del proyecto registra que `BulkUploadCSV.tsx` tenía el mismo patrón (`h-9.5`/`px-4.5`) y ya fue arreglado convirtiendo a valores arbitrarios explícitos: `h-[38px]`, `px-[18px]`. Ese archivo **no** aparece en el inventario de arriba porque ya está corregido.

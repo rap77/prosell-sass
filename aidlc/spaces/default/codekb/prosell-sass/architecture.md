@@ -1,244 +1,178 @@
-# Architecture — prosell-sass
+# Architecture — ProSell SaaS
 
 ## System Overview
 
-ProSell SaaS es un monorepo con dos servicios principales — un backend FastAPI (`apps/api`) y un frontend Next.js (`apps/web`) — más una micro-app mínima (`apps/app`, solo confirmada como página de privacidad) y una suite E2E Playwright separada (`tests/e2e/`). El backend implementa Clean Architecture estricta (`domain → application → infrastructure`), con el dominio sin dependencias externas. El frontend actúa como BFF (Backend-for-Frontend) parcial: sus propias rutas API (`apps/web/src/app/api/v1/`) proxean hacia el backend real, principalmente para preservar cookies httpOnly de autenticación.
+ProSell SaaS es un monorepo pnpm + Turborepo con dos aplicaciones principales desacopladas — un backend FastAPI (`apps/api`) y un frontend Next.js 16 (`apps/web`) — comunicadas exclusivamente por HTTP a través de un conjunto de rutas proxy BFF (Backend-For-Frontend) del lado de Next.js. No existe hoy código compartido en tiempo de compilación entre ambos: el `packages/shared-types/` documentado en el `CLAUDE.md` raíz **no existe** en el repo (ver `code-quality-assessment.md` § drift documental).
 
 ## Architectural Style
 
-**Monolito modular en dos servicios, con Clean Architecture en el backend.** Evidencia:
+**Monolito modular en ambos lados**, con Clean Architecture estricta en el backend:
 
-- Separación física en 3 capas dentro de `apps/api/src/prosell/` (`domain/`, `application/`, `infrastructure/`), consistente con la regla explícita de `CLAUDE.md`: "Domain layer has ZERO external dependencies".
-- Inyección de dependencias basada en interfaces: el dominio/aplicación define puertos (`application/ports/`, p. ej. `IDOSpacesService`, `IVINDecoderService`) que la infraestructura implementa — patrón Ports & Adapters (Hexagonal).
-- No hay evidencia de despliegue como microservicios independientes (no hay múltiples `main.py`/entrypoints de servicio backend, un solo `apps/api`) — es un monolito modular, no microservicios.
-- El frontend no es SSR puro tampoco es SPA pura: usa App Router de Next.js 16 con Server Components por defecto (regla de `CLAUDE.md`), y una capa de proxy API routes hace de BFF liviano.
+- **Backend (`apps/api`)**: un único servicio FastAPI, internamente dividido en las tres capas de Clean Architecture (`domain → application → infrastructure`), con 31 routers HTTP como puntos de entrada de infraestructura. No hay evidencia de descomposición en microservicios — es un monolito bien capeado.
+- **Frontend (`apps/web`)**: Next.js 16 App Router con Server Components por defecto, un conjunto de rutas API internas (`app/api/**/route.ts`) que actúan como capa BFF/proxy hacia el backend FastAPI — nunca el navegador llama directo a `apps/api`.
+- **Scraping/ML**: orquestado desde el backend (Playwright + Taskiq/Redis para colas asíncronas), no es un servicio separado en este pase (no se encontró un `apps/scraper` ni similar — vive dentro de `apps/api/src/prosell/infrastructure`).
+
+Evidencia: ausencia de `docker-compose` con múltiples servicios de aplicación propios más allá de `api`/`web` (el resto son Postgres/Redis), ausencia de `packages/*`, y la estructura de directorio de `apps/api/src/prosell/` que replica el patrón Clean Architecture canónico.
 
 ## Component Relationships
 
 ```mermaid
-flowchart TB
-    subgraph Browser["Navegador (comprador / vendedor / admin)"]
-        UI["Componentes UI (React)\nformularios, admin, catálogo, público"]
+graph TB
+    subgraph Cliente
+        Browser["Navegador"]
     end
 
-    subgraph Web["apps/web (Next.js 16)"]
-        AppRouter["App Router\n(admin)/(seller)/p/..."]
-        BFF["Proxy API Routes (BFF)\napps/web/src/app/api/v1/"]
-        ApiClient["Cliente API + Contratos Zod"]
+    subgraph "apps/web (Next.js 16 / React 19)"
+        AppRouter["App Router<br/>(Server Components)"]
+        BFF["Rutas BFF<br/>app/api/{auth,v1}/**/route.ts<br/>(33 archivos)"]
+        Client["Cliente API<br/>lib/api/ (27 módulos)"]
+        Zod["Esquemas Zod-mirror<br/>lib/api/schemas/ (18 módulos)"]
     end
 
-    subgraph Api["apps/api (FastAPI)"]
-        Routers["API Layer\nFastAPI Routers (25 archivos)"]
-        UseCases["Application Layer\nUse Cases + DTOs"]
-        Domain["Domain Layer\nEntidades, Value Objects"]
-        Infra["Infrastructure\nPersistencia + Servicios externos"]
+    subgraph "apps/api (FastAPI / Python 3.13)"
+        Routers["31 Routers REST<br/>190 endpoints"]
+        App["Application Layer<br/>Use Cases (20 grupos)"]
+        Domain["Domain Layer<br/>24 entidades, zero deps"]
+        Infra["Infrastructure Layer<br/>SQLAlchemy, Playwright, Taskiq"]
     end
 
-    subgraph External["Servicios externos"]
-        NHTSA["NHTSA VIN API"]
-        FB["Facebook Marketplace"]
-        Stripe["Stripe"]
-        Spaces["DigitalOcean Spaces / S3"]
+    subgraph Datos
         PG[("PostgreSQL 17")]
+        Redis[("Redis 7.4+")]
     end
 
-    UI --> AppRouter
+    subgraph Externos
+        FBM["Facebook Marketplace<br/>(scraping)"]
+        Stripe["Stripe"]
+        Anthropic["Anthropic SDK"]
+        S3["Storage (boto3)"]
+    end
+
+    Browser -->|"Server Components / fetch"| AppRouter
     AppRouter --> BFF
-    AppRouter --> ApiClient
-    BFF -->|cookies httpOnly, reenvío de headers| Routers
-    ApiClient --> BFF
-    Routers --> UseCases
-    UseCases --> Domain
-    UseCases --> Infra
+    Browser -->|"client fetch"| BFF
+    BFF -->|"forward HTTP"| Routers
+    Client --> Zod
+    AppRouter --> Client
+    Routers --> App
+    App --> Domain
+    App --> Infra
     Infra --> PG
-    Infra --> NHTSA
-    Infra --> FB
+    Infra --> Redis
+    Infra -->|"Playwright scraping"| FBM
     Infra --> Stripe
-    Infra --> Spaces
+    Infra --> Anthropic
+    Infra --> S3
+
+    style Domain fill:#e8f5e9
+    style BFF fill:#fff3e0
 ```
 
-**Fallback de texto**: el navegador renderiza Componentes UI dentro del App Router de `apps/web`; las páginas llaman al Cliente API (contratos Zod) que pega contra las Proxy API Routes del propio Next.js; esas rutas proxy reenvían la request (con cookies httpOnly) hacia los FastAPI Routers de `apps/api`; los routers delegan en Use Cases de Application, que a su vez operan sobre el Domain Layer y sobre Infrastructure (persistencia PostgreSQL y servicios externos: NHTSA, Facebook, Stripe, Spaces).
+**Regla de dependencia (backend)**: `Infrastructure → Application → Domain`, con Domain sin dependencias externas (Python puro), tal como declara `CLAUDE.md` raíz y confirma la estructura de directorios escaneada.
+
+**Corrección de límites del proxy BFF**: los proxies dinámicos `apps/web/src/app/api/v1/*/[...path]/route.ts` (`products`, `categories`, `organizations`, `vehicles`) fuerzan `response.json()` sobre toda respuesta del backend sin verificar `content-type` — un defecto arquitectónico conocido que rompe cualquier endpoint no-JSON (ver `api-documentation.md` y `code-quality-assessment.md`).
 
 ## Data Flow
 
-El flujo típico de una acción de negocio (p. ej. crear un producto vehículo) es:
-
-1. El vendedor completa el formulario dinámico (`GenericProductForm` / `SchemaFieldRenderer`), guiado por el `attribute_schema` JSONB de la categoría elegida.
-2. Si es un vehículo, puede invocar el decodificador VIN (`VinDecodeField` → proxy → `vehicle_router.decode_vin` → `nhtsa_vin_service` → NHTSA API → `nhtsa_normalizer`).
-3. Al enviar, el Cliente API valida contra el schema Zod espejo y pega al proxy BFF, que reenvía al `product_router` de FastAPI.
-4. El `product_router` delega en un Use Case de creación, que valida contra las reglas de `Category` (dominio) y persiste vía repositorio SQLAlchemy — cada cambio de estado se audita automáticamente en `product_audit_log` (trigger a nivel de `repo.update()`, no convención de call-site).
-5. El producto entra en estado `draft`/pendiente y debe pasar por la cola de revisión (`review-queue`) antes de ser visible en el catálogo público (`p/[slug]`).
+1. El navegador interactúa con un Server Component (SSR) o dispara un fetch de cliente contra una ruta BFF de Next.js.
+2. La ruta BFF reenvía la petición al backend FastAPI, incluyendo cookies de sesión httpOnly.
+3. El router de FastAPI correspondiente valida el DTO de entrada (Pydantic), delega a un Use Case de la capa Application.
+4. El Use Case orquesta entidades/servicios de dominio y llama a un puerto (interfaz) que la capa Infrastructure implementa (repositorio SQLAlchemy, servicio externo, etc.).
+5. La respuesta (DTO de salida) sube de vuelta por las mismas capas hasta el router, que la serializa a JSON.
+6. La ruta BFF de Next.js recibe la respuesta y hoy la fuerza a `response.json()` — el punto de fragilidad documentado.
+7. El cliente API del frontend (`lib/api/`) parsea la respuesta contra su esquema Zod-mirror correspondiente (`lib/api/schemas/`) antes de entregarla a TanStack Query / componentes.
 
 ## Interaction Diagrams
 
-Diagramas de secuencia mostrando cómo se implementan (o fallan en implementarse) las transacciones de negocio detrás de los bugs del intent `260826-prod-bugfixes-batch` (diagramas #1-5, preservados como contexto de dominio), más un diagrama nuevo (#6) para el intent activo `260827-react-doctor-cleanup`, trazado a nivel de archivo por el scan del desarrollador.
+### 1. Transición de estado de producto (BFF → FastAPI → SQLAlchemy)
 
-### 1. BUG-3 / BUG-6 — Schema de categoría: select pierde su valor / se renderiza como texto
-
-```mermaid
-sequenceDiagram
-    participant Admin as Admin (CategorySchemaEditor)
-    participant ZodA as AttributeField (Zod, categorySchema.ts)
-    participant API as category_router.py (PATCH /schema)
-    participant DTO as CategoryResponse (JSONB libre)
-    participant Domain as Category.validate_attributes()
-    participant Form as SchemaFieldRenderer.tsx
-    participant TypeB as AttributeSchemaEntry (types/category.ts)
-
-    Admin->>ZodA: elige Render As = "select"
-    Note over ZodA: AttributeField NO tiene campo "options"<br/>no hay UI para poblarlas
-    Admin->>API: PATCH /categories/{id}/schema (JSONB)
-    API->>DTO: persiste tal cual (dict libre)
-    Note over DTO: sin validar contra AttributeField ni AttributeSchemaEntry
-    Domain-->>DTO: (soporta options si existieran - no invocado aquí)
-
-    Note over Form: al crear un producto de esa categoría
-    Form->>TypeB: lee attribute_schema del producto
-    Form->>Form: if (Array.isArray(entry.options) && entry.options.length) render Select
-    Note over Form: entry.options es undefined (nunca se pobló)<br/>render_as="select" es IGNORADO
-    Form-->>Admin: renderiza <input type="text"> en vez de <Select>
-```
-
-**Fallback de texto**: el admin elige "Render As → select" en `CategorySchemaEditor`, pero el tipo Zod que respalda esa UI (`AttributeField`) no tiene ningún campo `options` — no hay dónde cargarlas. El `PATCH /categories/{id}/schema` persiste el JSONB tal cual, sin validación cruzada. Cuando el formulario de creación de producto (`SchemaFieldRenderer`) decide qué control renderizar, lee un tipo _distinto_ (`AttributeSchemaEntry`) y decide renderizar `<Select>` solo si `entry.options` es un array no vacío — nunca mira `render_as`. Como `options` nunca se pobló, siempre cae al input de texto plano. El dominio backend (`Category.validate_attributes()`) sí sabe validar `options` cuando existen, pero nunca llega a intervenir porque el dato nunca las tuvo.
-
-### 2. BUG-5 — Capitalización (Title Case) en formulario de vehículos
+Flujo representativo de una transacción de negocio típica: un revisor aprueba una publicación desde la cola de revisión.
 
 ```mermaid
 sequenceDiagram
-    participant Form as VinDecodeField.tsx
-    participant Router as vehicle_router.py (decode_vin)
-    participant NHTSA as nhtsa_vin_service.py
-    participant Norm as nhtsa_normalizer.py
-    participant Compose as template_composer.py
-    participant Sub as composeSubtitle.ts
+    participant U as Usuario (revisor)
+    participant W as apps/web (Server/Client Component)
+    participant BFF as BFF proxy<br/>app/api/v1/products/[...path]/route.ts
+    participant R as FastAPI Router<br/>(products router)
+    participant UC as Use Case<br/>(ApproveProduct)
+    participant D as Domain<br/>(Product entity, ProductStatus)
+    participant Repo as SQLAlchemyProductRepository
+    participant DB as PostgreSQL
 
-    Form->>Router: GET /vehicles/decode-vin?vin=...
-    Router->>NHTSA: fetch NHTSA API
-    NHTSA-->>Norm: datos crudos (case mixto real)
-    Norm->>Norm: MAKE/BODY_TYPE → lowercase/snake_case\n(alineado a valores estilo FB Marketplace)
-    Router->>Router: _normalize_model(): model.lower().strip()\n(incondicional)
-    Router-->>Form: campos normalizados en minúsculas
-    Form->>Form: mapDecodedToForm() escribe valores tal cual (sin transformar case)
-    Note over Compose: al auto-generar título "{year} {make} {model}"
-    Compose->>Compose: resolve_title(): str(value).strip() (sin case transform)
-    Sub->>Sub: composeSubtitle(): String(value) (sin case transform)
+    U->>W: click "Aprobar"
+    W->>BFF: PATCH /api/v1/products/{id}/approve<br/>(cookie sesión, body JSON)
+    BFF->>R: forward PATCH (Content-Type, Cookie)
+    Note over BFF,R: Headers no estándar (If-Match) se<br/>descartan salvo fix explícito por ruta
+    R->>UC: ApproveProductUseCase.execute(dto)
+    UC->>D: product.can_approve() / transición de estado
+    D-->>UC: nuevo estado válido (o excepción de dominio)
+    UC->>Repo: repository.update(product)
+    Repo->>DB: UPDATE products SET status=...<br/>+ INSERT product_audit_log (trigger automático)
+    DB-->>Repo: OK
+    Repo-->>UC: Product actualizado
+    UC-->>R: ApproveProductResponseDTO
+    R-->>BFF: 200 JSON
+    BFF-->>W: response.json() (asume JSON siempre)
+    W-->>U: UI actualizada, badge de estado
 ```
 
-**Fallback de texto**: `nhtsa_normalizer.py` convierte deliberadamente los valores decodificados de NHTSA a minúsculas/snake_case, pensado para consistencia con los enums estilo Facebook Marketplace usados en scraping/publicación — no para mostrarse al usuario humano. `vehicle_router._normalize_model()` además fuerza `.lower()` incondicionalmente sobre cualquier modelo. Estos valores en minúscula se reutilizan tal cual como valores humanos en el endpoint general de decode-vin que consume el formulario de creación de producto. Nada aguas abajo los re-capitaliza: `mapDecodedToForm()` los escribe verbatim, `template_composer.resolve_title()` (que genera el título automático `{year} {make} {model}`) solo hace `str(value).strip()`, y `composeSubtitle.ts` (subtítulo de la tarjeta de catálogo) solo hace `String(value)`. **No existe ninguna utilidad `titleCase`/`toTitleCase` en todo el código base** (confirmado por búsqueda) — es una utilidad faltante, no una llamada olvidada.
-
-### 3. BUG-4 — Compartir contacto de organización por WhatsApp
+### 2. Pipeline de calidad de código (pre-commit + CI, advisory vs. bloqueante)
 
 ```mermaid
-sequenceDiagram
-    participant Buyer as Comprador (navegador)
-    participant Page as apps/web/app/p/[slug]/page.tsx
-    participant PubRouter as public_product_router.py
-    participant ProductModel as ProductModel (SQLAlchemy)
-    participant View as ProductPublicView.tsx
-    participant WA as wa.me link
-
-    Buyer->>Page: GET /p/{slug}
-    Page->>PubRouter: GET /api/v1/public/products/{slug}
-    PubRouter->>ProductModel: build ProductResponse\n(SIN join a Organization/contactos)
-    ProductModel-->>PubRouter: solo organization_id (UUID)
-    PubRouter-->>Page: ProductData { organization_id, ... }
-    Page->>View: render con ProductData (sin whatsapp, sin address)
-    View->>WA: botón WhatsApp construye https://wa.me/?text=...\n(SIN número de destino)
-    WA-->>Buyer: abre WhatsApp genérico\n("compartir a cualquier contacto", no "chatear con el vendedor")
-```
-
-**Fallback de texto**: `OrganizationContact` (value object backend) y `ContactManager.tsx` (UI admin) permiten registrar contactos nombrados con campo `whatsapp` — pero esa data nunca llega al comprador. `public_product_router.get_public_product` construye el `ProductResponse` directo desde `ProductModel`, sin join hacia `Organization` ni sus contactos. `getProduct()` en `p/[slug]/page.tsx` solo llama a `/api/v1/public/products/{slug}` y su interfaz `ProductData` solo lleva `organization_id` (UUID pelado). El botón "WhatsApp" en `ProductPublicView.tsx` arma un link genérico `https://wa.me/?text=...` sin destinatario — es "compartir a cualquier contacto", no "escribirle directamente al vendedor". Si la intención de negocio es la segunda, falta toda la plomería del lado público: el endpoint, el DTO, y el componente. Corregir el bug reportado ("debe ocultar el teléfono, solo mostrar dirección") requiere primero decidir qué dato SÍ debe viajar al público antes de tocar la UI.
-
-### 4. BUG-7 — Mezcla de idiomas español/inglés en formularios de vehículos
-
-```mermaid
-sequenceDiagram
-    participant User as Usuario (locale EN o ES)
-    participant NextIntl as next-intl (messages/{en,es}.json)
-    participant Chrome as Chrome de UI (nav, labels next-intl)
-    participant Values as vehicle-values.ts (dict hardcoded)
-    participant Form as Formulario de vehículo
-
-    User->>NextIntl: locale resuelto (default "en")
-    NextIntl-->>Chrome: labels traducidos (nav, botones, etc.)
-    Form->>Values: pide labels de fuel_type/body_type/transmission/...
-    Note over Values: dict hardcoded SOLO en español<br/>(comentario propio: "dict only, no i18n lib")
-    Values-->>Form: labels siempre en español
-    Chrome-->>User: chrome en inglés (si locale=en) + valores de vehículo en español
-```
-
-**Fallback de texto**: el frontend corre `next-intl` como sistema de i18n, con `defaultLocale: "en"` (comentario: "Default: English (USA market primary)"). Pero `vehicle-values.ts` — que provee **todas** las etiquetas de valores de atributos de vehículo (fuel_type, body_type, transmission, etc.) mostradas en todo el UI de seller/admin — es un diccionario hardcodeado solo en español, sin ninguna conciencia de locale (comentario propio en el archivo: "ponytail: dict only, no i18n lib. Add next-intl when multi-locale needed"). Un usuario en locale inglés ve el chrome de la app en inglés (vía next-intl) mezclado con etiquetas de vehículo en español — muy probablemente el bug concreto reportado. Esto es un síntoma de un problema más amplio: `docs/AUDIT-UI-UX-I18N-2026-07-21.md` documenta que solo 2 de +125 archivos usan `useTranslations`, con el resto del panel admin/seller/CRM hardcodeado. El backend tiene su propio sistema de i18n (`infrastructure/i18n/translator.py`) pero es **código muerto** — no lo importa nada fuera de su propio paquete.
-
-### 5. FEAT-1 — Exportación de catálogo a CSV (espejo del importador)
-
-```mermaid
-sequenceDiagram
-    participant Admin as Admin/Seller
-    participant Export as (nuevo) endpoint export-csv
-    participant Cols as UNIVERSAL_COLUMNS (set Python)
-    participant Parser as csv_product_parser.py
-    participant Template as category_router.get_category_schema_template
-
-    Note over Template: hoy: list(UNIVERSAL_COLUMNS) + extra_cols + schema keys
-    Note over Cols: UNIVERSAL_COLUMNS es un SET, no list/tuple<br/>orden NO garantizado entre reinicios de proceso\n(hash aleatorio de strings por proceso en CPython)
-    Admin->>Export: solicita exportar catálogo a CSV
-    Export->>Cols: (debería) importar UNIVERSAL_COLUMNS directamente
-    Export->>Parser: reusar misma lógica de columnas que el importador
-    Export-->>Admin: CSV con mismos campos/orden que el importador actual
-```
-
-**Fallback de texto**: el endpoint existente que genera la plantilla CSV de importación (`category_router.get_category_schema_template`) construye el orden de columnas como `list(UNIVERSAL_COLUMNS) + extra_cols + [schema keys]`, donde `UNIVERSAL_COLUMNS = {"title", "price", "category_id"}` es un **set** de Python, no una lista/tupla ordenada. `list()` sobre un set de strings no garantiza orden estable entre reinicios de proceso (CPython aleatoriza el hash de strings por proceso). El nuevo endpoint de exportación (FEAT-1), para "espejar los mismos campos/orden que el importador actual" de forma confiable, debe importar `UNIVERSAL_COLUMNS` directamente y aplicar su propio orden fijo — o mejor, la constante fuente debería convertirse en una secuencia ordenada (`tuple`/`list`) para que ambos endpoints (import template y export) compartan una única fuente de verdad estable.
-
-### 6. Pipeline de diagnósticos `react-doctor` — pre-commit y CI, y el mecanismo de bailout del React Compiler
-
-```mermaid
-flowchart TB
-    Dev["Developer edita .tsx/.ts"]
-    Stage["git add (staged files)"]
-    PreCommit[".pre-commit-config.yaml\nhook local react-doctor --staged --blocking warning"]
-    Wrapper["shell wrapper del hook"]
-    Commit["git commit"]
-    CI[".github/workflows/react-doctor.yml\nmillionco/react-doctor@v2"]
-    PR["Pull Request"]
-
-    Dev --> Stage --> PreCommit
-    PreCommit --> Wrapper
-    Wrapper -->|findings a stderr\nexit code SIEMPRE 0| Commit
-    Commit -->|push| CI
-    CI -->|blocking: comentado\nsolo advisory| PR
-
-    subgraph Compiler["React Compiler (babel-plugin-react-compiler)"]
-        direction TB
-        Source["Componente fuente"]
-        TryFinally["try { ... } finally { ... }\ndetectado en el componente"]
-        Bailout["Compiler NO memoiza\n(bailout silencioso)"]
-        Runtime["Re-renders manuales\nsin memoización automática"]
+flowchart LR
+    subgraph "Pre-commit (local)"
+        Ruff["ruff + ruff-format<br/>(bloqueante)"]
+        Pyright["pyright<br/>(bloqueante)"]
+        LintStaged["lint-staged<br/>eslint --fix + prettier<br/>(solo archivos staged)"]
+        GGA["GGA AI review<br/>(bloqueante, contra AGENTS.md)"]
+        TWCheck["validate-tailwind.sh<br/>(solo var(--ps-*), NO valida<br/>escala de spacing)"]
     end
 
-    Source --> TryFinally --> Bailout --> Runtime
+    subgraph "CI (.github/workflows/ci.yml)"
+        LP["lint-python"]
+        TP["test-python"]
+        LN["lint-node"]
+        TN["test-node"]
+        VS["validate-specs"]
+        VCS["validate-code-standards"]
+        Build["build"]
+    end
+
+    subgraph "Advisory-only (no bloquea merge)"
+        RD["react-doctor.yml"]
+        Graphify["graphify.yml"]
+    end
+
+    Ruff --> GGA
+    Pyright --> GGA
+    LintStaged --> GGA
+    TWCheck -.->|"no detecta clases de<br/>spacing inválidas"| GGA
+    GGA --> Commit["commit local"]
+    Commit --> Push["push"]
+    Push --> LP & TP & LN & TN & VS & VCS
+    LP & TP & LN & TN & VS & VCS --> Build
+    Push -.-> RD
+    Push -.-> Graphify
+
+    style TWCheck fill:#ffebee
+    style RD fill:#e3f2fd
+    style Graphify fill:#e3f2fd
 ```
 
-**Fallback de texto**: `react-doctor` corre en dos puntos del pipeline, ninguno bloqueante hoy. En pre-commit, `.pre-commit-config.yaml` declara un hook local `react-doctor --staged --blocking warning`, pero el wrapper de shell que lo invoca no propaga el exit code — los hallazgos se escriben a stderr y el commit siempre tiene éxito (confirmado por el scan del desarrollador). En CI, `.github/workflows/react-doctor.yml` (nuevo este pase) usa la action `millionco/react-doctor@v2` con su input `blocking:` comentado — es puramente advisorio, no falla el job ni bloquea el merge del PR. Resultado: hoy **ningún gate local ni de CI puede impedir una regresión** de score/diagnósticos — solo una corrida manual o una revisión humana del output de CI lo detecta. Por separado, el diagrama de la derecha ilustra el patrón de bailout más frecuente detectado (`react-hooks-js/todo`, 9 ocurrencias): un componente con `try { ... } finally { ... }` hace que el React Compiler (`babel-plugin-react-compiler`, activado vía `reactCompiler: true` en `next.config.ts`) deje de memoizar automáticamente ese componente — el componente sigue funcionando, pero pierde la optimización de re-render que el resto de la base de código obtiene gratis del compiler.
+Este segundo diagrama explica directamente por qué el bug de este intent (clases Tailwind inválidas `h-9.5`/`px-4.5`) llegó a `main` sin ser atrapado: `validate-tailwind.sh` solo revisa el patrón `var(--ps-*)` dentro de `className`, no la validez de la clase de utilidad de spacing contra la escala configurada — ningún linter en el pipeline actual lo hace.
 
 ## Key Design Decisions
 
-- **Clean Architecture estricta en backend, con dominio cero-dependencias** — facilita testear reglas de negocio sin infraestructura, a costa de más indirección (DTOs, puertos, mapeos) en cada feature.
-- **JSONB libre para `attribute_schema` de categoría** — da flexibilidad total para categorías dinámicas (vehículos, inmuebles, artículos) sin migraciones por cada tipo de atributo, pero es la causa raíz directa de BUG-3/6: sin un contrato de tipo único compartido entre el editor de schema y el renderer runtime, el JSONB acepta formas que un lado entiende y el otro no.
-- **BFF liviano en Next.js (Proxy API Routes)** — centraliza el manejo de cookies httpOnly, pero cada proxy debe reenviar manualmente los headers necesarios; un bug histórico confirmado (sesión 2026-08-21, fuera de este intent) mostró que un proxy descartaba silenciosamente `If-Match`, rompiendo 4 endpoints de "deshacer" solo quando se usaban desde el navegador real.
-- **Normalización de valores decodificados hacia minúsculas/snake_case (NHTSA → estilo Facebook)** — decisión correcta para el pipeline de scraping/publicación, pero reutilizada sin transformación en el endpoint humano de decode-vin — mezcla dos audiencias (máquina vs. humano) en un solo endpoint sin diferenciación de presentación.
-- **next-intl adoptado solo parcialmente** — decisión de alcance (probablemente priorización de tiempo) documentada en `docs/AUDIT-UI-UX-I18N-2026-07-21.md`, con el 95% del UI todavía hardcodeado.
-- **React Compiler activado (`reactCompiler: true`)** — confirmado en vivo en `next.config.ts`, junto con `babel-plugin-react-compiler` + `eslint-plugin-react-hooks` conscientes del compiler. Decisión coherente con "no `useMemo`/`useCallback` manuales" (regla zero-tolerance del equipo), pero exige que el código evite patrones que fuerzan bailout (p. ej. `try/finally` dentro de un componente) — de ahí el foco del intent `260827-react-doctor-cleanup` en esos 9 casos confirmados.
-- **`react-doctor` adoptado como advisory-only en ambos gates (pre-commit y CI)** — decisión implícita (o pendiente, no confirmada como deliberada) de no bloquear commits/merges todavía mientras se reduce el backlog inicial de 371 diagnósticos. Ver diagrama #6 arriba y `code-quality-assessment.md` para el detalle completo.
+- **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
+- **Multi-tenant por `tenant_id` explícito** en cada agregado — decisión de aislamiento a nivel de fila, no de esquema/DB separada.
+- **BFF como capa de indirección obligatoria** — el navegador nunca habla directo con FastAPI; centraliza cookies httpOnly y auth, a costa de duplicar la superficie de rutas (33 archivos proxy) y de introducir el defecto de `response.json()` ciego.
+- **Zod-mirror 1:1** — cada DTO de backend tiene un esquema Zod equivalente en frontend, para no confiar en `as X` sin validar (regla zero-tolerance del proyecto).
+- **Auditoría automática de cambios de estado** — `ProductAuditLog` se dispara por diff en `SqlAlchemyProductRepository.update()`, no por convención de call-site, evitando el olvido de auditar un flujo nuevo.
+- **`packages/*` no implementado pese a estar documentado** — decisión implícita (o plan diferido) de no compartir tipos en build-time entre `apps/web` y `apps/api`; hoy el contrato se sincroniza a mano vía los esquemas Zod-mirror.
 
 ## Improvement Opportunities
 
-1. **Unificar el tipo de `attribute_schema`** entre `AttributeField` (editor) y `AttributeSchemaEntry` (runtime) en un único contrato Zod compartido, con `options` disponible en ambos y el renderer decidiendo por `render_as` en vez de por la presencia de `options`. Esto resuelve BUG-3 y BUG-6 de raíz.
-2. **Introducir una utilidad `toTitleCase()`** aplicada en el punto de presentación (formulario, `resolve_title`, `composeSubtitle`) — no en el normalizador NHTSA, que debe seguir devolviendo minúsculas para el pipeline de scraping. Mantener dos vistas del mismo dato: una "canónica" (minúsculas, para máquina) y una "de presentación" (Title Case, para humano).
-3. **Decidir y plomar el flujo completo de contacto público** antes de tocar el botón de WhatsApp — requiere extender `public_product_router` con un join (o endpoint dedicado) hacia los contactos de la organización, y decidir explícitamente qué campos son públicos (WhatsApp sí, teléfono no, dirección sí — según lo pedido en BUG-4).
-4. **Auditar los demás proxies BFF** (`organizations`, `categories`) por el mismo patrón de headers descartados que rompió `products` — es una clase de bug, no un caso aislado, según lo aprendido en la sesión 2026-08-21.
-5. **Completar la migración a `next-intl`** o, si el alcance actual es "normalizar sin i18n completo" (como pide el intent), extraer `vehicle-values.ts` a un formato consciente de locale igual sin llegar a next-intl completo — documentar la decisión explícitamente para no repetir la mezcla en el próximo campo agregado.
-6. **Eliminar el archivo de respaldo** `auth_router.py.backup2` del árbol versionado.
-7. **Convertir `UNIVERSAL_COLUMNS` a una secuencia ordenada** antes de construir FEAT-1 sobre ella.
-8. **Corregir el drift de documentación de Tailwind**: `CLAUDE.md` y `docs/AUDIT-UI-UX-I18N-2026-07-21.md` afirman "TailwindCSS 4.0" / "Tailwind 4 configurado", pero el `package.json` real fija `3.4.17` con `tailwind.config.ts` + directivas `@tailwind base/components/utilities` de estilo v3 (Tailwind v4 usa `@import "tailwindcss"` sin archivo de config JS). Ver `technology-stack.md`.
-9. **Convertir al menos uno de los dos gates de `react-doctor` (pre-commit o CI) en bloqueante** una vez que el backlog inicial de 371 diagnósticos baje a un nivel manejable — hoy ninguno de los dos puede impedir una regresión de score. Ver `code-quality-assessment.md` para el detalle del pipeline advisory-only.
-10. **Resolver los archivos con múltiples categorías de diagnóstico simultáneas en una sola pasada** (`UnifiedProductForm.tsx` y `category-schema-editor.tsx` cargan a la vez bailout de React Compiler por `try/finally` y el diagnóstico de componente gigante `no-giant-component`/`only-export-components`) — arreglarlos en pasadas separadas por categoría desperdicia el mismo archivo tocado dos veces.
+- Cerrar la brecha `response.json()`-sin-content-type en los 4 proxies dinámicos (`products`, `categories`, `organizations`, `vehicles`) antes de que un endpoint no-JSON (CSV, archivo) los rompa en producción.
+- Decidir formalmente el destino de `packages/shared-types/`: implementarlo o quitarlo de la documentación — hoy es drift activo.
+- Evaluar mover la validación de clases Tailwind a un linter real (p. ej. plugin ESLint de Tailwind) en vez de un grep de `validate-tailwind.sh` que no puede detectar clases de utilidad inválidas.
+- Investigar el propósito de `apps/app/` (orphan, un solo archivo) — candidato a eliminación o a integración real.

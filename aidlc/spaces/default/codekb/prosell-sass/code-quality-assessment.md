@@ -1,92 +1,87 @@
-# Code Quality Assessment — prosell-sass
+# Code Quality Assessment — ProSell SaaS
 
-## Backlog `react-doctor` (intent activo `260827-react-doctor-cleanup`)
+## Test Coverage
 
-`react-doctor` se instaló esta sesión como devDependency raíz + hook de pre-commit + workflow de CI en `apps/web`. Score inicial: **53/100**, **371 diagnósticos** (9 errores, 362 warnings), tras un primer batch de 7 archivos ya corregidos y verificados (test + lint + typecheck + rescan verde, sin commitear: `.pre-commit-config.yaml`, `apps/web/package.json`, `apps/web/src/app/(admin)/admin/fb-accounts/migration-approval/page.tsx`, `apps/web/src/app/(admin)/admin/fb-accounts/page.tsx`, `apps/web/src/app/invite/[token]/page.tsx`, `apps/web/src/components/admin/category-schema-editor.tsx`, `apps/web/src/components/layout/Sidebar.tsx`, `apps/web/src/components/ui/RefreshTrigger.tsx`, `apps/web/tests/setup.tsx`). El número de 371 restante es el conteo autoritativo de la propia herramienta; este pase de RE solo confirma categorías puntuales por grep en vivo, no vuelve a correr el scanner.
+| Área                              | Directorios                                                                                                         | Frameworks                           | Config de cobertura                                                                                                                                                                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend                           | `apps/api/tests/{contract,integration,unit,stubs,utils}/` (272 archivos `.py`) + `apps/api/src/prosell/tests/unit/` | pytest + pytest-asyncio + pytest-cov | `pytest.ini` presente; sin threshold de cobertura enforced visible en este pase (skimmed, no confirmado en detalle)                                                                                                                                   |
+| Frontend                          | `apps/web/tests/` (93 archivos) + 70 co-localizados `*.test.tsx`/`.test.ts`                                         | Vitest + Testing Library + jsdom     | `vitest.config.ts` — provider v8, thresholds `lines:40 functions:40 branches:75 statements:40`, **deliberadamente bajados** de un objetivo original del 80% (comentario en código justifica: la superficie del catálogo superó la superficie de test) |
+| E2E                               | `tests/e2e/specs/` (34 archivos)                                                                                    | Playwright                           | —                                                                                                                                                                                                                                                     |
+| Presencia adicional, no explorada | `tests/{integration,unit,apps}/` a nivel raíz                                                                       | —                                    | solo presencia confirmada                                                                                                                                                                                                                             |
 
-### Desglose por categoría (fuente: Project Information del intent, spot-confirmado por grep donde se indica)
+## Linting
 
-| Categoría                                                                          | Cantidad     | Estado / decisión                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ---------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `react-hooks-js/todo` (bailout React Compiler)                                     | 9            | **Confirmado en vivo**: 5 archivos con `try {...} finally {...}` tienen receta de fix acordada (`stores/authStore.ts`, `lib/api/authApi.ts`, `app/onboarding/page.tsx` ×3, `components/forms/UnifiedProductForm.tsx`, `components/upload/BulkUploadCSV.tsx`); 4 son imports dinámicos deliberados que el usuario decidió **NO tocar** (`hooks/useOAuthPreload.ts` ×2, `lib/api/products.ts:1220`, `lib/api/verticals.ts:134` — confirmados en vivo, code-splitting intencional) |
-| `no-hydration-branch-on-browser-global`                                            | 1            | **Evaluado y RECHAZADO como falso positivo** — no requiere fix                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `zod-v4-no-deprecated-schema-apis`                                                 | 39           | Volumen alto — pendiente muestra representativa + aprobación antes de fix masivo. Ver `technology-stack.md` § Zod.                                                                                                                                                                                                                                                                                                                                                              |
-| `zod-v4-prefer-top-level-string-formats`                                           | 19           | Volumen alto — mismo patrón de migración que la fila anterior, pendiente aprobación                                                                                                                                                                                                                                                                                                                                                                                             |
-| deslop `unused-export`                                                             | 31           | Volumen alto — sin herramienta de cross-validation (`knip`/`ts-prune`/`depcheck`), requiere revisión manual antes de borrar                                                                                                                                                                                                                                                                                                                                                     |
-| deslop `unused-file`                                                               | 29           | Ídem — mismo riesgo de falso positivo sin segunda herramienta                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| deslop `unused-dependency`                                                         | 2            | Volumen bajo — pendiente aprobación igual que el resto del deslop                                                                                                                                                                                                                                                                                                                                                                                                               |
-| accessibility (`control/label-has-associated-control`, etc.)                       | ~85          | Volumen alto — pendiente muestra representativa + aprobación                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| performance (`js-combine-iterations`, `js-set-map-lookups`, `js-hoist-intl`, etc.) | ~50          | Volumen alto — pendiente muestra representativa + aprobación                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `no-giant-component` + `only-export-components`                                    | 16 + 16 = 32 | Ver ranking de tamaño en `code-structure.md` § "Componentes grandes detectados por `react-doctor`" — 2 archivos (`UnifiedProductForm.tsx`, `category-schema-editor.tsx`) coinciden con la fila de bailout de compiler, arreglar en una sola pasada por archivo                                                                                                                                                                                                                  |
-| bugs varios (misc)                                                                 | ~55          | Volumen alto — pendiente muestra representativa + aprobación                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| security `tenant-static-proxy-risk`                                                | 3            | Categoría de seguridad — no evaluada a fondo en este pase, pendiente triage                                                                                                                                                                                                                                                                                                                                                                                                     |
-
-### Estado de los gates locales/CI para `react-doctor`
-
-- **Pre-commit**: hook local `react-doctor --staged --blocking warning`, pero el wrapper de shell **no propaga el exit code** — los hallazgos van a stderr, el commit siempre pasa. No bloquea.
-- **CI**: `.github/workflows/react-doctor.yml` (nuevo), usa `millionco/react-doctor@v2` con `blocking:` comentado — puramente advisorio, no falla el job.
-- **Consecuencia**: hoy **ningún gate local puede impedir una regresión** de score/diagnósticos de `react-doctor` — solo CI (advisorio) o una corrida manual la detectan. Ver `architecture.md` § Interaction Diagrams #6 para el diagrama del pipeline completo.
-- Nota relacionada, no causada por este intent: el hook de pre-commit de ESLint está **deshabilitado** ("TODO: currently disabled due to next lint issues") — `lint-staged` corre `eslint --fix` + `prettier --write` como sustituto parcial sobre archivos staged. Confirma que la disciplina de gates locales del frontend tiene más de un punto débil, no solo el de `react-doctor`.
-
-### Riesgo de sensibilidad de cobertura frente a la limpieza de código muerto
-
-El umbral de cobertura frontend ya fue bajado una vez (80%→40%/40%/75%, ver detalle abajo). Eliminar 60 diagnósticos de `unused-export`/`unused-file` puede mover ese porcentaje en cualquier dirección (subir si el código muerto no aportaba cobertura, bajar si algún archivo "no usado" en realidad sí tenía tests que lo ejercitaban indirectamente) — a verificar caso por caso en Build and Test, no asumir neutralidad.
-
-## Cobertura de tests
-
-| Suite                             | Directorios                                                                                 | Archivos | Framework                                                     |
-| --------------------------------- | ------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------- |
-| Backend unit/integration/contract | `apps/api/tests/{unit,integration,contract,utils}`                                          | 270      | pytest + pytest-asyncio (`asyncio_mode=auto`) + pytest-cov    |
-| Backend unit (ubicación inusual)  | `apps/api/src/prosell/tests/unit`                                                           | 8        | pytest — dentro de `src/`, no en `tests/` de nivel de paquete |
-| Frontend unit/component           | `apps/web/tests/{unit,components,app,e2e,__mocks__,utils}` + 65 co-localizados `*.test.tsx` | 93 + 65  | Vitest + Testing Library + jsdom                              |
-| E2E                               | `tests/e2e/{specs,fixtures}`                                                                | 88       | Playwright                                                    |
-
-**No se encontró (en este pase) un umbral de cobertura configurado para pytest** — no confirma ausencia real, solo que no se localizó en la lectura de `pytest.ini` (solo se leyeron las claves de config, no el archivo completo).
-
-### Umbral de cobertura frontend — regresión documentada explícitamente
-
-`apps/web/vitest.config.ts` (provider v8) tiene los umbrales **bajados explícitamente de 80% → 40% líneas/funciones, 75% ramas**, con un comentario inline documentando la razón: el catálogo se volvió multi-vertical más rápido de lo que creció la cobertura de tests. Medición de junio 2026 citada en el propio comentario: **líneas 48.51%, funciones 44.45%, ramas 77.9%**. Esto es deuda técnica reconocida y auto-documentada por el equipo — no un hallazgo nuevo de este pase, pero relevante para calibrar cuánta cobertura de regresión exigir en el bugfix batch actual (scope `express`, que según `org.md` usa la "Minimal strategy": un test por requerimiento + piso de happy-path por componente, sin exigir subir el piso de cobertura global).
-
-## Linting y type-checking
-
-- **Backend**: Ruff (reglas `E/W/F/I/N/UP/B/C4/SIM/ARG/PTH/RUF`, `target-version = py313`) + Pyright (modo `standard`, `py313`).
-  - `apps/api/pyproject.toml` tiene un bloque `per-file-ignores` con comentario `# TODO: Fix these pre-existing issues` nombrando 6 archivos con reglas suprimidas — backlog de deuda auto-documentado, no oculto.
-- **Frontend**: ESLint con `max-warnings=0` (cero tolerancia — cualquier warning bloquea) + `tsc --noEmit` + Prettier repo-wide.
-- **Pre-commit**: `.pre-commit-config.yaml` corre linters en cada commit; `.gga` corre revisión de código por IA contra las reglas de `AGENTS.md` en cada commit — doble gate antes de que el código llegue a CI. El hook de ESLint específicamente está deshabilitado (ver arriba); el hook de `react-doctor` (nuevo) corre pero no bloquea.
+- **Python**: Ruff (`select = [E,W,F,I,N,UP,B,C4,SIM,ARG,PTH,RUF]`) + Pyright — completamente wireados en pre-commit **y** pre-push.
+- **TypeScript/JS**: ESLint flat config (`eslint . --max-warnings=0`) — pero el hook `next-lint` de pre-commit está **comentado** ("TODO: currently disabled due to next lint issues"). `lint-staged` (`eslint --fix` + `prettier --write`) cubre solo archivos staged como sustituto parcial — no hay enforcement completo de ESLint en cada commit.
+- **`scripts/validate-tailwind.sh`**: verifica solo el patrón `var(--ps-*)` dentro de `className` — no valida la validez de una clase de utilidad de spacing contra la escala configurada de Tailwind. Confirmado por lectura completa del script.
 
 ## CI/CD
 
-7 pipelines en `.github/workflows/` (6 heredados + 1 nuevo este pase):
-
-- `ci.yml` — **leído a fondo esta sesión**: 7 jobs confirmados — `lint-python`, `test-python`, `lint-node`, `test-node`, `validate-specs`, `validate-code-standards`, `build`. Corre en `ubuntu-latest`.
-- `react-doctor.yml` — **nuevo este pase**, usa la action `millionco/react-doctor@v2`, advisory-only (`blocking:` comentado). Ver `## Backlog react-doctor` arriba.
-- `deploy.yml`, `e2e.yml`, `graphify.yml`, `promote-prod.yml`, `recover-prod.yml` — **no abiertos en este pase**, presencia confirmada únicamente.
+- **`.github/workflows/ci.yml`** — 7 jobs: `lint-python`, `test-python`, `lint-node`, `test-node`, `validate-specs`, `validate-code-standards`, `build`.
+- **`.github/workflows/e2e.yml`** — suite E2E Playwright.
+- **`.github/workflows/deploy.yml`** — despliegue a staging on `workflow_run`.
+- **`.github/workflows/react-doctor.yml`** — advisory-only (no bloquea merge).
+- **`.github/workflows/graphify.yml`** — reconstrucción del grafo de conocimiento.
+- **`.github/workflows/promote-prod.yml`** / **`recover-prod.yml`** — promoción y recuperación de producción.
 
 ## Documentación
 
-- `CLAUDE.md` es detallado y explícito sobre convenciones, pero tiene **al menos un drift confirmado**: TailwindCSS documentado como "4.0", instalado real `3.4.17` (ver `technology-stack.md`). El mismo drift está replicado en `docs/AUDIT-UI-UX-I18N-2026-07-21.md` ("Tailwind 4 configurado") — está en al menos dos documentos, no es un error de tipeo puntual.
-- `docs/AUDIT-UI-UX-I18N-2026-07-21.md` — auditoría propia del equipo, fechada 2026-07-21, ya documenta con detalle el problema de i18n incompleto (95% hardcoded, solo 2 archivos usan `useTranslations`) que subyace a BUG-7. Este pase de reverse engineering **corrobora y añade** el detalle técnico específico (`vehicle-values.ts` como fuente puntual del bug reportado) que el audit de UX no llega a nivel de archivo/línea.
-- Comentarios de código auto-documentando deuda: `vehicle-values.ts` ("ponytail: dict only, no i18n lib. Add next-intl when multi-locale needed"), `SchemaFieldRenderer.tsx` ("check options array, not type — schema uses filter_type for select"), `vitest.config.ts` (justificación de la baja de umbral de cobertura). Buena señal de cultura de equipo: la deuda se declara donde vive, no se esconde.
+- `CLAUDE.md` raíz es comprehensivo pero tiene **al menos 2 puntos de drift confirmados** (ver Signal #1 y #8 abajo).
+- `AGENTS.md` (521 líneas) — reglas autoritativas de revisión AI (GGA), incluye la excepción Zod-3-vs-4.
+- 13 archivos markdown sueltos en la raíz del repo (artefactos de sesión/handoff ad-hoc) — `docs/sessions/` existe como hogar presumible, no usado consistentemente.
 
-## Señales de deuda técnica (consolidado)
+---
 
-Ordenadas por relevancia directa al intent activo (`260827-react-doctor-cleanup` primero, luego lo heredado del intent anterior como contexto):
+## Technical Debt Signals (inventario completo — 8 señales)
 
-1. **Backlog `react-doctor` de 371 diagnósticos (53/100)** — ver desglose completo arriba. Ningún gate local/CI puede impedir hoy una regresión.
-2. **Archivos con múltiples categorías de diagnóstico simultáneas** (`UnifiedProductForm.tsx`, `category-schema-editor.tsx`) — requieren una pasada de fix combinada, no separada por categoría.
-3. **Sin herramienta de cross-validation para el deslop de `react-doctor`** (`unused-export`/`unused-file`/`unused-dependency`, 62 diagnósticos) — un único analizador estático decide qué se borra; requiere revisión manual antes de un borrado masivo.
-4. **Sensibilidad del umbral de cobertura frontend a la limpieza de código muerto** — ya bajado una vez (ver detalle abajo); una limpieza de 60 archivos/exports puede moverlo en cualquier dirección.
-5. **ESLint deshabilitado en pre-commit + `react-doctor` no bloqueante en ambos gates** — dos brechas de gate local independientes, no relacionadas entre sí pero que se suman.
-6. **Doble contrato de tipo para `attribute_schema`** (`AttributeField` vs `AttributeSchemaEntry`) — raíz de BUG-3/6 del intent anterior. Ver `architecture.md` § Interaction Diagrams #1.
-7. **Sin utilidad `titleCase`/`toTitleCase` en todo el código base** — raíz de BUG-5 del intent anterior.
-8. **Vacío de plomería público para contacto de organización** — raíz de BUG-4 del intent anterior, requiere backend + frontend.
-9. **i18n backend muerto + i18n frontend al 5% de adopción** — raíz de BUG-7 del intent anterior, ya auto-documentado por el equipo en `docs/AUDIT-UI-UX-I18N-2026-07-21.md`.
-10. **`UNIVERSAL_COLUMNS` como `set` sin orden garantizado** — riesgo heredado del intent anterior para FEAT-1.
-11. **`CreateOrganizationUseCase` duplicado** en `org/` vs `organization/` — deuda de claridad arquitectónica.
-12. **Archivo de respaldo `auth_router.py.backup2`** versionado en el árbol — cosmético.
-13. **Drift de documentación Tailwind 3 vs 4** — replicado en dos documentos.
-14. **Piso `requires-python >=3.12` vs target documentado "3.13+"** — inconsistencia menor, no bloqueante.
+### 1. ⚠️ Clases Tailwind inválidas — bug de este intent, alcance más amplio de lo originalmente declarado
 
-## Evaluación general
+**Este es el defecto que originó el intent `260828-fix-invalid-tailwind-spa`.** Barrido repo-wide de todo patrón `*-<n>.5` bajo `apps/web/src` confirmó que la mayoría de las clases half-step (`gap-1.5`, `px-2.5`, `mt-0.5`, `w-3.5`) **son válidas** en la escala default de Tailwind 3 (que incluye half-steps 0.5–3.5). El bug real está acotado a instancias **por encima de 3.5**, que `tailwind.config.ts` (leído completo) no extiende y por tanto compilan a CSS vacío.
 
-El frontend entra a este intent con **disciplina de proceso fuerte pero incompleta en el eje de gates automáticos**: Clean Architecture consistente en backend, cero-tolerancia a warnings de ESLint _cuando corre_ (el hook está deshabilitado en pre-commit), doble gate pre-commit con revisión por IA, y ahora `react-doctor` como tercera capa de análisis estático — pero ninguna de las dos capas nuevas (`react-doctor` en pre-commit, `react-doctor` en CI) es hoy bloqueante, así que el score de 53/100 puede regresar sin que nada lo impida activamente. El backlog de 371 diagnósticos tiene una composición manejable: 9 errores con receta de fix confirmada (5) o decisión explícita de no tocar (4), 1 falso positivo ya descartado, y el resto son categorías de alto volumen (Zod deprecated APIs, deslop, accesibilidad, performance, componentes gigantes, bugs varios, seguridad) que requieren una muestra representativa y aprobación explícita antes de un fix masivo — evitando así el riesgo de aplicar 200+ cambios automáticos sin revisión humana sobre un código base sin segunda herramienta de cross-validation para el deslop. La deuda heredada del intent anterior (contrato de tipo doble en categorías, i18n parcial, utilidad de Title Case faltante) permanece sin cambios — no fue tocada en este pase por estar fuera de su alcance.
+**Inventario completo — 7 archivos, 13 instancias** (ver `component-inventory.md` para el detalle línea por línea):
+
+- `h-9.5` — `OnboardingStep3.tsx:167,181,196` (3×); `publications/page.tsx:286,297,443,450` (4×); `PublishForm.tsx:573,583` (2×)
+- `px-4.5` — `privacy/page.tsx:89`; `terms/page.tsx:89`; `publications/page.tsx:286,297` (2×); `AppointmentForm.tsx:529`
+- `h-8.5` — `KanbanBoard.tsx:291`
+
+**⚠️ Brecha de alcance frente al intent original**: el intent declaró originalmente 5 archivos (`privacy/page.tsx`, `terms/page.tsx`, `publications/page.tsx`, `OnboardingStep3.tsx`, `AppointmentForm.tsx`). Este rescan encontró **2 archivos y 3 instancias adicionales no declarados**: `PublishForm.tsx` (2× `h-9.5`) y `KanbanBoard.tsx` (1× `h-8.5`). Total real = 7 archivos, 13 instancias. Esta brecha debe surgirse explícitamente en Requirements Analysis para decidir si el fix cubre las 13 instancias o se acota a las 10 originalmente conocidas con un follow-up para las 3 restantes.
+
+**Causa raíz probable — drift documental**: la tabla de stack de `CLAUDE.md` raíz declara **TailwindCSS 4.0**, cuando la versión real instalada (`apps/web/package.json`) es **3.4.17**. Es plausible que un agente o humano confiando en esa tabla haya asumido el motor de spacing de Tailwind 4 al escribir `h-9.5`/`px-4.5`, generando el bug. Ver Signal #8 para el drift documental en sí.
+
+**Ningún linter existente atrapa este bug**: `scripts/validate-tailwind.sh` solo revisa `var(--ps-*)`, no la validez de clases de utilidad de spacing — confirmado por lectura completa.
+
+### 2. `packages/` documentado pero ausente
+
+`CLAUDE.md` raíz documenta una estructura de monorepo que incluye `packages/shared-types/` — el directorio **no existe** en disco (confirmado). Documentación muerta, o plan diferido sin fecha.
+
+### 3. `apps/app/` — micro-app huérfana
+
+Contiene únicamente `privacy/page.tsx`. Sin wiring confirmado al grafo de build activo del workspace pnpm. Estado y propósito no claros — candidato a eliminación o integración real, decisión pendiente.
+
+### 4. Hook ESLint deshabilitado en pre-commit
+
+Comentado en `.pre-commit-config.yaml` con TODO abierto ("currently disabled due to next lint issues"). `lint-staged` cubre solo archivos staged, no un enforcement completo por commit — brecha de cobertura de linting real.
+
+### 5. Estado dual Zod 3/4
+
+`AGENTS.md` instruye usar Zod 3 hasta resolver issue #74, pero `apps/web/package.json` ya instala `zod: ^4.4.0`. El código real sigue en estilo Zod 3. Un intento parcial de migrar 2 archivos fue revertido en el intent `260827-react-doctor-cleanup` porque GGA lo bloqueó citando esta misma regla. Migración completa trackeada aparte en `260828-zod-3-to-4-migration` — **no colar fixes parciales de Zod 4** en otros archivos hasta que ese intent corra.
+
+### 6. Clutter de markdown suelto en la raíz
+
+13 archivos `.md` ad-hoc de sesión/handoff en la raíz del repo, sin mover a `docs/sessions/` (que sí existe como hogar presumible).
+
+### 7. Thresholds de cobertura frontend deliberadamente bajados
+
+`vitest.config.ts` documenta en comentario in-code la razón: la superficie del catálogo (número de componentes/páginas) superó la superficie de test disponible, y el equipo bajó el threshold de un 80% original a `lines:40 functions:40 branches:75 statements:40` en vez de bloquear CI. Deuda intencional y documentada, no accidental.
+
+### 8. ⚠️ Drift de tabla de stack en `CLAUDE.md` raíz — Tailwind 4.0 vs. 3.4.17 real
+
+Confirmado por lectura completa de `apps/web/package.json`: la versión real es `3.4.17`, no `4.0` como afirma la tabla "Tech Stack 2026" del `CLAUDE.md` raíz. **Causa raíz plausible del Signal #1** (el bug de este intent) — ver arriba. Corrección de la tabla recomendada como parte de este intent o de un follow-up inmediato para prevenir recurrencia.
+
+---
+
+## Prioridad recomendada de resolución (para Requirements Analysis)
+
+1. **Signal #1** (bug del intent) — bloqueante para este intent, con la decisión de alcance (7 vs. 5 archivos) pendiente de confirmación explícita.
+2. **Signal #8** (drift Tailwind en CLAUDE.md) — causa raíz de #1, corrección barata, alto valor preventivo.
+3. Signals #2–#7 — deuda preexistente, no bloqueante para este intent, cada uno con intent propio o pendiente de uno (Signal #5 ya tiene intent dedicado; Signal #4 sin intent propio aún, ver también `260828-useeffect-to-react-query` para deuda relacionada de patrones React no cubierta por este pase).

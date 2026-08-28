@@ -1,64 +1,60 @@
-# Dependencies — prosell-sass
+# Dependencies — ProSell SaaS
 
-## Dependencias internas entre paquetes (monorepo)
+## Dependencias internas entre paquetes del monorepo
 
-```mermaid
-flowchart LR
-    Web["apps/web (Next.js)"] -->|HTTP, cookies httpOnly| Api["apps/api (FastAPI)"]
-    E2E["tests/e2e (Playwright)"] -->|dirige el navegador contra| Web
-    E2E -->|verifica estado vía API| Api
-    App["apps/app (micro-app)"] -.->|relación no confirmada| Web
-    Shared["packages/shared-types (documentado, NO PRESENTE)"] -.->|aspiracional| Web
-    Shared -.->|aspiracional| Api
-```
+**Ninguna.** `apps/web` y `apps/api` no comparten código en tiempo de compilación — se comunican exclusivamente por HTTP en runtime a través de la capa BFF (ver `architecture.md`). El directorio `packages/` que debería alojar código compartido (`packages/shared-types/`, según documenta `CLAUDE.md` raíz) **no existe** — confirmado por verificación directa de presencia de directorio.
 
-**Fallback de texto**: `apps/web` depende de `apps/api` vía HTTP (con cookies httpOnly para auth). La suite `tests/e2e` dirige un navegador real contra `apps/web` y, en algunos flujos, verifica estado directamente contra `apps/api`. La relación entre `apps/app` (micro-app) y `apps/web` no fue confirmada — solo se sabe que ambos son apps Next.js del mismo monorepo. `packages/shared-types`, documentado en `CLAUDE.md` como código compartido futuro, **no existe** en el árbol actual — no hay dependencia real que trazar ahí todavía; cualquier tipo compartido hoy vive duplicado (ver el caso `AttributeField` vs `AttributeSchemaEntry` en `component-inventory.md`).
+Consecuencia práctica: la sincronización de contrato entre backend y frontend es **manual y convencional**, sostenida por la disciplina del patrón Zod-mirror (18 esquemas Zod en `apps/web/src/lib/api/schemas/` espejando DTOs Pydantic), no por un tipo compartido en build-time. Esto es una fuente de riesgo de drift silencioso entre ambos lados si el mirror no se actualiza al cambiar un DTO backend.
 
-## Dependencias externas críticas — Backend
+## Grafo de build (Turborepo)
 
-| Dependencia                                               | Rol                                            | Punto de acoplamiento conocido                                                                                                                                                                      |
-| --------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| NHTSA VIN Decoder API                                     | Fuente de datos de decodificación de vehículos | `nhtsa_vin_service.py` — sin fallback/circuit breaker confirmado en este pase; si NHTSA cambia formato de respuesta, `nhtsa_normalizer.py` rompe silenciosamente (no verificado el manejo de error) |
-| PostgreSQL 17                                             | Persistencia primaria                          | vía SQLAlchemy 2.0 async + asyncpg                                                                                                                                                                  |
-| DigitalOcean Spaces / S3 (boto3)                          | Storage de imágenes                            | abstraído detrás de `IDOSpacesService` (puerto)                                                                                                                                                     |
-| Stripe                                                    | Pagos/wallet                                   | `wallet_router` (no leído a fondo)                                                                                                                                                                  |
-| Facebook Marketplace (facebook-sdk + Playwright scraping) | Scraping/publicación multi-marketplace         | `facebook_router`, `fb_account_router`, `fb_sync_router`, `fb_credential_migration_router` (ninguno leído a fondo en este pase)                                                                     |
-| Redis (vía taskiq)                                        | Cola de tareas asíncronas                      | declarado en extras, no verificado en runtime en este pase                                                                                                                                          |
-| Anthropic (SDK)                                           | Presente como dependencia, uso no investigado  | `pyproject.toml` extras — **hallazgo abierto**: no se confirmó en qué feature se usa                                                                                                                |
+Todas las tareas de Turbo (`build`, `lint`, `test`, `test:coverage`, `typecheck`, `test:e2e`) están declaradas con `dependsOn: ["^build"]` / `["build"]`, pero como no hay dependencias cruzadas reales entre `apps/*` (sin `packages/*` poblado), `apps/web` y `apps/api` **construyen de forma totalmente independiente** — el grafo de Turbo es topológicamente trivial hoy.
 
-## Dependencias externas críticas — Frontend
+## Dependencias externas — backend (`apps/api`)
 
-| Dependencia            | Rol                                     | Punto de acoplamiento conocido                                                                                                                                   |
-| ---------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| next-intl              | i18n frontend                           | Solo 2 de +125 archivos la usan (`docs/AUDIT-UI-UX-I18N-2026-07-21.md`) — la mayor parte del UI está hardcodeado, incluyendo `vehicle-values.ts` (raíz de BUG-7) |
-| @radix-ui/react-select | Primitiva de Select (shadcn/ui)         | **Parcheada** vía `patches/@radix-ui__react-select.patch` — cualquier bump de esta librería requiere revalidar el parche                                         |
-| TanStack Query         | Cache/fetching                          | Consume los contratos Zod espejo de `lib/api/schemas/`                                                                                                           |
-| Zod                    | Validación runtime de contratos backend | Ver el caso de doble-tipo (`AttributeField`/`AttributeSchemaEntry`) — dos schemas Zod distintos describiendo el mismo concepto backend, sin unificación          |
+| Dependencia                 | Propósito                                                    |
+| --------------------------- | ------------------------------------------------------------ |
+| FastAPI 0.128.0             | framework web                                                |
+| Pydantic 2.12.5             | validación/DTOs                                              |
+| SQLAlchemy >=2.0.36 (async) | ORM                                                          |
+| Alembic                     | migraciones (71 archivos)                                    |
+| asyncpg                     | driver PostgreSQL async                                      |
+| Redis                       | cache + backend de colas                                     |
+| Taskiq (+redis)             | tareas asíncronas                                            |
+| Playwright                  | scraping (Facebook Marketplace)                              |
+| Stripe                      | pagos/wallet                                                 |
+| Anthropic SDK               | funcionalidad IA (alcance exacto no verificado en este pase) |
+| PyJWT, pyotp, bcrypt        | auth (JWT, 2FA TOTP, hashing)                                |
+| boto3                       | storage (S3-compatible)                                      |
 
-## Dependencias internas relevantes a los bugs del intent
+## Dependencias externas — frontend (`apps/web`)
 
-- **`SchemaFieldRenderer.tsx` depende del tipo `AttributeSchemaEntry` (`types/category.ts`)**, mientras que **`CategorySchemaEditor` depende del tipo `AttributeField` (`lib/api/schemas/categorySchema.ts`)** — dos consumidores del mismo dato backend (`Category.attribute_schema` JSONB) con contratos de tipo incompatibles entre sí. Ninguno depende del otro; ambos dependen, sin saberlo, del mismo JSONB libre que no impone forma. Esta es la dependencia implícita rota detrás de BUG-3/6.
-- **`vehicle_router.decode_vin` depende de `nhtsa_normalizer.py`**, cuya salida en minúsculas fue diseñada para el pipeline de scraping/Facebook (`facebook_router`/`fb_sync_router`), no para consumo humano directo — un acoplamiento de conveniencia entre dos audiencias distintas del mismo normalizador, raíz de BUG-5.
-- **`public_product_router.py` NO depende de `OrganizationContact`** (value object) ni de ningún repositorio de contactos — la ausencia de esa dependencia es, literalmente, la causa de que BUG-4 sea un vacío de plomería y no solo un bug visual.
-- **`category_router.get_category_schema_template` depende de `UNIVERSAL_COLUMNS`** (un `set`) para construir el orden de columnas del CSV — dependencia frágil que FEAT-1 (export CSV) heredará si reutiliza la misma constante sin normalizarla primero a una secuencia ordenada.
+| Dependencia                                 | Propósito                                                    |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Next.js ^16.1.0                             | framework/App Router                                         |
+| React ^19.2.0                               | UI, Server Components                                        |
+| TailwindCSS 3.4.17                          | estilos (ver corrección de versión en `technology-stack.md`) |
+| Zustand ^5.0.11                             | estado cliente                                               |
+| TanStack Query ^5.0.0                       | data fetching/cache                                          |
+| TanStack Table ^8.21.3                      | tablas                                                       |
+| TanStack Virtual                            | listas virtualizadas                                         |
+| React Hook Form ^7 + resolvers              | formularios                                                  |
+| Zod ^4.4.0 (instalado, código en estilo v3) | validación runtime                                           |
+| next-intl                                   | i18n                                                         |
+| react-doctor ^0.9.12                        | calidad de código React (dev)                                |
 
-## Dependencia de tooling nueva — `react-doctor` (intent activo)
+## Dependencias externas — plataforma/infra
 
-`react-doctor ^0.9.12` se agregó esta sesión como devDependency raíz, sin archivo de configuración propio (corre con sus defaults). Se cablea en dos puntos:
+- **PostgreSQL 17** — base de datos primaria.
+- **Redis 7.4+** — cache + cola de tareas.
+- **Docker** — `docker/api.Dockerfile`, `docker/web.Dockerfile`, `docker/docker-compose.yml` (+ variantes staging/prod referenciadas en memoria del proyecto: `docker-compose.staging.yml`, `docker-compose.prod.yml`).
+- **GitHub Actions** — 7 workflows (`ci.yml`, `e2e.yml`, `deploy.yml`, `react-doctor.yml`, `graphify.yml`, `promote-prod.yml`, `recover-prod.yml`).
+- **Facebook Marketplace** — fuente de datos externa scrapeada vía Playwright (dependencia funcional, no de paquete).
 
-- `.pre-commit-config.yaml` — hook local `react-doctor --staged --blocking warning`, pero el wrapper de shell no propaga el exit code: el commit siempre pasa, los hallazgos van a stderr.
-- `.github/workflows/react-doctor.yml` (nuevo) — usa la action `millionco/react-doctor@v2`; su input `blocking:` está comentado, así que el job es puramente advisorio.
+## Duplicación de pines observada (workspace vs. app)
 
-**Riesgo de dependencia**: no hay una segunda herramienta de análisis de código muerto (`knip`, `ts-prune`, `depcheck`) en `apps/web/package.json` para cruzar contra los hallazgos `unused-export`/`unused-file`/`unused-dependency` de `react-doctor` — sus 60 diagnósticos de deslop (31 + 29) dependen de la exactitud de un único analizador estático, sin verificación cruzada, antes de borrar código en masa.
+El `package.json` raíz pinea independientemente `zod: ^4`, `@dnd-kit/*`, `@hookform/resolvers`, duplicando pines que `apps/web/package.json` ya declara. No se investigó en este pase si esto es intencional (p. ej. para herramientas a nivel raíz) o deuda de mantenimiento — señal reportada en `code-quality-assessment.md`, no resuelta aquí.
 
-## Dependencias de build/CI
+## Riesgo de deuda relacionado a dependencias
 
-- pnpm workspaces + Turborepo orquestan el fan-out de scripts entre `apps/web`, `apps/api` (via wrappers) y el resto del monorepo.
-- `apps/web` y `apps/api` son **desplegables independientemente** (Dockerfiles separados) pese a compartir el monorepo — no hay acoplamiento de build entre ambos más allá de los scripts raíz de Turbo.
-- `.pre-commit-config.yaml` + `.gga` (AI code review contra reglas de `AGENTS.md`) se ejecutan en cada commit — dependencia de proceso, no de código, pero bloqueante si falla.
-
-## Riesgos de dependencia detectados
-
-1. **NHTSA como única fuente de decodificación VIN** — sin evidencia (en este pase) de fallback si el servicio externo falla o cambia contrato.
-2. **`@radix-ui/react-select` parcheado** — riesgo de que un bump automático de dependencias silencie o rompa el parche sin que CI lo detecte, si no hay un test específico cubriendo el comportamiento parcheado.
-3. **`Translator`/`translator` backend (`i18n/translator.py`) es código muerto** — no es un riesgo de dependencia externa, pero sí de dependencia interna no usada: mantenerlo vivo en el árbol sin consumidores es deuda de claridad, y su existencia puede confundir a quien busque "dónde se traduce el backend" (respuesta real: en ningún lado, todavía).
+Ver `code-quality-assessment.md` § Technical Debt Signal #5 (estado dual Zod 3/4) para el detalle del riesgo de incompatibilidad entre la versión instalada y el estilo de código real.

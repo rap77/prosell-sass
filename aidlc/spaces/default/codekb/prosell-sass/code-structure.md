@@ -1,94 +1,107 @@
-# Code Structure — prosell-sass
+# Code Structure — ProSell SaaS
 
-## Organización del monorepo
+## Layout del monorepo
 
 ```
 prosell-sass/
 ├── apps/
-│   ├── api/                    # Backend FastAPI (Python 3.13, requires-python >=3.12)
+│   ├── api/                    # Backend FastAPI (Python 3.13)
 │   │   ├── src/prosell/
-│   │   │   ├── domain/         # Entidades, value objects, servicios de dominio, excepciones
-│   │   │   ├── application/    # Use cases, DTOs, ports (interfaces de infraestructura)
-│   │   │   └── infrastructure/ # FastAPI routers, SQLAlchemy, servicios externos, i18n
-│   │   ├── tests/               # unit, integration, contract, utils — 270 archivos
-│   │   ├── src/prosell/tests/   # unit — 8 archivos (ubicación inusual, dentro de src/)
-│   │   └── pyproject.toml
+│   │   │   ├── domain/         # Entidades, value objects, eventos, puertos — zero deps
+│   │   │   ├── application/    # Use cases, DTOs, orquestación
+│   │   │   └── infrastructure/ # FastAPI routers, SQLAlchemy, scrapers, tareas
+│   │   └── tests/{contract,integration,unit,stubs,utils}/
 │   │
 │   ├── web/                    # Frontend Next.js 16 + React 19
-│   │   ├── src/
-│   │   │   ├── app/            # App Router — grupos: (admin), (seller), api, auth, branch,
-│   │   │   │                   #   invite, manager, onboarding, p, privacy, profile, terms, vendedor
-│   │   │   ├── components/     # 23 subdirectorios (forms, admin, review, catalog, public, ui, i18n, ...)
-│   │   │   ├── lib/
-│   │   │   │   ├── api/        # 30 módulos cliente API (por nombre; no todos leídos)
-│   │   │   │   ├── api/schemas/# contratos Zod espejo de DTOs backend
-│   │   │   │   ├── translations/ # vehicle-values.ts (dict hardcoded español)
-│   │   │   │   └── utils/      # composeSubtitle.ts, etc.
-│   │   │   ├── i18n/           # config.ts, request.ts (next-intl)
-│   │   │   └── types/          # category.ts, etc.
-│   │   ├── tests/              # unit, components, app, e2e, __mocks__, utils — 93 archivos
-│   │   │   + 65 archivos *.test.tsx co-localizados bajo src/
-│   │   └── package.json
+│   │   └── src/{app,components,lib,stores,hooks,domain}/
 │   │
-│   └── app/                    # Micro-app mínima (contenido no confirmado más allá de privacy/)
+│   └── app/                    # ⚠️ orphan — un único archivo, no wireado al build activo
 │       └── privacy/page.tsx
 │
-├── packages/                   # Documentado en CLAUDE.md como futuro ("shared-types") —
-│                                #   NO EXISTE en el árbol actual, confirmado por fd
+├── packages/                   # ⚠️ documentado en CLAUDE.md, NO existe en disco
 │
-├── tests/e2e/                  # Playwright — specs/, fixtures/ — 88 archivos
+├── tests/e2e/                  # Playwright E2E (34 specs)
 │
-├── docker/                     # 3 compose (dev/staging/prod), 4 Dockerfiles, Caddyfile — 11 archivos
+├── docker/                     # Dockerfiles + docker-compose (dev/staging/prod)
 │
-└── .github/workflows/          # ci.yml, deploy.yml, e2e.yml, graphify.yml,
-                                 #   promote-prod.yml, recover-prod.yml — 6 pipelines
+└── .github/workflows/          # 7 workflows de CI/CD
 ```
 
-## Convención de capas (backend)
+## Backend — `apps/api/src/prosell/`
 
-Regla de dependencia (`CLAUDE.md`): `Infrastructure → Application → Domain`. Confirmado en los archivos leídos a fondo:
+Clean Architecture de 3 capas, confirmada por lectura completa del árbol (profundidad 2):
 
-- `domain/entities/category.py` — no importa nada de `infrastructure/` ni de `application/`.
-- `domain/value_objects/organization_contact.py` — value object puro.
-- `application/dto/category/response.py` — DTO que expone datos del dominio hacia infraestructura, sin depender de FastAPI/SQLAlchemy.
-- `infrastructure/api/routers/*.py` — dependen de `application/` (use cases) y de `domain/` (tipos), nunca al revés.
+### `domain/` (zero dependencias externas)
 
-## Convención de capas (frontend)
+- **24 entidades** de dominio (conteo de archivos, nombres exactos no enumerados en este pase — skimmed)
+- `value_objects/` — valores inmutables (skimmed)
+- `events/` — eventos de dominio (skimmed)
+- `exceptions/` — excepciones de reglas de negocio (skimmed)
+- `ports/` — interfaces/contratos (Repository interfaces, IEmailService, etc.) (skimmed)
+- `services/` — servicios de dominio (skimmed)
 
-- **App Router** (`app/`) — orquesta layout y data fetching a nivel de página.
-- **Componentes** (`components/`) — presentación, agrupados por dominio funcional (forms, admin, review, catalog, public) más una carpeta `ui/` de componentes shadcn/ui reutilizables.
-- **lib/api/** — capa cliente API con contratos Zod "espejo" de cada endpoint backend (patrón confirmado en memoria de sesión: "every backend endpoint has a frontend Zod schema").
-- **types/** — tipos TypeScript adicionales fuera de los schemas Zod (p. ej. `AttributeSchemaEntry` en `category.ts`) — este es precisamente el punto de fricción detrás de BUG-3/6: dos fuentes de verdad de tipo para el mismo concepto (`lib/api/schemas/categorySchema.ts` vs `types/category.ts`).
+### `application/`
 
-## Patrones de nomenclatura observados
+- **20 grupos de módulos de use case** (conteo confirmado, listado detallado no leído en este pase)
+- DTOs de entrada/salida por caso de uso
 
-- **Backend**: `snake_case` para archivos y funciones Python, `PascalCase` para clases/entidades — idiomático, sin regla de renombrado propia del proyecto.
-- **Frontend**: `camelCase` para funciones/variables, `PascalCase` para componentes React, archivos de componente en `PascalCase.tsx` (`SchemaFieldRenderer.tsx`, `ContactManager.tsx`) y archivos de utilidad en `camelCase.ts` (`composeSubtitle.ts`).
-- **Testing frontend — dos convenciones coexistiendo**: `tests/components/{module}/X.test.tsx` (no co-localizado, patrón más antiguo) y `page.test.tsx` co-localizado junto a la página (patrón más nuevo, usado en páginas admin T12-T18 según memoria de sesión previa). Ambos funcionan; no hay una migración forzada de uno a otro.
+### `infrastructure/`
 
-## Componentes grandes detectados por `react-doctor` (intent `260827-react-doctor-cleanup`)
+- `api/routers/` — **31 archivos de router**, 190 endpoints (`@router.get/post/put/patch/delete`)
+- `database/`, `models/`, `repositories/` — adaptadores SQLAlchemy 2.0 async (skimmed en detalle)
+- `services/` — integraciones externas (Stripe, storage, etc.) (skimmed)
+- `tasks/` — jobs asíncronos (Taskiq + Redis) (skimmed)
+- `webhook/` — receptores de webhooks (skimmed)
+- `i18n/` — internacionalización backend (skimmed)
+- `images/` — procesamiento de imágenes (skimmed)
+- **71 migraciones Alembic** presentes
 
-Confirmado en vivo por conteo de líneas — los dos componentes más grandes del frontend cargan simultáneamente **dos categorías distintas de diagnóstico** (bailout de React Compiler por `try/finally` + `no-giant-component`/`only-export-components`), lo que implica arreglarlos en una sola pasada combinada en vez de dos pasadas separadas por categoría:
+### Tests
 
-- `apps/web/src/components/forms/UnifiedProductForm.tsx` — 1226 líneas
-- `apps/web/src/components/admin/category-schema-editor.tsx` — 1156 líneas
+- `apps/api/tests/{contract,integration,unit,stubs,utils}/` — 272 archivos `.py`
+- `apps/api/src/prosell/tests/unit/` adicional
+- `pytest.ini` presente en raíz de `apps/api` (skimmed — sin verificar thresholds de cobertura)
 
-Siguiente nivel (solo `no-giant-component`, sin bailout de compiler): `app/(seller)/categories/page.tsx` (836), `app/(seller)/catalog/page.tsx` (731), `components/auth/dynamic/TwoFactorSetupForm.tsx` (659), `components/admin/BulkImportClientCSV.tsx` (658), `app/(seller)/publications/page.tsx` (655), `app/(admin)/admin/organizations/[id]/page.tsx` (631), `components/admin/ContactManager.tsx` (629), `components/layout/Sidebar.tsx` (611 — ya corregido esta sesión, tamaño post-fix), `components/publisher/PublishForm.tsx` (596).
+## Frontend — `apps/web/src/`
 
-## Archivos/artefactos de tech-debt visibles en el árbol
+Estructura App Router + capas de soporte, listada a profundidad 2:
 
-- `apps/api/src/prosell/infrastructure/api/routers/auth_router.py.backup2` — archivo de respaldo suelto, no debería estar versionado.
-- `patches/@radix-ui__react-select.patch` — parche aplicado a una dependencia de terceros vía `pnpm.patchedDependencies`; requiere seguimiento manual en cada actualización de esa librería.
-- `apps/api/pyproject.toml` — bloque `ruff` `per-file-ignores` con un comentario `# TODO: Fix these pre-existing issues` nombrando 6 archivos con reglas suprimidas — backlog auto-documentado por el propio equipo.
+- `app/` — Next.js App Router (rutas de página + rutas API BFF bajo `app/api/{auth,v1}/**/route.ts`)
+- `components/` — **28 subcarpetas de componentes** (contenido interno no leído individualmente en este pase — skimmed)
+- `lib/` — utilidades transversales:
+  - `lib/api/` — **27 módulos de cliente API**
+  - `lib/api/schemas/` — **18 módulos de esquema Zod-mirror**
+  - `lib/{admin,auth,cache,constants,filters,hooks,mocks,schemas,translations,utils}/` — presencia confirmada, contenido no leído (skimmed)
+- `stores/` — estado Zustand
+- `hooks/` — hooks React reutilizables (además de `lib/hooks/`)
+- `domain/` — modelos/tipos de dominio del lado frontend
 
-## Áreas del árbol NO analizadas a fondo en este pase
+### Tests
 
-(Ver detalle completo y honesto en `reverse-engineering-timestamp.md` § Scope of Analysis.) A nivel de directorio, quedaron solo enumeradas — no leídas — las siguientes áreas, por estar fuera del alcance de los 7 bugs + FEAT-1 de este intent:
+- `apps/web/tests/` — 93 archivos
+- 70 archivos `*.test.tsx`/`.test.ts` co-localizados junto al código fuente
+- Dos patrones de ubicación de test conviven en el proyecto (memoria del proyecto): `tests/components/{module}/X.test.tsx` (histórico) y co-localizado `page.test.tsx` (más reciente, T12-T18) — ambos válidos hoy.
 
-- El grueso de `apps/api/src/prosell/{domain,application,infrastructure}/` fuera de los archivos puntuales listados arriba (~421 archivos Python totales en el subárbol).
-- `apps/web/src/components/` fuera de las piezas de forms/review/admin/public/ui tocadas.
-- `apps/web/src/app/` fuera de los tres archivos de página leídos — la estructura de grupos de rutas SÍ se enumeró.
-- `apps/web/src/lib/api/` — 30 módulos enumerados por nombre, ninguno leído salvo `schemas/categorySchema.ts`.
-- `apps/api/alembic/versions/` (71 migraciones), `apps/api/tests/` (270), `apps/api/src/prosell/tests/` (8), `apps/web/tests/` (93) + co-localizados (65), `tests/e2e/` (88).
-- `.github/workflows/*.yml` (5 de 6 no abiertos), `docker/` (11 archivos, ninguno abierto).
-- `docs/`, `PRPs/`, `Product-Definition/`, `prosell-design/`, `scripts/`, `tasks/`, `patches/`, `.archive/`, `aidlc/` — solo presencia de nivel superior confirmada.
+## Patrones de código observados
+
+- **Dependency Rule estricta** en backend: `infrastructure → application → domain`, nunca al revés — confirmado por la ausencia de imports de `infrastructure`/`application` dentro de `domain/` reportada en escaneos previos y no contradicha en este pase.
+- **DTO boundary explícito**: Pydantic en cada frontera de application/infrastructure (backend), Zod en cada frontera de UI/API client (frontend).
+- **Interface-based DI**: el dominio define puertos (`ports/`), la infraestructura los implementa — inversión de dependencia clásica.
+- **Multi-tenant por convención de campo**: `tenant_id` presente en agregados, no en el nombre de esquema/DB.
+- **Server Components por defecto** en `apps/web/src/app/` — fetching de datos server-side salvo excepciones documentadas como deuda (ver `code-quality-assessment.md`, casos `onboarding/page.tsx` e `invite/[token]/page.tsx` que usan `useEffect` en violación de la regla `AGENTS.md:333`).
+
+## Clasificación de archivos relevantes a este intent (bug Tailwind)
+
+Archivos con clases de spacing Tailwind inválidas (`h-9.5`, `px-4.5`, `h-8.5` — fuera de la escala default 0–3.5 half-steps de Tailwind 3, y `tailwind.config.ts` no extiende `spacing`):
+
+| Archivo                                                    | Tipo                                  | Instancias |
+| ---------------------------------------------------------- | ------------------------------------- | ---------- |
+| `apps/web/src/components/onboarding/OnboardingStep3.tsx`   | Componente de formulario (onboarding) | 3          |
+| `apps/web/src/app/(seller)/publications/page.tsx`          | Página App Router (seller)            | 6          |
+| `apps/web/src/components/publisher/PublishForm.tsx`        | Componente de formulario (publisher)  | 2          |
+| `apps/web/src/app/privacy/page.tsx`                        | Página estática (legal)               | 1          |
+| `apps/web/src/app/terms/page.tsx`                          | Página estática (legal)               | 1          |
+| `apps/web/src/components/appointments/AppointmentForm.tsx` | Componente de formulario (citas)      | 1          |
+| `apps/web/src/components/pipeline/KanbanBoard.tsx`         | Componente de tablero (pipeline)      | 1          |
+
+Inventario completo con número de línea en `component-inventory.md` y `code-quality-assessment.md`.

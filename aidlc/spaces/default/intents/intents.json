@@ -26,5 +26,12 @@
     "dirName": "260828-useeffect-to-react-query",
     "scope": "bugfix",
     "status": "in-flight"
+  },
+  {
+    "uuid": "01a04980-8558-72a9-af63-cafdf4d9209c",
+    "slug": "fix-invalid-tailwind-spa",
+    "dirName": "260828-fix-invalid-tailwind-spa",
+    "scope": "express",
+    "status": "complete"
   }
 ]

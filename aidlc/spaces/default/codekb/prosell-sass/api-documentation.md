@@ -1,92 +1,57 @@
-# API Documentation — prosell-sass
+# API Documentation — ProSell SaaS
 
-## Superficie general
+## Superficie de API — resumen
 
-Backend REST (FastAPI) en `apps/api/src/prosell/infrastructure/api/routers/` — **25 archivos de router**, **30 llamadas `include_router()`** en `main.py`. Cada router tiene su propio prefijo/tag; no se leyó `main.py` línea por línea en este pase (superficial), pero la lista de routers fue confirmada por el scan del desarrollador.
+| Capa                         | Ubicación                                          | Cantidad                  | Protocolo          |
+| ---------------------------- | -------------------------------------------------- | ------------------------- | ------------------ |
+| FastAPI REST (backend real)  | `apps/api/src/prosell/infrastructure/api/routers/` | 31 routers, 190 endpoints | HTTP/JSON          |
+| Next.js BFF proxy (frontend) | `apps/web/src/app/api/{auth,v1}/**/route.ts`       | 33 archivos de ruta       | HTTP/JSON (proxy)  |
+| Cliente API frontend         | `apps/web/src/lib/api/`                            | 27 módulos                | fetch tipado       |
+| Esquemas Zod-mirror          | `apps/web/src/lib/api/schemas/`                    | 18 módulos                | validación runtime |
 
-### Routers enumerados (superficial salvo donde se indica "profundo")
+## FastAPI REST — backend (`apps/api`)
 
-| Router                                            | Confianza                                      |
-| ------------------------------------------------- | ---------------------------------------------- |
-| `admin_organizations_router`                      | superficial                                    |
-| `admin_router`                                    | superficial                                    |
-| `appointment_router`                              | superficial                                    |
-| `auth_router` (+ `auth_router.py.backup2` suelto) | superficial                                    |
-| `branch_router`                                   | superficial                                    |
-| `category_inference_router`                       | superficial                                    |
-| `category_router`                                 | **profundo** (schema endpoints)                |
-| `facebook_router`                                 | superficial                                    |
-| `fb_account_router`                               | superficial                                    |
-| `fb_credential_migration_router`                  | superficial                                    |
-| `fb_sync_router`                                  | superficial                                    |
-| `health_router`                                   | superficial                                    |
-| `image_router`                                    | superficial                                    |
-| `lead_router`                                     | superficial                                    |
-| `marketplace_access_router`                       | superficial                                    |
-| `notification_router`                             | superficial                                    |
-| `org_router`                                      | superficial                                    |
-| `org_verticals_router`                            | superficial                                    |
-| `product_router`                                  | superficial (bulk-upload confirmado, resto no) |
-| `public_product_router`                           | **profundo**                                   |
-| `publisher_router`                                | superficial                                    |
-| `team_router`                                     | superficial                                    |
-| `test_cleanup_router`                             | superficial                                    |
-| `test_router`                                     | superficial                                    |
-| `user_branch_router`                              | superficial                                    |
-| `user_router`                                     | superficial                                    |
-| `vehicle_router`                                  | **profundo**                                   |
-| `vendedor_router`                                 | superficial                                    |
-| `wallet_router`                                   | superficial                                    |
-| `webhook_router`                                  | superficial                                    |
+- **31 archivos de router**, **190 endpoints** contados directamente por decorador (`@router.get/post/put/patch/delete`).
+- Convenciones confirmadas por memoria del proyecto y consistentes con el patrón Clean Architecture escaneado:
+  - Los updates de estado **siempre** van en el body JSON, nunca en query params.
+  - El `tenant_id` se resuelve **siempre** del JWT, nunca del body — mitigación explícita de IDOR.
+- Auth: JWT + OAuth2 + TOTP (2FA), cookies httpOnly (`access_token`, `refresh_token`).
+- No se leyó en este pase el contenido interno de cada router (skimmed a nivel de nombre de archivo/conteo) — un futuro pase que necesite el catálogo endpoint-por-endpoint debe volver a escanear `infrastructure/api/routers/` a profundidad.
 
-## Endpoints documentados a fondo
+## Next.js BFF Proxy — frontend (`apps/web`)
 
-### Public Product API (`public_product_router.py`) — superficie NO autenticada
+**33 archivos de ruta** bajo `app/api/{auth,v1}/**/route.ts` (incluye 2 co-localizados `route.test.ts`), actuando como capa BFF entre el navegador y FastAPI. Reenvían la petición al backend, incluyendo cookies de sesión.
 
-- `GET /{slug}` — obtiene un producto público por slug. Construye `ProductResponse` directo desde `ProductModel`, **sin join hacia `Organization` ni sus contactos** — confirmado como causa raíz de BUG-4 (ver `architecture.md` § Interaction Diagrams #3). Solo expone `organization_id` (UUID pelado), ningún dato de contacto.
-- `GET /{slug}/image-urls` — obtiene URLs firmadas de imágenes del producto.
-- **Contrato de seguridad implícito**: al no incluir datos de contacto de organización, este endpoint hoy es "seguro por omisión" respecto a exposición de teléfono — pero también insuficiente para resolver BUG-4 sin una extensión deliberada.
+### ⚠️ Defecto conocido — `response.json()` sin verificación de `content-type`
 
-### Category Schema API (`category_router.py`)
+Los proxies **dinámicos** (`[...path]/route.ts`) de los siguientes recursos fuerzan `response.json()` sobre **toda** respuesta del backend, sin comprobar el header `content-type` primero:
 
-- `PATCH /{category_id}/schema` — actualiza el `attribute_schema` JSONB de una categoría; flujo con advertencia de migración (mencionado en scan, no detallado línea por línea). Persiste el JSONB sin validación de forma contra ningún contrato Zod específico — raíz de BUG-3/6.
-- `GET /{category_id}/schema/template.csv` — genera la plantilla CSV de importación. Construye el orden de columnas como `list(UNIVERSAL_COLUMNS) + extra_cols + [schema keys]`, donde `UNIVERSAL_COLUMNS = {"title", "price", "category_id"}` es un **`set` de Python** — orden no garantizado entre reinicios de proceso. Relevante directamente para el diseño de FEAT-1 (export CSV): ver `architecture.md` § Interaction Diagrams #5.
-- `POST /{category_id}/schema/clone-from/{source_category_id}` — clona schema de otra categoría.
+- `apps/web/src/app/api/v1/products/[...path]/route.ts`
+- `apps/web/src/app/api/v1/categories/[...path]/route.ts`
+- `apps/web/src/app/api/v1/organizations/[...path]/route.ts`
+- `apps/web/src/app/api/v1/vehicles/[...path]/route.ts`
 
-### VIN Decode API (`vehicle_router.py`)
+**Impacto**: cualquier endpoint del backend que devuelva un content-type distinto de JSON (CSV de export, descarga de archivo, etc.) rompe al pasar por estos proxies — el `.json()` lanza sobre un cuerpo que no es JSON válido.
 
-- `decode_vin` — endpoint principal usado por el formulario de creación de vehículo. Devuelve **28 campos normalizados agrupados en 10 grupos** (make, model, body_type, drivetrain, wheelbase_type, bed_type, cab_type, electrification_level, etc.). Internamente:
-  - Llama a `nhtsa_vin_service.py`, que a su vez llama a la NHTSA API externa.
-  - Pasa el resultado por `nhtsa_normalizer.py`, que mapea valores a minúsculas/snake_case estilo Facebook Marketplace (decisión correcta para el pipeline de scraping, pero reutilizada tal cual en este endpoint humano — raíz de BUG-5).
-  - Tiene un helper interno `_normalize_model()` que hace `model.lower().strip()` incondicionalmente sobre cualquier valor de modelo decodificado.
-- **Contrato de datos**: no se documentó (en este pase) el schema Pydantic exacto de request/response de `decode_vin` — se infiere de los 28 campos mencionados por el desarrollador y de `VinDecodeField.tsx`/`mapDecodedToForm()` en el frontend.
+**Historial del mismo patrón de bug**: memoria del proyecto documenta un caso hermano ya arreglado — el header `If-Match` era descartado silenciosamente por estos mismos proxies (solo reenviaban `Content-Type`/`Cookie`), rompiendo los 4 endpoints de "deshacer" (`reverse`/`resubmit`/`restore`/`revert-sale`) cuando se usaban desde navegador real. Verificado y arreglado en sesión 2026-08-21 con chrome-devtools MCP en vivo. El defecto de `content-type` es el mismo patrón de raíz (proxy que asume una forma fija de respuesta) sin arreglar aún.
 
-### Bulk Upload API (`product_router.py`)
+**Regla operativa activa** (memoria del proyecto, `project.md`): antes de agregar un endpoint que devuelva un content-type distinto de JSON, auditar el proxy correspondiente.
 
-- `bulk_upload_products` — carga masiva de productos vía CSV.
-- `GET /bulk-upload/errors.csv` — descarga de errores de una carga fallida/parcial.
-- Relevante para FEAT-1: la lógica de columnas de `csv_product_parser.py` (`parse_csv` + definición de columnas) debe ser la fuente de verdad que el nuevo endpoint de exportación espeje, según lo pedido explícitamente en el intent ("mismos campos/orden que el importador actual").
+## Cliente API frontend (`apps/web/src/lib/api/`)
 
-## Puertos internos (Application Layer)
+- **27 módulos de cliente**, uno por dominio/recurso (mapeo aproximado 1:1 con los routers del backend, aunque el conteo no coincide exactamente porque algunos routers backend no tienen cliente dedicado y viceversa — no verificado línea por línea en este pase).
+- Cada módulo consume el proxy BFF correspondiente, nunca llama directo a `apps/api`.
 
-`apps/api/src/prosell/application/ports/` — interfaces de infraestructura inyectadas por Clean Architecture / DI basada en interfaces:
+## Esquemas Zod-mirror (`apps/web/src/lib/api/schemas/`)
 
-- `IDOSpacesService` — abstrae el storage de imágenes (DigitalOcean Spaces / S3 vía boto3).
-- `IVINDecoderService` — abstrae el proveedor de decodificación VIN (implementado por `nhtsa_vin_service.py`).
-- (Lista no exhaustiva — solo los dos puertos nombrados explícitamente por el scan del desarrollador; el directorio completo no fue enumerado en este pase.)
+- **18 módulos de esquema**, cada uno espejando 1:1 el DTO Pydantic del endpoint backend correspondiente (patrón "Zero unvalidated `as X` casts on backend responses", confirmado por memoria del proyecto como regla zero-tolerance).
+- Puntos de fricción documentados de este patrón (memoria del proyecto):
+  - Campos `Optional[X]` de Pydantic serializan a `null` en JSON — el mirror debe usar `.nullable().optional()`, nunca solo `.optional()` (bug histórico: `decode-vin` schema mismatch).
+  - Estado de migración Zod 3→4: el paquete instala `zod: ^4.4.0` pero el código sigue en estilo de Zod 3 (41× `.passthrough()`, 4× `z.nativeEnum()` en `leads.ts`); `AGENTS.md` documenta la regla "usar Zod 3 hasta resolver issue #74" pese al paquete ya instalado — migración completa trackeada por separado en el intent `260828-zod-3-to-4-migration`, **fuera de alcance de este documento**.
 
-## Frontend — Proxy API Routes (BFF)
+## Contratos internos relevantes no cubiertos en profundidad este pase
 
-`apps/web/src/app/api/v1/` — **no leído en este pase** (superficial). Riesgo conocido de una sesión previa (memoria persistente, no confirmado en este scan): el proxy `api/v1/products/[...path]/route.ts` solo reenviaba `Content-Type`/`Cookie` al backend real, descartando silenciosamente el header `If-Match` — rompiendo los endpoints de "deshacer" (reverse/resubmit/restore/revert-sale) cuando se invocaban desde el navegador real. Corregido en sesión 2026-08-21 según memoria — **no verificado en este pase si el mismo patrón existe en los proxies de `organizations` o `categories`**; queda como riesgo abierto a auditar (ver `architecture.md` § Improvement Opportunities #4).
+- Contenido detallado de los 31 routers (endpoint por endpoint, request/response shape) — solo conteo, no catálogo.
+- Contratos de los 20 grupos de use cases de `application/` — no leídos a nivel de firma.
 
-## Frontend — Cliente API y contratos Zod
-
-`apps/web/src/lib/api/` — 30 módulos enumerados por nombre de archivo (no leídos en este pase, salvo `schemas/categorySchema.ts`). Patrón confirmado por memoria de sesión y por el archivo leído: cada endpoint backend tiene un schema Zod espejo bajo `lib/api/schemas/`, usado con `parse()`/`safeParse()` en el `queryFn` del hook correspondiente — "cero casts `as X` no validados sobre respuestas del backend" es la convención declarada del equipo.
-
-## Nota — intent `260827-react-doctor-cleanup`
-
-Este intent es un refactor de tooling de análisis estático frontend (`react-doctor`); no toca ni re-audita la superficie de API. El contenido de este documento no fue revalidado en este pase — se preserva tal cual del pase anterior (`260826-prod-bugfixes-batch`). El riesgo abierto de headers descartados en los proxies BFF (`organizations`, `categories`) sigue sin auditar.
-
-## Nota sobre completitud
-
-Este documento cubre a fondo únicamente los 4 routers/flujos tocados por los bugs del intent activo (`public_product_router`, `category_router` en su porción de schema/template, `vehicle_router`, y la porción de `product_router` de bulk-upload). Los 21 routers restantes están enumerados por nombre pero sus endpoints, parámetros y contratos de request/response **no fueron leídos** en este pase — no asumir cobertura completa de la superficie REST del sistema a partir de este documento.
+Un futuro pase de `functional-design` o `contract-design` que necesite especificar contratos exactos endpoint-por-endpoint debe re-escanear `apps/api/src/prosell/infrastructure/api/routers/` y `apps/web/src/lib/api/` a profundidad completa.

@@ -1,0 +1,69 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1",
+    "FR1.1",
+    "FR1.2",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR2.6",
+    "FR2.7",
+    "FR3",
+    "NFR1",
+    "NFR2"
+  ],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "apps/web/tailwind.config.ts" },
+    { "id": "FR1.1", "status": "OK", "target": "apps/web/tailwind.config.ts" },
+    { "id": "FR1.2", "status": "OK", "target": "apps/web/tailwind.config.ts" },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/components/onboarding/OnboardingStep3.tsx"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/publications/page.tsx"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "apps/web/src/components/publisher/PublishForm.tsx"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "apps/web/src/app/privacy/page.tsx"
+    },
+    {
+      "id": "FR2.5",
+      "status": "OK",
+      "target": "apps/web/src/app/terms/page.tsx"
+    },
+    {
+      "id": "FR2.6",
+      "status": "OK",
+      "target": "apps/web/src/components/appointments/AppointmentForm.tsx"
+    },
+    {
+      "id": "FR2.7",
+      "status": "OK",
+      "target": "apps/web/src/components/pipeline/KanbanBoard.tsx"
+    },
+    { "id": "FR3", "status": "OK", "target": "CLAUDE.md" },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/config/tailwind.config.test.ts"
+    },
+    {
+      "id": "NFR2",
+      "status": "Deferred",
+      "target": "verified in Build and Test (3.6) — full-suite regression check"
+    }
+  ]
+}
