@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { formatDate } from "@/lib/utils/format";
 
 const STATUS_STYLES: Record<
   string,
@@ -84,14 +85,14 @@ export default function FBAccountsPage() {
     }
   }
 
-  async function handleDelete(id: string, email: string) {
+  function handleDelete(id: string, email: string) {
     if (!confirm(`¿Eliminar la cuenta ${email}?`)) return;
     setDeletingId(id);
-    try {
-      await deleteAccount.mutateAsync(id);
-    } finally {
+    // React Compiler can't lower try/finally yet; Promise#finally keeps the
+    // same cleanup-always-runs semantics.
+    void deleteAccount.mutateAsync(id).finally(() => {
       setDeletingId(null);
-    }
+    });
   }
 
   if (isLoading) {
@@ -223,9 +224,7 @@ export default function FBAccountsPage() {
                             <span>·</span>
                             <span>
                               Última:{" "}
-                              {new Date(
-                                account.last_used_at,
-                              ).toLocaleDateString()}
+                              {formatDate(account.last_used_at, "es-AR")}
                             </span>
                           </>
                         )}

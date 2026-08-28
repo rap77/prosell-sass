@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Upload, FileText, X, Download } from "lucide-react";
 import { useBulkUploadProducts } from "@/lib/api/products";
 import type { BulkUploadUploadResult } from "@/lib/api/schemas/bulkUpload";
+import { cn } from "@/lib/utils";
 
 interface BulkUploadCSVProps {
   onSuccess?: (count: number) => void;
@@ -58,29 +59,33 @@ export function BulkUploadCSV({
     maxFiles: 1,
   });
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     if (!file) return;
 
     setIsUploading(true);
-    try {
-      const result = await bulkUpload.mutateAsync(file);
-
-      if (result.failed_count > 0) {
-        onErrors?.(result);
-      } else {
-        toast.success(
-          `Se cargaron ${result.created_count} productos correctamente`,
+    // React Compiler can't lower try/catch/finally yet; the promise chain
+    // keeps the exact same success/error/cleanup semantics.
+    return bulkUpload
+      .mutateAsync(file)
+      .then((result) => {
+        if (result.failed_count > 0) {
+          onErrors?.(result);
+        } else {
+          toast.success(
+            `Se cargaron ${result.created_count} productos correctamente`,
+          );
+          onSuccess?.(result.created_count);
+          setFile(null);
+        }
+      })
+      .catch((error: unknown) => {
+        toast.error(
+          error instanceof Error ? error.message : "Error al subir el CSV",
         );
-        onSuccess?.(result.created_count);
-        setFile(null);
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Error al subir el CSV",
-      );
-    } finally {
-      setIsUploading(false);
-    }
+      })
+      .finally(() => {
+        setIsUploading(false);
+      });
   };
 
   const downloadTemplate = () => {
@@ -102,10 +107,10 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
   };
 
   const outlineBtnClass =
-    "inline-flex items-center gap-1.5 h-9.5 px-4 rounded-lg bg-ps-bg-elevated border border-ps-border-default text-ps-text-secondary text-sm font-medium cursor-pointer transition-opacity duration-150";
+    "inline-flex items-center gap-1.5 h-[38px] px-4 rounded-lg bg-ps-bg-elevated border border-ps-border-default text-ps-text-secondary text-sm font-medium cursor-pointer transition-opacity duration-150";
 
   const primaryBtnClass =
-    "inline-flex items-center gap-1.5 h-9.5 px-4.5 rounded-lg bg-ps-cyan border-0 text-ps-bg-base text-sm font-bold cursor-pointer transition-opacity duration-150";
+    "inline-flex items-center gap-1.5 h-[38px] px-[18px] rounded-lg bg-ps-cyan border-0 text-ps-bg-base text-sm font-bold cursor-pointer transition-opacity duration-150";
 
   return (
     <div className="flex flex-col gap-6">
@@ -157,15 +162,12 @@ Product B,250,category-uuid-1,Like new,used,USD,Miami,FL,33101
       {!file ? (
         <div
           {...getRootProps()}
-          className="flex flex-col items-center justify-center rounded-xl cursor-pointer transition-colors duration-150"
-          style={{
-            borderRadius: 10,
-            border: isDragActive
-              ? "2px dashed var(--ps-cyan)"
-              : "2px dashed var(--ps-border-default)",
-            background: isDragActive ? "rgba(77,184,255,0.04)" : "transparent",
-            padding: "48px 24px",
-          }}
+          className={cn(
+            "flex flex-col items-center justify-center rounded-[10px] cursor-pointer transition-colors duration-150 border-2 border-dashed px-6 py-12",
+            isDragActive
+              ? "border-ps-cyan bg-ps-hover-bg-xs"
+              : "border-ps-border-default bg-transparent",
+          )}
         >
           <input {...getInputProps()} aria-label="Upload CSV file" />
           <Upload

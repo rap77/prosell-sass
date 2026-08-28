@@ -655,7 +655,8 @@ export function CategorySchemaEditor({
         if (!matchesKey && !matchesLabel) continue;
       }
       const key = row.group?.trim() || UNGROUPED;
-      (grouped[key] ??= grouped[UNGROUPED]).push(row);
+      if (grouped[key] == null) grouped[key] = grouped[UNGROUPED];
+      grouped[key].push(row);
     }
     return grouped;
   })();
@@ -706,20 +707,19 @@ export function CategorySchemaEditor({
     }
 
     // Dragging groups
+    const canReorderGroups =
+      groups.some((g) => g._id === active.id) &&
+      groups.some((g) => g._id === over.id);
+    if (!canReorderGroups) return;
+
+    setIsDirty(true);
     setGroups((prev) => {
-      if (
-        prev.some((g) => g._id === active.id) &&
-        prev.some((g) => g._id === over.id)
-      ) {
-        const oldIndex = prev.findIndex((g) => g._id === active.id);
-        const newIndex = prev.findIndex((g) => g._id === over.id);
-        setIsDirty(true);
-        return arrayMove(prev, oldIndex, newIndex).map((g, index) => ({
-          ...g,
-          order: index,
-        }));
-      }
-      return prev;
+      const oldIndex = prev.findIndex((g) => g._id === active.id);
+      const newIndex = prev.findIndex((g) => g._id === over.id);
+      return arrayMove(prev, oldIndex, newIndex).map((g, index) => ({
+        ...g,
+        order: index,
+      }));
     });
   };
 
@@ -1133,7 +1133,7 @@ export function CategorySchemaEditor({
           </p>
           <ul className="mt-2 space-y-1 text-sm">
             {migrationWarnings.map((w, i) => (
-              <li key={i} className="text-amber-700 dark:text-amber-400">
+              <li key={i} className="text-ps-warning">
                 • {w}
               </li>
             ))}

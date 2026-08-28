@@ -465,13 +465,13 @@ export function UnifiedProductForm({
 
   // Submit handler
   // ponytail: pass selectedOrgId so images are uploaded to the target org's bucket
-  const handleImagesUpload = async () => {
+  const handleImagesUpload = () => {
     setIsUploadingImages(true);
-    try {
-      await uploadImages(selectedOrgId ?? undefined);
-    } finally {
+    // React Compiler can't lower try/finally yet; Promise#finally keeps the
+    // same cleanup-always-runs semantics.
+    return uploadImages(selectedOrgId ?? undefined).finally(() => {
       setIsUploadingImages(false);
-    }
+    });
   };
 
   const buildProductPayload = (

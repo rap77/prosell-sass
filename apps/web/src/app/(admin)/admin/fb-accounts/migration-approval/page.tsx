@@ -20,6 +20,43 @@ function normalizePairingCode(value: string): string {
     : characters;
 }
 
+type ApprovalResult = { ok: true } | { ok: false; message: string };
+
+// Module-level (not a component/hook) so React Compiler doesn't need to trace
+// the try/catch/finally in here — it only analyzes component and hook bodies.
+async function submitMigrationApproval(
+  pairingCode: string,
+): Promise<ApprovalResult> {
+  try {
+    const response = await fetch(
+      "/api/v1/fb-sync/migrations/authorization-requests/approve",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pairing_code: pairingCode }),
+      },
+    );
+
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => null);
+      throw new Error(
+        extractErrorMessage(body, "No se pudo aprobar la migración."),
+      );
+    }
+
+    return { ok: true };
+  } catch (submissionError) {
+    return {
+      ok: false,
+      message:
+        submissionError instanceof Error
+          ? submissionError.message
+          : "No se pudo aprobar la migración.",
+    };
+  }
+}
+
 export default function MigrationApprovalPage() {
   const { isAdmin, isSuperAdmin } = useAuth();
   const router = useRouter();
@@ -45,35 +82,14 @@ export default function MigrationApprovalPage() {
     }
 
     setIsPending(true);
-    try {
-      const response = await fetch(
-        "/api/v1/fb-sync/migrations/authorization-requests/approve",
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pairing_code: pairingCode }),
-        },
-      );
-
-      if (!response.ok) {
-        const body: unknown = await response.json().catch(() => null);
-        throw new Error(
-          extractErrorMessage(body, "No se pudo aprobar la migración."),
-        );
-      }
-
+    const result = await submitMigrationApproval(pairingCode);
+    if (result.ok) {
       setPairingCode("");
       setIsApproved(true);
-    } catch (submissionError) {
-      setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "No se pudo aprobar la migración.",
-      );
-    } finally {
-      setIsPending(false);
+    } else {
+      setError(result.message);
     }
+    setIsPending(false);
   }
 
   if (!isAdmin || !isSuperAdmin) {

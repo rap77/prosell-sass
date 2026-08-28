@@ -325,5 +325,6 @@ vi.mock("framer-motion", () => {
       li: createMotionComponent("li"),
     },
     AnimatePresence: ({ children }: ChildrenProps) => <>{children}</>,
+    useReducedMotion: () => false,
   };
 });

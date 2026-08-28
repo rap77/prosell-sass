@@ -103,6 +103,9 @@ const config: Config = {
           badge: "var(--ps-badge-bg)",
           "field-tag-bg": "var(--ps-field-tag-bg)",
           "nav-bg": "var(--ps-nav-bg)",
+          "nav-active-bg": "var(--ps-nav-active-bg)",
+          "hover-bg-xs": "var(--ps-hover-bg-xs)",
+          "user-card-bg": "var(--ps-user-card-bg)",
           "danger-hover-bg": "var(--ps-danger-hover-bg)",
           "danger-hover-border": "var(--ps-danger-hover-border)",
           // Landing decorative
@@ -122,6 +125,9 @@ const config: Config = {
           "violet-bg": "var(--ps-violet-bg)",
           whatsapp: "var(--ps-whatsapp)",
         },
+      },
+      backgroundImage: {
+        "ps-avatar": "var(--ps-avatar-gradient)",
       },
       borderRadius: {
         lg: "var(--radius)",

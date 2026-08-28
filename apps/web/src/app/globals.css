@@ -54,6 +54,11 @@
     --ps-blue-hover: #2d72e8;
     --ps-cyan: #4db8ff;
     --ps-cyan-hover: #7dceff;
+    --ps-avatar-gradient: linear-gradient(
+      135deg,
+      var(--ps-cyan),
+      var(--ps-blue)
+    );
 
     --ps-text-primary: #f0f4ff;
     --ps-text-secondary: #8a9bbf;

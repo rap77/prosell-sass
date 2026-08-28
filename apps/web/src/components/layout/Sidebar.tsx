@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/lib/auth/permissions";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import {
@@ -181,6 +181,7 @@ export function Sidebar({ groups }: SidebarProps) {
   const { hasPermission } = useAuth();
   const pathname = usePathname();
   const isMountRef = useRef(true);
+  const prefersReducedMotion = useReducedMotion();
 
   // Auto-close mobile drawer on route change (skip mount)
   useEffect(() => {
@@ -217,34 +218,17 @@ export function Sidebar({ groups }: SidebarProps) {
       role="complementary"
       aria-label="Sidebar"
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out",
+        "fixed left-0 top-0 z-40 h-screen border-r border-ps-border-subtle bg-ps-sidebar transition-all duration-300 ease-in-out",
         // Desktop: always visible with collapse
         "hidden md:block",
         sidebarCollapsed ? "w-16" : "w-64",
       )}
-      style={{
-        background: "var(--ps-bg-sidebar)",
-        borderRight: "1px solid var(--ps-border-subtle)",
-      }}
     >
       {/* Toggle button — floats at right edge of sidebar */}
       <button
         onClick={toggleSidebar}
-        className="absolute -right-3 top-[22px] z-50 flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
-        style={{
-          background: "var(--ps-bg-sidebar)",
-          borderColor: "var(--ps-border-subtle)",
-          color: "var(--ps-text-secondary)",
-        }}
+        className="absolute -right-3 top-[22px] z-50 flex h-6 w-6 items-center justify-center rounded-full border border-ps-border-subtle bg-ps-sidebar text-ps-text-secondary transition-colors hover:border-ps-border-medium hover:text-ps-text-primary"
         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "var(--ps-border-medium)";
-          e.currentTarget.style.color = "var(--ps-text-primary)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "var(--ps-border-subtle)";
-          e.currentTarget.style.color = "var(--ps-text-secondary)";
-        }}
       >
         <svg
           width="12"
@@ -266,10 +250,7 @@ export function Sidebar({ groups }: SidebarProps) {
 
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div
-          className="flex h-16 items-center justify-center border-b px-4"
-          style={{ borderBottomColor: "var(--ps-border-subtle)" }}
-        >
+        <div className="flex h-16 items-center justify-center border-b border-ps-border-subtle px-4">
           {sidebarCollapsed ? (
             <Image
               src="/logo-mark.png"
@@ -279,10 +260,7 @@ export function Sidebar({ groups }: SidebarProps) {
               style={{ height: 26, width: "auto" }}
             />
           ) : (
-            <span
-              className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight"
-              style={{ color: "var(--ps-text-primary)" }}
-            >
+            <span className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight text-ps-text-primary">
               <Image
                 src="/logo-mark.png"
                 alt="ProSell"
@@ -333,26 +311,20 @@ export function Sidebar({ groups }: SidebarProps) {
             <motion.aside
               role="complementary"
               aria-label="Sidebar"
-              initial={{ x: "-100%" }}
+              initial={{ x: prefersReducedMotion ? 0 : "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
-              className="fixed left-0 top-0 z-[70] h-screen w-64 md:hidden"
-              style={{
-                background: "var(--ps-bg-sidebar)",
-                borderRight: "1px solid var(--ps-border-subtle)",
+              exit={{ x: prefersReducedMotion ? 0 : "-100%" }}
+              transition={{
+                type: "tween",
+                duration: prefersReducedMotion ? 0 : 0.3,
+                ease: "easeOut",
               }}
+              className="fixed left-0 top-0 z-[70] h-screen w-64 border-r border-ps-border-subtle bg-ps-sidebar md:hidden"
             >
               <div className="flex h-full flex-col">
                 {/* Logo */}
-                <div
-                  className="flex h-16 items-center justify-center border-b px-4"
-                  style={{ borderBottomColor: "var(--ps-border-subtle)" }}
-                >
-                  <span
-                    className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight"
-                    style={{ color: "var(--ps-text-primary)" }}
-                  >
+                <div className="flex h-16 items-center justify-center border-b border-ps-border-subtle px-4">
+                  <span className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight text-ps-text-primary">
                     <Image
                       src="/logo-mark.png"
                       alt="ProSell"
@@ -428,20 +400,12 @@ function SidebarNav({
           <div key={group}>
             {/* Group divider between sections (not before first) */}
             {groupIdx > 0 && (
-              <div
-                className="my-1.5 mx-2 h-px"
-                style={{
-                  background: "var(--ps-border-subtle)",
-                }}
-              />
+              <div className="my-1.5 mx-2 h-px bg-ps-border-subtle" />
             )}
 
             {/* Group label (only when expanded and group has a label) */}
             {!collapsed && groupLabels[group] && (
-              <span
-                className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em]"
-                style={{ color: "var(--ps-text-tertiary)" }}
-              >
+              <span className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em] text-ps-tertiary">
                 {groupLabels[group]}
               </span>
             )}
@@ -458,40 +422,21 @@ function SidebarNav({
                     <a
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 text-sm font-medium transition-all duration-200",
+                        "flex items-center gap-3 border-r-2 text-sm font-medium no-underline text-ps-text-primary transition-all duration-200",
                         collapsed
                           ? "justify-center px-2 py-2"
                           : "px-4 py-[10px]",
+                        isActive
+                          ? "rounded-l-lg rounded-r-none border-ps-cyan bg-ps-nav-active-bg"
+                          : "rounded-lg border-transparent bg-transparent hover:bg-ps-hover-bg-xs",
                       )}
-                      style={{
-                        borderRadius: isActive ? "8px 0 0 8px" : 8,
-                        background: isActive
-                          ? "var(--ps-nav-active-bg)"
-                          : "transparent",
-                        color: "var(--ps-text-primary)",
-                        borderRight: isActive
-                          ? "2px solid var(--ps-cyan)"
-                          : "2px solid transparent",
-                        textDecoration: "none",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive)
-                          e.currentTarget.style.background =
-                            "var(--ps-hover-bg-xs)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive)
-                          e.currentTarget.style.background = "transparent";
-                      }}
                     >
                       <Icon
-                        className="h-[18px] w-[18px] flex-shrink-0"
-                        style={{
-                          strokeWidth: 2,
-                          color: isActive
-                            ? "var(--ps-cyan)"
-                            : "var(--ps-text-secondary)",
-                        }}
+                        className={cn(
+                          "h-[18px] w-[18px] flex-shrink-0",
+                          isActive ? "text-ps-cyan" : "text-ps-text-secondary",
+                        )}
+                        strokeWidth={2}
                       />
                       {!collapsed && (
                         <span className="flex-1">{item.label}</span>
@@ -533,54 +478,25 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   const role = user?.role || "Seller";
 
   return (
-    <div
-      className="border-t p-3"
-      style={{ borderTopColor: "var(--ps-border-subtle)" }}
-    >
+    <div className="border-t border-ps-border-subtle p-3">
       <div
         className={cn(
-          "flex items-center gap-[10px] rounded-[10px] cursor-pointer transition-all",
+          "flex items-center gap-[10px] rounded-[10px] cursor-pointer border border-ps-border-subtle bg-ps-user-card-bg transition-all hover:border-ps-border-medium",
           collapsed ? "justify-center p-2" : "p-3",
         )}
-        style={{
-          background: "var(--ps-user-card-bg)",
-          border: "1px solid var(--ps-border-subtle)",
-        }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.borderColor = "var(--ps-border-medium)")
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.borderColor = "var(--ps-border-subtle)")
-        }
       >
         {/* Avatar */}
-        <div
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold tracking-widest"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
-            color: "var(--ps-bg-base)",
-          }}
-        >
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-ps-avatar text-[12px] font-bold tracking-widest text-ps-base">
           {initials}
         </div>
 
         {!collapsed && (
           <>
             <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
-              <b
-                className="truncate text-[13px] font-semibold"
-                style={{ color: "var(--ps-text-primary)" }}
-              >
+              <b className="truncate text-[13px] font-semibold text-ps-text-primary">
                 {displayName}
               </b>
-              <span
-                className="inline-flex self-start text-[10px] font-bold uppercase px-[7px] py-[2px] rounded-full tracking-[0.04em]"
-                style={{
-                  background: "var(--ps-badge-bg)",
-                  color: "var(--ps-cyan)",
-                }}
-              >
+              <span className="inline-flex self-start text-[10px] font-bold uppercase px-[7px] py-[2px] rounded-full tracking-[0.04em] bg-ps-badge text-ps-cyan">
                 {role}
               </span>
             </div>
@@ -593,8 +509,7 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="flex-shrink-0"
-              style={{ color: "var(--ps-text-secondary)" }}
+              className="flex-shrink-0 text-ps-text-secondary"
             >
               <path d="m9 18 6-6-6-6" />
             </svg>

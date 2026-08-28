@@ -24,6 +24,10 @@ const CATEGORIES: { value: FBGroupCategory; label: string }[] = [
   { value: "other", label: "Otros" },
 ];
 
+function isFBGroupCategory(value: string): value is FBGroupCategory {
+  return CATEGORIES.some((c) => c.value === value);
+}
+
 const STATUS_OPTIONS = [
   { value: "active", label: "Activa" },
   { value: "disabled", label: "Deshabilitada" },
@@ -45,7 +49,7 @@ function showMutationError(error: unknown, fallback: string): void {
 export default function EditFBAccountPage() {
   const params = useParams();
   const router = useRouter();
-  const accountId = params.id as string;
+  const accountId = typeof params.id === "string" ? params.id : "";
 
   const { data: account, isLoading, error } = useFBAccount(accountId);
   const updateAccount = useUpdateFBAccount();
@@ -189,10 +193,14 @@ export default function EditFBAccountPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+              <label
+                htmlFor="fb-account-email"
+                className="block text-sm font-medium text-ps-text-secondary mb-1"
+              >
                 Email
               </label>
               <Input
+                id="fb-account-email"
                 value={account.email}
                 disabled
                 className="bg-ps-elevated text-ps-text-secondary"
@@ -203,10 +211,14 @@ export default function EditFBAccountPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+              <label
+                htmlFor="fb-account-alias"
+                className="block text-sm font-medium text-ps-text-secondary mb-1"
+              >
                 Alias
               </label>
               <Input
+                id="fb-account-alias"
                 value={currentAlias}
                 onChange={(e) => setAlias(e.target.value)}
                 placeholder="Cuenta Principal, etc."
@@ -215,10 +227,14 @@ export default function EditFBAccountPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+              <label
+                htmlFor="fb-account-status"
+                className="block text-sm font-medium text-ps-text-secondary mb-1"
+              >
                 Estado
               </label>
               <select
+                id="fb-account-status"
                 value={currentStatus}
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
@@ -234,12 +250,16 @@ export default function EditFBAccountPage() {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+            <label
+              htmlFor="fb-account-password"
+              className="block text-sm font-medium text-ps-text-secondary mb-1"
+            >
               Contraseña
             </label>
             {!showPasswordForm ? (
               <div className="flex items-center gap-2">
                 <Input
+                  id="fb-account-password"
                   value="••••••••••••"
                   disabled
                   className="flex-1 bg-ps-elevated text-ps-text-secondary"
@@ -257,6 +277,7 @@ export default function EditFBAccountPage() {
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Input
+                    id="fb-account-password"
                     type={showPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -266,6 +287,9 @@ export default function EditFBAccountPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={
+                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                    }
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-ps-text-secondary"
                   >
                     {showPassword ? (
@@ -309,10 +333,14 @@ export default function EditFBAccountPage() {
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+              <label
+                htmlFor="fb-account-browser"
+                className="block text-sm font-medium text-ps-text-secondary mb-1"
+              >
                 Navegador
               </label>
               <select
+                id="fb-account-browser"
                 value={currentBrowser}
                 onChange={(e) => setBrowser(e.target.value)}
                 className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
@@ -323,10 +351,14 @@ export default function EditFBAccountPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+              <label
+                htmlFor="fb-account-language"
+                className="block text-sm font-medium text-ps-text-secondary mb-1"
+              >
                 Idioma
               </label>
               <select
+                id="fb-account-language"
                 value={currentLanguage}
                 onChange={(e) => setLanguage(e.target.value)}
                 className="w-full rounded border border-ps-border-default bg-ps-input-bg px-3 py-2 text-sm text-ps-text-primary"
@@ -337,10 +369,14 @@ export default function EditFBAccountPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ps-text-secondary mb-1">
+              <label
+                htmlFor="fb-account-delay"
+                className="block text-sm font-medium text-ps-text-secondary mb-1"
+              >
                 Delay (seg)
               </label>
               <Input
+                id="fb-account-delay"
                 type="number"
                 step="0.1"
                 min="0.1"
@@ -380,9 +416,12 @@ export default function EditFBAccountPage() {
               />
               <select
                 value={newGroupCategory}
-                onChange={(e) =>
-                  setNewGroupCategory(e.target.value as FBGroupCategory)
-                }
+                onChange={(e) => {
+                  if (isFBGroupCategory(e.target.value)) {
+                    setNewGroupCategory(e.target.value);
+                  }
+                }}
+                aria-label="Categoría del grupo"
                 className="rounded border border-ps-border-default bg-ps-input-bg px-2 py-1 text-sm text-ps-text-primary"
               >
                 {CATEGORIES.map((c) => (

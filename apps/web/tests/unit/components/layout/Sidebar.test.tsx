@@ -152,10 +152,10 @@ describe("Sidebar", () => {
     render(<Sidebar groups={["inventario"]} />);
 
     const catalogLink = screen.getByText("Catálogo").closest("a");
-    expect(catalogLink).toHaveStyle({
-      background: "var(--ps-nav-active-bg)",
-      color: "var(--ps-text-primary)",
-    });
+    expect(catalogLink).toHaveClass(
+      "bg-ps-nav-active-bg",
+      "text-ps-text-primary",
+    );
   });
 
   it("renders collapse toggle button", () => {

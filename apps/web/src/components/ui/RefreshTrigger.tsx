@@ -26,17 +26,17 @@ export function RefreshTrigger({ onRefresh, children }: RefreshTriggerProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
 
-  async function handleDragEnd(_: unknown, info: { offset: { y: number } }) {
+  function handleDragEnd(_: unknown, info: { offset: { y: number } }) {
     const dragDistance = info.offset.y;
 
     if (dragDistance >= PULL_THRESHOLD && !isRefreshing) {
       setIsRefreshing(true);
-      try {
-        await onRefresh();
-      } finally {
+      // React Compiler can't lower try/finally yet; Promise#finally is the
+      // AST-equivalent that keeps the exact same cleanup-always-runs semantics.
+      void Promise.resolve(onRefresh()).finally(() => {
         setIsRefreshing(false);
         setPullDistance(0);
-      }
+      });
     } else {
       setPullDistance(0);
     }
@@ -60,9 +60,8 @@ export function RefreshTrigger({ onRefresh, children }: RefreshTriggerProps) {
         }}
       >
         <Loader2
-          className="h-6 w-6"
+          className="h-6 w-6 text-ps-cyan"
           style={{
-            color: "var(--ps-cyan)",
             transform: isRefreshing
               ? "none"
               : `rotate(${indicatorRotation}deg)`,
