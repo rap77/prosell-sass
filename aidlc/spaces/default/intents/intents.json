@@ -33,5 +33,12 @@
     "dirName": "260828-fix-invalid-tailwind-spa",
     "scope": "express",
     "status": "complete"
+  },
+  {
+    "uuid": "01a04ae3-b0af-7b1e-8db5-6e9f47fb1ef0",
+    "slug": "nextjs-react-bump",
+    "dirName": "260829-nextjs-react-bump",
+    "scope": "express",
+    "status": "complete"
   }
 ]
