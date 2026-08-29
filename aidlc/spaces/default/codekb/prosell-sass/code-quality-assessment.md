@@ -2,86 +2,115 @@
 
 ## Test Coverage
 
-| Área                              | Directorios                                                                                                         | Frameworks                           | Config de cobertura                                                                                                                                                                                                                                   |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend                           | `apps/api/tests/{contract,integration,unit,stubs,utils}/` (272 archivos `.py`) + `apps/api/src/prosell/tests/unit/` | pytest + pytest-asyncio + pytest-cov | `pytest.ini` presente; sin threshold de cobertura enforced visible en este pase (skimmed, no confirmado en detalle)                                                                                                                                   |
-| Frontend                          | `apps/web/tests/` (93 archivos) + 70 co-localizados `*.test.tsx`/`.test.ts`                                         | Vitest + Testing Library + jsdom     | `vitest.config.ts` — provider v8, thresholds `lines:40 functions:40 branches:75 statements:40`, **deliberadamente bajados** de un objetivo original del 80% (comentario en código justifica: la superficie del catálogo superó la superficie de test) |
-| E2E                               | `tests/e2e/specs/` (34 archivos)                                                                                    | Playwright                           | —                                                                                                                                                                                                                                                     |
-| Presencia adicional, no explorada | `tests/{integration,unit,apps}/` a nivel raíz                                                                       | —                                    | solo presencia confirmada                                                                                                                                                                                                                             |
+| Área     | Directorios                                                                                                                                                                                                                                                                                | Frameworks                           | Config de cobertura                                                                                                                                                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend  | `apps/api/tests/{unit,integration,contract,stubs,utils}/` — `unit` → `api/application/domain/dto/infrastructure/scripts/services/test_entities`; `integration` → `api/bulk_upload/database/i18n/repositories/services/tasks/use_cases`; `contract` → `integration/openapi/schema_matching` | pytest + pytest-asyncio + pytest-cov | `pytest --cov=prosell` (per `CLAUDE.md`); `pytest-cov` presente; threshold explícito no confirmado este pase                                                                                                                                                      |
+| Frontend | `apps/web/tests/{unit,components,app,__mocks__,utils}/` — `unit` → `api/components/config/design-tokens/hooks/lib/stores`; `components` → `admin/appointments/auth/catalog/filters/forms/ui`                                                                                               | Vitest + Testing Library + jsdom     | `vitest.config.ts` — provider v8, thresholds `lines:40 functions:40 branches:75 statements:40`, **deliberadamente bajados** de un objetivo original del 80% (comentario in-code lo justifica: la superficie del catálogo superó la superficie de test disponible) |
+| E2E      | `tests/{specs,pages,fixtures,factories,helpers,mocks,layer2}/` (paquete standalone `@prosell/e2e`)                                                                                                                                                                                         | Playwright                           | —                                                                                                                                                                                                                                                                 |
+
+**Test de regresión de nivel-config**: `apps/web/tests/unit/config/tailwind.config.test.ts` asserta que `theme.extend.spacing` contiene `"4.5"`, `"8.5"`, `"9.5"` — sigue el patrón establecido de importar el config con `await import(...)` y asertar directo sobre el objeto exportado (mismo patrón que `next.config.test.ts`). Este patrón es el que debería seguir cualquier test futuro que cubra config-level (p. ej. la extensión de spacing necesaria para el residuo `.25`/`.75`).
 
 ## Linting
 
-- **Python**: Ruff (`select = [E,W,F,I,N,UP,B,C4,SIM,ARG,PTH,RUF]`) + Pyright — completamente wireados en pre-commit **y** pre-push.
-- **TypeScript/JS**: ESLint flat config (`eslint . --max-warnings=0`) — pero el hook `next-lint` de pre-commit está **comentado** ("TODO: currently disabled due to next lint issues"). `lint-staged` (`eslint --fix` + `prettier --write`) cubre solo archivos staged como sustituto parcial — no hay enforcement completo de ESLint en cada commit.
-- **`scripts/validate-tailwind.sh`**: verifica solo el patrón `var(--ps-*)` dentro de `className` — no valida la validez de una clase de utilidad de spacing contra la escala configurada de Tailwind. Confirmado por lectura completa del script.
+- **Python**: Ruff (extenso `[tool.ruff]`, con una lista de per-file-ignores para **8 archivos** marcada explícitamente `# TODO: Fix these pre-existing issues (not part of current GGA fixes)` — reglas suprimidas incluyen ARG002, SIM102, RUF022, N818, RUF012) + Pyright — wireados en pre-commit **y** pre-push.
+- **⚠️ Divergencia de estrictez Pyright**: `apps/api/pyproject.toml` (la config real usada por CI/pre-commit) declara `typeCheckingMode = "standard"`; el `pyproject.toml` raíz declara `"strict"` — dos niveles distintos de type-checking según qué archivo de config se consulte.
+- **TypeScript/JS**: ESLint flat config (`eslint . --max-warnings=0`) — pero el hook `next-lint` de pre-commit está **comentado** ("TODO: currently disabled due to next lint issues"). `lint-staged` (`eslint --fix` + `prettier --write`) cubre solo archivos staged como sustituto parcial — no hay enforcement completo de ESLint en cada commit; CI sí lo corre por separado.
+- **`scripts/validate-tailwind.sh`**: verifica solo el patrón `var(--ps-*)` dentro de `className` — no valida la validez de una clase de utilidad de spacing contra la escala configurada de Tailwind.
 
 ## CI/CD
 
-- **`.github/workflows/ci.yml`** — 7 jobs: `lint-python`, `test-python`, `lint-node`, `test-node`, `validate-specs`, `validate-code-standards`, `build`.
-- **`.github/workflows/e2e.yml`** — suite E2E Playwright.
-- **`.github/workflows/deploy.yml`** — despliegue a staging on `workflow_run`.
+- **`.github/workflows/ci.yml`** — al menos `lint-python` y `test-python` confirmados (este último con un contenedor de servicio `postgres-test`); cuerpo completo no releído más allá de las primeras 60 líneas este pase.
+- **`.github/workflows/e2e.yml`** — suite E2E Playwright (cuerpo no releído).
+- **`.github/workflows/deploy.yml`**, **`promote-prod.yml`**, **`recover-prod.yml`** — despliegue y promoción/recuperación de producción (cuerpos no releídos).
 - **`.github/workflows/react-doctor.yml`** — advisory-only (no bloquea merge).
 - **`.github/workflows/graphify.yml`** — reconstrucción del grafo de conocimiento.
-- **`.github/workflows/promote-prod.yml`** / **`recover-prod.yml`** — promoción y recuperación de producción.
+
+## Pipeline de pre-commit / pre-push (`.pre-commit-config.yaml`)
+
+`default_install_hook_types: [pre-commit, pre-push]`. Orden de ejecución en pre-commit:
+
+1. GGA AI code review (`scripts/gga-batch.sh`, proveedor `codex`, reglas de `AGENTS.md`, `STRICT_MODE=true`)
+2. Secret scan
+3. Spec-status lifecycle enforcement (`validate_spec_status.py`, acotado a `docs/superpowers/specs/*.md`)
+4. Guard de `var()`-en-className de Tailwind (`validate-tailwind.sh`)
+5. `lint-staged` (ESLint + Prettier, solo archivos staged)
+6. ruff + ruff-format
+7. pyright
+8. `react-doctor --staged --blocking warning`
+9. hooks estándar de `pre-commit-hooks`
+
+Pre-push re-corre prettier/ruff/pyright, más `sync-test-db.sh` y la suite completa `pytest -q` del backend.
 
 ## Documentación
 
-- `CLAUDE.md` raíz es comprehensivo pero tiene **al menos 2 puntos de drift confirmados** (ver Signal #1 y #8 abajo).
-- `AGENTS.md` (521 líneas) — reglas autoritativas de revisión AI (GGA), incluye la excepción Zod-3-vs-4.
-- 13 archivos markdown sueltos en la raíz del repo (artefactos de sesión/handoff ad-hoc) — `docs/sessions/` existe como hogar presumible, no usado consistentemente.
+- `CLAUDE.md` raíz es comprehensivo pero conserva **al menos 1 punto de drift Tailwind sin corregir** (ver Signal #2 abajo) pese a que la tabla de Tech Stack ya fue corregida en el intent `260828-fix-invalid-tailwind-spa`.
+- `AGENTS.md` — reglas autoritativas de revisión AI (GGA), incluye la excepción Zod-3-vs-4; línea 14 ya correcta sobre Tailwind.
+- **Sprawl de markdown en la raíz**: número inusualmente grande de archivos `.md` de sesión/handoff ad-hoc en la raíz del repo (README.md, CLAUDE.md, AGENTS.md, DEPLOY.md, HANDOFF.md, HANDOFF-RELEASE.md, CONTINUE-HERE.md, INITIAL.md, SPEC.md, MIGRATION_TEST_REPORT.md, TESTING.md, TODO-CLEANUP-SUMMARY.md, varios SPRINT__\_VALIDACION_.md, FIX-MARKETPLACE-ACCESS-BUTTON.md, más archivos de reporte/transcript de "council") — señal de documentación de sesión acumulada fuera del árbol estructurado `docs/`. Un lifecycle durable existe y está enforced en `docs/superpowers/specs/`, pero el sprawl de raíz no está gobernado de forma similar.
 
 ---
 
-## Technical Debt Signals (inventario completo — 8 señales)
+## Technical Debt Signals (inventario actualizado — este rescan)
 
-### 1. ⚠️ Clases Tailwind inválidas — bug de este intent, alcance más amplio de lo originalmente declarado
+### 1. ⚠️ Residuo de clases Tailwind inválidas — familia `.25`/`.75`, NO cubierta por el fix anterior de este mismo intent
 
-**Este es el defecto que originó el intent `260828-fix-invalid-tailwind-spa`.** Barrido repo-wide de todo patrón `*-<n>.5` bajo `apps/web/src` confirmó que la mayoría de las clases half-step (`gap-1.5`, `px-2.5`, `mt-0.5`, `w-3.5`) **son válidas** en la escala default de Tailwind 3 (que incluye half-steps 0.5–3.5). El bug real está acotado a instancias **por encima de 3.5**, que `tailwind.config.ts` (leído completo) no extiende y por tanto compilan a CSS vacío.
+La familia `.5` (`h-9.5`, `px-4.5`, `h-8.5`) que originó el intent `260828-fix-invalid-tailwind-spa` **ya está corregida**: `tailwind.config.ts` extiende `spacing` con esos tres valores, con test de regresión dedicado. Sin embargo, el barrido repo-wide de este rescan encontró un **segundo grupo, no cubierto por ese fix**: clases de paso de cuarto `gap-1.25` (×2) y `mt-0.25` en `apps/web/src/app/(seller)/publications/page.tsx`; `py-0.75`/`p-0.75`/`mb-0.75` en el mismo archivo más `PublicationStatus.tsx`, `LeadStatusBadge.tsx`, `ProductImageGallery.tsx`. Compilan a CSS vacío por la misma causa raíz (fuera de la escala default y no extendidas). Por contraste, el conjunto mucho más grande de clases `.5`-puras repo-wide (`gap-1.5`, `py-2.5`, `w-3.5`) **es válido** y no es defecto. Detalle línea por línea pendiente en `component-inventory.md`.
 
-**Inventario completo — 7 archivos, 13 instancias** (ver `component-inventory.md` para el detalle línea por línea):
+### 2. ⚠️ Drift de tabla de stack en `CLAUDE.md` — parcialmente remediado
 
-- `h-9.5` — `OnboardingStep3.tsx:167,181,196` (3×); `publications/page.tsx:286,297,443,450` (4×); `PublishForm.tsx:573,583` (2×)
-- `px-4.5` — `privacy/page.tsx:89`; `terms/page.tsx:89`; `publications/page.tsx:286,297` (2×); `AppointmentForm.tsx:529`
-- `h-8.5` — `KanbanBoard.tsx:291`
+La tabla "Tech Stack 2026" (línea ~72) y `AGENTS.md` línea 14 ya fueron corregidas a `3.4.17`. **Sigue sin corregir**: la sección "Key Conventions" (línea ~194) de `CLAUDE.md`, que todavía dice "TailwindCSS 4: New engine, no `var()` en className". Quedó fuera del alcance aprobado del intent previo (su FR solo nombraba la tabla). El comentario de encabezado de `globals.css` ("Tailwind CSS 4.0 directives") tampoco fue corregido. El naming del hook/script `validate-tailwind` ("Tailwind 4 enforcement") es cosmético y no afecta la funcionalidad del chequeo.
 
-**⚠️ Brecha de alcance frente al intent original**: el intent declaró originalmente 5 archivos (`privacy/page.tsx`, `terms/page.tsx`, `publications/page.tsx`, `OnboardingStep3.tsx`, `AppointmentForm.tsx`). Este rescan encontró **2 archivos y 3 instancias adicionales no declarados**: `PublishForm.tsx` (2× `h-9.5`) y `KanbanBoard.tsx` (1× `h-8.5`). Total real = 7 archivos, 13 instancias. Esta brecha debe surgirse explícitamente en Requirements Analysis para decidir si el fix cubre las 13 instancias o se acota a las 10 originalmente conocidas con un follow-up para las 3 restantes.
+### 3. `packages/*` documentado pero ausente
 
-**Causa raíz probable — drift documental**: la tabla de stack de `CLAUDE.md` raíz declara **TailwindCSS 4.0**, cuando la versión real instalada (`apps/web/package.json`) es **3.4.17**. Es plausible que un agente o humano confiando en esa tabla haya asumido el motor de spacing de Tailwind 4 al escribir `h-9.5`/`px-4.5`, generando el bug. Ver Signal #8 para el drift documental en sí.
+`pnpm-workspace.yaml` declara el glob `packages/*`; el directorio no existe físicamente. Documentación/estructura muerta, o plan diferido sin fecha.
 
-**Ningún linter existente atrapa este bug**: `scripts/validate-tailwind.sh` solo revisa `var(--ps-*)`, no la validez de clases de utilidad de spacing — confirmado por lectura completa.
+### 4. `apps/app/` — micro-app huérfana
 
-### 2. `packages/` documentado pero ausente
+Contiene únicamente `privacy/page.tsx`, sin `package.json` propio — no es miembro del workspace pnpm, shadowed por la ruta real `apps/web/src/app/privacy/page.tsx`. Candidato a eliminación.
 
-`CLAUDE.md` raíz documenta una estructura de monorepo que incluye `packages/shared-types/` — el directorio **no existe** en disco (confirmado). Documentación muerta, o plan diferido sin fecha.
+### 5. Hook ESLint deshabilitado en pre-commit
 
-### 3. `apps/app/` — micro-app huérfana
+Comentado en `.pre-commit-config.yaml` con TODO abierto. `lint-staged` cubre solo archivos staged; CI sí ejecuta ESLint completo por separado.
 
-Contiene únicamente `privacy/page.tsx`. Sin wiring confirmado al grafo de build activo del workspace pnpm. Estado y propósito no claros — candidato a eliminación o integración real, decisión pendiente.
+### 6. Estado dual Zod 3/4
 
-### 4. Hook ESLint deshabilitado en pre-commit
+`AGENTS.md` instruye usar Zod 3 hasta resolver issue #74, pero `zod: ^4.4.0` ya está instalado (código real sigue en estilo Zod 3). Migración completa trackeada aparte en `260828-zod-3-to-4-migration` — no colar fixes parciales.
 
-Comentado en `.pre-commit-config.yaml` con TODO abierto ("currently disabled due to next lint issues"). `lint-staged` cubre solo archivos staged, no un enforcement completo por commit — brecha de cobertura de linting real.
+### 7. `useEffect` para data fetching/mutación
 
-### 5. Estado dual Zod 3/4
+`onboarding/page.tsx` e `invite/[token]/page.tsx` violan `AGENTS.md:333` ("useEffect for data fetching - use Server Components or React Query"). `invite/[token]/page.tsx` dispara una mutación en el mount con 5 estados de UI; no existe hoy un hook `useQuery` reusable para `orgApi`. Migración trackeada aparte en `260828-useeffect-to-react-query` (scope bugfix, hereda piso de test).
 
-`AGENTS.md` instruye usar Zod 3 hasta resolver issue #74, pero `apps/web/package.json` ya instala `zod: ^4.4.0`. El código real sigue en estilo Zod 3. Un intento parcial de migrar 2 archivos fue revertido en el intent `260827-react-doctor-cleanup` porque GGA lo bloqueó citando esta misma regla. Migración completa trackeada aparte en `260828-zod-3-to-4-migration` — **no colar fixes parciales de Zod 4** en otros archivos hasta que ese intent corra.
+### 8. Defecto conocido de proxy BFF — `response.json()` sin chequeo de content-type
 
-### 6. Clutter de markdown suelto en la raíz
+Persiste sin arreglar en los proxies catch-all (`products`, `categories`, `organizations`, `vehicles`) — no re-verificado línea por línea este pase (skimmed), pero confirmado aún abierto según memoria del proyecto.
 
-13 archivos `.md` ad-hoc de sesión/handoff en la raíz del repo, sin mover a `docs/sessions/` (que sí existe como hogar presumible).
+### 9. Hook pre-commit ESLint deshabilitado + divergencia de estrictez Pyright (root `strict` vs. `apps/api` `standard`)
 
-### 7. Thresholds de cobertura frontend deliberadamente bajados
+Dos configuraciones de Pyright con distinta estrictez conviviendo en el repo — la real usada en CI/pre-commit es la más laxa (`standard`).
 
-`vitest.config.ts` documenta en comentario in-code la razón: la superficie del catálogo (número de componentes/páginas) superó la superficie de test disponible, y el equipo bajó el threshold de un 80% original a `lines:40 functions:40 branches:75 statements:40` en vez de bloquear CI. Deuda intencional y documentada, no accidental.
+### 10. Thresholds de cobertura frontend deliberadamente bajados
 
-### 8. ⚠️ Drift de tabla de stack en `CLAUDE.md` raíz — Tailwind 4.0 vs. 3.4.17 real
+`vitest.config.ts` documenta en comentario in-code la razón (superficie del catálogo superó la superficie de test disponible); bajado de un 80% original a `lines:40 functions:40 branches:75 statements:40`. Deuda intencional y documentada, no accidental.
 
-Confirmado por lectura completa de `apps/web/package.json`: la versión real es `3.4.17`, no `4.0` como afirma la tabla "Tech Stack 2026" del `CLAUDE.md` raíz. **Causa raíz plausible del Signal #1** (el bug de este intent) — ver arriba. Corrección de la tabla recomendada como parte de este intent o de un follow-up inmediato para prevenir recurrencia.
+### 11. Lista extensa de ruff per-file-ignores
+
+8 archivos con violaciones suprimidas (ARG002, SIM102, RUF022, N818, RUF012), marcados TODO en `pyproject.toml`.
+
+### 12. TODO/FIXME density
+
+15 marcadores TODO/FIXME encontrados en `apps/api/src` y `apps/web/src` (grep dirigido, no exhaustivo), incluyendo trabajo de integración con Facebook Graph API diferido a fase 3 y un **chequeo de rol admin sin implementar** en `marketplace_access_router.py:110`.
+
+### 13. Router backend potencialmente no wireado
+
+31 módulos de router presentes bajo `infrastructure/api/routers/`, pero solo **30** llamadas `app.include_router(...)` en `main.py` — un módulo no confirmado como registrado. No investigado a fondo este pase si es intencional.
+
+### 14. Sprawl de documentación ad-hoc en la raíz
+
+Ver § Documentación arriba.
 
 ---
 
 ## Prioridad recomendada de resolución (para Requirements Analysis)
 
-1. **Signal #1** (bug del intent) — bloqueante para este intent, con la decisión de alcance (7 vs. 5 archivos) pendiente de confirmación explícita.
-2. **Signal #8** (drift Tailwind en CLAUDE.md) — causa raíz de #1, corrección barata, alto valor preventivo.
-3. Signals #2–#7 — deuda preexistente, no bloqueante para este intent, cada uno con intent propio o pendiente de uno (Signal #5 ya tiene intent dedicado; Signal #4 sin intent propio aún, ver también `260828-useeffect-to-react-query` para deuda relacionada de patrones React no cubierta por este pase).
+1. **Signal #1** (residuo `.25`/`.75`, este mismo intent) — bloqueante, decidir si se cubre en el mismo fix que ya cerró la familia `.5` o se trata como follow-up separado.
+2. **Signal #2** (drift Tailwind residual en `CLAUDE.md` línea ~194 + `globals.css`) — corrección barata, alto valor preventivo, causa raíz plausible del bug original.
+3. Signals #3–#14 — deuda preexistente, no bloqueante para este intent; #6 y #7 ya tienen intent propio dedicado (`260828-zod-3-to-4-migration`, `260828-useeffect-to-react-query`); el resto sin intent propio todavía.

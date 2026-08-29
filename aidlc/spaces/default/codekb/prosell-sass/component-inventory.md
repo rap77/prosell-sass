@@ -5,86 +5,64 @@ Nombres de componente en este documento son los que `reverse-engineering-timesta
 ## prosell-api (FastAPI backend)
 
 - **Responsabilidad**: lógica de negocio, orquestación de scraping/ML, persistencia, auth.
-- **Dependencias**: PostgreSQL 17, Redis 7.4+, Playwright (scraping FB Marketplace), Stripe, Anthropic SDK, boto3 (storage).
+- **Dependencias**: PostgreSQL 17, Redis 7.4+, Playwright (scraping FB Marketplace), Stripe, Anthropic SDK, boto3 (storage), facebook-sdk.
 - **Subcomponentes** (Clean Architecture):
-  - `domain/` — 24 entidades, zero deps externas.
-  - `application/` — 20 grupos de use cases.
-  - `infrastructure/` — 31 routers (190 endpoints), repositorios SQLAlchemy 2.0 async, 71 migraciones Alembic, tareas Taskiq+Redis, webhooks, i18n, procesamiento de imágenes.
-- **Tests**: 272 archivos `.py` en `apps/api/tests/{contract,integration,unit,stubs,utils}/` + `apps/api/src/prosell/tests/unit/`.
+  - `domain/` — entidades, value objects, eventos, puertos, servicios; zero deps externas.
+  - `application/` — use cases y DTOs.
+  - `infrastructure/` — 31 módulos de router (30 wireados en `main.py`), 4 archivos de middleware, repositorios SQLAlchemy 2.0 async, tareas Taskiq+Redis, webhooks, i18n, procesamiento de imágenes, integraciones, security.
+- **Tests**: `apps/api/tests/{unit,integration,contract,stubs,utils}/` con subdivisión por dominio (ver `code-structure.md`), más `apps/api/conftest.py`.
 
 ## prosell-web (Next.js frontend)
 
 - **Responsabilidad**: UI admin/vendedor SaaS + frontend de marketplace público.
 - **Dependencias**: prosell-api (vía BFF proxy), ninguna dependencia de build-time de `packages/*` (no existe).
 - **Subcomponentes**:
-  - `app/` — App Router, 28 subcarpetas de componentes bajo `components/`.
-  - `lib/api/` — 27 módulos de cliente API.
-  - `lib/api/schemas/` — 18 módulos Zod-mirror.
-  - `stores/` (Zustand), `hooks/`, `domain/`.
-- **Tests**: 93 archivos en `apps/web/tests/` + 70 co-localizados `*.test.tsx`/`.test.ts`.
+  - `app/` — App Router, incluyendo las 30 rutas BFF bajo `app/api/`.
+  - `proxy.ts` — middleware de routing/auth-redirect.
+  - `components/`, `lib/`, `stores/` (Zustand), `hooks/`, `domain/`, `i18n/`, `types/`.
+- **Tests**: `apps/web/tests/{unit,components,app,__mocks__,utils}/` con subdivisión por dominio de feature (ver `code-structure.md`).
 
 ## BFF proxy routes
 
 - **Responsabilidad**: intermediar entre navegador y `prosell-api`, centralizando cookies httpOnly y auth.
-- **Ubicación**: `apps/web/src/app/api/{auth,v1}/**/route.ts`, 33 archivos.
+- **Ubicación**: `apps/web/src/app/api/{auth,v1}/**/route.ts`, 30 archivos.
 - **Dependencias**: `prosell-api` (destino de reenvío).
-- **Defecto activo**: `response.json()` sin chequeo de `content-type` en los 4 proxies dinámicos (`products`, `categories`, `organizations`, `vehicles`) — ver `api-documentation.md`.
+- **Defecto activo (heredado, no re-verificado línea por línea este pase)**: `response.json()` sin chequeo de `content-type` en los proxies catch-all (`products`, `categories`, `organizations`, `vehicles`) — ver `api-documentation.md`.
 
 ## apps/app (orphan micro-app)
 
-- **Responsabilidad**: desconocida/no wireada — contiene únicamente `privacy/page.tsx`.
-- **Dependencias**: ninguna confirmada al grafo de build activo del workspace pnpm.
-- **Estado**: candidato a deuda técnica (ver `code-quality-assessment.md` signal #3).
+- **Responsabilidad**: desconocida/no wireada — contiene únicamente `privacy/page.tsx`, sin `package.json` propio.
+- **Dependencias**: ninguna confirmada al grafo de build activo del workspace pnpm. Shadowed por la ruta real `apps/web/src/app/privacy/page.tsx`.
+- **Estado**: candidato a deuda técnica (ver `code-quality-assessment.md`).
 
-## tests/e2e (Playwright suite)
+## tests/e2e (Playwright suite / @prosell/e2e workspace member)
 
 - **Responsabilidad**: pruebas end-to-end del flujo completo (navegador real contra stack levantado).
-- **Ubicación**: `tests/e2e/specs/`, 34 archivos (conteo confirmado, contenido no leído en este pase).
+- **Ubicación**: `tests/e2e/`, paquete pnpm independiente con `package.json` propio (`@prosell/e2e`), subcarpetas `specs/`, `pages/`, `fixtures/`, `factories/`, `helpers/`, `mocks/`, `layer2/` (internals no releídos en profundidad este pase).
 
 ---
 
 ## Inventario de bug — clases Tailwind inválidas (intent `260828-fix-invalid-tailwind-spa`)
 
-**Causa raíz confirmada**: `apps/web/tailwind.config.ts` (leído completo) NO extiende la escala `spacing` — el proyecto usa `tailwindcss: 3.4.17` (confirmado en `apps/web/package.json`, **no** Tailwind 4 como afirma la tabla de stack del `CLAUDE.md` raíz). La escala default de spacing de Tailwind 3 incluye half-steps solo hasta `3.5` (`0.5, 1.5, 2.5, 3.5`) — cualquier `*-<n>.5` con `n > 3` no existe en la escala y compila a **CSS vacío** (la clase se emite en el HTML pero no genera ninguna regla).
+### Estado de la familia `.5` (`h-9.5`, `px-4.5`, `h-8.5`) — YA CORREGIDA
 
-**Verificación de scope**: un barrido repo-wide de todo patrón `*-<n>.5` confirmó que la mayoría de las clases (`gap-1.5`, `px-2.5`, `mt-0.5`, `w-3.5`, etc.) **SON válidas** — el bug real se limita a las instancias por encima de `3.5`, listadas abajo con número de línea exacto.
+`apps/web/tailwind.config.ts` (leído completo este pase) extiende hoy `theme.extend.spacing` con `"4.5"`, `"8.5"`, `"9.5"`, confirmado además por un test de regresión dedicado: `apps/web/tests/unit/config/tailwind.config.test.ts` asserta explícitamente la presencia de esos tres valores. Las 15 instancias remanentes de esas clases en el código son hoy **válidas** — no forman parte de la deuda activa.
 
-### Inventario completo — 7 archivos, 13 instancias
+### Residuo NO cubierto por ese fix — familia `.25`/`.75`, encontrado en este rescan
 
-| #   | Archivo                                                    | Línea(s)      | Clase inválida | Nota                                                                    |
-| --- | ---------------------------------------------------------- | ------------- | -------------- | ----------------------------------------------------------------------- |
-| 1   | `apps/web/src/components/onboarding/OnboardingStep3.tsx`   | 167, 181, 196 | `h-9.5`        | 3× — en el file list original del intent                                |
-| 2   | `apps/web/src/app/(seller)/publications/page.tsx`          | 286, 297      | `h-9.5`        | 2× — en el file list original del intent                                |
-| 3   | `apps/web/src/app/(seller)/publications/page.tsx`          | 443, 450      | `h-9.5`        | 2× — en el file list original del intent                                |
-| 4   | `apps/web/src/app/(seller)/publications/page.tsx`          | 286, 297      | `px-4.5`       | 2× (mismas líneas que #2, clases combinadas) — en el file list original |
-| 5   | `apps/web/src/components/publisher/PublishForm.tsx`        | 573, 583      | `h-9.5`        | 2× — **NO estaba en el file list original del intent**                  |
-| 6   | `apps/web/src/app/privacy/page.tsx`                        | 89            | `px-4.5`       | 1× — en el file list original del intent                                |
-| 7   | `apps/web/src/app/terms/page.tsx`                          | 89            | `px-4.5`       | 1× — en el file list original del intent                                |
-| 8   | `apps/web/src/components/appointments/AppointmentForm.tsx` | 529           | `px-4.5`       | 1× — en el file list original del intent                                |
-| 9   | `apps/web/src/components/pipeline/KanbanBoard.tsx`         | 291           | `h-8.5`        | 1× — **NO estaba en el file list original del intent**                  |
+Barrido repo-wide de toda clase de utilidad de spacing fraccional (`h-`, `w-`, `p-`, `px-`, `py-`, `m-`, `gap-`, `top-`, etc. con sufijo `.25`/`.5`/`.75`) confirmó un **segundo grupo de clases inválidas** de paso de cuarto, distinto de la familia `.5` ya arreglada. Ni la escala default de Tailwind 3 ni la extensión ya presente en `tailwind.config.ts` cubren pasos de `.25`/`.75` — estas clases compilan a CSS vacío igual que la familia `.5` antes de su fix.
 
-**Totales por archivo** (7 archivos):
+| Archivo                                                   | Clases inválidas encontradas                             |
+| --------------------------------------------------------- | -------------------------------------------------------- |
+| `apps/web/src/app/(seller)/publications/page.tsx`         | `gap-1.25` (×2), `mt-0.25`, `py-0.75`/`p-0.75`/`mb-0.75` |
+| `apps/web/src/components/publisher/PublicationStatus.tsx` | `py-0.75`/`p-0.75`/`mb-0.75`                             |
+| `apps/web/src/components/leads/LeadStatusBadge.tsx`       | `py-0.75`/`p-0.75`/`mb-0.75`                             |
+| `apps/web/src/components/catalog/ProductImageGallery.tsx` | `py-0.75`/`p-0.75`/`mb-0.75`                             |
 
-| Archivo                 | Instancias                                 |
-| ----------------------- | ------------------------------------------ |
-| `OnboardingStep3.tsx`   | 3 (`h-9.5`)                                |
-| `publications/page.tsx` | 6 (`h-9.5` ×4, `px-4.5` ×2)                |
-| `PublishForm.tsx`       | 2 (`h-9.5`) — **fuera del scope original** |
-| `privacy/page.tsx`      | 1 (`px-4.5`)                               |
-| `terms/page.tsx`        | 1 (`px-4.5`)                               |
-| `AppointmentForm.tsx`   | 1 (`px-4.5`)                               |
-| `KanbanBoard.tsx`       | 1 (`h-8.5`) — **fuera del scope original** |
-| **Total**               | **13 instancias, 7 archivos**              |
+**Nota de precisión**: el scan de este pase identificó estos archivos y clases vía grep repo-wide (evidencia sólida de que las clases existen y son inválidas), pero **no releyó cada archivo línea por línea** para fijar número de línea exacto — a diferencia del inventario de la familia `.5` en el pase anterior, que sí tenía línea exacta. Un fix de este residuo debe re-abrir cada archivo para localizar la línea antes de aplicar el cambio.
 
-### ⚠️ Brecha de alcance frente al intent original
-
-El intent `260828-fix-invalid-tailwind-spa` fue registrado originalmente citando 5 archivos (`privacy/page.tsx`, `terms/page.tsx`, `publications/page.tsx`, `OnboardingStep3.tsx`, `AppointmentForm.tsx`). Este rescan encontró **2 archivos y 3 instancias adicionales** no listados originalmente:
-
-- `apps/web/src/components/publisher/PublishForm.tsx` (2× `h-9.5`, líneas 573 y 583)
-- `apps/web/src/components/pipeline/KanbanBoard.tsx` (1× `h-8.5`, línea 291)
-
-Esta brecha se traslada explícitamente a `code-quality-assessment.md` y debe considerarse en Requirements Analysis para decidir si el fix cubre los 7 archivos o se mantiene acotado a los 5 originales con un follow-up separado para los 2 nuevos.
+**Contraste de control**: el conjunto mucho más grande de clases con sufijo `.5` puro (`gap-1.5`, `py-2.5`, `w-3.5`, `mt-0.5`, etc.) encontrado repo-wide **SÍ es válido** en la escala default de Tailwind 3 (half-steps 0.5–3.5) — no confundir con el residuo `.25`/`.75` de arriba.
 
 ### Fix ya aplicado como precedente (referencia, no parte de este intent)
 
-Memoria del proyecto registra que `BulkUploadCSV.tsx` tenía el mismo patrón (`h-9.5`/`px-4.5`) y ya fue arreglado convirtiendo a valores arbitrarios explícitos: `h-[38px]`, `px-[18px]`. Ese archivo **no** aparece en el inventario de arriba porque ya está corregido.
+Memoria del proyecto registra que `BulkUploadCSV.tsx` tenía el mismo patrón (`h-9.5`/`px-4.5`) y ya fue arreglado convirtiendo a valores arbitrarios explícitos: `h-[38px]`, `px-[18px]`. Ese archivo no aparece en ningún inventario de arriba porque ya está corregido.

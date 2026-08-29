@@ -9,99 +9,95 @@ prosell-sass/
 │   │   ├── src/prosell/
 │   │   │   ├── domain/         # Entidades, value objects, eventos, puertos — zero deps
 │   │   │   ├── application/    # Use cases, DTOs, orquestación
-│   │   │   └── infrastructure/ # FastAPI routers, SQLAlchemy, scrapers, tareas
-│   │   └── tests/{contract,integration,unit,stubs,utils}/
+│   │   │   └── infrastructure/ # FastAPI routers, middleware, SQLAlchemy, scrapers, tareas
+│   │   ├── tests/{unit,integration,contract,stubs,utils}/
+│   │   ├── scripts/             # 24 scripts (utilidades de mantenimiento/datos)
+│   │   ├── conftest.py
+│   │   └── pyproject.toml
 │   │
 │   ├── web/                    # Frontend Next.js 16 + React 19
-│   │   └── src/{app,components,lib,stores,hooks,domain}/
+│   │   └── src/{app,components,domain,hooks,i18n,lib,stores,types}/
 │   │
-│   └── app/                    # ⚠️ orphan — un único archivo, no wireado al build activo
+│   └── app/                    # ⚠️ orphan — un único archivo, sin package.json, no es miembro del workspace
 │       └── privacy/page.tsx
 │
-├── packages/                   # ⚠️ documentado en CLAUDE.md, NO existe en disco
+├── packages/                   # ⚠️ declarado en pnpm-workspace.yaml (glob packages/*), NO existe en disco
 │
-├── tests/e2e/                  # Playwright E2E (34 specs)
+├── tests/e2e/                  # Paquete pnpm independiente @prosell/e2e — Playwright E2E
 │
-├── docker/                     # Dockerfiles + docker-compose (dev/staging/prod)
+├── scripts/                    # 22 scripts a nivel raíz
+│
+├── docker/                     # Dockerfiles + docker-compose (13 servicios)
 │
 └── .github/workflows/          # 7 workflows de CI/CD
 ```
 
 ## Backend — `apps/api/src/prosell/`
 
-Clean Architecture de 3 capas, confirmada por lectura completa del árbol (profundidad 2):
+Clean Architecture de 3 capas, confirmada por enumeración completa del árbol de subdirectorios:
 
 ### `domain/` (zero dependencias externas)
 
-- **24 entidades** de dominio (conteo de archivos, nombres exactos no enumerados en este pase — skimmed)
-- `value_objects/` — valores inmutables (skimmed)
-- `events/` — eventos de dominio (skimmed)
-- `exceptions/` — excepciones de reglas de negocio (skimmed)
-- `ports/` — interfaces/contratos (Repository interfaces, IEmailService, etc.) (skimmed)
-- `services/` — servicios de dominio (skimmed)
+- Entidades, value objects, eventos, excepciones, puertos (interfaces) y servicios de dominio — enumerados a nivel de subcarpeta, contenidos no releídos línea por línea este pase.
 
 ### `application/`
 
-- **20 grupos de módulos de use case** (conteo confirmado, listado detallado no leído en este pase)
-- DTOs de entrada/salida por caso de uso
+- Use cases y DTOs de entrada/salida — estructura/nombres enumerados, contenidos no releídos línea por línea este pase.
 
 ### `infrastructure/`
 
-- `api/routers/` — **31 archivos de router**, 190 endpoints (`@router.get/post/put/patch/delete`)
-- `database/`, `models/`, `repositories/` — adaptadores SQLAlchemy 2.0 async (skimmed en detalle)
-- `services/` — integraciones externas (Stripe, storage, etc.) (skimmed)
-- `tasks/` — jobs asíncronos (Taskiq + Redis) (skimmed)
-- `webhook/` — receptores de webhooks (skimmed)
-- `i18n/` — internacionalización backend (skimmed)
-- `images/` — procesamiento de imágenes (skimmed)
-- **71 migraciones Alembic** presentes
+- `api/routers/` — **31 módulos de router** enumerados por nombre de archivo.
+- `api/middleware/` — **4 archivos**: `auth_middleware.py`, `rbac_middleware.py`, `rate_limit_middleware.py`, `exception_handlers.py`.
+- `api/main.py` — **30 llamadas `app.include_router(...)`** (1 módulo de router menos que los 31 presentes — discrepancia no investigada a fondo este pase, ver `code-quality-assessment.md`).
+- `{database,models,repositories,services,tasks,webhook,i18n,images,integrations,security}/` — presencia confirmada, contenido skimmed.
 
 ### Tests
 
-- `apps/api/tests/{contract,integration,unit,stubs,utils}/` — 272 archivos `.py`
-- `apps/api/src/prosell/tests/unit/` adicional
-- `pytest.ini` presente en raíz de `apps/api` (skimmed — sin verificar thresholds de cobertura)
+- `apps/api/tests/{unit,integration,contract,stubs,utils}/`, con subdivisión adicional confirmada:
+  - `unit/` → `api/`, `application/`, `domain/`, `dto/`, `infrastructure/`, `scripts/`, `services/`, `test_entities/`
+  - `integration/` → `api/`, `bulk_upload/`, `database/`, `i18n/`, `repositories/`, `services/`, `tasks/`, `use_cases/`
+  - `contract/` → `integration/`, `openapi/`, `schema_matching/`
+- `apps/api/conftest.py` presente en raíz de `apps/api` (existencia/config confirmada, no releído en profundidad).
 
 ## Frontend — `apps/web/src/`
 
-Estructura App Router + capas de soporte, listada a profundidad 2:
+Estructura App Router + capas de soporte, enumerada a nivel de directorio de primer/segundo nivel:
 
-- `app/` — Next.js App Router (rutas de página + rutas API BFF bajo `app/api/{auth,v1}/**/route.ts`)
-- `components/` — **28 subcarpetas de componentes** (contenido interno no leído individualmente en este pase — skimmed)
-- `lib/` — utilidades transversales:
-  - `lib/api/` — **27 módulos de cliente API**
-  - `lib/api/schemas/` — **18 módulos de esquema Zod-mirror**
-  - `lib/{admin,auth,cache,constants,filters,hooks,mocks,schemas,translations,utils}/` — presencia confirmada, contenido no leído (skimmed)
-- `stores/` — estado Zustand
-- `hooks/` — hooks React reutilizables (además de `lib/hooks/`)
-- `domain/` — modelos/tipos de dominio del lado frontend
+- `app/` — Next.js App Router, incluyendo las 30 rutas API BFF bajo `app/api/{auth,v1}/**/route.ts` (todas enumeradas por archivo).
+- `components/` — contenido interno no releído individualmente este pase (skimmed).
+- `domain/`, `hooks/`, `i18n/`, `lib/`, `stores/`, `types/` — presencia confirmada al nivel de árbol; contenidos no releídos en profundidad salvo `lib/api/`/`lib/api/schemas/` referidos en `api-documentation.md`.
+- `proxy.ts` — middleware de routing/auth-redirect, identificado vía el grafo del proyecto, no releído línea por línea este pase.
 
 ### Tests
 
-- `apps/web/tests/` — 93 archivos
-- 70 archivos `*.test.tsx`/`.test.ts` co-localizados junto al código fuente
-- Dos patrones de ubicación de test conviven en el proyecto (memoria del proyecto): `tests/components/{module}/X.test.tsx` (histórico) y co-localizado `page.test.tsx` (más reciente, T12-T18) — ambos válidos hoy.
+- `apps/web/tests/{unit,components,app,__mocks__,utils}/`, con subdivisión adicional confirmada:
+  - `unit/` → `api/`, `components/`, `config/`, `design-tokens/`, `hooks/`, `lib/`, `stores/`
+  - `components/` → subcarpetas por dominio de feature: `admin/`, `appointments/`, `auth/`, `catalog/`, `filters/`, `forms/`, `ui/`
+- Dos patrones de ubicación de test conviven en el proyecto (memoria del proyecto): `tests/components/{module}/X.test.tsx` (histórico) y co-localizado `page.test.tsx` (más reciente) — ambos válidos hoy. El patrón de test de nivel-config (`apps/web/tests/unit/config/<config-file>.test.ts`, importando el config con `await import(...)` y asertando directo sobre el objeto exportado) es el establecido para cualquier archivo `*.config.ts` — ver `tailwind.config.test.ts` y `next.config.test.ts`.
+
+## `tests/e2e` — paquete standalone `@prosell/e2e`
+
+Miembro independiente del workspace pnpm (`package.json` propio), no un simple directorio de specs. Listado a nivel raíz confirmado; internals de `specs/`, `pages/`, `fixtures/`, `factories/`, `helpers/`, `mocks/`, `layer2/` no releídos en profundidad este pase.
 
 ## Patrones de código observados
 
-- **Dependency Rule estricta** en backend: `infrastructure → application → domain`, nunca al revés — confirmado por la ausencia de imports de `infrastructure`/`application` dentro de `domain/` reportada en escaneos previos y no contradicha en este pase.
+- **Dependency Rule estricta** en backend: `infrastructure → application → domain`, nunca al revés.
 - **DTO boundary explícito**: Pydantic en cada frontera de application/infrastructure (backend), Zod en cada frontera de UI/API client (frontend).
-- **Interface-based DI**: el dominio define puertos (`ports/`), la infraestructura los implementa — inversión de dependencia clásica.
+- **Interface-based DI**: el dominio define puertos (`ports/`), la infraestructura los implementa.
 - **Multi-tenant por convención de campo**: `tenant_id` presente en agregados, no en el nombre de esquema/DB.
-- **Server Components por defecto** en `apps/web/src/app/` — fetching de datos server-side salvo excepciones documentadas como deuda (ver `code-quality-assessment.md`, casos `onboarding/page.tsx` e `invite/[token]/page.tsx` que usan `useEffect` en violación de la regla `AGENTS.md:333`).
+- **Server Components por defecto** en `apps/web/src/app/` — con dos excepciones documentadas como deuda: `onboarding/page.tsx` e `invite/[token]/page.tsx` usan `useEffect` para fetch/mutación de datos, violando `AGENTS.md:333` (migración trackeada aparte en el intent `260828-useeffect-to-react-query`).
 
 ## Clasificación de archivos relevantes a este intent (bug Tailwind)
 
-Archivos con clases de spacing Tailwind inválidas (`h-9.5`, `px-4.5`, `h-8.5` — fuera de la escala default 0–3.5 half-steps de Tailwind 3, y `tailwind.config.ts` no extiende `spacing`):
+**Familia `.5` (`h-9.5`, `px-4.5`, `h-8.5`) — ya corregida**: `tailwind.config.ts` extiende hoy la escala `spacing` con `4.5`/`8.5`/`9.5`, confirmado por lectura completa del archivo. Existe un test de regresión dedicado (`apps/web/tests/unit/config/tailwind.config.test.ts`) que asegura que esos valores siguen presentes. 15 call-sites que usan esas clases son válidos hoy.
 
-| Archivo                                                    | Tipo                                  | Instancias |
-| ---------------------------------------------------------- | ------------------------------------- | ---------- |
-| `apps/web/src/components/onboarding/OnboardingStep3.tsx`   | Componente de formulario (onboarding) | 3          |
-| `apps/web/src/app/(seller)/publications/page.tsx`          | Página App Router (seller)            | 6          |
-| `apps/web/src/components/publisher/PublishForm.tsx`        | Componente de formulario (publisher)  | 2          |
-| `apps/web/src/app/privacy/page.tsx`                        | Página estática (legal)               | 1          |
-| `apps/web/src/app/terms/page.tsx`                          | Página estática (legal)               | 1          |
-| `apps/web/src/components/appointments/AppointmentForm.tsx` | Componente de formulario (citas)      | 1          |
-| `apps/web/src/components/pipeline/KanbanBoard.tsx`         | Componente de tablero (pipeline)      | 1          |
+**Familia `.25`/`.75` — residuo no cubierto por el fix anterior, encontrado en este rescan**: clases de paso de cuarto (`gap-1.25`, `mt-0.25`, `py-0.75`, `p-0.75`, `mb-0.75`) que **no** están en la escala default de Tailwind 3 ni fueron extendidas en `tailwind.config.ts`, y por tanto compilan a CSS vacío igual que la familia `.5` antes de su fix:
 
-Inventario completo con número de línea en `component-inventory.md` y `code-quality-assessment.md`.
+| Archivo                                                   | Clases inválidas encontradas                             |
+| --------------------------------------------------------- | -------------------------------------------------------- |
+| `apps/web/src/app/(seller)/publications/page.tsx`         | `gap-1.25` (×2), `mt-0.25`, `py-0.75`/`p-0.75`/`mb-0.75` |
+| `apps/web/src/components/publisher/PublicationStatus.tsx` | `py-0.75`/`p-0.75`/`mb-0.75` (variante presente)         |
+| `apps/web/src/components/leads/LeadStatusBadge.tsx`       | `py-0.75`/`p-0.75`/`mb-0.75` (variante presente)         |
+| `apps/web/src/components/catalog/ProductImageGallery.tsx` | `py-0.75`/`p-0.75`/`mb-0.75` (variante presente)         |
+
+Números de línea exactos no confirmados este pase (skimmed vía grep repo-wide, no releídos archivo por archivo) — inventario detallado adicional en `component-inventory.md`. Por contraste, el conjunto mucho más grande de clases con sufijo `.5` (`gap-1.5`, `py-2.5`, `w-3.5`, etc.) encontrado repo-wide **es válido** en la escala default de Tailwind 3 y no constituye defecto.
