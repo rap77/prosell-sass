@@ -146,6 +146,7 @@ export function RegisterPageContent() {
             setLoadingOAuth("google");
             const b =
               process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- cross-origin redirect to the backend OAuth authorize endpoint, not an internal Next.js page; the rule can't statically resolve the template literal's absolute origin
             window.location.href = `${b}/api/auth/oauth/google/authorize`;
           }}
         />
@@ -157,6 +158,7 @@ export function RegisterPageContent() {
             setLoadingOAuth("microsoft");
             const b =
               process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- cross-origin redirect to the backend OAuth authorize endpoint, not an internal Next.js page; the rule can't statically resolve the template literal's absolute origin
             window.location.href = `${b}/api/auth/oauth/microsoft/authorize`;
           }}
         />

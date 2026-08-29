@@ -34,6 +34,7 @@ export async function fetchWithAuth(...args: FetchArgs): Promise<Response> {
 
   if (!refreshed) {
     if (typeof window !== "undefined") {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- deliberate full-page reload outside React tree to reset all client state on session expiry, not a router.push() candidate
       window.location.href = "/auth/login";
     }
     return res;
