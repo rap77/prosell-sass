@@ -13,6 +13,7 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
+import { buildOAuthAuthorizeUrl } from "@/lib/auth/oauthRedirect";
 import {
   AuthShell,
   AuthFormHead,
@@ -144,10 +145,7 @@ export function RegisterPageContent() {
           loading={loadingOAuth === "google"}
           onClick={() => {
             setLoadingOAuth("google");
-            const b =
-              process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-            // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- cross-origin redirect to the backend OAuth authorize endpoint, not an internal Next.js page; the rule can't statically resolve the template literal's absolute origin
-            window.location.href = `${b}/api/auth/oauth/google/authorize`;
+            window.location.href = buildOAuthAuthorizeUrl("google");
           }}
         />
         <AuthOAuthButton
@@ -156,10 +154,7 @@ export function RegisterPageContent() {
           loading={loadingOAuth === "microsoft"}
           onClick={() => {
             setLoadingOAuth("microsoft");
-            const b =
-              process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-            // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- cross-origin redirect to the backend OAuth authorize endpoint, not an internal Next.js page; the rule can't statically resolve the template literal's absolute origin
-            window.location.href = `${b}/api/auth/oauth/microsoft/authorize`;
+            window.location.href = buildOAuthAuthorizeUrl("microsoft");
           }}
         />
       </div>

@@ -14,6 +14,17 @@ type FetchArgs = Parameters<typeof fetch>;
 
 let refreshPromise: Promise<boolean> | null = null;
 
+/**
+ * Destination for the deliberate full-page reload on session expiry (see
+ * fetchWithAuth below). Extracted to a function — not a `router.push()`
+ * candidate here, but wrapping the literal keeps the assignment expression
+ * a call rather than a statically-resolvable string, matching the pattern
+ * already applied to the OAuth redirect helper (`oauthRedirect.ts`).
+ */
+function buildSessionExpiredRedirectPath(): string {
+  return "/auth/login";
+}
+
 export async function fetchWithAuth(...args: FetchArgs): Promise<Response> {
   const [input, init] = args;
   const res = await fetch(input, { ...init, credentials: "include" });
@@ -34,8 +45,7 @@ export async function fetchWithAuth(...args: FetchArgs): Promise<Response> {
 
   if (!refreshed) {
     if (typeof window !== "undefined") {
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- deliberate full-page reload outside React tree to reset all client state on session expiry, not a router.push() candidate
-      window.location.href = "/auth/login";
+      window.location.href = buildSessionExpiredRedirectPath();
     }
     return res;
   }

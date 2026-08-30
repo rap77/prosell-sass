@@ -1,8 +1,11 @@
 /**
- * Next.js Middleware for Route Protection
+ * Next.js Proxy for Route Protection
  *
- * This middleware runs on the Edge Runtime and protects routes by checking
- * for auth cookies. Unauthenticated users are redirected to login.
+ * Next.js 16 renamed the `middleware.ts` file convention to `proxy.ts`
+ * (functionality unchanged) — this file is that Edge Runtime proxy: it
+ * protects routes by checking for auth cookies, and unauthenticated users
+ * are redirected to login. The exported function keeps the `middleware`
+ * name for backward compatibility with existing imports (e.g. `proxy.test.ts`).
  *
  * Performance optimizations:
  * - React.cache for per-request deduplication
@@ -10,7 +13,7 @@
  * - Optimized JSON parsing with memoization
  * - Minimal data serialization
  *
- * @see https://nextjs.org/docs/app/building-your-application/routing/middleware
+ * @see https://nextjs.org/docs/app/api-reference/file-conventions/proxy
  */
 
 import { NextResponse } from "next/server";

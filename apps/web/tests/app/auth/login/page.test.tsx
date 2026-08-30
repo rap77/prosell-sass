@@ -6,8 +6,8 @@
  * @see https://nextjs.org/docs/app/building-your-application/testing
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { LoginPageContent } from "@/app/auth/login/LoginPageContent";
 
 // ============================================
@@ -120,6 +120,51 @@ describe("LoginPage", () => {
       expect(
         screen.getByRole("link", { name: /Registrate gratis/i }),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("OAuth buttons", () => {
+    const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    beforeEach(() => {
+      delete process.env.NEXT_PUBLIC_API_URL;
+      // Replace window.location with a plain, spy-able object (starting from
+      // a valid absolute URL so unrelated code that resolves relative URLs
+      // against it — e.g. next/image — keeps working) instead of letting
+      // jsdom attempt a real (unimplemented) navigation on assignment.
+      Object.defineProperty(window, "location", {
+        writable: true,
+        configurable: true,
+        value: { href: "http://localhost:3000/auth/login" },
+      });
+    });
+
+    afterEach(() => {
+      if (originalApiUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_API_URL;
+      } else {
+        process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
+      }
+    });
+
+    it("navigates to the google OAuth authorize URL when the Google button is clicked", () => {
+      render(<LoginPageContent />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Google/i }));
+
+      expect(window.location.href).toBe(
+        "http://localhost:8000/api/auth/oauth/google/authorize",
+      );
+    });
+
+    it("navigates to the microsoft OAuth authorize URL when the Microsoft button is clicked", () => {
+      render(<LoginPageContent />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Microsoft/i }));
+
+      expect(window.location.href).toBe(
+        "http://localhost:8000/api/auth/oauth/microsoft/authorize",
+      );
     });
   });
 });
