@@ -15,11 +15,13 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 
 
 @pytest.mark.asyncio
-async def test_batch_submit_multiple_draft_products(db_session, test_organization):
+async def test_batch_submit_multiple_draft_products(
+    db_session, test_organization, test_category, test_user
+):
     """All draft products should be submitted successfully."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    user_id = uuid4()
+    user_id = test_user.id
 
     # Create 3 draft products
     products = []
@@ -28,7 +30,7 @@ async def test_batch_submit_multiple_draft_products(db_session, test_organizatio
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Test Vehicle {i}",
             price_cents=1000000,
             currency="USD",
@@ -65,12 +67,14 @@ async def test_batch_submit_multiple_draft_products(db_session, test_organizatio
 
 
 @pytest.mark.asyncio
-async def test_batch_submit_rejected_products(db_session, test_organization):
+async def test_batch_submit_rejected_products(
+    db_session, test_organization, test_category, test_user
+):
     """Rejected products should be submitted successfully."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    user_id = uuid4()
-    reviewer_id = uuid4()
+    user_id = test_user.id
+    reviewer_id = test_user.id
 
     # Create 2 rejected products
     products = []
@@ -79,7 +83,7 @@ async def test_batch_submit_rejected_products(db_session, test_organization):
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Rejected Vehicle {i}",
             price_cents=1000000,
             currency="USD",
@@ -114,18 +118,20 @@ async def test_batch_submit_rejected_products(db_session, test_organization):
 
 
 @pytest.mark.asyncio
-async def test_batch_submit_partial_success(db_session, test_organization):
+async def test_batch_submit_partial_success(
+    db_session, test_organization, test_category, test_user
+):
     """Mix of draft/published should return partial success."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    user_id = uuid4()
+    user_id = test_user.id
 
     # Create 2 draft + 1 published
     draft1 = Product(
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Draft 1",
         price_cents=1000000,
         currency="USD",
@@ -137,7 +143,7 @@ async def test_batch_submit_partial_success(db_session, test_organization):
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Draft 2",
         price_cents=1000000,
         currency="USD",
@@ -149,7 +155,7 @@ async def test_batch_submit_partial_success(db_session, test_organization):
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Published",
         price_cents=1000000,
         currency="USD",
@@ -195,18 +201,20 @@ async def test_batch_submit_partial_success(db_session, test_organization):
 
 
 @pytest.mark.asyncio
-async def test_batch_submit_deduplicates_ids(db_session, test_organization):
+async def test_batch_submit_deduplicates_ids(
+    db_session, test_organization, test_category, test_user
+):
     """Duplicate IDs should be processed only once."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    user_id = uuid4()
+    user_id = test_user.id
 
     # Create 1 draft product
     product = Product(
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Test Vehicle",
         price_cents=1000000,
         currency="USD",

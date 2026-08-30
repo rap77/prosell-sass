@@ -13,8 +13,9 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import event, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 from tests.integration._constants import TEST_DB_URL
 
@@ -43,14 +44,40 @@ BOT_TOKEN = "test-bot-token-12345"
 
 @pytest_asyncio.fixture
 async def shared_session() -> AsyncGenerator[AsyncSession]:
-    """Shared session for test data and endpoint."""
+    """Shared session for test data and endpoint.
+
+    Joins the session to a connection-level transaction and nests a
+    SAVEPOINT inside it, so a handler's explicit ``await db.commit()`` (the
+    production per-request pattern — see ``session.py``) releases only the
+    savepoint instead of ending the fixture's outer transaction. Without
+    this, a commit inside the endpoint under test leaves the session
+    unusable for the rest of the test with
+    ``sqlalchemy.exc.InvalidRequestError: Can't operate on closed
+    transaction inside context manager``. The listener restarts the
+    savepoint after each release so repeated commits (e.g. calling the same
+    endpoint twice to check idempotency) keep working. The outer
+    connection-level transaction (not ``session.begin()``) is what makes
+    this combination valid — see SQLAlchemy's "Joining a Session into an
+    External Transaction" recipe.
+    """
     engine = create_async_engine(TEST_DB_URL, poolclass=NullPool)
-    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    connection = await engine.connect()
+    outer_transaction = await connection.begin()
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+    await session.begin_nested()
 
-    async with session_factory() as session, session.begin():
-        yield session
-        await session.rollback()
+    @event.listens_for(session.sync_session, "after_transaction_end")
+    def _restart_savepoint(sess: Session, transaction: object) -> None:
+        if getattr(transaction, "nested", False) and not getattr(
+            getattr(transaction, "_parent", None), "nested", True
+        ):
+            sess.begin_nested()
 
+    yield session
+
+    await session.close()
+    await outer_transaction.rollback()
+    await connection.close()
     await engine.dispose()
 
 

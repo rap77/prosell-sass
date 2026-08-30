@@ -46,16 +46,45 @@ async def test_seed_creates_global_root_vertical(db_session):
 async def test_seed_creates_level_3_leaf_with_correct_hierarchy(db_session):
     await seed_vehicles_vertical(db_session)
 
-    suvs = await _get_by_slug(db_session, "suvs")
-    assert suvs is not None
-    assert suvs.tenant_id is None
-    assert suvs.level == 3
-
-    # parent chain: SUVs → Carros y Camionetas (L2) → Vehículos Terrestres (L1)
+    # Carros y Camionetas IS the leaf (level 2) since commit 2166f142 flattened
+    # the former level-3 body-type nodes (sedan/hatchback/suvs/pick-ups/coupe) —
+    # body type is an attribute, not a subcategory. See also
+    # test_seed_carros_y_camionetas_is_a_leaf_with_no_removed_child_slugs below.
     carros = await _get_by_slug(db_session, "carros-y-camionetas")
     assert carros is not None
+    assert carros.tenant_id is None
     assert carros.level == 2
-    assert suvs.parent_id == carros.id
+
+    # parent chain: Carros y Camionetas (L2) → Vehículos Terrestres (L1)
+    terrestres = await _get_by_slug(db_session, "vehiculos-terrestres")
+    assert terrestres is not None
+    assert terrestres.level == 1
+    assert carros.parent_id == terrestres.id
+
+
+@pytest.mark.asyncio
+async def test_seed_carros_y_camionetas_is_a_leaf_with_no_removed_child_slugs(db_session):
+    """Regression for the flattened hierarchy (commit 2166f142).
+
+    Carros y Camionetas has no children, and the level-3 body-type slugs it
+    used to have are gone from the seed tree entirely — a future
+    re-jerarquización should break this test on purpose, not fail silently
+    elsewhere.
+    """
+    await seed_vehicles_vertical(db_session)
+
+    carros = await _get_by_slug(db_session, "carros-y-camionetas")
+    assert carros is not None
+
+    children_stmt = select(CategoryModel).where(
+        CategoryModel.parent_id == carros.id, CategoryModel.tenant_id.is_(None)
+    )
+    children = (await db_session.execute(children_stmt)).scalars().all()
+    assert children == []
+
+    removed_slugs = ["sedan", "hatchback", "suvs", "pick-ups", "coupe"]
+    for slug in removed_slugs:
+        assert await _get_by_slug(db_session, slug) is None
 
 
 @pytest.mark.asyncio

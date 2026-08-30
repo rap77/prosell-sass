@@ -15,11 +15,13 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 
 
 @pytest.mark.asyncio
-async def test_batch_approve_multiple_pending_products(db_session, test_organization):
+async def test_batch_approve_multiple_pending_products(
+    db_session, test_organization, test_category, test_user
+):
     """All pending products should be approved successfully."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    reviewer_id = uuid4()
+    reviewer_id = test_user.id
 
     # Create 3 pending products
     products = []
@@ -28,7 +30,7 @@ async def test_batch_approve_multiple_pending_products(db_session, test_organiza
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Test Vehicle {i}",
             price_cents=1000000,
             currency="USD",
@@ -67,18 +69,20 @@ async def test_batch_approve_multiple_pending_products(db_session, test_organiza
 
 
 @pytest.mark.asyncio
-async def test_batch_approve_partial_success(db_session, test_organization):
+async def test_batch_approve_partial_success(
+    db_session, test_organization, test_category, test_user
+):
     """Mix of pending/draft should return partial success."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    reviewer_id = uuid4()
+    reviewer_id = test_user.id
 
     # Create 2 pending + 1 draft
     pending1 = Product(
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Pending 1",
         price_cents=1000000,
         currency="USD",
@@ -90,7 +94,7 @@ async def test_batch_approve_partial_success(db_session, test_organization):
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Pending 2",
         price_cents=1000000,
         currency="USD",
@@ -102,7 +106,7 @@ async def test_batch_approve_partial_success(db_session, test_organization):
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Draft",
         price_cents=1000000,
         currency="USD",
@@ -142,18 +146,20 @@ async def test_batch_approve_partial_success(db_session, test_organization):
 
 
 @pytest.mark.asyncio
-async def test_batch_approve_deduplicates_ids(db_session, test_organization):
+async def test_batch_approve_deduplicates_ids(
+    db_session, test_organization, test_category, test_user
+):
     """Duplicate IDs should be deduplicated."""
     repo = SqlAlchemyProductRepository(db_session)
     tenant_id = test_organization.tenant_id
-    reviewer_id = uuid4()
+    reviewer_id = test_user.id
 
     # Create 1 pending product
     product = Product(
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Test Vehicle",
         price_cents=1000000,
         currency="USD",

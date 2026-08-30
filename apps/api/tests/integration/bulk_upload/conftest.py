@@ -10,7 +10,9 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
@@ -51,9 +53,32 @@ async def async_client(
     )
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: auth_user
 
+    # `db_session` (shared `tests/integration/conftest.py` fixture) already
+    # wraps itself in `session.begin()`. Nesting a SAVEPOINT directly on
+    # db_session breaks that context manager's own transaction-identity check
+    # (confirmed while fixing the identical bug in test_fb_sync_router.py's
+    # `shared_session` fixture — `session.begin()` does not tolerate
+    # `begin_nested()` underneath it). Since the shared `db_session` fixture
+    # is out of scope here (FR3.3), give the app its OWN session bound to
+    # db_session's live connection instead: same underlying transaction (so
+    # db_session's setup writes are visible), but its own SAVEPOINT that a
+    # handler's explicit `await db.commit()` can release without touching
+    # db_session's transaction. The listener restarts the savepoint after
+    # each release so repeated commits keep working.
+    connection = await db_session.connection()
+    override_session = AsyncSession(bind=connection, expire_on_commit=False)
+    await override_session.begin_nested()
+
+    @event.listens_for(override_session.sync_session, "after_transaction_end")
+    def _restart_savepoint(sess: Session, transaction: object) -> None:
+        if getattr(transaction, "nested", False) and not getattr(
+            getattr(transaction, "_parent", None), "nested", True
+        ):
+            sess.begin_nested()
+
     # Override the database dependency
     async def get_test_db() -> AsyncIterator[AsyncSession]:
-        yield db_session
+        yield override_session
 
     app.dependency_overrides[get_async_session] = get_test_db  # type: ignore[arg-type]
 

@@ -35,14 +35,17 @@ async def _get(db_session, slug):
 async def test_car_leaf_has_attribute_schema_and_presentation(db_session):
     await seed_vehicles_vertical(db_session)
 
-    suvs = await _get(db_session, "suvs")
-    assert suvs is not None
-    assert suvs.attribute_schema["make"]["required"] is True
-    assert suvs.attribute_schema["model"]["required"] is True
-    assert suvs.attribute_schema["year"]["type"] == "number"
-    assert suvs.presentation["title_template"] == "{year} {make} {model}"
+    # Carros y Camionetas IS the leaf (level 2) since commit 2166f142
+    # flattened the former level-3 body-type nodes — body type is an
+    # attribute, not a subcategory.
+    carros = await _get(db_session, "carros-y-camionetas")
+    assert carros is not None
+    assert carros.attribute_schema["make"]["required"] is True
+    assert carros.attribute_schema["model"]["required"] is True
+    assert carros.attribute_schema["year"]["type"] == "number"
+    assert carros.presentation["title_template"] == "{year} {make} {model}"
 
-    filterables = {f["key"] for f in filter_fields(suvs.attribute_schema)}
+    filterables = {f["key"] for f in filter_fields(carros.attribute_schema)}
     assert {"make", "model", "year"} <= filterables
 
 
@@ -51,7 +54,7 @@ async def test_create_product_under_car_leaf_validates_and_composes_title(
     db_session, test_organization
 ):
     await seed_vehicles_vertical(db_session)
-    suvs = await _get(db_session, "suvs")
+    carros = await _get(db_session, "carros-y-camionetas")
 
     response = await CreateProductUseCase(
         SqlAlchemyProductRepository(db_session),
@@ -62,7 +65,7 @@ async def test_create_product_under_car_leaf_validates_and_composes_title(
             price_cents=2_500_000,
             tenant_id=test_organization.tenant_id,
             organization_id=test_organization.id,
-            category_id=suvs.id,
+            category_id=carros.id,
             attributes={
                 "vin": "1HGCM82633A004352",  # required since _CAR_SCHEMA update
                 "make": "Toyota",
@@ -81,7 +84,7 @@ async def test_create_product_under_car_leaf_rejects_missing_required(
     db_session, test_organization
 ):
     await seed_vehicles_vertical(db_session)
-    suvs = await _get(db_session, "suvs")
+    carros = await _get(db_session, "carros-y-camionetas")
 
     with pytest.raises(ValueError, match="make"):
         await CreateProductUseCase(
@@ -93,7 +96,7 @@ async def test_create_product_under_car_leaf_rejects_missing_required(
                 price_cents=2_500_000,
                 tenant_id=test_organization.tenant_id,
                 organization_id=test_organization.id,
-                category_id=suvs.id,
+                category_id=carros.id,
                 attributes={
                     "vin": "1HGCM82633A004352",
                     "model": "RAV4",
