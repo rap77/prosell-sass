@@ -61,5 +61,12 @@
     "dirName": "260830-ci-fixes-round2",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a055e0-eeaf-7a5a-9281-049e814f7c88",
+    "slug": "invalid-tailwind-classes",
+    "dirName": "260831-invalid-tailwind-classes",
+    "scope": "bugfix",
+    "status": "complete"
   }
 ]

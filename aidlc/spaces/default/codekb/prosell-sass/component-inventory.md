@@ -109,26 +109,38 @@ Nuevo componente inventariado en el scan enfocado del intent `260830-ci-seed-dat
 
 ## Inventario de bug — clases Tailwind inválidas
 
-### Familia `.5` (`h-9.5`, `px-4.5`, `h-8.5`) — corregida
+### Familia `.5` (`h-9.5`, `px-4.5`, `h-8.5`) — corregida por el commit `624819e3`
 
-`apps/web/tailwind.config.ts` extiende `theme.extend.spacing` con `"4.5"`, `"8.5"`, `"9.5"`, confirmado por `apps/web/tests/unit/config/tailwind.config.test.ts`. Instancias remanentes de esas clases son válidas.
+`apps/web/tailwind.config.ts` extiende `theme.extend.spacing` con `"4.5"`, `"8.5"`, `"9.5"`, confirmado por `apps/web/tests/unit/config/tailwind.config.test.ts`. El commit `624819e3` ("fix(web): extend Tailwind spacing scale for invalid h-9.5/px-4.5/h-8.5 classes"), ya mergeado a `main` antes del intent `260831-invalid-tailwind-classes`, es el que introdujo esta extensión. Instancias remanentes de esas clases son válidas.
 
-### NUEVO hallazgo este pase — `PublishForm.tsx` con clases `.5` fuera del set extendido
+**Verificado línea por línea en el scan enfocado del intent `260831-invalid-tailwind-classes`**: `apps/web/src/app/privacy/page.tsx`, `apps/web/src/app/terms/page.tsx`, `apps/web/src/components/onboarding/OnboardingStep3.tsx` y `apps/web/src/components/appointments/AppointmentForm.tsx` (los 4 archivos originalmente catalogados con `h-9.5`/`px-4.5` sin arreglar) usan exclusivamente clases de la familia `.5` ya cubiertas por la escala extendida — **ya NO son deuda**, compilan correctamente hoy.
 
-`apps/web/src/components/publisher/PublishForm.tsx` usa `h-9.5` (líneas ~573 y ~583, en dos botones) — esta clase específica SÍ está en el set extendido de `tailwind.config.ts` (`"9.5"`), por lo que **compila correctamente** y no es deuda nueva de spacing inválido; se documenta aquí porque no había sido inventariado en el pase anterior como archivo que usa la familia `.5` extendida (era conocido `BulkUploadCSV.tsx` como el caso ya arreglado, no éste como caso vigente-y-válido). No requiere acción.
+### `PublishForm.tsx` con clases `.5` fuera del set extendido — confirmado válido
+
+`apps/web/src/components/publisher/PublishForm.tsx` usa `h-9.5` (líneas ~573 y ~583, en dos botones) — esta clase específica SÍ está en el set extendido de `tailwind.config.ts` (`"9.5"`), por lo que **compila correctamente** y no es deuda de spacing inválido. No requiere acción.
 
 ### Residuo NO cubierto — familia `.25`/`.75`
 
-Ni la escala default de Tailwind 3 ni la extensión en `tailwind.config.ts` cubren pasos de `.25`/`.75` — compilan a CSS vacío.
+Ni la escala default de Tailwind 3 (half-steps `0.5, 1.5, 2.5, 3.5` solamente) ni la extensión en `tailwind.config.ts` (que solo cubre `4.5`/`8.5`/`9.5`) cubren pasos de `.25`/`.75` — compilan a CSS vacío.
 
-| Archivo                                                   | Clases inválidas encontradas                             |
-| --------------------------------------------------------- | -------------------------------------------------------- |
-| `apps/web/src/app/(seller)/publications/page.tsx`         | `gap-1.25` (×2), `mt-0.25`, `py-0.75`/`p-0.75`/`mb-0.75` |
-| `apps/web/src/components/publisher/PublicationStatus.tsx` | `py-0.75`/`p-0.75`/`mb-0.75`                             |
-| `apps/web/src/components/leads/LeadStatusBadge.tsx`       | `py-0.75`/`p-0.75`/`mb-0.75`                             |
-| `apps/web/src/components/catalog/ProductImageGallery.tsx` | `py-0.75`/`p-0.75`/`mb-0.75`                             |
+**Verificado línea por línea en el scan enfocado del intent `260831-invalid-tailwind-classes`** — `apps/web/src/app/(seller)/publications/page.tsx` es hoy el único archivo con clases genuinamente inválidas de esta familia:
 
-No releído línea por línea en este pase — inventario heredado del rescan previo, sin re-verificación exacta de número de línea.
+| Clase      | Líneas   |
+| ---------- | -------- |
+| `gap-1.25` | 208, 488 |
+| `p-0.75`   | 479      |
+| `mt-0.25`  | 524      |
+| `mb-0.75`  | 594      |
+
+Si estos valores fraccionarios son intencionales (design tokens) o typos de los enteros vecinos (`gap-1`, `p-1`, `mt-1`/`mb-1`) queda como pregunta abierta para Requirements Analysis — no se resuelve en reverse engineering.
+
+Los siguientes 3 archivos catalogados en un pase anterior con el mismo patrón (`py-0.75`/`p-0.75`/`mb-0.75`) **NO fueron re-verificados en este pase** (fuera del alcance del scan enfocado de `260831-invalid-tailwind-classes`, que cubrió solo las 5 rutas listadas en `reverse-engineering-timestamp.md` § Scope of Analysis) — se preservan tal cual, heredados, sin re-confirmación de número de línea:
+
+| Archivo                                                   | Clases inválidas encontradas (heredado, no re-verificado) |
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| `apps/web/src/components/publisher/PublicationStatus.tsx` | `py-0.75`/`p-0.75`/`mb-0.75`                              |
+| `apps/web/src/components/leads/LeadStatusBadge.tsx`       | `py-0.75`/`p-0.75`/`mb-0.75`                              |
+| `apps/web/src/components/catalog/ProductImageGallery.tsx` | `py-0.75`/`p-0.75`/`mb-0.75`                              |
 
 ### Fix ya aplicado como precedente (referencia)
 

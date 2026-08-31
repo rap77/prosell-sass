@@ -105,6 +105,10 @@
 - `.github/workflows/e2e.yml`, `.github/workflows/graphify.yml`.
 - `.github/dependabot.yml` — cobertura exclusiva del ecosistema `github-actions` (sin CVE scanning de dependencias npm/Python reales de la app).
 
+## Confirmación de vigencia — scan enfocado `260831-invalid-tailwind-classes`
+
+El scan enfocado de este intent (foco `apps/web/tailwind.config.ts`, `apps/web/tests/unit/config/tailwind.config.test.ts`, y el bloque de dependencia `tailwindcss` de `apps/web/package.json`) confirma directamente: **`tailwindcss: 3.4.17` exacto** (Tailwind 3, no 4 — el drift sigue siendo puramente de `CLAUDE.md`, no del manifiesto real), y que `theme.extend.spacing` en `tailwind.config.ts` extiende exactamente `"4.5"`, `"8.5"`, `"9.5"` (introducidos por el commit `624819e3`, ya en `main` antes de este intent) — sin cobertura para pasos `.25`/`.75`. Ver `code-quality-assessment.md` § "Actualización del scan enfocado `260831-invalid-tailwind-classes`" y `component-inventory.md` para el detalle de qué archivos siguen afectados.
+
 ## Confirmación de vigencia — scan enfocado `260830-ci-fixes-round2`
 
 El scan enfocado de este intent (foco batch review, bulk upload, appointments, fb-sync) no encontró cambios de versión respecto al pase anterior — pytest, pytest-asyncio, httpx (`AsyncClient` + `ASGITransport`), FastAPI, SQLAlchemy 2.0 async y Pydantic 2.x siguen siendo las mismas versiones documentadas arriba. Se confirma además el patrón recurrente `sqlalchemy.event.listens_for(..., "after_transaction_end")` para los fixtures `shared_session`/`override_session` (`test_fb_sync_router.py`, `bulk_upload/conftest.py`).

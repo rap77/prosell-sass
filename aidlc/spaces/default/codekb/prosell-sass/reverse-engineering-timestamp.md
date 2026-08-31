@@ -1,18 +1,66 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-08-30 (última actualización: scan enfocado del intent `260830-ci-fixes-round2`, mismo día)
-**Commit analizado**: `3414ec3f` (rama `main`) — 1 commit nuevo desde el scan enfocado previo (`fix(tests): resolve CI seed data and FK constraint failures in backend tests`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260830-ci-seed-data` (que a su vez fue aditivo sobre el full rescan de `260826-prod-bugfixes-batch`) — ver § "Scan enfocado adicional — intent `260830-ci-fixes-round2`" más abajo. Las secciones anteriores (full rescan + scan enfocado `260830-ci-seed-data`) quedan preservadas íntegras debajo.
+**Fecha**: 2026-08-31 (última actualización: scan enfocado del intent `260831-invalid-tailwind-classes`)
+**Commit analizado**: `8939ec10` (rama `main`) — incluye `624819e3` ("fix(web): extend Tailwind spacing scale for invalid h-9.5/px-4.5/h-8.5 classes"), ya mergeado antes de este intent.
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260830-ci-fixes-round2` (a su vez aditivo sobre `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Scan enfocado — intent `260831-invalid-tailwind-classes`" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo.
 
 ## Motivo del pase
 
-El intent `260830-ci-fixes-round2` continúa reparando fallas de CI en `main` tras el fix parcial del intent `260830-ci-seed-data` (que resolvió el root cause de seed data de categorías y el patrón de fixture `shared_session`). Quedan fallas adicionales sin cubrir por el scan anterior: violación de FK por `category_id=uuid4()` en `test_batch_review_api.py`, un bug de diseño en `bulk_upload_vehicles.py` (fallback de organización ignorado por el chequeo de "unknown codes"), una docstring desactualizada en `test_appointment_api.py`, y una asignación de estado implícita (vía `server_default`) en `fb_sync_router.py::unpublish_callback`. El store existente (`kind: partial`, foco CI seed data/schema) no cubría estas áreas a profundidad — se decidió un scan enfocado adicional en vez de reuse o full rescan.
+El intent `260831-invalid-tailwind-classes` continúa el seguimiento de deuda de clases Tailwind inválidas ya catalogada en pases previos (`code-quality-assessment.md` Signal #3, `component-inventory.md` § "Inventario de bug — clases Tailwind inválidas"). El foco de este pase fue re-verificar el estado ACTUAL de esa deuda tras el fix de escala de spacing (`624819e3`) ya mergeado a `main` antes de que este intent arrancara: confirmar cuáles de las clases previamente catalogadas siguen siendo inválidas hoy, y cuáles quedaron resueltas por la extensión de `theme.extend.spacing`.
 
 ## Verificación de overwrite (codekb-scope-diff)
 
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco batch review/bulk upload/appointments/fb-sync, intent `260830-ci-fixes-round2`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (frontend Tailwind/config, no backend). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+## Developer Code Scan Results — foco Tailwind config / clases inválidas (intent `260831-invalid-tailwind-classes`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**:
+  - `apps/web/src/app/privacy/page.tsx`
+  - `apps/web/src/app/terms/page.tsx`
+  - `apps/web/src/app/(seller)/publications/page.tsx`
+  - `apps/web/src/components/onboarding/OnboardingStep3.tsx`
+  - `apps/web/src/components/appointments/AppointmentForm.tsx`
+  - `apps/web/tailwind.config.ts`
+  - `apps/web/tests/unit/config/tailwind.config.test.ts`
+  - `apps/web/package.json` (bloque de dependencia `tailwindcss` solamente)
+- **Skimmed / no analizado este pase**: el resto del repositorio (scan enfocado, no full rescan).
+
+### Hallazgo principal — reencuadre de la deuda catalogada
+
+El commit `624819e3` ("fix(web): extend Tailwind spacing scale for invalid h-9.5/px-4.5/h-8.5 classes"), ya mergeado a `main` antes de que este intent arrancara, agregó a `apps/web/tailwind.config.ts`:
+
+```ts
+spacing: {
+  "4.5": "1.125rem",
+  "8.5": "2.125rem",
+  "9.5": "2.375rem",
+},
+```
+
+con test de respaldo en `apps/web/tests/unit/config/tailwind.config.test.ts`. Esto **resuelve** las clases `h-9.5`/`px-4.5`/`h-8.5` en `privacy/page.tsx`, `terms/page.tsx`, `OnboardingStep3.tsx` y `AppointmentForm.tsx` — ya NO son deuda, compilan correctamente. Este pase confirma directamente (lectura de línea) que esas 4 páginas/componentes usan exclusivamente clases ahora cubiertas por la escala extendida.
+
+El único archivo con clases genuinamente inválidas hoy es `apps/web/src/app/(seller)/publications/page.tsx` (nota: la ruta real usa el route group `(seller)/`, no `apps/web/src/app/publications/page.tsx` como asumía la descripción original del intent) — 5 clases inválidas de la familia `.25`/`.75`, ya catalogada como "residuo NO cubierto" en el pase anterior pero sin verificación línea por línea; este pase la verifica con exactitud:
+
+- `gap-1.25` — líneas 208, 488
+- `p-0.75` — línea 479
+- `mt-0.25` — línea 524
+- `mb-0.75` — línea 594
+
+Estos pasos fraccionarios (`.25`/`.75`) no están en la escala de half-step default de Tailwind 3 (`0.5, 1.5, 2.5, 3.5` solamente) ni en `theme.extend.spacing`, por lo que compilan a CSS vacío. Si son valores de diseño intencionales o typos de los enteros vecinos (`gap-1`, `p-1`, `mt-1`/`mb-1`) queda como pregunta abierta para Requirements Analysis — no se resuelve en este pase de reverse engineering.
+
+Ver `code-quality-assessment.md` § "Actualización del scan enfocado `260831-invalid-tailwind-classes`" y `component-inventory.md` § "Inventario de bug — clases Tailwind inválidas" (actualizado) para el detalle completo.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260830-ci-fixes-round2`)
+
+El intent `260830-ci-fixes-round2` continúa reparando fallas de CI en `main` tras el fix parcial del intent `260830-ci-seed-data` (que resolvió el root cause de seed data de categorías y el patrón de fixture `shared_session`). Quedan fallas adicionales sin cubrir por el scan anterior: violación de FK por `category_id=uuid4()` en `test_batch_review_api.py`, un bug de diseño en `bulk_upload_vehicles.py` (fallback de organización ignorado por el chequeo de "unknown codes"), una docstring desactualizada en `test_appointment_api.py`, y una asignación de estado implícita (vía `server_default`) en `fb_sync_router.py::unpublish_callback`. El store existente (`kind: partial`, foco CI seed data/schema) no cubría estas áreas a profundidad — se decidió un scan enfocado adicional en vez de reuse o full rescan.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260830-ci-fixes-round2`
+
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco seed data/schema de test de CI, intent `260830-ci-seed-data`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado (el nuevo scan no re-cubre todas las rutas del store anterior, aunque sí agrega profundidad nueva en un área distinta). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
-## Developer Code Scan Results — foco batch review / bulk upload / appointments / fb-sync (intent `260830-ci-fixes-round2`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco batch review / bulk upload / appointments / fb-sync (intent `260830-ci-fixes-round2`)
 
 ### Scan Coverage
 
@@ -121,9 +169,23 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260830-ci-fixes-round2
-fingerprint: 8dcb01313c0abb47271a0162803255386b206a32
+intent: 260831-invalid-tailwind-classes
+fingerprint: 139441935b526fed5ca91509d3827c4eff61bcc3
 analyzed:
+  paths:
+    - apps/web/src/app/privacy/page.tsx
+    - apps/web/src/app/terms/page.tsx
+    - apps/web/src/app/(seller)/publications/page.tsx
+    - apps/web/src/components/onboarding/OnboardingStep3.tsx
+    - apps/web/src/components/appointments/AppointmentForm.tsx
+    - apps/web/tailwind.config.ts
+    - apps/web/tests/unit/config/tailwind.config.test.ts
+    - apps/web/package.json
+  components:
+    - prosell-web (Next.js frontend)
+    - Tailwind config / spacing scale
+    - "publications page ((seller) route group)"
+shallow:
   paths:
     - apps/api/tests/integration/api/test_batch_review_api.py
     - apps/api/tests/integration/use_cases/test_batch_approve_products.py
@@ -143,20 +205,6 @@ analyzed:
     - apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py
     - apps/api/src/prosell/infrastructure/models/fb_unpublish_request_model.py
     - .github/workflows/ci.yml
-  components:
-    - prosell-api (FastAPI backend)
-    - prosell-web (Next.js frontend)
-    - BFF proxy routes
-    - Navegación Auth (frontend)
-    - Publicación a Facebook Marketplace (backend)
-    - CI test-schema bootstrap (seed/test infra)
-    - Batch Review (product batch approve/reject)
-    - Bulk Upload CSV (CSV vehicle import)
-    - Appointments
-    - FB Sync (bot↔backend unpublish callback)
-    - FB Credential Migration (estructura solamente, bloqueado por permisos)
-shallow:
-  paths:
     - apps/api/src/prosell/infrastructure/models/
     - apps/web/src/components/
     - apps/api/tests/

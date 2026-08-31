@@ -1,0 +1,23 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR2.1", "FR2.2", "FR3.1"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "apps/web/tailwind.config.ts" },
+    { "id": "FR1.2", "status": "OK", "target": "apps/web/tailwind.config.ts" },
+    {
+      "id": "FR2.1",
+      "status": "N/A",
+      "target": "satisfied transitively by FR1.1 — no source-line edit needed in apps/web/src/app/(seller)/publications/page.tsx, confirmed by direct grep against the live file (line numbers 208, 479, 488, 524, 594 unchanged)"
+    },
+    {
+      "id": "FR2.2",
+      "status": "N/A",
+      "target": "verified by the complete file-change list in code-summary.md — only apps/web/tailwind.config.ts and apps/web/tests/unit/config/tailwind.config.test.ts were touched"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/config/tailwind.config.test.ts"
+    }
+  ]
+}
