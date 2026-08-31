@@ -130,6 +130,8 @@ const config: Config = {
         "ps-avatar": "var(--ps-avatar-gradient)",
       },
       spacing: {
+        "0.25": "0.0625rem",
+        "0.75": "0.1875rem",
         "4.5": "1.125rem",
         "8.5": "2.125rem",
         "9.5": "2.375rem",
