@@ -1,138 +1,174 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-08-28
-**Commit analizado**: `3f14750e` (rama `main`, árbol de trabajo limpio salvo bookkeeping de `aidlc/`)
-**Tipo de pase**: Rescan completo (full rescan) del repositorio entero — reemplaza íntegramente el store `codekb` existente (correspondiente a un pase previo de este mismo intent, anterior al fix de la familia `.5`), sintetizando el scan del link 1 (developer) para el intent `260828-fix-invalid-tailwind-spa`, scope bugfix.
-**Motivo del pase**: revalidación en modo `--single` del stage `reverse-engineering` para confirmar el estado actual del repo tras el fix de las clases Tailwind `h-9.5`/`px-4.5`/`h-8.5` (familia `.5`) y detectar cualquier residuo. El rescan completo confirmó: (a) la familia `.5` está corregida y cubierta por test de regresión; (b) existe un residuo no cubierto — clases de paso de cuarto (`.25`/`.75`) en 4 archivos; (c) el drift documental de Tailwind en `CLAUDE.md` está parcialmente remediado (tabla de stack corregida, sección "Key Conventions" línea ~194 aún no).
+**Fecha**: 2026-08-30 (última actualización: scan enfocado del intent `260830-ci-fixes-round2`, mismo día)
+**Commit analizado**: `3414ec3f` (rama `main`) — 1 commit nuevo desde el scan enfocado previo (`fix(tests): resolve CI seed data and FK constraint failures in backend tests`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260830-ci-seed-data` (que a su vez fue aditivo sobre el full rescan de `260826-prod-bugfixes-batch`) — ver § "Scan enfocado adicional — intent `260830-ci-fixes-round2`" más abajo. Las secciones anteriores (full rescan + scan enfocado `260830-ci-seed-data`) quedan preservadas íntegras debajo.
+
+## Motivo del pase
+
+El intent `260830-ci-fixes-round2` continúa reparando fallas de CI en `main` tras el fix parcial del intent `260830-ci-seed-data` (que resolvió el root cause de seed data de categorías y el patrón de fixture `shared_session`). Quedan fallas adicionales sin cubrir por el scan anterior: violación de FK por `category_id=uuid4()` en `test_batch_review_api.py`, un bug de diseño en `bulk_upload_vehicles.py` (fallback de organización ignorado por el chequeo de "unknown codes"), una docstring desactualizada en `test_appointment_api.py`, y una asignación de estado implícita (vía `server_default`) en `fb_sync_router.py::unpublish_callback`. El store existente (`kind: partial`, foco CI seed data/schema) no cubría estas áreas a profundidad — se decidió un scan enfocado adicional en vez de reuse o full rescan.
 
 ## Verificación de overwrite (codekb-scope-diff)
 
-Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente. Veredicto: **COVERS** — el rescan entrante cubre todo lo que el store anterior había analizado, tal como se esperaba de un full rescan de todo el repo. Los 9 artefactos del store fueron reemplazados íntegramente por este pase.
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco seed data/schema de test de CI, intent `260830-ci-seed-data`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado (el nuevo scan no re-cubre todas las rutas del store anterior, aunque sí agrega profundidad nueva en un área distinta). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
-## Developer Code Scan Results
+## Developer Code Scan Results — foco batch review / bulk upload / appointments / fb-sync (intent `260830-ci-fixes-round2`)
 
 ### Scan Coverage
 
-- **Analizado a fondo**:
-  - `./` (raíz) — `package.json`, `pyproject.toml`, `pnpm-workspace.yaml`, `turbo.json`, `.pre-commit-config.yaml`, `.gga`, `.nvmrc`, `.python-version`
-  - `apps/api/pyproject.toml`, `apps/api/conftest.py` (existencia/config), árbol de directorios completo de `apps/api/src/prosell/` (capas domain/application/infrastructure, enumeración completa de subdirectorios), `apps/api/src/prosell/infrastructure/api/routers/` (31 archivos de router enumerados), `apps/api/src/prosell/infrastructure/api/middleware/` (4 archivos), `apps/api/src/prosell/infrastructure/api/main.py` (conteo de registro de routers), estructura de `apps/api/tests/` (unit/integration/contract/stubs)
-  - `apps/web/package.json` (lista completa de dependencias, pin exacto `tailwindcss: 3.4.17` confirmado), `apps/web/tailwind.config.ts` (contenido completo — extensión de spacing para `4.5`/`8.5`/`9.5` confirmada), `apps/web/postcss.config.mjs`, `apps/web/src/app/globals.css` (comentario de encabezado + directivas `@tailwind` v3), `apps/web/vitest.config.ts` (contenido completo, thresholds de cobertura), `apps/web/tests/unit/config/tailwind.config.test.ts` (contenido completo), estructura de directorios de `apps/web/src/{app,components,domain,hooks,i18n,lib,stores,types}`, los 30 archivos de ruta proxy BFF enumerados bajo `apps/web/src/app/api/**/route.ts`, `apps/web/src/proxy.ts` (middleware) referenciado vía el grafo del proyecto
-  - `apps/app/privacy/page.tsx` — directorio orphan, confirmado sin `package.json`, no es miembro real del workspace
-  - `tests/e2e/package.json` (miembro de workspace pnpm independiente `@prosell/e2e`), listado de nivel superior de `tests/e2e/`
-  - `docker/` — listado completo de archivos, nombres de servicio de `docker-compose.yml` (13 servicios)
-  - `.github/workflows/` — listado completo (7 workflows), primeras 60 líneas de `ci.yml` (estructura del job lint/test Python)
-  - `scripts/` (raíz, 22 archivos) y `apps/api/scripts/` (24 archivos) — listado completo, propósito inferido por nombre de archivo
-  - Barrido codebase-wide vía grep de clases de utilidad Tailwind con sufijo decimal (`h-`, `w-`, `p-`, `px-`, `py-`, `m-`, `gap-`, `top-`, etc. con `.25`/`.5`/`.75`) en todo archivo `.tsx`/`.jsx` bajo `apps/web/src` y `apps/app` — evidencia principal para el intent activo
-  - `AGENTS.md` (grep de afirmaciones de versión Tailwind/Zod), `CLAUDE.md` (grep de menciones a Tailwind) — cruzados contra versiones realmente instaladas
-  - Densidad de TODO/FIXME en `apps/api/src` y `apps/web/src`
+- **Analizado en profundidad** (graphify-first, luego lectura directa de líneas exactas):
+  - `apps/api/tests/integration/api/test_batch_review_api.py`
+  - `apps/api/tests/integration/use_cases/test_batch_approve_products.py` (patrón ya arreglado, comparado línea a línea)
+  - `apps/api/tests/integration/conftest.py` (fixtures `test_organization`, `test_user`, `test_category`, `system_roles`, `db_session`)
+  - `apps/api/tests/integration/bulk_upload/conftest.py`
+  - `apps/api/tests/integration/bulk_upload/test_bulk_upload_with_images.py`
+  - `apps/api/tests/integration/bulk_upload/test_bulk_upload_preview.py`
+  - `apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py`
+  - `apps/api/src/prosell/application/use_cases/product/bulk_upload_preview.py`
+  - `apps/api/src/prosell/domain/services/csv_field_mapper.py` (incl. `map_row()`, `MappedCSVRow`)
+  - `apps/api/src/prosell/infrastructure/models/organization_model.py`
+  - `apps/api/src/prosell/infrastructure/api/routers/product_router.py` (secciones `/bulk-upload/preview` L1908-1980, `/bulk-upload/with-images` L1982-2085, y dos handlers `/brokers`+`/ownership` como contraste, L2190-2290)
+  - `apps/api/tests/integration/api/test_appointment_api.py`
+  - `apps/api/src/prosell/infrastructure/api/routers/appointment_router.py`
+  - `apps/api/src/prosell/infrastructure/api/main.py` (registro de routers, L385-399)
+  - `apps/api/tests/integration/api/routers/test_fb_sync_router.py` (fixture `shared_session`/`setup_override` L1-100, `test_failed_callback_keeps_request_queued_with_capped_attempt_count` L769-824, `test_...unpublish...` L700-767)
+  - `apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py` (`unpublish_callback` L324-415)
+  - `apps/api/src/prosell/infrastructure/models/fb_unpublish_request_model.py`
+  - `.github/workflows/ci.yml` (job `test-python`, Postgres de test, `create_test_schema.py`)
 
-- **Solo revisado por encima (skimmed)**:
-  - Lógica de negocio interna dentro de use cases, entidades de dominio y repositorios (estructura/nombres enumerados, contenidos no leídos línea por línea)
-  - Contenido de routers FastAPI individuales más allá de la lista de registro de `main.py` (enumeración endpoint-por-endpoint no realizada para los 31 routers)
-  - Cuerpos de rutas proxy BFF individuales más allá de `proxy.ts` y el patrón `[...path]/route.ts` ya conocido (defecto de content-type ya documentado en codekb previo, no re-verificado línea por línea este pase)
-  - `tests/e2e/{specs,pages,fixtures}/` internals (cuerpos de specs de Playwright)
-  - `docs/`, `PRPs/`, `.mm-flow/`, `Product-Definition/`, `prosell-design/` (árboles grandes de documentación — fuera de la superficie de código fuente)
-  - `apps/api/src/prosell/infrastructure/{images,integrations,tasks,webhook,i18n,security,services}/` internals (enumerados solo como directorios)
-  - `apps/web/src/components/**` cuerpos de archivo (contados por subdirectorio, no abiertos individualmente)
-  - Cuerpos de workflow de CI más allá de las primeras 60 líneas de `ci.yml` (`deploy.yml`, `e2e.yml`, `graphify.yml`, `promote-prod.yml`, `recover-prod.yml`, `react-doctor.yml` no abiertos)
-  - `node_modules`, `.venv`, directorios de caché (`.ruff_cache`, `.mypy_cache`, `.turbo`, `.pytest_cache`) — excluidos, no son código fuente
+- **BLOQUEADO por política de permisos local (no analizado por el developer)**:
+  - `apps/api/tests/integration/api/test_fb_credential_migration_router.py`
+  - `apps/api/src/prosell/infrastructure/api/routers/fb_credential_migration_router.py`
+  - Motivo: `.claude/settings.local.json` tiene `"deny": ["Read(**/*credential*)"]`, bloquea Read y Bash sobre cualquier ruta con "credential". Límite de permisos real, no un bug — no se intentó rodear. Este gap queda registrado como conocimiento NO cubierto en este scan (solo estructura vía graphify) en `code-quality-assessment.md` y aquí.
 
-### Packages Found
+- **Skimmed only**:
+  - `apps/api/src/prosell/application/dto/appointment/request.py` / `response.py` (solo existencia confirmada)
+  - `apps/api/src/prosell/infrastructure/repositories/appointment_repository_impl.py`
+  - Resto del repo (frontend `apps/web`, resto de routers) — cubierto por el store previo, NO re-escaneado.
 
-Ver `dependencies.md` § Miembros reales del workspace pnpm y `component-inventory.md` para el detalle completo.
+Ver `code-quality-assessment.md` § "Hallazgos del scan enfocado `260830-ci-fixes-round2`" para el detalle completo de Technical Debt Signals nuevos, y `api-documentation.md`/`component-inventory.md`/`architecture.md` para el resto de las secciones estándar del scan.
 
-### Build System
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (full rescan `260826-prod-bugfixes-batch`)
 
-Ver `technology-stack.md` § Infraestructura / plataforma y `dependencies.md` § Grafo de build (Turborepo).
+Revalidación de `260826-prod-bugfixes-batch` (intent en curso, estado `in-flight`) antes de retomar Deployment Execution — el store existente estaba `UNVERIFIED` (no se pudo calcular el fingerprint del árbol actual contra el store previo) y, además, ese store solo cubría el área auth/OAuth de un intent distinto. Se decidió un rescan completo del repo en vez de reuse o scan enfocado.
 
-### APIs Discovered
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite del full rescan (codekb-scope-diff)
 
-Ver `api-documentation.md` para el detalle completo (31 módulos de router / 30 wireados en `main.py`; 30 rutas BFF de Next.js).
+Antes de escribir el full rescan se ejecutó `codekb-scope-diff --compare` contra un borrador de ese scope, comparado contra el store existente (`kind: partial`, foco auth/OAuth, intent `260829-auth-navigation-refactor`). Veredicto: **NARROWER**.
 
-### Frameworks & Libraries
+Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan del full rescan cubrió en profundidad `apps/api/` (domain, application/use_cases, infrastructure/api, infrastructure/services, infrastructure/tasks) y la capa de auth/BFF general de `apps/web/` (`lib/api/`, `stores/`, `app/api/`, `proxy.ts`, `deriveRole.ts`, `useAuth.ts`), pero **no releyó línea por línea** los archivos de página específicos que el store anterior sí había analizado en detalle: `apps/web/src/app/auth/login/LoginPageContent.tsx`, `apps/web/src/app/auth/register/RegisterPageContent.tsx`, `apps/web/src/components/layout/NavigationCleanup.tsx`, `apps/web/src/hooks/useOAuthPreload.ts`, y el directorio `apps/web/src/app/auth/` a nivel de archivo por archivo.
 
-Ver `technology-stack.md` para el detalle completo, incluyendo el estado actualizado del drift de versión de TailwindCSS (tabla corregida, sección "Key Conventions" aún pendiente).
+**El conocimiento sustantivo no se perdió**: los hechos ya documentados sobre esos archivos (consolidación del handler OAuth, `useOAuthPreload.ts` como código muerto, JSDoc desactualizado de `proxy.ts`) fueron preservados y trasladados a `code-quality-assessment.md` (Signals #16–#18) porque ya estaban registrados como aprendizaje de equipo en `project.md`.
 
-### Test Coverage
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — full rescan `260826-prod-bugfixes-batch`
 
-Ver `code-quality-assessment.md` § Test Coverage para el detalle completo por capa.
+### Scan Coverage
 
-### Code Quality Indicators
+- **Analizado en profundidad**:
+  - `apps/api/src/prosell/domain/` (entities, value_objects, repositories, ports, services, exceptions, events)
+  - `apps/api/src/prosell/application/use_cases/` (18 subdominios, 97 archivos)
+  - `apps/api/src/prosell/infrastructure/api/routers/` (28 routers)
+  - `apps/api/src/prosell/infrastructure/api/middleware/` (auth, rbac, rate-limit, exception_handlers)
+  - `apps/api/src/prosell/infrastructure/services/` y `tasks/` (email, Facebook Graph API, publishers, taskiq)
+  - `apps/web/src/lib/api/`, `apps/web/src/stores/`, `apps/web/src/app/api/**/route.ts` (BFF proxies), `apps/web/src/proxy.ts`, `apps/web/src/lib/auth/deriveRole.ts`, `apps/web/src/hooks/useAuth.ts`
+  - `apps/web/package.json`, `apps/api/pyproject.toml` (versiones exactas)
+  - `apps/web/vitest.config.ts` (thresholds), `.github/workflows/ci.yml` (jobs), `.pre-commit-config.yaml` (hooks)
+  - Verificación puntual de deuda técnica ya documentada en `project.md` (clases Tailwind inválidas, `useEffect` para fetching, `.passthrough()` Zod 3-style)
+- **Solo relevado (a nivel directorio, sin lectura profunda)**:
+  - `apps/api/src/prosell/infrastructure/models/` (29 modelos SQLAlchemy — contados, no leídos uno a uno)
+  - `apps/api/alembic/versions/` (71 migraciones — solo contadas)
+  - `apps/web/src/components/**` (22 subcarpetas — inventariadas por directorio)
+  - `apps/api/tests/` (243 archivos) y `apps/web/tests/` (161 archivos) — contados y clasificados por carpeta
+  - `tests/e2e/specs/` (34 specs Playwright — contados)
+  - `docker/` (compose files, Dockerfiles — listados)
+  - `apps/api/scripts/` (22 scripts — contados)
+- **Fuera de alcance de código** (no tocados): `docs/`, `PRPs/`, `.archive/`
 
-Ver `code-quality-assessment.md` para linting, CI/CD y documentación.
+## [PRESERVADO ÍNTEGRO] Scan enfocado — intent `260830-ci-seed-data` (2026-08-30)
 
-### Technical Debt Signals
+**Tipo de pase**: **Scan enfocado** (aditivo sobre el full rescan anterior de esta misma fecha, no lo reemplaza). Motivo: reparar el CI de `main`, en rojo consistente en varios pushes no relacionados (patrón ya aprendido en `project.md`: rojo sistemático = bloqueo de infraestructura de pipeline, no regresión del último commit). El store previo no había cubierto a profundidad el área de seed data/schema de test de CI — solo relevada a nivel de directorio (`apps/api/scripts/`, `apps/api/tests/`).
 
-Ver `code-quality-assessment.md` § Technical Debt Signals para las 14 señales completas, con la Signal #1 (residuo `.25`/`.75` de este intent) y Signal #2 (drift Tailwind residual en `CLAUDE.md`) dadas prominencia completa.
+**Verificación de overwrite (`codekb-scope-diff --compare`)**: veredicto **COVERS** — el scan entrante cubrió todo lo que el store anterior ya había analizado (unión aditiva, sin pérdida de cobertura previa).
+
+### Developer Code Scan Results — foco CI seed data
+
+**Analizado en profundidad este pase**:
+
+- `apps/api/scripts/create_test_schema.py`
+- `apps/api/src/prosell/infrastructure/database/base.py`
+- `apps/api/src/prosell/infrastructure/database/session.py`
+- `apps/api/tests/conftest.py`
+- `apps/api/tests/integration/conftest.py`
+- `apps/api/tests/integration/api/routers/test_fb_sync_router.py` (fixtures + 3 tests relevantes)
+- `apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py` (`_get_active_fb_account`, `unpublish_callback`)
+- `apps/api/tests/integration/database/test_seed_categories.py`
+- `apps/api/tests/integration/database/test_seed_car_attributes.py`
+- `apps/api/src/prosell/infrastructure/database/seed_categories.py`
+- `apps/api/src/prosell/infrastructure/models/product_model.py`
+- `apps/api/tests/integration/use_cases/test_batch_approve_products.py` (grep dirigido)
+- `apps/api/tests/integration/bulk_upload/conftest.py` (fixtures)
+- `apps/api/scripts/init_data.py`
+- `apps/api/alembic/versions/` (listado + búsqueda de FK/enum drift)
+- Git history: `apps/api/scripts/`, `apps/api/tests/conftest.py`, `apps/api/src/prosell/infrastructure/database/`, `apps/api/tests/integration/conftest.py`, `apps/api/src/prosell/infrastructure/models/product_model.py`, `apps/api/tests/integration/database/*`, commit `2166f142`
+- Runs de CI reales: `gh run list` (últimos 15) + `gh run view 33292657961 --log-failed` (log completo, 23499 líneas)
+
+**Solo relevado (skimmed) este pase**: `apps/api/scripts/seed_dev.py`, `seed_marketplace_inventory.py`, `seed_dealers.py`, `seed_test_vehicles.py`, `audit_schema_drift.py`, `test_data_cleanup.py`; `apps/api/alembic/versions/20260601_recreate_facebook_tables.py` (solo referenciado por el docstring de `create_test_schema.py`); job `test-python` de `.github/workflows/ci.yml` (ya cubierto por un pase previo, no releído).
+
+**Fuera de alcance de este scan** (store previo aún vigente sobre esas áreas, no reescaneado): `apps/api/src/prosell/domain/`, `apps/api/src/prosell/application/use_cases/`, `apps/api/src/prosell/infrastructure/api/routers/` (excepto `fb_sync_router.py`), `apps/api/src/prosell/infrastructure/api/middleware/`, `apps/api/src/prosell/infrastructure/services/`, `apps/api/src/prosell/infrastructure/tasks/`, `apps/web/**`, `apps/api/pyproject.toml`, `apps/web/vitest.config.ts`, `.pre-commit-config.yaml`.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
-kind: full
-intent: 260828-fix-invalid-tailwind-spa
-fingerprint: 730e497ac8531e54313eafd72b4dc41e1622a1b4
+kind: partial
+intent: 260830-ci-fixes-round2
+fingerprint: 8dcb01313c0abb47271a0162803255386b206a32
 analyzed:
   paths:
-    - ./
-    - package.json
-    - pyproject.toml
-    - pnpm-workspace.yaml
-    - turbo.json
-    - .pre-commit-config.yaml
-    - .gga
-    - .nvmrc
-    - .python-version
-    - AGENTS.md
-    - CLAUDE.md
-    - apps/api/pyproject.toml
-    - apps/api/conftest.py
-    - apps/api/src/prosell/
-    - apps/api/src/prosell/infrastructure/api/routers/
-    - apps/api/src/prosell/infrastructure/api/middleware/
+    - apps/api/tests/integration/api/test_batch_review_api.py
+    - apps/api/tests/integration/use_cases/test_batch_approve_products.py
+    - apps/api/tests/integration/conftest.py
+    - apps/api/tests/integration/bulk_upload/conftest.py
+    - apps/api/tests/integration/bulk_upload/test_bulk_upload_with_images.py
+    - apps/api/tests/integration/bulk_upload/test_bulk_upload_preview.py
+    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
+    - apps/api/src/prosell/application/use_cases/product/bulk_upload_preview.py
+    - apps/api/src/prosell/domain/services/csv_field_mapper.py
+    - apps/api/src/prosell/infrastructure/models/organization_model.py
+    - apps/api/src/prosell/infrastructure/api/routers/product_router.py
+    - apps/api/tests/integration/api/test_appointment_api.py
+    - apps/api/src/prosell/infrastructure/api/routers/appointment_router.py
     - apps/api/src/prosell/infrastructure/api/main.py
-    - apps/api/tests/
-    - apps/api/scripts/
-    - apps/web/package.json
-    - apps/web/tailwind.config.ts
-    - apps/web/postcss.config.mjs
-    - apps/web/src/app/globals.css
-    - apps/web/vitest.config.ts
-    - apps/web/tests/unit/config/tailwind.config.test.ts
-    - apps/web/src/
-    - apps/web/src/app/api/
-    - apps/app/privacy/page.tsx
-    - tests/e2e/package.json
-    - tests/e2e/
-    - docker/
-    - .github/workflows/
-    - scripts/
+    - apps/api/tests/integration/api/routers/test_fb_sync_router.py
+    - apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py
+    - apps/api/src/prosell/infrastructure/models/fb_unpublish_request_model.py
+    - .github/workflows/ci.yml
   components:
     - prosell-api (FastAPI backend)
     - prosell-web (Next.js frontend)
     - BFF proxy routes
-    - apps/app (orphan micro-app)
-    - tests/e2e (Playwright suite / @prosell/e2e workspace member)
+    - Navegación Auth (frontend)
+    - Publicación a Facebook Marketplace (backend)
+    - CI test-schema bootstrap (seed/test infra)
+    - Batch Review (product batch approve/reject)
+    - Bulk Upload CSV (CSV vehicle import)
+    - Appointments
+    - FB Sync (bot↔backend unpublish callback)
+    - FB Credential Migration (estructura solamente, bloqueado por permisos)
 shallow:
   paths:
-    - apps/api/src/prosell/domain/
-    - apps/api/src/prosell/application/
-    - apps/api/src/prosell/infrastructure/images/
-    - apps/api/src/prosell/infrastructure/integrations/
-    - apps/api/src/prosell/infrastructure/tasks/
-    - apps/api/src/prosell/infrastructure/webhook/
-    - apps/api/src/prosell/infrastructure/i18n/
-    - apps/api/src/prosell/infrastructure/security/
-    - apps/api/src/prosell/infrastructure/services/
-    - apps/web/src/proxy.ts
+    - apps/api/src/prosell/infrastructure/models/
     - apps/web/src/components/
+    - apps/api/tests/
+    - apps/web/tests/
     - tests/e2e/specs/
-    - tests/e2e/pages/
-    - tests/e2e/fixtures/
-    - docs/
-    - PRPs/
-    - .mm-flow/
-    - Product-Definition/
-    - prosell-design/
-    - packages/
+    - docker/
+    - apps/api/scripts/
+    - apps/api/src/prosell/application/dto/appointment/
+    - apps/api/src/prosell/infrastructure/repositories/appointment_repository_impl.py
+blocked:
+  paths:
+    - apps/api/tests/integration/api/test_fb_credential_migration_router.py
+    - apps/api/src/prosell/infrastructure/api/routers/fb_credential_migration_router.py
+  reason: ".claude/settings.local.json deny rule blocks Read/Bash on any path matching '*credential*' — local permissions limit, not a bug"
 ```

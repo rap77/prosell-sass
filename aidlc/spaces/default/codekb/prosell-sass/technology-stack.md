@@ -1,100 +1,114 @@
 # Technology Stack — ProSell SaaS
 
-## ⚠️ Estado del drift documental — Tailwind CSS (parcialmente remediado)
-
-- **`CLAUDE.md` raíz, tabla "Tech Stack 2026" (línea ~72)**: **ya corregida** en el intent `260828-fix-invalid-tailwind-spa` — hoy dice `TailwindCSS | 3.4.17`.
-- **`AGENTS.md` (línea 14)**: ya correcta — "TailwindCSS 3.4.17".
-- **`CLAUDE.md` raíz, sección "Key Conventions" (línea ~194)**: **sigue sin corregir** — todavía dice "TailwindCSS 4: New engine, no `var()` en className", contradiciendo la versión real instalada. Quedó fuera del alcance aprobado del intent que corrigió la tabla de arriba (esa corrección solo cubría la tabla de Tech Stack). Corregir en el próximo intent que toque `CLAUDE.md`.
-- **`apps/web/src/app/globals.css`**: el comentario de encabezado dice "This file includes Tailwind CSS 4.0 directives", pero las directivas reales debajo (`@tailwind base/components/utilities`) son sintaxis de Tailwind **v3** — Tailwind 4 usa `@import "tailwindcss"`. Comentario stale, no corregido.
-- **`.pre-commit-config.yaml`** (hook id `validate-tailwind`) y `scripts/validate-tailwind.sh` (comentario interno): etiquetados como "Tailwind 4 enforcement" — el chequeo real (bloquear `var(--ps-*)` en `className`) es funcionalmente agnóstico de versión y sigue funcionando correctamente pese al nombre — drift cosmético, no funcional.
-
-**Versión real confirmada** (`apps/web/package.json`, devDependency, pin exacto): `tailwindcss: 3.4.17` — **NO** un caret range, **NO** Tailwind 4.
-
 ## Backend (`apps/api`)
 
-| Categoría           | Tecnología                                                       | Versión (pin exacto de `pyproject.toml`)                                           |
-| ------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Lenguaje            | Python                                                           | `>=3.12` requerido; `.python-version` pinea `3.13`; ruff/pyright targetean `py313` |
-| Framework web       | FastAPI                                                          | `==0.128.0` (con extras `[standard]`)                                              |
-| Validación/DTOs     | Pydantic                                                         | `==2.12.5`                                                                         |
-| ORM                 | SQLAlchemy                                                       | `>=2.0.36` `[asyncio]`                                                             |
-| Migraciones         | Alembic                                                          | `>=1.14.0`                                                                         |
-| Driver DB           | asyncpg + psycopg2-binary                                        | `>=0.30.0` / `>=2.9.11` (async **y** sync, ambos presentes)                        |
-| Cache/colas         | Redis                                                            | `>=5.2.0`                                                                          |
-| Colas de tareas     | taskiq `[redis]` + taskiq-redis                                  | `>=0.12.1` / `>=1.2.2`                                                             |
-| Scraping            | Playwright (Python)                                              | `>=1.42.0`                                                                         |
-| Pagos               | Stripe                                                           | `>=11.0.0`                                                                         |
-| IA                  | Anthropic SDK                                                    | `>=0.40.0`                                                                         |
-| Imágenes            | Pillow                                                           | `>=12.0.0`                                                                         |
-| Integración externa | facebook-sdk                                                     | `>=3.1.0`                                                                          |
-| Auth                | pyotp, qrcode[pil], bcrypt, pyjwt, cryptography, passlib[bcrypt] | JWT + OAuth2 + 2FA (TOTP)                                                          |
-| Storage             | boto3 + types-boto3                                              | `>=1.35.0`                                                                         |
-| Rate limiting       | slowapi                                                          | —                                                                                  |
-| Templates email     | jinja2                                                           | —                                                                                  |
-
-**Dev/test backend**: pytest `>=8.3.0`, pytest-asyncio `>=0.24.0`, pytest-cov, ruff `>=0.8.0`, pyright `>=1.1.390`, pre-commit `>=4.0.0`, factory-boy, faker.
+| Categoría           | Tecnología        | Versión (pinned)                                                  |
+| ------------------- | ----------------- | ----------------------------------------------------------------- |
+| Lenguaje            | Python            | `>=3.12` (ruff target `py313`)                                    |
+| Framework web       | FastAPI           | `[standard]==0.128.0`                                             |
+| Validación/DTOs     | Pydantic          | `==2.12.5`                                                        |
+| Settings            | pydantic-settings | `>=2.7.0`                                                         |
+| ORM                 | SQLAlchemy        | `[asyncio]>=2.0.36`                                               |
+| Driver DB           | asyncpg           | `>=0.30.0`                                                        |
+| Migraciones         | Alembic           | `>=1.14.0` (71 versions)                                          |
+| Cache/colas         | Redis (cliente)   | `>=5.2.0`                                                         |
+| Colas de tareas     | taskiq            | `[redis]>=0.12.1`                                                 |
+| Colas de tareas     | taskiq-redis      | `>=1.2.2`                                                         |
+| Automatización nav. | Playwright        | `>=1.42.0`                                                        |
+| Auth password       | passlib           | `[bcrypt]>=1.7.4`                                                 |
+| Auth password       | bcrypt            | `>=4.2.0`                                                         |
+| Auth JWT            | pyjwt             | `>=2.9.0`                                                         |
+| Auth 2FA/TOTP       | pyotp             | `>=2.9.0`                                                         |
+| Auth 2FA/QR         | qrcode            | `[pil]>=8.0`                                                      |
+| Crypto              | cryptography      | `>=43.0.0`                                                        |
+| Rate limiting       | slowapi           | `>=0.1.9`                                                         |
+| Storage             | boto3             | `>=1.35.0`                                                        |
+| Storage (tipos)     | types-boto3       | `>=1.0.0`                                                         |
+| Imágenes            | Pillow            | `>=12.0.0`                                                        |
+| Facebook            | facebook-sdk      | `>=3.1.0`                                                         |
+| Pagos (declarado)   | stripe            | `>=11.0.0` — **sin uso en código fuente** (ver `dependencies.md`) |
+| IA (declarado)      | anthropic         | `>=0.40.0` — **sin uso en código fuente** (ver `dependencies.md`) |
+| Multipart           | python-multipart  | `>=0.0.18`                                                        |
+| HTTP client         | httpx             | `>=0.28.0`                                                        |
+| Templates           | jinja2            | `>=3.1.0`                                                         |
+| DB driver (sync)    | psycopg2-binary   | `>=2.9.11`                                                        |
+| Testing             | pytest            | `>=8.3.0`                                                         |
+| Testing async       | pytest-asyncio    | `>=0.24.0`                                                        |
+| Coverage            | pytest-cov        | `>=6.0.0`                                                         |
+| Lint                | ruff              | `>=0.8.0` (pre-commit pin `v0.14.14`)                             |
+| Type check          | pyright           | `>=1.1.390`                                                       |
+| Hooks               | pre-commit        | `>=4.0.0`                                                         |
+| Test data           | factory-boy       | `>=3.3.0`                                                         |
+| Test data           | faker             | `>=30.0.0`                                                        |
+| Build backend       | hatchling         | (vía `[build-system]`)                                            |
+| DB                  | PostgreSQL        | 17                                                                |
+| Cache/broker        | Redis             | 7.4+                                                              |
 
 ## Frontend (`apps/web`)
 
-| Categoría                          | Tecnología                                                                                                | Versión (pin exacto de `package.json`)                                                 |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Framework                          | Next.js                                                                                                   | `^16.1.0`                                                                              |
-| UI                                 | React / React DOM                                                                                         | `^19.2.0`                                                                              |
-| **Styling**                        | **TailwindCSS**                                                                                           | **`3.4.17` (devDependency, pin exacto — NO 4.0 como aún dice `CLAUDE.md` línea ~194)** |
-| PostCSS pipeline                   | postcss / autoprefixer                                                                                    | `^8.4.49` / `10.4.20`                                                                  |
-| Estado                             | Zustand                                                                                                   | `^5.0.11`                                                                              |
-| Data fetching                      | TanStack Query                                                                                            | `^5.0.0`                                                                               |
-| Tablas                             | TanStack Table                                                                                            | `^8.21.3`                                                                              |
-| Listas virtualizadas               | TanStack Virtual                                                                                          | `^3.13.23`                                                                             |
-| Formularios                        | React Hook Form + @hookform/resolvers                                                                     | `^7.0.0` / `^5.4.0`                                                                    |
-| Validación                         | Zod                                                                                                       | `^4.4.0` instalado — código en estilo Zod 3 (ver nota abajo)                           |
-| UI primitives                      | Radix UI (dialog, dropdown, select, slider, alert-dialog, checkbox, label, separator, slot, switch, tabs) | `select` parcheado vía `patches/@radix-ui__react-select.patch`                         |
-| i18n                               | next-intl                                                                                                 | `^4.13.1`                                                                              |
-| Animación                          | framer-motion                                                                                             | `^12.38.0`                                                                             |
-| Fechas                             | date-fns                                                                                                  | `^4.1.0`                                                                               |
-| Calendario                         | FullCalendar (suite)                                                                                      | `^6.1.20`                                                                              |
-| Utilidades UI                      | class-variance-authority, clsx, tailwind-merge, sonner                                                    | —                                                                                      |
-| Archivos                           | jszip, csv-parse, react-dropzone, browser-image-compression                                               | —                                                                                      |
-| React Compiler                     | babel-plugin-react-compiler                                                                               | `^1.0.0` — habilitado (sin `useMemo`/`useCallback` manuales)                           |
-| Lenguaje                           | TypeScript                                                                                                | `^5.5.0`                                                                               |
-| Linting                            | ESLint + eslint-config-next + typescript-eslint                                                           | `^9.39.2` / `^16.1.0` / `^8.55.0` — `--max-warnings=0`                                 |
-| Formato                            | Prettier                                                                                                  | `^3.4.0`                                                                               |
-| Testing unit/componente            | Vitest + @vitest/coverage-v8 + Testing Library + jsdom                                                    | `^2.1.0` / — / `^16.1.0` / `^25.0.0`                                                   |
-| Testing E2E (dentro de `apps/web`) | Playwright                                                                                                | `^1.58.2` (devDependency propio, además de `tests/e2e`)                                |
-| Calidad de código React            | react-doctor                                                                                              | `^0.9.12` (pre-commit + CI + Turbo)                                                    |
+| Categoría                     | Tecnología                                     | Versión (pinned)                                                                                                                            |
+| ----------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework                     | Next.js                                        | `^16.3.3` (Turbopack, App Router)                                                                                                           |
+| UI library                    | React / react-dom                              | `^19.2.8`                                                                                                                                   |
+| Lenguaje                      | TypeScript                                     | `^5.5.0` (strict)                                                                                                                           |
+| Estilos                       | TailwindCSS                                    | **`3.4.17`** (exacto, NO v4 — pese al drift en `CLAUDE.md`)                                                                                 |
+| Estado global                 | Zustand                                        | `^5.0.11`                                                                                                                                   |
+| Data fetching                 | TanStack Query                                 | `^5.0.0`                                                                                                                                    |
+| Tablas                        | TanStack Table                                 | `^8.21.3`                                                                                                                                   |
+| Virtualización                | TanStack Virtual                               | `^3.13.23`                                                                                                                                  |
+| Formularios                   | React Hook Form                                | `^7.0.0`                                                                                                                                    |
+| Resolvers de formulario       | @hookform/resolvers                            | `^5.4.0`                                                                                                                                    |
+| Validación de esquema         | Zod                                            | `^4.4.0` instalado — **código en estilo Zod 3** (`.passthrough()`, `z.nativeEnum()`); migración pendiente, ver `code-quality-assessment.md` |
+| Calendario                    | @fullcalendar/*                                | `^6.1.20` (core, daygrid, interaction, list, react, timegrid)                                                                               |
+| Drag & drop                   | @dnd-kit/*                                     | `^6.3.1` / `^10.0.0` / `^3.2.2`                                                                                                             |
+| Componentes primitivos        | @radix-ui/react-*                              | `^1.x`/`^2.x` (dialog, dropdown-menu, select, slider, alert-dialog, checkbox, label, separator, slot, switch, tabs)                         |
+| Animación                     | framer-motion                                  | `^12.38.0`                                                                                                                                  |
+| Notificaciones                | sonner                                         | `^2.0.7`                                                                                                                                    |
+| Iconos                        | lucide-react                                   | `^0.400.0`                                                                                                                                  |
+| Fechas                        | date-fns                                       | `^4.1.0`                                                                                                                                    |
+| CSV                           | csv-parse                                      | `^6.2.1`                                                                                                                                    |
+| Compresión de imágenes        | browser-image-compression                      | `^2.0.2`                                                                                                                                    |
+| Zip                           | jszip                                          | `^3.10.1`                                                                                                                                   |
+| Dropzone                      | react-dropzone                                 | `^15.0.0`                                                                                                                                   |
+| Command palette               | cmdk                                           | `^1.1.1`                                                                                                                                    |
+| Utilidades de clases          | clsx, class-variance-authority, tailwind-merge | `^2.0.0` / `^0.7.0` / `^2.0.0`                                                                                                              |
+| i18n                          | next-intl                                      | `^4.13.1`                                                                                                                                   |
+| Testing unit/component        | Vitest                                         | `^2.1.0`                                                                                                                                    |
+| Testing library               | @testing-library/{react,dom,jest-dom}          | `^16.1.0` / `^10.4.0` / `^6.6.0`                                                                                                            |
+| Testing E2E (frontend dev)    | @playwright/test                               | `^1.49.0`                                                                                                                                   |
+| Testing E2E (tests/e2e)       | playwright                                     | `^1.58.2`                                                                                                                                   |
+| Lint                          | ESLint (flat config)                           | `^9.39.2`                                                                                                                                   |
+| Lint config Next              | eslint-config-next                             | `^16.3.3`                                                                                                                                   |
+| Lint hooks/compiler           | eslint-plugin-react-hooks                      | `^7.0.1`                                                                                                                                    |
+| React Compiler                | babel-plugin-react-compiler                    | `^1.0.0`                                                                                                                                    |
+| Format                        | Prettier                                       | `^3.4.0`                                                                                                                                    |
+| DOM headless (tests)          | jsdom                                          | `^25.0.0`                                                                                                                                   |
+| Imágenes (build)              | sharp                                          | `^0.35.1`                                                                                                                                   |
+| CSS pipeline                  | postcss / autoprefixer                         | `^8.4.49` / `10.4.20`                                                                                                                       |
+| Auditoría de calidad frontend | react-doctor                                   | (via `npx react-doctor@latest`)                                                                                                             |
 
-### Nota — estado dual Zod 3/4
+**Nota sobre gestión de estado en el área Auth**: `authStore.ts` usa Zustand con `persist`, no TanStack Query — el área de navegación auth es una excepción deliberada al patrón general de data-fetching del resto de la app.
 
-`AGENTS.md` instruye "usar Zod 3, NO Zod 4, hasta resolver issue #74", pero `apps/web/package.json` (y el `package.json` raíz) ya tienen `zod: ^4.4.0` instalado. El código real sigue en estilo Zod 3 (41+ `.passthrough()`, `z.nativeEnum()` en `leads.ts`, cero usos legítimos de `z.looseObject()`/`z.enum()`-sobre-enum de Zod 4). Migración completa trackeada por separado en el intent `260828-zod-3-to-4-migration` — **fuera de alcance de este documento y de este intent**; no colar fixes parciales de Zod 4 hasta que ese intent corra (regla de memoria del proyecto).
+## Herramientas de build / monorepo
 
-## `tests/e2e` — paquete standalone
+- **Turborepo** + **pnpm workspaces** (frontend/tooling): `pnpm-workspace.yaml` declara `apps/*` y `packages/*` — este último es un glob muerto (`packages/` no existe físicamente).
+- **uv** + **hatchling** (backend Python): `apps/api/pyproject.toml`, target Python `>=3.12`.
+- Sin dependencia de build cruzada entre `apps/web` y `apps/api` — comunicación exclusivamente HTTP en runtime.
 
-Miembro de workspace pnpm independiente (`@prosell/e2e`, `package.json` propio) — Playwright `^1.59.1` / `@playwright/test` (versión exacta de `tests/e2e/package.json`, distinta del Playwright `^1.58.2` que `apps/web` instala como devDependency propia).
+## CI/CD
 
-## Infraestructura / plataforma
+- `.github/workflows/ci.yml` — 7 jobs: `lint-python`, `test-python`, `lint-node`, `test-node`, `validate-specs`, `validate-code-standards`, `build`.
+- `.github/workflows/deploy.yml` — deploy a staging vía `workflow_run` post-CI exitoso en `main` (+ `workflow_dispatch` manual).
+- `.github/workflows/promote-prod.yml` — `workflow_dispatch`-only, confirmación de texto exacto `"deploy"`.
+- `.github/workflows/recover-prod.yml` — recovery de emergencia (reinicio de contenedores sin rebuild).
+- `.github/workflows/react-doctor.yml` — advisory-only, no bloquea merge.
+- `.github/workflows/e2e.yml`, `.github/workflows/graphify.yml`.
+- `.github/dependabot.yml` — cobertura exclusiva del ecosistema `github-actions` (sin CVE scanning de dependencias npm/Python reales de la app).
 
-| Categoría      | Tecnología                  | Versión                                                                                 |
-| -------------- | --------------------------- | --------------------------------------------------------------------------------------- |
-| Base de datos  | PostgreSQL                  | 17                                                                                      |
-| Cache          | Redis                       | 7.4+                                                                                    |
-| Build monorepo | pnpm workspaces + Turborepo | `packageManager: pnpm@9.15.1`, patch aplicado a `@radix-ui/react-select` vía `patches/` |
-| Build backend  | uv + hatchling              | —                                                                                       |
-| Node engine    | Node                        | 22 (pinned en `.nvmrc`)                                                                 |
-| Contenedores   | Docker                      | `docker/` — 13 servicios en `docker-compose.yml`                                        |
-| CI/CD          | GitHub Actions              | 7 workflows                                                                             |
+## Confirmación de vigencia — scan enfocado `260830-ci-fixes-round2`
 
-## Testing
+El scan enfocado de este intent (foco batch review, bulk upload, appointments, fb-sync) no encontró cambios de versión respecto al pase anterior — pytest, pytest-asyncio, httpx (`AsyncClient` + `ASGITransport`), FastAPI, SQLAlchemy 2.0 async y Pydantic 2.x siguen siendo las mismas versiones documentadas arriba. Se confirma además el patrón recurrente `sqlalchemy.event.listens_for(..., "after_transaction_end")` para los fixtures `shared_session`/`override_session` (`test_fb_sync_router.py`, `bulk_upload/conftest.py`).
 
-| Capa                     | Framework(s)                                                     |
-| ------------------------ | ---------------------------------------------------------------- |
-| Backend unit/integration | pytest + pytest-asyncio + pytest-cov                             |
-| Frontend unit/componente | Vitest + Testing Library + jsdom                                 |
-| E2E                      | Playwright (`tests/e2e`, más devDependency propia en `apps/web`) |
+## Drift de documentación conocido
 
-## Herramientas de calidad de código
-
-- **Ruff** (extenso `[tool.ruff]` con lista de per-file-ignores marcada `# TODO: Fix these pre-existing issues`) + **Pyright** — Python, forzados en pre-commit y pre-push. **Divergencia de estrictez**: `apps/api/pyproject.toml` declara `standard` (la config real usada por CI/pre-commit); el `pyproject.toml` raíz declara `strict` — dos niveles distintos según qué archivo se consulte.
-- **ESLint** flat config, `--max-warnings=0` — pero el hook `next-lint` está **comentado/deshabilitado** en `.pre-commit-config.yaml` ("TODO: currently disabled due to next lint issues"); `lint-staged` cubre solo archivos staged como sustituto parcial. CI sí corre ESLint por separado.
-- **react-doctor** — bloqueante en pre-commit (`--staged --blocking warning`), advisory-only en `.github/workflows/react-doctor.yml`.
-- **GGA** (AI code review, proveedor `codex`, `STRICT_MODE=true`) — bloqueante en pre-commit, primero en el orden de hooks, contra reglas de `AGENTS.md`.
-- **`scripts/validate-tailwind.sh`** — grep de `var(--ps-*)` dentro de `className`; **no valida** la existencia de una clase de utilidad de spacing en la escala configurada — confirmado por lectura del script, es la razón estructural por la que ni la familia `.5` (ya corregida) ni el residuo `.25`/`.75` (encontrado en este pase) fueron atrapados por ningún linter existente.
+`CLAUDE.md` (raíz) declara "TailwindCSS 4" en la tabla de stack y en "Key Conventions" (línea ~194) — el proyecto real fija `tailwindcss: 3.4.17` (Tailwind 3, no 4). Corregido parcialmente en la tabla de stack por el intent `260828-fix-invalid-tailwind-spa`; la línea de "Key Conventions" sigue sin corregir.

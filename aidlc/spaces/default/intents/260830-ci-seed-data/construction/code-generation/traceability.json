@@ -1,0 +1,98 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR2.1",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR4.1",
+    "FR4.2",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/api/tests/integration/database/test_seed_categories.py"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/api/tests/integration/database/test_seed_car_attributes.py"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "apps/api/tests/integration/database/test_seed_car_attributes.py"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "apps/api/tests/integration/database/test_seed_car_attributes.py"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/database/seed_categories.py"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/api/tests/integration/database/test_seed_categories.py"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "apps/api/tests/integration/api/routers/test_fb_sync_router.py"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "apps/api/tests/integration/bulk_upload/conftest.py"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "apps/api/tests/integration/bulk_upload/conftest.py"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "apps/api/tests/integration/api/routers/test_fb_sync_router.py"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "apps/api/tests/integration/use_cases/test_batch_approve_products.py"
+    },
+    {
+      "id": "FR4.2",
+      "status": "N/A",
+      "target": "no hypothesis-confirmation required per FR4.2 — fix verified sufficient by passing tests"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "apps/api/tests/integration/database/test_seed_categories.py, apps/api/tests/integration/database/test_seed_car_attributes.py, apps/api/tests/integration/api/routers/test_fb_sync_router.py, apps/api/tests/integration/bulk_upload/, apps/api/tests/integration/use_cases/test_batch_approve_products.py, apps/api/tests/integration/use_cases/test_batch_submit_products.py"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "Deferred",
+      "target": "apps/api — full backend suite runs in Build and Test (3.6), not Code Generation"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "N/A",
+      "target": "no new coverage threshold introduced"
+    }
+  ]
+}

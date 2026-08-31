@@ -1,0 +1,31 @@
+{
+  "stage_slug": "requirements-analysis",
+  "space": "default",
+  "intent": "260830-ci-fixes-round2",
+  "selections": [
+    {
+      "candidate_id": "c1",
+      "type": "learning",
+      "scope": "project",
+      "heading": "Corrections",
+      "text": "El clasificador de Auto Mode bloquea automáticamente cualquier edición de Claude Code a .claude/settings.local.json que toque reglas de seguridad (ej. el deny list de permisos), aunque el usuario ya haya autorizado la excepción explícitamente en el chat — no intentar rodear el bloqueo (ej. vía sed/Bash); pedirle al usuario que edite el archivo él mismo, o buscar una vía alternativa (pegar contenido, correr pytest en vivo, etc.). (learned 2026-08-30)",
+      "source": "orchestrator"
+    },
+    {
+      "candidate_id": "c2",
+      "type": "learning",
+      "scope": "project",
+      "heading": "Corrections",
+      "text": "Cuando el usuario pega código para diagnosticar un archivo bloqueado por permisos (u otro motivo), verificar contra graphify antes de asumir que corresponde al repo real — en el intent 260830-ci-fixes-round2 el contenido pegado tenía un namespace genérico (app.*) que no existe en este proyecto (prosell.*), y proceder a ciegas hubiera producido un diagnóstico inútil. (learned 2026-08-30)",
+      "source": "orchestrator"
+    },
+    {
+      "candidate_id": "c3",
+      "type": "learning",
+      "scope": "project",
+      "heading": "Corrections",
+      "text": "Para diagnosticar fallas reales de tests de integración backend (no solo en Build and Test, también en Requirements Analysis cuando hace falta confirmar causa raíz antes de escribir requirements.md), usar SIEMPRE un contenedor Postgres 17 temporal con la config exacta de postgres-test en ci.yml, nunca la base de staging (destructiva) — reconfirma y generaliza el patrón ya aprendido en el intent ci-seed-data para Build and Test. (learned 2026-08-30)",
+      "source": "orchestrator"
+    }
+  ]
+}

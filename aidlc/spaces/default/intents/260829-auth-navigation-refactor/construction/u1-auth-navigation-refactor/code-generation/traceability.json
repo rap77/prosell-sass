@@ -1,0 +1,43 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-auth-navigation-refactor",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    {
+      "id": "FR1",
+      "status": "OK",
+      "target": "apps/web/src/lib/auth/oauthRedirect.ts"
+    },
+    {
+      "id": "FR2",
+      "status": "OK",
+      "target": "apps/web/src/lib/auth/oauthRedirect.ts, apps/web/src/lib/api/fetchWithAuth.ts"
+    },
+    {
+      "id": "FR3",
+      "status": "N/A",
+      "target": "eliminación verificada — apps/web/src/hooks/useOAuthPreload.ts y su test ya no existen en el workspace, sin archivo remanente que targetear"
+    },
+    { "id": "FR4", "status": "OK", "target": "apps/web/src/proxy.ts" },
+    {
+      "id": "FR5",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/auth/oauthRedirect.test.ts, apps/web/tests/unit/lib/api/fetchWithAuth.test.ts, apps/web/tests/app/auth/login/page.test.tsx, apps/web/tests/app/auth/register/page.test.tsx"
+    },
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "verificado por corrida de suite completa (1265 tests, 1252 verdes/13 pre-existentes no relacionados) — ver code-summary.md § Test Coverage Summary, no es un archivo único a targetear"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "sin nuevo piso de cobertura introducido — verificación de ausencia, no un archivo a targetear"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "apps/web/src/app/auth/login/LoginPageContent.tsx, apps/web/src/app/auth/register/RegisterPageContent.tsx, apps/web/src/lib/api/fetchWithAuth.ts"
+    }
+  ]
+}

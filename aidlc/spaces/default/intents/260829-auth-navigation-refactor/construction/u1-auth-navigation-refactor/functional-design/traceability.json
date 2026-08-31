@@ -1,0 +1,32 @@
+{
+  "stage": "functional-design",
+  "unit": "u1-auth-navigation-refactor",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5"],
+  "coverage": [
+    {
+      "id": "FR1",
+      "status": "N/A",
+      "target": "functional-spec.md § Workflow: Redirect OAuth consolidado — Unit kind ui, sin rules.md/entities.md; comportamiento especificado directamente en el workflow"
+    },
+    {
+      "id": "FR2",
+      "status": "N/A",
+      "target": "functional-spec.md § Workflow: Redirect OAuth consolidado + § Workflow: Redirect por sesión expirada"
+    },
+    {
+      "id": "FR3",
+      "status": "N/A",
+      "target": "functional-spec.md § Eliminaciones (FR3, FR4)"
+    },
+    {
+      "id": "FR4",
+      "status": "N/A",
+      "target": "functional-spec.md § Eliminaciones (FR3, FR4)"
+    },
+    {
+      "id": "FR5",
+      "status": "N/A",
+      "target": "functional-spec.md § Workflow: Cobertura de test nueva"
+    }
+  ]
+}

@@ -2,38 +2,50 @@
 
 ## Dominio de negocio
 
-ProSell SaaS es una **plataforma de análisis de mercado de vehículos** que combina tres frentes de negocio en un mismo monorepo:
+ProSell SaaS es una **plataforma de venta y análisis de mercado de vehículos**: un marketplace propio (catálogo, fichas de producto, leads, citas) combinado con herramientas de gestión de inventario multi-tenant para concesionarios (dealers), y publicación automatizada de listados hacia Facebook Marketplace.
 
-1. **Marketplace público** — e-commerce orientado al comprador final de vehículos: catálogo, fichas de producto, contacto con vendedor/dealer, citas.
-2. **Analytics SaaS para concesionarios (dealers)** — inteligencia de mercado en tiempo (casi) real: qué se está vendiendo, a qué precio, qué tan rápido rota el inventario de la competencia.
-3. **Scraping automatizado multi-marketplace** — Facebook Marketplace como fuente primaria, orquestado con Playwright (backend, `facebook-sdk` incluido en dependencias), alimentando tanto el catálogo propio como los datos de mercado de terceros.
-4. **Predicciones ML** — modelos de predicción de precio y recomendación, apoyados en el SDK de Anthropic entre las dependencias backend (alcance funcional exacto no releído en profundidad este pase).
+## Corrección respecto a `CLAUDE.md` (brecha visión vs. implementación)
 
-## Funcionalidad clave
+`CLAUDE.md` (raíz del repo) describe el proyecto con cuatro pilares: "Public Marketplace", "SaaS Analytics", **"Automated Scraping: Multi-marketplace scraping (Facebook Marketplace primary)"** y **"ML Predictions: Price prediction and recommendation models"**. Este rescan completo verificó el código real contra esa descripción y encontró una brecha real entre visión documentada e implementación:
+
+- **No existe scraping genérico multi-marketplace.** Lo que existe es **publicación** (no extracción) hacia Facebook, vía dos estrategias intercambiables detrás de `publisher_strategy.py`: `graph_api_publisher.py` (Facebook Graph API oficial, requiere cuenta de negocio conectada) y `playwright_publisher.py` (automatización de navegador vía Playwright como estrategia alternativa/fallback cuando no hay credenciales de Graph API). Playwright automatiza la **publicación** del propio inventario, no la extracción de datos de terceros — no hay scraper de "qué se está vendiendo en la competencia" en ningún marketplace, ni un módulo dedicado a scraping multi-sitio.
+- **No existe código de Machine Learning.** Se buscó explícitamente cualquier módulo de predicción de precio o motor de recomendación (`sklearn`, `torch`, `tensorflow`, nombres de archivo tipo `price_prediction`/`ml_model`/`recommendation_engine`) — cero resultados. La dependencia `anthropic>=0.40.0` está declarada en `apps/api/pyproject.toml` pero **no tiene ningún uso en el código fuente** (cero imports de `anthropic` en `apps/api/src`) — es una dependencia instalada y no utilizada, no evidencia de un pipeline de ML/IA en producción.
+
+**Este documento describe lo efectivamente implementado**, no la aspiración de `CLAUDE.md`. La brecha queda registrada aquí y en `code-quality-assessment.md` § Technical Debt Signals como deuda de documentación (visión desactualizada o nunca ejecutada), no como funcionalidad entregada.
+
+## Funcionalidad clave (verificada este pase)
 
 - **Gestión de inventario/catálogo**: alta, edición, publicación y ciclo de vida de estado de un producto (`Borrador → Pendiente revisión → Aprobado/Rechazado → Publicado → Vendido/Archivado`, con reversiones auditadas — ver `architecture.md` § Interaction Diagrams).
 - **Cola de revisión (review queue)**: flujo de moderación donde un rol interno aprueba o rechaza publicaciones antes de que lleguen al marketplace público.
-- **Leads y citas**: captura de interés de compradores y agendamiento de citas con el vendedor/dealer, con calendario (`FullCalendar` en dependencias frontend).
-- **Multi-tenant**: cada organización (dealer) opera con su propio espacio de datos; todo agregado de dominio lleva `tenant_id`.
-- **Onboarding e invitaciones**: alta de organizaciones nuevas y alta de usuarios vía invitación por token.
-- **Autenticación**: JWT + OAuth2 + 2FA (TOTP), cookies httpOnly, con auditoría multi-nivel (`auth_middleware.py`, `rbac_middleware.py`, `rate_limit_middleware.py`).
-- **Categorización dinámica**: taxonomía de categorías con `attribute_schema` configurable por categoría (no exclusivo de vehículos — el modelo de producto es genérico, con vehículos como vertical principal).
-- **Wallet / monetización**: integración con Stripe (`stripe>=11.0.0` en dependencias backend).
+- **Publicación a Facebook Marketplace**: `publisher_router.py` + `PublisherStrategy` (Graph API oficial o Playwright como alternativa), orquestado vía tareas asíncronas Taskiq/Redis (`publish_product_task.py`, `auto_republish_task.py`, `delete_listing_task.py`, `update_listing_task.py`, `poll_facebook_leads_task.py`, `refresh_facebook_tokens.py`) — publicación y sincronización de estado, no scraping de terceros.
+- **Leads y citas**: captura de interés de compradores (incluye leads sincronizados desde Facebook vía `poll_facebook_leads_task.py`) y agendamiento de citas con el vendedor/dealer, con calendario (`FullCalendar` en dependencias frontend).
+- **Multi-tenant**: cada organización (dealer) opera con su propio espacio de datos; todo agregado de dominio lleva `tenant_id`, resuelto siempre desde el JWT (nunca del body de la petición — mitigación IDOR).
+- **Onboarding e invitaciones**: alta de organizaciones nuevas y alta de usuarios vía invitación por token (`organization_invitation.py`, `team_invitation.py`).
+- **Autenticación**: JWT + OAuth2 (Google, Microsoft) + 2FA (TOTP), cookies httpOnly, con auditoría multi-nivel (`auth_middleware.py`, `rbac_middleware.py`, `rate_limit_middleware.py`). Del lado frontend, la navegación auth vive en `apps/web/src/proxy.ts` (middleware) + `apps/web/src/stores/authStore.ts` (Zustand con persist) + `apps/web/src/lib/auth/deriveRole.ts` (single source of truth de rol, compartida entre ambos) — ver `architecture.md` § Interaction Diagrams para el flujo OAuth completo.
+- **Categorización dinámica**: taxonomía de categorías con `attribute_schema` configurable por categoría vía `category_inference_router.py` y `org_verticals_router.py` — el modelo de producto es genérico, con vehículos como vertical principal (VIN decode vía NHTSA, `nhtsa_vin_service.py`/`nhtsa_normalizer.py`, y consumo de tabla de eficiencia de combustible vía `fueleconomy_service.py`).
+  - **Nota de negocio sobre la taxonomía de vehículos (confirmado en el scan enfocado del intent `260830-ci-seed-data`)**: la jerarquía de categorías de la vertical "Vehículos y Transporte" fue **aplanada deliberadamente** el 6-ago (commit `2166f142`, "fix(seed): flatten Carros y Camionetas category"). Antes, `carros-y-camionetas` tenía 5 subcategorías hoja de nivel 3 (`sedan`, `hatchback`, `suvs`, `pick-ups`, `coupe`); ahora `carros-y-camionetas` ES la hoja (nivel 2), y el tipo de carrocería (body type) pasó a ser un **atributo del producto** (vía `attribute_schema`), no una subcategoría separada. Es una decisión de modelado de dominio válida y ya aplicada en la data de seed real — el problema encontrado no es de negocio sino de sincronización de tests (ver `code-quality-assessment.md`).
+- **Wallet**: entidad de dominio `wallet.py` + `wallet_router.py` para saldo/transacciones por organización. **Nota**: `stripe>=11.0.0` está declarado en dependencias backend pero, igual que `anthropic`, **no tiene ningún import en el código fuente** — no hay integración de cobro real verificada este pase; el wallet parece un libro de saldo interno, no un flujo de pago con proveedor externo conectado.
+- **Carga masiva de inventario por CSV (bulk upload)** (confirmado en el scan enfocado del intent `260830-ci-fixes-round2`): importación de vehículos vía archivo CSV del cliente (23 columnas, delimitado por `;`), mapeado por `csv_field_mapper.py` a `MappedCSVRow`, con resolución de organización por código (`cod_organization`, con fallback deliberado a `title` cuando no hay código explícito — comentario in-line "ponytail"). Dos modos: **preview/dry-run** (`/bulk-upload/preview`, no escribe en DB, solo reporta un resumen incluyendo `missing_org_codes`) y **ejecución con imágenes** (`/bulk-upload/with-images`, sube CSV + ZIP de fotos, hace upsert por VIN). El fallback de resolución de organización interactúa mal con el chequeo de "unknown codes" del modo de ejecución — ver `code-quality-assessment.md` para el bug de diseño confirmado.
+- **Citas (appointments)**: 5 endpoints CRUD + cambio de estado (`appointment_router.py`), registrados en producción (`main.py:389-393`) — confirmado este pase que están activos pese a que la documentación de test interna (`test_appointment_api.py`) tenía una nota desactualizada sugiriendo lo contrario.
 
 ## Actores / usuarios
 
-- **Comprador (público)**: navega el marketplace, contacta vendedores, agenda citas. No requiere cuenta necesariamente.
-- **Vendedor/dealer (seller)**: publica inventario, gestiona leads, ve analytics de su organización.
+- **Comprador (público)**: navega el marketplace, contacta vendedores, agenda citas. No requiere cuenta necesariamente (`public_product_router.py`).
+- **Vendedor/dealer (seller)**: publica inventario, gestiona leads, ve analytics de su organización, publica a Facebook Marketplace.
 - **Revisor/moderador (admin interno)**: aprueba/rechaza publicaciones en la cola de revisión.
-- **Super admin / plataforma**: gestiona categorías, esquemas de atributos, y operaciones sensibles. Nota de deuda: un chequeo de rol admin queda **sin implementar** en `marketplace_access_router.py:110` (marcado TODO), lo cual es relevante para este actor — ver `code-quality-assessment.md`.
+- **Super admin / plataforma**: gestiona categorías, esquemas de atributos, y operaciones sensibles (`admin_router.py`, `admin_organizations_router.py`). Deuda conocida: verificar el TODO histórico de chequeo de rol admin en `marketplace_access_router.py` (ver `code-quality-assessment.md`).
 
 ## Alcance de este pase de reverse engineering
 
-Este es un **rescan completo** (full rescan) del repositorio entero, disparado por el intent `260828-fix-invalid-tailwind-spa` (bugfix de clases Tailwind inválidas). El bug en sí es puramente de presentación (CSS que compila vacío), sin impacto funcional de negocio directo — pero el rescan de todo el repo permitió reconfirmar el estado real post-fix del defecto original, detectar un **residuo no cubierto por el fix anterior** (clases de paso de cuarto — `.25`/`.75` — distintas de la familia `.5` ya corregida), y actualizar el inventario de deuda documental y técnica del proyecto. El store anterior de este mismo intent (pase previo, familia `.5` sin corregir aún) queda íntegramente reemplazado por este documento y sus ocho hermanos.
+**Rescan completo** (full rescan, human-approved), disparado por el intent `260826-prod-bugfixes-batch`, que reemplaza íntegramente el store de codekb previo (incluyendo el scan enfocado de auth-navigation del intent `260829-auth-navigation-refactor`, cuyo contenido sustantivo sobre navegación OAuth/`proxy.ts`/`fetchWithAuth.ts` fue preservado e integrado en este documento y en `architecture.md`). Cobertura: dominio, aplicación (18 subdominios de use cases), 30 routers FastAPI, middleware backend, servicios de infraestructura (email, Facebook, publishers, tareas Taskiq), cliente API y stores del frontend, 31 rutas BFF de Next.js, configuración de build/CI/pre-commit. Ver `reverse-engineering-timestamp.md` § Scope of Analysis para el detalle exacto de rutas analizadas en profundidad vs. solo relevadas.
 
-## Fuera de alcance (según memoria del proyecto)
+**Scan enfocado adicional** (intent `260830-ci-seed-data`, aditivo sobre el rescan completo anterior — no lo reemplaza): fue a profundidad sobre el área de seed data/schema de test de CI (`apps/api/scripts/create_test_schema.py`, `apps/api/src/prosell/infrastructure/database/{base,session,seed_categories}.py`, `apps/api/tests/conftest.py` + jerarquía de `tests/integration/conftest.py`), que el rescan previo solo había relevado a nivel de directorio. Ver `architecture.md` § Interaction Diagrams (nuevo diagrama de bootstrap de schema de test) y `code-quality-assessment.md` para los hallazgos.
+
+**Scan enfocado adicional** (intent `260830-ci-fixes-round2`, aditivo sobre los dos pases anteriores — no los reemplaza): fue a profundidad sobre las áreas de batch review (`test_batch_review_api.py`), bulk upload CSV (`bulk_upload_vehicles.py`, `bulk_upload_preview.py`, `csv_field_mapper.py`), appointments (`appointment_router.py`, `test_appointment_api.py`) y fb-sync (`fb_sync_router.py::unpublish_callback`) — áreas que los pases anteriores solo habían relevado a nivel de directorio o no habían tocado. `fb_credential_migration_router.py` y su test quedaron BLOQUEADOS por una política de permisos local (`.claude/settings.local.json` deniega Read/Bash sobre rutas con "credential") — documentado como gap de cobertura, no como bug. Ver `architecture.md` § Interaction Diagrams (nuevos diagramas de bulk upload y fb-sync) y `code-quality-assessment.md` para los hallazgos completos.
+
+## Fuera de alcance (según memoria del proyecto y este rescan)
 
 - Marketplace público completo / SEO — parcialmente implementado, no es el foco de MVP.
-- E-commerce completo (pagos de compra directa al comprador).
+- E-commerce completo (pagos de compra directa al comprador) — sin integración de cobro verificada (ver nota sobre `stripe` sin uso arriba).
 - App móvil nativa.
-- Pricing por IA en producción (existe integración con Anthropic SDK en dependencias, alcance exacto no verificado en este pase).
+- Scraping genérico multi-marketplace y pricing/recomendación por IA — no implementados; ver corrección de brecha arriba.

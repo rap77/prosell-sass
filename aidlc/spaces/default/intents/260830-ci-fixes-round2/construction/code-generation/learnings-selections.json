@@ -1,0 +1,31 @@
+{
+  "stage_slug": "code-generation",
+  "space": "default",
+  "intent": "260830-ci-fixes-round2",
+  "selections": [
+    {
+      "candidate_id": "c1",
+      "type": "learning",
+      "scope": "project",
+      "heading": "Corrections",
+      "text": "Cuando un pre-chequeo de batch (que corre antes de un loop por fila) puede volverse fatal por una condición que el loop por fila ya sabe resolver con un fallback explícito del caller, el fix mínimo correcto es agregar ese fallback como guard a la condición del pre-chequeo (ej. \"if unknown and fallback is None\"), no reordenar/mover código — confirmado en bulk_upload_vehicles.py (intent 260830-ci-fixes-round2). (learned 2026-08-30)",
+      "source": "orchestrator"
+    },
+    {
+      "candidate_id": "c4",
+      "type": "learning",
+      "scope": "project",
+      "heading": "Corrections",
+      "text": "En este proyecto, un patrón recurrente en routers/__init__.py es \"from .modulo import router as modulo\" (re-exportar el router con el mismo nombre que su módulo fuente) — esto pisa el atributo del módulo en el paquete con la instancia del router, y rompe tanto `monkeypatch.setattr(\"paquete.modulo.attr\", ...)` (dotted-string) como `import paquete.modulo.submodulo as alias` (ambos resuelven vía atributo del paquete, no vía sys.modules). El fix correcto es `importlib.import_module(\"paquete.modulo.completo\")` para obtener el módulo real, y patchear el objeto directamente en vez de un dotted-string. Confirmado en fb_credential_migration_router.py (intent 260830-ci-fixes-round2) — revisar el mismo patrón si aparece en otros routers con nombres re-exportados así. (learned 2026-08-30)",
+      "source": "orchestrator"
+    },
+    {
+      "candidate_id": "c7",
+      "type": "learning",
+      "scope": "project",
+      "heading": "Corrections",
+      "text": "Cuando arreglar un defecto destapa un SEGUNDO defecto enmascarado (ver aprendizaje ya persistido de code-summary/traceability en ci-seed-data), y hay más de una forma de resolverlo, preferir el fix más acotado en superficie (ej. tocar solo un archivo de test) sobre uno más invasivo (ej. renombrar un alias usado por código de producción en múltiples call sites) cuando ambos resuelven el problema igual de bien — minimiza el riesgo de regresión colateral en un intent de bugfix. (learned 2026-08-30)",
+      "source": "orchestrator"
+    }
+  ]
+}

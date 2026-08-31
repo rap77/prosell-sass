@@ -4,15 +4,15 @@
 
 ## Interpretations
 
-<!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
+- 2026-08-30T05:30:00Z — Marked `kind: partial` in Scope of Analysis instead of `kind: full`, even though the human chose "Full rescan" breadth. Rationale: re-artifacts.md's rule is depth-based ("kind: full only when the scan genuinely covered the whole repo deeply; analyzed.paths MUST include ./"). This pass deep-read apps/api domain/application/infrastructure and the general apps/web auth/BFF layer, but only skimmed models, migrations, components, tests, and docker at directory granularity — honest depth doesn't meet the strict "full" bar even though breadth-wise it replaced all 9 artifacts repo-wide.
 
 ## Deviations
 
-<!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-08-30T05:30:00Z — The dispatched architect subagent hit a session-limit API error mid-run, after finishing artifacts 1-8 (business-overview through code-quality-assessment) but before writing artifact 9 (reverse-engineering-timestamp.md). Resumed by finishing item 9 directly (conductor role) instead of re-dispatching a fresh subagent, since the remaining work (overwrite backstop compare, fingerprint mint, final timestamp write) was well-defined and the developer/architect context was already in hand.
 
 ## Tradeoffs
 
-<!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
+- 2026-08-30T05:30:00Z — The overwrite compare returned NARROWER against the store's prior auth-focused intent (260829-auth-navigation-refactor): this full rescan didn't re-read line-by-line the specific auth page files (LoginPageContent.tsx, RegisterPageContent.tsx, NavigationCleanup.tsx, useOAuthPreload.ts, apps/web/src/app/auth/ tree) that the prior narrower scan had analyzed in detail. Chose to accept this and flag it as a warning at the approval gate rather than re-dispatch another scan pass for those specific files, since their known facts were already preserved into code-quality-assessment.md from prior team learnings.
 
 ## Open questions
 

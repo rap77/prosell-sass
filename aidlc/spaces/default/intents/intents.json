@@ -11,7 +11,7 @@
     "slug": "prod-bugfixes-batch",
     "dirName": "260826-prod-bugfixes-batch",
     "scope": "express",
-    "status": "in-flight"
+    "status": "complete"
   },
   {
     "uuid": "01a04131-de7f-7647-bd96-0b146bf44552",
@@ -39,6 +39,27 @@
     "slug": "nextjs-react-bump",
     "dirName": "260829-nextjs-react-bump",
     "scope": "express",
+    "status": "complete"
+  },
+  {
+    "uuid": "01a04dfd-befc-7243-a526-f0a50599a371",
+    "slug": "auth-navigation-refactor",
+    "dirName": "260829-auth-navigation-refactor",
+    "scope": "classic",
+    "status": "complete"
+  },
+  {
+    "uuid": "01a052c0-45f9-77f7-9726-aa845bc328b1",
+    "slug": "ci-seed-data",
+    "dirName": "260830-ci-seed-data",
+    "scope": "bugfix",
+    "status": "complete"
+  },
+  {
+    "uuid": "01a053a8-cdd5-7694-838b-a5d6c9131195",
+    "slug": "ci-fixes-round2",
+    "dirName": "260830-ci-fixes-round2",
+    "scope": "bugfix",
     "status": "complete"
   }
 ]

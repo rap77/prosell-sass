@@ -2,115 +2,82 @@
 
 ## Test Coverage
 
-| Área     | Directorios                                                                                                                                                                                                                                                                                | Frameworks                           | Config de cobertura                                                                                                                                                                                                                                               |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend  | `apps/api/tests/{unit,integration,contract,stubs,utils}/` — `unit` → `api/application/domain/dto/infrastructure/scripts/services/test_entities`; `integration` → `api/bulk_upload/database/i18n/repositories/services/tasks/use_cases`; `contract` → `integration/openapi/schema_matching` | pytest + pytest-asyncio + pytest-cov | `pytest --cov=prosell` (per `CLAUDE.md`); `pytest-cov` presente; threshold explícito no confirmado este pase                                                                                                                                                      |
-| Frontend | `apps/web/tests/{unit,components,app,__mocks__,utils}/` — `unit` → `api/components/config/design-tokens/hooks/lib/stores`; `components` → `admin/appointments/auth/catalog/filters/forms/ui`                                                                                               | Vitest + Testing Library + jsdom     | `vitest.config.ts` — provider v8, thresholds `lines:40 functions:40 branches:75 statements:40`, **deliberadamente bajados** de un objetivo original del 80% (comentario in-code lo justifica: la superficie del catálogo superó la superficie de test disponible) |
-| E2E      | `tests/{specs,pages,fixtures,factories,helpers,mocks,layer2}/` (paquete standalone `@prosell/e2e`)                                                                                                                                                                                         | Playwright                           | —                                                                                                                                                                                                                                                                 |
+- **Directorios de test**: `apps/api/tests/{unit,integration,contract,stubs,utils}/` (243 archivos), `apps/web/tests/{unit,components,app,e2e,__mocks__,utils}/` (161 archivos), `tests/e2e/specs/` (34 specs).
+- **Frameworks**: pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend), Playwright (E2E).
+- **Asimetría de piso de cobertura — total, aceptada por el equipo (team.md Q3)**:
+  - Frontend: `apps/web/vitest.config.ts` fija `lines:40 functions:40 branches:75 statements:40`, rebajado deliberadamente de un objetivo original de 80% tras medir cobertura real disponible (comentario en el config: "Current measured coverage (June 2026): lines 48.51%, functions 44.45%, statements 48.51%, branches 77.9%").
+  - Backend: `pytest --cov=prosell --cov-report=xml` en CI genera el reporte pero **no pasa `--cov-fail-under`**, y `apps/api/pyproject.toml` no declara `fail_under` — **sin piso enforced**, no un número bajo sino ausencia total de gate.
+  - CI ejecuta la suite completa en cada push/PR a `main` (`test-python`, `test-node`) y el pre-push hook local corre `pytest -q` — el gate de "suite completa en verde antes de merge" SÍ está enforced mecánicamente, aunque el umbral de cobertura backend no lo esté.
 
-**Test de regresión de nivel-config**: `apps/web/tests/unit/config/tailwind.config.test.ts` asserta que `theme.extend.spacing` contiene `"4.5"`, `"8.5"`, `"9.5"` — sigue el patrón establecido de importar el config con `await import(...)` y asertar directo sobre el objeto exportado (mismo patrón que `next.config.test.ts`). Este patrón es el que debería seguir cualquier test futuro que cubra config-level (p. ej. la extensión de spacing necesaria para el residuo `.25`/`.75`).
+## Code Quality Indicators
 
-## Linting
+- **Linting backend**: Ruff (`select = [E,W,F,I,N,UP,B,C4,SIM,ARG,PTH,RUF]`, target `py313`, line-length 100) + Pyright (`typeCheckingMode = "standard"`), ejecutados en pre-commit y pre-push.
+- **Linting frontend**: ESLint flat config (`--max-warnings=0`) + Prettier. **Asimetría de gates intencional (team.md Q4)**: `next-lint` (ESLint completo) está comentado/deshabilitado en `.pre-commit-config.yaml` ("TODO: currently disabled due to next lint issues") y solo corre en CI (`lint-node`); `react-doctor`, en cambio, SÍ bloquea en pre-commit (`--staged --blocking warning`) pero es solo advisory en CI (`react-doctor.yml` no bloquea merge).
+- **CI/CD**: `.github/workflows/ci.yml` — 7 jobs (`lint-python`, `test-python`, `lint-node`, `test-node`, `validate-specs`, `validate-code-standards`, `build`). Además: `deploy.yml` (staging on `workflow_run` post-CI), `promote-prod.yml` (`workflow_dispatch`-only + confirmación de texto exacto `"deploy"`), `recover-prod.yml` (recovery de emergencia sin rebuild), `react-doctor.yml` (advisory), `e2e.yml`, `graphify.yml`.
+- **GGA (AI code review)**: bloqueante en pre-commit, primero en el orden de hooks (`gga → secret scan → spec-status → validate-tailwind → lint-staged → ruff/ruff-format → pyright → react-doctor`), proveedor `codex`, `STRICT_MODE=true`, contra las reglas de `AGENTS.md`. Es un revisor de convenciones de estilo/arquitectura vía IA — explícitamente **NO un SAST**.
+- **Documentación**: `CLAUDE.md` extenso (raíz + `.claude/`), docstrings en entidades de dominio confirmadas en el grafo de código. Drift conocido: la tabla de stack (ya corregida) y "Key Conventions" línea ~194 (aún sin corregir) declaran "TailwindCSS 4" pese a que el proyecto real fija `3.4.17`.
 
-- **Python**: Ruff (extenso `[tool.ruff]`, con una lista de per-file-ignores para **8 archivos** marcada explícitamente `# TODO: Fix these pre-existing issues (not part of current GGA fixes)` — reglas suprimidas incluyen ARG002, SIM102, RUF022, N818, RUF012) + Pyright — wireados en pre-commit **y** pre-push.
-- **⚠️ Divergencia de estrictez Pyright**: `apps/api/pyproject.toml` (la config real usada por CI/pre-commit) declara `typeCheckingMode = "standard"`; el `pyproject.toml` raíz declara `"strict"` — dos niveles distintos de type-checking según qué archivo de config se consulte.
-- **TypeScript/JS**: ESLint flat config (`eslint . --max-warnings=0`) — pero el hook `next-lint` de pre-commit está **comentado** ("TODO: currently disabled due to next lint issues"). `lint-staged` (`eslint --fix` + `prettier --write`) cubre solo archivos staged como sustituto parcial — no hay enforcement completo de ESLint en cada commit; CI sí lo corre por separado.
-- **`scripts/validate-tailwind.sh`**: verifica solo el patrón `var(--ps-*)` dentro de `className` — no valida la validez de una clase de utilidad de spacing contra la escala configurada de Tailwind.
+## Technical Debt Signals
 
-## CI/CD
+1. **Brecha visión (`CLAUDE.md`) vs. implementación**: "Automated Scraping multi-marketplace" y "ML Predictions" no tienen código correspondiente — lo implementado es publicación (Graph API + Playwright como estrategias alternativas) a Facebook, sin scraper genérico ni módulo de ML/predicción. `anthropic` y `stripe` son dependencias declaradas sin uso en código fuente. Ver `business-overview.md` § Corrección.
+2. **Drift de versión Tailwind en `CLAUDE.md`**: tabla de stack ya corregida (intent `260828-fix-invalid-tailwind-spa`); "Key Conventions" línea ~194 ("TailwindCSS 4: New engine...") sigue sin corregir — quedó fuera del alcance aprobado de ese intent.
+3. **Clases Tailwind inválidas — familia `.25`/`.75`**: `gap-1.25`, `mt-0.25`, `py-0.75`/`p-0.75`/`mb-0.75` en `(seller)/publications/page.tsx`, `PublicationStatus.tsx`, `LeadStatusBadge.tsx`, `ProductImageGallery.tsx` — compilan a CSS vacío, ni la escala default de Tailwind 3 ni la extensión en `tailwind.config.ts` (que solo cubre `4.5`/`8.5`/`9.5`) los cubre. Ver `component-inventory.md` para el inventario completo.
+4. **`PublishForm.tsx` — verificado este pase, NO es deuda nueva**: el scan del developer marcó este archivo como hallazgo nuevo de clases Tailwind inválidas. Verificación directa de línea (`h-9.5` ×2, `ml-0.5`, `ml-1.5`) confirma que **todas son válidas** — `9.5` está en el set extendido de `tailwind.config.ts`, y `0.5`/`1.5` son half-steps del set default de Tailwind 3. No se encontró ninguna clase fraccional `.25`/`.75` en este archivo. Se documenta el hallazgo del developer y su refutación explícita, en vez de propagarlo sin verificar.
+5. **Migración Zod 3→4 pendiente**: `zod: ^4.4.0` instalado, código sigue en estilo Zod 3 (`.passthrough()` confirmado en 11 archivos de `apps/web/src/lib/api/schemas/` este pase; aprendizaje previo cita 41+ ocurrencias en todo el repo). `AGENTS.md` dice explícitamente "usar Zod 3 hasta resolver issue #74". Intent dedicado `260828-zod-3-to-4-migration`, aún sin ejecutar.
+6. **`useEffect` para data-fetching/mutación**: `onboarding/page.tsx` e `invite/[token]/page.tsx` violan la regla explícita `AGENTS.md:333` ("useEffect for data fetching - use Server Components or React Query"). Flujos de negocio sensibles (onboarding de organización, alta de usuarios vía invitación con mutación en el mount). Intent dedicado `260828-useeffect-to-react-query`, aún sin ejecutar.
+7. **Endpoints de testing en `infrastructure/api/routers/`** — verificado este pase, resuelve el open question planteado:
+   - `test_router.py` — SÍ está wireado, y SÍ gateado por entorno (`if settings.environment in ["development", "testing"]`). No se registra en producción.
+   - `test_cleanup_router.py` (480 líneas) — **no está wireado en ningún punto del código**, ni en `main.py` ni en ningún otro módulo bajo `apps/`, `tests/` o `docker/`. Es dead code, no un endpoint expuesto — sus rutas son inalcanzables en cualquier entorno, incluida producción. No es un riesgo de exposición activo, pero es deuda de código muerto.
+8. **Subcarpetas vacías de `use_cases/`**: `dealer/`, `user_dealer/`, `vehicle/` bajo `apps/api/src/prosell/application/use_cases/` tienen **cero archivos .py** cada una — scaffolding sin implementación, verificado por listado directo este pase. Candidato a confirmar si es deliberado (feature planificada) o residuo de refactor.
+9. **`response.json()` sin verificación de `content-type`** en los proxies BFF catch-all dinámicos (`categories`, `organizations`, `products`, `vehicles`) — rompe cualquier endpoint backend que devuelva un content-type distinto de JSON. Mismo patrón de raíz que el bug histórico ya arreglado del header `If-Match` descartado silenciosamente en los mismos proxies.
+10. **Asimetría de piso de cobertura backend(0%)/frontend(40%)** — decisión aceptada explícitamente por el equipo (team.md Q3), no es gap a resolver de oficio.
+11. **Sin SAST real ni DAST**: GGA es revisor de estilo/arquitectura con IA, no analizador de vulnerabilidades — no detecta injection, XSS, SSRF, deserialización insegura de forma determinística. Sin DAST contra staging pese a publicarse ahí en cada merge. Secret-scanning liviano solo en pre-commit local (script custom "gitleaks-style" sin red, sin backstop en CI, sin escaneo de historial). Dependabot cubre exclusivamente `github-actions` — sin escaneo de CVEs para dependencias reales de la app (npm/pnpm en `apps/web`, Python/uv en `apps/api`). Gap aceptado por el equipo (Q7), pendiente de intent de seguridad dedicado.
+12. **Frontend sin taxonomía de errores equivalente al backend**: backend tiene `<Dominio>DomainException` (`AuthDomainException`, `OrgDomainException`, etc.) + exception handler centralizado por dominio; frontend (`proxy.ts`, `fetchWithAuth.ts`, `authStore.ts`) no tiene equivalente explícito (sesión expirada vs. credenciales inválidas vs. error de red). El equipo afirmó adoptar un patrón equivalente hacia adelante (team.md Q6), aún no implementado sistemáticamente.
+13. **`packages/*` no implementado pese a estar documentado en `pnpm-workspace.yaml`** — glob de workspace muerto/sin cumplir; el contrato de tipos frontend/backend se sincroniza a mano vía Zod-mirror.
+14. **`apps/app` — micro-app huérfana**: contiene solo `privacy/page.tsx`, sin `package.json` propio, no wireada al grafo de build activo del workspace pnpm, shadowed por la ruta real `apps/web/src/app/privacy/page.tsx`. Candidato a eliminación o investigación de propósito.
+15. **Dependencias backend declaradas sin uso confirmado en código fuente**: `stripe>=11.0.0` y `anthropic>=0.40.0` — cero imports encontrados en `apps/api/src` este pase. Ver `dependencies.md`.
+16. **Duplicación histórica del handler OAuth** (resuelta): `LoginPageContent.tsx`/`RegisterPageContent.tsx` repetían el patrón `window.location.href` línea por línea, con 4 supresores de ESLint duplicados (2 por página) + 1 en `fetchWithAuth.ts`. El intent `260829-auth-navigation-refactor` consolidó el patrón en una función nombrada, eliminando los 5 supresores sin cambiar comportamiento (la regla `@next/next/no-location-assign-relative-destination` solo analiza estáticamente literales/identificadores constantes, no `CallExpression`s — extraer a función basta).
+17. **`useOAuthPreload.ts` — código muerto** (backend histórico, verificar estado post-refactor): sin import real en `apps/web/src`, referenciaba un componente inexistente (`@/components/auth/OAuthButtons`); el componente OAuth real activo es `AuthOAuthButton` dentro de `AuthShell.tsx`. Tenía test propio ejercitando un hook nunca wireado a producción.
+18. **JSDoc desactualizado en `proxy.ts`**: cabecera aún dice "Next.js Middleware" pese a que el archivo fue renombrado desde `middleware.ts`.
 
-- **`.github/workflows/ci.yml`** — al menos `lint-python` y `test-python` confirmados (este último con un contenedor de servicio `postgres-test`); cuerpo completo no releído más allá de las primeras 60 líneas este pase.
-- **`.github/workflows/e2e.yml`** — suite E2E Playwright (cuerpo no releído).
-- **`.github/workflows/deploy.yml`**, **`promote-prod.yml`**, **`recover-prod.yml`** — despliegue y promoción/recuperación de producción (cuerpos no releídos).
-- **`.github/workflows/react-doctor.yml`** — advisory-only (no bloquea merge).
-- **`.github/workflows/graphify.yml`** — reconstrucción del grafo de conocimiento.
+## CI en rojo — hallazgos del scan enfocado `260830-ci-seed-data`
 
-## Pipeline de pre-commit / pre-push (`.pre-commit-config.yaml`)
+Evidencia mecánica de un run real de CI en `main` (`gh run view 33292657961 --log-failed`, log completo):
 
-`default_install_hook_types: [pre-commit, pre-push]`. Orden de ejecución en pre-commit:
+```
+================= 21 failed, 1931 passed, 12 errors in 57.52s ==================
+```
 
-1. GGA AI code review (`scripts/gga-batch.sh`, proveedor `codex`, reglas de `AGENTS.md`, `STRICT_MODE=true`)
-2. Secret scan
-3. Spec-status lifecycle enforcement (`validate_spec_status.py`, acotado a `docs/superpowers/specs/*.md`)
-4. Guard de `var()`-en-className de Tailwind (`validate-tailwind.sh`)
-5. `lint-staged` (ESLint + Prettier, solo archivos staged)
-6. ruff + ruff-format
-7. pyright
-8. `react-doctor --staged --blocking warning`
-9. hooks estándar de `pre-commit-hooks`
+`gh run list` (últimos 15 runs) muestra CI en rojo de forma consistente en al menos 4 pushes no relacionados entre sí (23-ago, 25-ago, 30-ago ×2) — esto confirma, con evidencia directa, el patrón ya aprendido y persistido en `project.md`: _"Un CI en rojo de forma sistemática y consecutiva a través de varios runs no relacionados con el último commit es señal de bloqueo de infraestructura del pipeline (seed data, entorno de CI), no necesariamente una regresión del batch recién mergeado"_. Este intent es exactamente ese caso — el bloqueo es infraestructura de seed data/tests, no una regresión de código de producción.
 
-Pre-push re-corre prettier/ruff/pyright, más `sync-test-db.sh` y la suite completa `pytest -q` del backend.
+19. **[ROOT CAUSE, máxima confianza] Tests de seed de categorías desincronizados de la data de seed real — 4 tests fallando por un slug de categoría eliminado hace 3+ semanas.** El commit `2166f142` ("fix(seed): flatten Carros y Camionetas category", 6-ago) aplanó la jerarquía de vehículos en `seed_categories.py`: eliminó los 5 nodos-hoja nivel-3 (`sedan`, `hatchback`, `suvs`, `pick-ups`, `coupe`) y convirtió `carros-y-camionetas` mismo en la hoja (nivel 2), porque "body type es un atributo, no una subcategoría" — decisión de dominio válida (ver `business-overview.md`). **Los tests nunca se actualizaron.** Cuatro tests siguen buscando el slug `"suvs"` que ya no existe:
+    - `apps/api/tests/integration/database/test_seed_categories.py::test_seed_creates_level_3_leaf_with_correct_hierarchy` → `assert suvs is not None` falla (`assert None is not None`)
+    - `apps/api/tests/integration/database/test_seed_car_attributes.py::test_car_leaf_has_attribute_schema_and_presentation` → `AttributeError: 'NoneType' object has no attribute 'attribute_schema'`
+    - `apps/api/tests/integration/database/test_seed_car_attributes.py::test_create_product_under_car_leaf_validates_and_composes_title` → `AttributeError: 'NoneType' object has no attribute 'id'`
+    - `apps/api/tests/integration/database/test_seed_car_attributes.py::test_create_product_under_car_leaf_rejects_missing_required` → ídem
 
-## Documentación
+    Confirmado con `git show 2166f142` (diff exacto que borra los 5 `_car_leaf(...)` hoja) y con el log de CI real, donde estos 4 tests aparecen listados como `FAILED` con exactamente esos mensajes. **Fix mecánico**: actualizar los 4 tests para apuntar a `carros-y-camionetas` como la hoja (nivel 2), no a `suvs` (nivel 3) — cero cambio en código de producción. Este es el hallazgo de mayor confianza y más accionable de todo el scan: causa determinística, diff exacto identificado, fix mecánico sin ambigüedad.
 
-- `CLAUDE.md` raíz es comprehensivo pero conserva **al menos 1 punto de drift Tailwind sin corregir** (ver Signal #2 abajo) pese a que la tabla de Tech Stack ya fue corregida en el intent `260828-fix-invalid-tailwind-spa`.
-- `AGENTS.md` — reglas autoritativas de revisión AI (GGA), incluye la excepción Zod-3-vs-4; línea 14 ya correcta sobre Tailwind.
-- **Sprawl de markdown en la raíz**: número inusualmente grande de archivos `.md` de sesión/handoff ad-hoc en la raíz del repo (README.md, CLAUDE.md, AGENTS.md, DEPLOY.md, HANDOFF.md, HANDOFF-RELEASE.md, CONTINUE-HERE.md, INITIAL.md, SPEC.md, MIGRATION_TEST_REPORT.md, TESTING.md, TODO-CLEANUP-SUMMARY.md, varios SPRINT__\_VALIDACION_.md, FIX-MARKETPLACE-ACCESS-BUTTON.md, más archivos de reporte/transcript de "council") — señal de documentación de sesión acumulada fuera del árbol estructurado `docs/`. Un lifecycle durable existe y está enforced en `docs/superpowers/specs/`, pero el sprawl de raíz no está gobernado de forma similar.
+20. **`create_test_schema.py` bootstrapea el schema de test vía `Base.metadata.create_all()`, no vía Alembic real — documentado, deliberado, no accidental.** El propio docstring dice: _"this project's migration chain has drift (see alembic/versions/20260601_recreate_facebook_tables.py) and fails on a fresh database, so the test DB is bootstrapped straight from the ORM models instead."_ Verificado: el único enum con `create_type=False` (`fb_group_category` en `fb_account_model.py`) está correctamente registrado en `MANUAL_ENUMS`; no hay otros enums sin registrar. **No es la causa directa** de los 21 failed, pero es la explicación arquitectónica de por qué el schema de CI difiere del real de Alembic — relevante para decidir si "arreglar seed data" en este intent debe incluir reparar la cadena de migraciones real. Ver `architecture.md` § Interaction Diagrams y `dependencies.md`.
 
----
+21. **Patrón de fixture `shared_session` incompatible con handlers que llaman `db.commit()` explícitamente dentro del mismo request.** Encontrado en `test_fb_sync_router.py` (fixture local `shared_session`/`_setup_override`) y replicado en `apps/api/tests/integration/bulk_upload/conftest.py`. El fixture mapea una única sesión de DB como override de `get_async_session` para toda la duración del test; cuando el endpoint bajo test llama `await db.commit()` (patrón válido en producción, donde cada request obtiene una sesión nueva), commitea la transacción externa que el fixture había abierto, y toda query posterior en el MISMO test revienta con `sqlalchemy.exc.InvalidRequestError: Can't operate on closed transaction inside context manager`. Confirmado en vivo: `test_fb_sync_router.py::TestUnpublishEndpoints::test_completed_callback_updates_all_publication_records_idempotently` — la 1ª llamada a `unpublish_callback` pasa con 200; la 2ª llamada (para verificar idempotencia) revienta con esa excepción exacta.
 
-## Technical Debt Signals (inventario actualizado — este rescan)
+22. **[Menor prioridad / no confirmado como regresión reciente] `test_batch_approve_products.py` y `test_batch_submit_products.py` construyen filas `Product` con `category_id=uuid4()`** — un UUID aleatorio que nunca fue insertado como `Category` real. Dado que `ProductModel.category_id` tiene `ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False` desde un commit antiguo (`fe34f2b8`) y el patrón `category_id=uuid4()` en estos tests data de otro commit antiguo (`1fa1fd3c`), esto **siempre debería haber violado la FK**. Hipótesis no confirmada con certeza en esta ventana de scan: la migración a `Base.metadata.create_all()` en `create_test_schema.py` (mtime 31-jul) pudo haber empezado a enforce esta constraint por primera vez de forma consistente, exponiendo un bug preexistente en los tests que antes quedaba enmascarado por el drift de Alembic. **Recomendación**: no arreglar en este intent salvo pedido explícito — es una familia de falla separada de "seed data" propiamente dicho.
 
-### 1. ⚠️ Residuo de clases Tailwind inválidas — familia `.25`/`.75`, NO cubierta por el fix anterior de este mismo intent
+23. **[Fuera de alcance de seed data, mencionado para completitud]** `ValueError: Unknown organization codes: DJ, RM` en tests de `bulk_upload` — bug de mapeo de códigos de organización en el CSV importer, no relacionado con schema/seed. El job separado "Test Node" del mismo run de CI falla por las 13 fallas frontend pre-existentes ya documentadas (Signal ya conocido, mock sin `published_to_marketplace`) — confirmado, no es nada nuevo.
 
-La familia `.5` (`h-9.5`, `px-4.5`, `h-8.5`) que originó el intent `260828-fix-invalid-tailwind-spa` **ya está corregida**: `tailwind.config.ts` extiende `spacing` con esos tres valores, con test de regresión dedicado. Sin embargo, el barrido repo-wide de este rescan encontró un **segundo grupo, no cubierto por ese fix**: clases de paso de cuarto `gap-1.25` (×2) y `mt-0.25` en `apps/web/src/app/(seller)/publications/page.tsx`; `py-0.75`/`p-0.75`/`mb-0.75` en el mismo archivo más `PublicationStatus.tsx`, `LeadStatusBadge.tsx`, `ProductImageGallery.tsx`. Compilan a CSS vacío por la misma causa raíz (fuera de la escala default y no extendidas). Por contraste, el conjunto mucho más grande de clases `.5`-puras repo-wide (`gap-1.5`, `py-2.5`, `w-3.5`) **es válido** y no es defecto. Detalle línea por línea pendiente en `component-inventory.md`.
+## Hallazgos del scan enfocado `260830-ci-fixes-round2` (batch review / bulk upload / appointments / fb-sync)
 
-### 2. ⚠️ Drift de tabla de stack en `CLAUDE.md` — parcialmente remediado
+24. **[Root cause confirmado, fix ya probado en el repo] `test_batch_review_api.py` viola `products_category_id_fkey`.** 4 usos de `category_id=uuid4()` (L110, 151, 201, 213) sin la fixture `test_category` — un UUID aleatorio nunca insertado como `Category` real. El fix ya existe en el mismo repo, comparado línea a línea: `test_batch_approve_products.py` agrega `test_category` como parámetro de fixture y usa `category_id=test_category.id`. Aplicar el mismo patrón a `test_batch_review_api.py`.
+25. **`csv_field_mapper.py:332-338` — fallback silencioso de `cod_organization` a `title`.** Intencional (comentario "ponytail" in-line), pero interactúa mal con el chequeo estricto de `bulk_upload_vehicles.py` — ver signal #26.
+26. **[Bug de diseño] `bulk_upload_vehicles.py:124-127` — el chequeo de "unknown organization codes" corre ANTES del loop por fila que sí respeta el fallback.** `execute()` levanta `ValueError` para cualquier código de organización no resuelto en el CSV, incluso cuando el llamador ya proveyó un `organization_id` válido como fallback explícito — ese fallback solo se aplica en el loop principal, que nunca se alcanza si el pre-chequeo falla antes. No es solo un problema de test: es un defecto de flujo de control en el use case de producción. Ver `architecture.md` § Interaction Diagrams para el diagrama completo.
+27. **Asimetría de manejo de errores en `product_router.py`.** Ni `bulk_upload_with_images` (L1982-2085) ni `bulk_upload_preview` (L1908-1980) envuelven `use_case.execute()` en `try/except ValueError`, a diferencia de `/brokers` (L2193-2207) y `/ownership` (L2269-2283) que sí mapean `ValueError → HTTPException(400)` en el mismo archivo. Consecuencia práctica: el bug #26 hoy se manifiesta como un 500 sin manejar, no un 400 informativo.
+28. **Fixture `test_organization` (`conftest.py:190-215`) nunca setea `OrganizationModel.code`.** Cualquier test que dependa de la resolución de código de organización vía esta fixture fallará silenciosamente esa resolución — relevante para cualquier test futuro de bulk upload que use `test_organization` sin setear `code` explícitamente.
+29. **[Frágil, no confirmado con corrida real] `fb_sync_router.py:356-366` — rama `"failed"` no asigna `status` explícitamente.** Incrementa y cappea `attempt_count` contra `MAX_UNPUBLISH_ATTEMPTS=3`, pero nunca asigna `unpublish_request.status` en esa rama — si persiste como `"queued"` es por el `server_default="queued"` de la columna (`fb_unpublish_request_model.py`), no por lógica explícita del handler. El developer no corrió pytest para confirmar si esto es la causa real de la falla del test asociado (`test_failed_callback_keeps_request_queued_with_capped_attempt_count`) — queda pendiente de verificación con ejecución real en Requirements Analysis / Code Generation.
+30. **[Discrepancia nueva, a verificar] `test_bulk_upload_preview.py` probablemente NO comparte el root cause de `test_bulk_upload_with_images.py`.** `BulkUploadPreviewUseCase.execute()` no lanza `ValueError` por códigos de organización desconocidos — solo los reporta en `summary.missing_org_codes`, a diferencia del modo de ejecución (signal #26). Si ambos tests fallan hoy en CI, probablemente sea por causas distintas; no asumir una única causa raíz para "bulk upload" sin verificar cada test por separado.
+31. **`test_appointment_api.py` — docstring desactualizada, no bug funcional.** Dice que los tests fallan con 404 porque el router "no está registrado todavía", pero `appointment_router.py` SÍ está registrado (`main.py:389-393`) y las factories necesarias existen. La causa raíz real de las fallas del test NO fue identificada por lectura estática — los asserts son deliberadamente laxos (`in [200, 401, 403, 404]`), lo que oculta el código de estado real devuelto. Requiere ejecución real de pytest para diagnosticar, no un fix de docstring solamente.
+32. **[Gap de cobertura, no un hallazgo de código] `fb_credential_migration_router.py` y `test_fb_credential_migration_router.py` — BLOQUEADOS por política de permisos local.** `.claude/settings.local.json` tiene `"deny": ["Read(**/*credential*)"]`, que bloquea tanto `Read` como `Bash` (cat/bat/rg) sobre cualquier ruta que contenga "credential". Es un límite de permisos real del entorno de este scan, no un bug del código ni del framework — no se intentó rodear. Solo se conoce la estructura de este router vía graphify: endpoints `create_migration_authorization`, `approve_migration_authorization`, `poll_migration_authorization`, `create_migration_token`, `import_credentials`; modelos `FBCredentialMigrationAuthorizationModel`/`FBCredentialMigrationTokenModel`; `TokenEncryptionService` (Fernet). **Ningún hallazgo de calidad de código fue posible sobre este router en este pase** — queda como conocimiento explícitamente NO cubierto, a diferencia del resto del `shallow`/`skimmed` de este documento (que sí tuvieron al menos lectura parcial). Un futuro intent que necesite tocar este router debe ajustar esa regla de `deny` o correr el scan desde un entorno sin esa restricción.
 
-La tabla "Tech Stack 2026" (línea ~72) y `AGENTS.md` línea 14 ya fueron corregidas a `3.4.17`. **Sigue sin corregir**: la sección "Key Conventions" (línea ~194) de `CLAUDE.md`, que todavía dice "TailwindCSS 4: New engine, no `var()` en className". Quedó fuera del alcance aprobado del intent previo (su FR solo nombraba la tabla). El comentario de encabezado de `globals.css` ("Tailwind CSS 4.0 directives") tampoco fue corregido. El naming del hook/script `validate-tailwind` ("Tailwind 4 enforcement") es cosmético y no afecta la funcionalidad del chequeo.
+## Mérito de supply-chain a preservar
 
-### 3. `packages/*` documentado pero ausente
-
-`pnpm-workspace.yaml` declara el glob `packages/*`; el directorio no existe físicamente. Documentación/estructura muerta, o plan diferido sin fecha.
-
-### 4. `apps/app/` — micro-app huérfana
-
-Contiene únicamente `privacy/page.tsx`, sin `package.json` propio — no es miembro del workspace pnpm, shadowed por la ruta real `apps/web/src/app/privacy/page.tsx`. Candidato a eliminación.
-
-### 5. Hook ESLint deshabilitado en pre-commit
-
-Comentado en `.pre-commit-config.yaml` con TODO abierto. `lint-staged` cubre solo archivos staged; CI sí ejecuta ESLint completo por separado.
-
-### 6. Estado dual Zod 3/4
-
-`AGENTS.md` instruye usar Zod 3 hasta resolver issue #74, pero `zod: ^4.4.0` ya está instalado (código real sigue en estilo Zod 3). Migración completa trackeada aparte en `260828-zod-3-to-4-migration` — no colar fixes parciales.
-
-### 7. `useEffect` para data fetching/mutación
-
-`onboarding/page.tsx` e `invite/[token]/page.tsx` violan `AGENTS.md:333` ("useEffect for data fetching - use Server Components or React Query"). `invite/[token]/page.tsx` dispara una mutación en el mount con 5 estados de UI; no existe hoy un hook `useQuery` reusable para `orgApi`. Migración trackeada aparte en `260828-useeffect-to-react-query` (scope bugfix, hereda piso de test).
-
-### 8. Defecto conocido de proxy BFF — `response.json()` sin chequeo de content-type
-
-Persiste sin arreglar en los proxies catch-all (`products`, `categories`, `organizations`, `vehicles`) — no re-verificado línea por línea este pase (skimmed), pero confirmado aún abierto según memoria del proyecto.
-
-### 9. Hook pre-commit ESLint deshabilitado + divergencia de estrictez Pyright (root `strict` vs. `apps/api` `standard`)
-
-Dos configuraciones de Pyright con distinta estrictez conviviendo en el repo — la real usada en CI/pre-commit es la más laxa (`standard`).
-
-### 10. Thresholds de cobertura frontend deliberadamente bajados
-
-`vitest.config.ts` documenta en comentario in-code la razón (superficie del catálogo superó la superficie de test disponible); bajado de un 80% original a `lines:40 functions:40 branches:75 statements:40`. Deuda intencional y documentada, no accidental.
-
-### 11. Lista extensa de ruff per-file-ignores
-
-8 archivos con violaciones suprimidas (ARG002, SIM102, RUF022, N818, RUF012), marcados TODO en `pyproject.toml`.
-
-### 12. TODO/FIXME density
-
-15 marcadores TODO/FIXME encontrados en `apps/api/src` y `apps/web/src` (grep dirigido, no exhaustivo), incluyendo trabajo de integración con Facebook Graph API diferido a fase 3 y un **chequeo de rol admin sin implementar** en `marketplace_access_router.py:110`.
-
-### 13. Router backend potencialmente no wireado
-
-31 módulos de router presentes bajo `infrastructure/api/routers/`, pero solo **30** llamadas `app.include_router(...)` en `main.py` — un módulo no confirmado como registrado. No investigado a fondo este pase si es intencional.
-
-### 14. Sprawl de documentación ad-hoc en la raíz
-
-Ver § Documentación arriba.
-
----
-
-## Prioridad recomendada de resolución (para Requirements Analysis)
-
-1. **Signal #1** (residuo `.25`/`.75`, este mismo intent) — bloqueante, decidir si se cubre en el mismo fix que ya cerró la familia `.5` o se trata como follow-up separado.
-2. **Signal #2** (drift Tailwind residual en `CLAUDE.md` línea ~194 + `globals.css`) — corrección barata, alto valor preventivo, causa raíz plausible del bug original.
-3. Signals #3–#14 — deuda preexistente, no bloqueante para este intent; #6 y #7 ya tienen intent propio dedicado (`260828-zod-3-to-4-migration`, `260828-useeffect-to-react-query`); el resto sin intent propio todavía.
+La acción `appleboy/ssh-action` está pineada por SHA completo en los dos workflows con SSH a producción (`promote-prod.yml`, `recover-prod.yml`) — buena práctica explícita, aunque el resto de las Actions siguen pineadas por tag mutable.
