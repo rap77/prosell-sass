@@ -195,11 +195,18 @@ async def test_list_org_verticals_excludes_deactivated_child_categories(
 
 @pytest.mark.asyncio
 async def test_list_org_verticals_cross_org_returns_403(
-    async_client_as_admin: AsyncClient, admin_user
+    async_client_as_seller: AsyncClient, seller_user
 ):
-    """A user from org A cannot read org B's verticals."""
-    other_org_id = uuid4()  # org B
-    assert other_org_id != admin_user.tenant_id
+    """A user from org A cannot read org B's verticals.
 
-    resp = await async_client_as_admin.get(f"/api/v1/organizations/{other_org_id}/verticals")
+    Uses seller_user (SALES_AGENT) rather than admin_user (SUPER_ADMIN):
+    ADMIN/SUPER_ADMIN both carry Permission.ORG_ADMIN_VIEW_ALL, which the
+    router intentionally bypasses the tenant check for (cross-tenant platform
+    admin functionality, see org_verticals_router.py). Only a non-admin,
+    tenant-scoped role should ever get 403 here.
+    """
+    other_org_id = uuid4()  # org B
+    assert other_org_id != seller_user.tenant_id
+
+    resp = await async_client_as_seller.get(f"/api/v1/organizations/{other_org_id}/verticals")
     assert resp.status_code == 403, resp.text

@@ -93,7 +93,7 @@ async def test_batch_reject_requires_marketplace_publish_permission(
 
 
 @pytest.mark.asyncio
-async def test_batch_approve_success(test_user, test_organization, db_session):
+async def test_batch_approve_success(test_user, test_organization, test_category, db_session):
     """Should approve multiple pending products."""
     # User with permission (ADMIN has MARKETPLACE_PUBLISH)
     reviewer = _user_with_permission(test_user, has_marketplace_publish=True)
@@ -107,7 +107,7 @@ async def test_batch_approve_success(test_user, test_organization, db_session):
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Test Vehicle {i}",
             price_cents=1000000,
             currency="USD",
@@ -135,7 +135,7 @@ async def test_batch_approve_success(test_user, test_organization, db_session):
 
 
 @pytest.mark.asyncio
-async def test_batch_reject_success(test_user, test_organization, db_session):
+async def test_batch_reject_success(test_user, test_organization, test_category, db_session):
     """Should reject multiple pending products."""
     reviewer = _user_with_permission(test_user, has_marketplace_publish=True)
     repo = SqlAlchemyProductRepository(db_session)
@@ -148,7 +148,7 @@ async def test_batch_reject_success(test_user, test_organization, db_session):
             id=uuid4(),
             tenant_id=tenant_id,
             organization_id=test_organization.id,
-            category_id=uuid4(),
+            category_id=test_category.id,
             title=f"Test Vehicle {i}",
             price_cents=1000000,
             currency="USD",
@@ -187,7 +187,9 @@ async def test_batch_reject_success(test_user, test_organization, db_session):
 
 
 @pytest.mark.asyncio
-async def test_batch_approve_partial_failure(test_user, test_organization, db_session):
+async def test_batch_approve_partial_failure(
+    test_user, test_organization, test_category, db_session
+):
     """Should return partial success for mixed statuses."""
     reviewer = _user_with_permission(test_user, has_marketplace_publish=True)
     repo = SqlAlchemyProductRepository(db_session)
@@ -198,7 +200,7 @@ async def test_batch_approve_partial_failure(test_user, test_organization, db_se
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Pending Product",
         price_cents=1000000,
         currency="USD",
@@ -210,7 +212,7 @@ async def test_batch_approve_partial_failure(test_user, test_organization, db_se
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=test_organization.id,
-        category_id=uuid4(),
+        category_id=test_category.id,
         title="Draft Product",
         price_cents=1000000,
         currency="USD",

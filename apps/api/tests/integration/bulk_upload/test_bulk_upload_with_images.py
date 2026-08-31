@@ -72,7 +72,11 @@ class TestBulkUploadWithImages:
         auth_headers: dict[str, str],
         client_csv_valid: str,
     ) -> None:
-        """Endpoint requires organization_id form field."""
+        """organization_id is an optional Form field (the endpoint can resolve
+        organizations from CSV codes instead) — omitting it is only an error
+        when none of the CSV rows' codes resolve either, which the use case
+        now reports as a 400, not a native FastAPI 422 required-field error.
+        """
         response = await async_client.post(
             "/api/v1/products/bulk-upload/with-images",
             data={
@@ -82,8 +86,7 @@ class TestBulkUploadWithImages:
             headers=auth_headers,
         )
 
-        # Should return 422 (validation error)
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     async def test_endpoint_requires_category_id(
         self,

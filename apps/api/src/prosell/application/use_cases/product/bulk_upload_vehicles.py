@@ -19,7 +19,7 @@ from typing import cast
 from uuid import UUID
 
 from prosell.application.dto.product.create import CreateProductRequest
-from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.application.ports.ido_spaces import IDOSpacesService, StorageUploadError
 from prosell.domain.entities.product import Product
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
@@ -120,34 +120,37 @@ class BulkUploadVehiclesUseCase:
         # 1. Parse CSV rows
         parsed_rows = self._parse_csv(csv_content)
 
-        # 2. Resolve org codes to (org_id, tenant_id) tuples
-        org_code_map = await self._resolve_org_codes(parsed_rows)
+        # 2. Resolve org codes to org_id, scoped to the caller's tenant —
+        # a code that resolves to a different tenant is treated as unknown,
+        # never used to write outside the JWT's tenant_id.
+        org_code_map = await self._resolve_org_codes(parsed_rows, tenant_id)
         unknown_codes = self._unknown_org_codes(parsed_rows, org_code_map)
-        if unknown_codes:
+        # Only fatal when there is no organization_id fallback: the per-row
+        # loop below already falls back to `organization_id` for any row
+        # whose code doesn't resolve, so an unresolved code is not an error
+        # when the caller already supplied one.
+        if unknown_codes and organization_id is None:
             raise ValueError(f"Unknown organization codes: {', '.join(unknown_codes)}")
 
         # 4. Map images if ZIP provided
         # ponytail: map images if (1) frontend provides org, OR (2) CSV has exactly one org code
         image_mapping: ImageMappingResult | None = None
         if zip_bytes:
-            # Determine org + tenant for image mapping: use the org resolved from
-            # the CSV row's cod_organization (the SAME tenant the product will
-            # be created under), NOT the JWT's tenant. Otherwise storage paths
-            # would be namespaced under the uploader's tenant while products
-            # belong to a different one — the image-urls endpoint then rejects
-            # the keys because the prefix doesn't match the product's tenant.
+            # Determine org for image mapping: use the org resolved from the
+            # CSV row's cod_organization when the caller didn't pick one.
+            # tenant_id is always the JWT's — org_code_map is already scoped
+            # to it, so there is no cross-tenant path here.
             mapping_org_id = organization_id
-            mapping_tenant_id = tenant_id
             if mapping_org_id is None and len(org_code_map) == 1:
                 # CSV has exactly one organization - use it for image mapping
-                mapping_org_id, mapping_tenant_id = next(iter(org_code_map.values()))
+                mapping_org_id = next(iter(org_code_map.values()))
 
             if mapping_org_id is not None:
                 rows_as_dicts = [asdict(row) for row in parsed_rows]
                 image_mapping = self.csv_image_mapper.map_images(
                     zip_bytes=zip_bytes,
                     parsed_rows=rows_as_dicts,
-                    tenant_id=mapping_tenant_id,
+                    tenant_id=tenant_id,
                     organization_id=mapping_org_id,
                 )
 
@@ -159,20 +162,21 @@ class BulkUploadVehiclesUseCase:
 
         for mapped_row in parsed_rows:
             try:
-                # ponytail: resolve org+tenant from CSV code, fallback to frontend selection
+                # ponytail: resolve org from CSV code (within the caller's
+                # tenant), fallback to frontend selection. tenant_id is
+                # always the JWT's — never derived from CSV.
                 row_org_id: UUID | None = organization_id
-                row_tenant_id = tenant_id
                 if mapped_row.cod_organization:
                     code = mapped_row.cod_organization.strip().upper()
                     if code in org_code_map:
-                        row_org_id, row_tenant_id = org_code_map[code]
+                        row_org_id = org_code_map[code]
 
                 if row_org_id is None:
                     raise ValueError("No organization: CSV row has no org code and none selected")
 
                 result = await self._upsert_vehicle(
                     mapped_row=mapped_row,
-                    tenant_id=row_tenant_id,
+                    tenant_id=tenant_id,
                     organization_id=row_org_id,
                     category_id=category_id,
                     image_mapping=image_mapping,
@@ -242,16 +246,23 @@ class BulkUploadVehiclesUseCase:
         return rows
 
     async def _resolve_org_codes(
-        self, parsed_rows: list[MappedCSVRow]
-    ) -> dict[str, tuple[UUID, UUID]]:
+        self, parsed_rows: list[MappedCSVRow], tenant_id: UUID
+    ) -> dict[str, UUID]:
         """
-        Resolve org codes from CSV to organization IDs and tenant IDs.
+        Resolve org codes from CSV to organization IDs, scoped to tenant_id.
+
+        A code that belongs to a different tenant is dropped from the
+        result — it is not resolvable by this caller, exactly like a code
+        that does not exist at all. tenant_id always comes from the JWT and
+        is never widened by a CSV-supplied code.
 
         Args:
             parsed_rows: Parsed CSV rows
+            tenant_id: Tenant ID from JWT context — the only tenant a code
+                may resolve within
 
         Returns:
-            Dict mapping uppercase org code to (organization_id, tenant_id) tuple
+            Dict mapping uppercase org code to organization_id
         """
         # Extract unique codes
         codes = [
@@ -263,13 +274,12 @@ class BulkUploadVehiclesUseCase:
         if not unique_codes:
             return {}
 
-        # Query orgs by codes (no tenant filter - admin can access all)
         orgs = await self.organization_repository.get_by_codes(unique_codes)
-        return {org.code.upper(): (org.id, org.tenant_id) for org in orgs if org.code}
+        return {org.code.upper(): org.id for org in orgs if org.code and org.tenant_id == tenant_id}
 
     @staticmethod
     def _unknown_org_codes(
-        parsed_rows: list[MappedCSVRow], org_code_map: dict[str, tuple[UUID, UUID]]
+        parsed_rows: list[MappedCSVRow], org_code_map: dict[str, UUID]
     ) -> list[str]:
         """Return CSV organization codes that could not be resolved before importing."""
         return sorted(
@@ -356,7 +366,7 @@ class BulkUploadVehiclesUseCase:
                     )
                     uploaded_urls.append(public_url)
                     images_uploaded += 1
-                except Exception as e:
+                except StorageUploadError as e:
                     logger.error("Failed to upload image %s: %s", img.do_spaces_key, e)
 
         if existing:

@@ -63,10 +63,15 @@ class TestDOSpacesService:
 
     @patch("prosell.infrastructure.services.do_spaces_service.boto3.client")
     async def test_delete_file_handles_error(self, mock_boto3_client):
-        """Return False when delete fails."""
+        """Return False when delete fails with a storage client error."""
+        from botocore.exceptions import ClientError
+
         mock_s3 = MagicMock()
         mock_boto3_client.return_value = mock_s3
-        mock_s3.delete_object.side_effect = Exception("S3 error")
+        mock_s3.delete_object.side_effect = ClientError(
+            {"Error": {"Code": "500", "Message": "S3 error"}},
+            "DeleteObject",
+        )
 
         service = DOSpacesService(
             region="nyc3",

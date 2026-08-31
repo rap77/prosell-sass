@@ -1,6 +1,7 @@
 """Integration tests for approved Facebook credential migration."""
 
 import hashlib
+import importlib
 import json
 from collections.abc import AsyncGenerator
 from uuid import UUID, uuid4
@@ -10,6 +11,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prosell.core.config import settings as global_settings
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
@@ -83,14 +85,21 @@ async def migration_context(
         "prosell.infrastructure.api.dependencies.settings.fb_bot_api_key",
         BOT_TOKEN,
     )
-    monkeypatch.setattr(
-        "prosell.infrastructure.api.routers.fb_credential_migration_router.settings.service_organization_id",
-        service_organization_id,
+    # `routers/__init__.py` does `from .fb_credential_migration_router import
+    # router as fb_credential_migration_router`, which shadows the module name
+    # on the `routers` package with the APIRouter instance. Both a dotted
+    # monkeypatch string and a plain `import a.b.c as x` resolve that shadowed
+    # package attribute instead of the real module (Python's `import a.b.c`
+    # walks attribute access on each parent package, it does not read
+    # sys.modules directly), so fetch the actual module via importlib and
+    # patch the real objects directly.
+    fb_credential_migration_router_module = importlib.import_module(
+        "prosell.infrastructure.api.routers.fb_credential_migration_router"
     )
+    monkeypatch.setattr(global_settings, "service_organization_id", service_organization_id)
     encryption = FBEncryptionService("test-migration-encryption-key")
     monkeypatch.setattr(
-        "prosell.infrastructure.api.routers.fb_credential_migration_router.get_fb_encryption_service",
-        lambda: encryption,
+        fb_credential_migration_router_module, "get_fb_encryption_service", lambda: encryption
     )
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -588,10 +597,9 @@ async def test_token_generation_fails_closed_without_service_organization(
 ) -> None:
     """Migration operations require an explicitly configured service organization."""
     client, _db, _admin_tenant_id, _service_organization_id, _admin = migration_context
-    monkeypatch.setattr(
-        "prosell.infrastructure.api.routers.fb_credential_migration_router.settings.service_organization_id",
-        None,
-    )
+    # See migration_context: dotted-string monkeypatch resolution is broken
+    # for this module by the routers/__init__.py re-export shadow.
+    monkeypatch.setattr(global_settings, "service_organization_id", None)
 
     response = await client.post(
         "/api/v1/fb-sync/migrations/tokens",

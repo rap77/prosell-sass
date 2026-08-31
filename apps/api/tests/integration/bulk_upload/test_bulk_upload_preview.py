@@ -276,8 +276,10 @@ class TestBulkUploadPreview:
         assert data["total_rows"] == 3
         assert data["summary"]["importable_count"] == 3
         assert data["summary"]["error_count"] == 0
-        # 3 rows, each with 1 image path
-        assert data["summary"]["images_count"] == 3
+        # No ZIP is uploaded in this request, and BulkUploadPreviewUseCase only
+        # counts images when a ZIP is actually mapped — 0 is the correct count
+        # here, not "1 per CSV path reference".
+        assert data["summary"]["images_count"] == 0
 
     async def test_preview_unmapped_columns_reported(
         self,

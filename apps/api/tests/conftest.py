@@ -74,6 +74,12 @@ _db_session.async_session_maker = async_sessionmaker(
 # so a hostile or malformed name can never break out of the identifier.
 _PG_IDENTIFIER_PREPARER = postgresql.dialect().identifier_preparer
 
+# ENUMs with create_type=False must be created manually before create_all().
+# Kept in lock-step with apps/api/scripts/create_test_schema.py's MANUAL_ENUMS.
+_MANUAL_ENUMS = [
+    ("fb_group_category", ["vehicles", "general", "real_estate", "electronics", "other"]),
+]
+
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_jwt_keys() -> None:
@@ -186,6 +192,15 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
 
     # Create all tables from model definitions
     async with async_engine.begin() as conn:
+        # ENUMs with create_type=False (e.g. fb_group_category on
+        # FBAccountGroupModel) must be created manually before create_all() —
+        # mirrors apps/api/scripts/create_test_schema.py's MANUAL_ENUMS, since
+        # this fixture bootstraps its own isolated database rather than reusing
+        # the schema that script builds.
+        for enum_name, values in _MANUAL_ENUMS:
+            values_sql = ", ".join(f"'{v}'" for v in values)
+            await conn.execute(sa_text(f"DROP TYPE IF EXISTS {enum_name} CASCADE"))
+            await conn.execute(sa_text(f"CREATE TYPE {enum_name} AS ENUM ({values_sql})"))
         await conn.run_sync(Base.metadata.create_all)
 
     # Create session factory

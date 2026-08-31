@@ -30,8 +30,12 @@ class TestBulkUploadVehiclesUseCase:
         )
 
     @pytest.mark.asyncio
-    async def test_use_case_rejects_unknown_csv_organization_codes(self, sample_csv: str):
-        """Unknown organization codes must stop the whole import before any writes."""
+    async def test_use_case_rejects_unknown_csv_organization_codes_without_fallback(
+        self, sample_csv: str
+    ):
+        """Unknown organization codes stop the import only when there is no
+        organization_id fallback — when the caller supplies one, unresolved
+        per-row codes fall back to it instead (see the per-row loop)."""
         product_repository = AsyncMock()
         organization_repository = AsyncMock()
         organization_repository.get_by_codes.return_value = []
@@ -46,7 +50,7 @@ class TestBulkUploadVehiclesUseCase:
             await use_case.execute(
                 csv_content=sample_csv,
                 tenant_id=uuid4(),
-                organization_id=uuid4(),
+                organization_id=None,
                 category_id=uuid4(),
             )
 

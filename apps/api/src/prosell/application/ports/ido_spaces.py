@@ -3,6 +3,16 @@
 from abc import ABC, abstractmethod
 
 
+class StorageUploadError(Exception):
+    """Raised when a storage backend fails to upload a file.
+
+    Implementations wrap their own client/network exceptions (e.g.
+    botocore's ClientError/BotoCoreError) into this port-level type so
+    callers can catch a specific, documented failure mode instead of a
+    bare Exception.
+    """
+
+
 class IDOSpacesService(ABC):
     """Interface for DigitalOcean Spaces storage service."""
 

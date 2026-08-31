@@ -6,9 +6,9 @@ from uuid import uuid4
 
 import boto3
 from botocore.client import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
-from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.application.ports.ido_spaces import IDOSpacesService, StorageUploadError
 from prosell.core.config import settings
 
 
@@ -47,6 +47,10 @@ class DOSpacesService(IDOSpacesService):
         else:
             self.endpoint = f"https://{self.region}.digitaloceanspaces.com"
 
+        # Any is justified here: values are unpacked as **kwargs into
+        # botocore.client.Config, whose many optional params have distinct
+        # types (str, float, bool, Mapping) — dict[str, object] fails
+        # pyright's **kwargs argument matching against that signature.
         boto_config_kwargs: dict[str, Any] = {"signature_version": "s3v4"}
         if use_path_style:
             boto_config_kwargs["s3"] = {"addressing_style": "path"}
@@ -162,7 +166,7 @@ class DOSpacesService(IDOSpacesService):
                 Key=key,
             )
             return True
-        except Exception:
+        except (ClientError, BotoCoreError):
             return False
 
     async def check_file_exists(self, key: str) -> bool:
@@ -218,7 +222,10 @@ class DOSpacesService(IDOSpacesService):
             put_params["ACL"] = "public-read"
 
         # Upload file to Spaces (run sync boto3 call in thread pool)
-        await asyncio.to_thread(lambda: self.s3_client.put_object(**put_params))
+        try:
+            await asyncio.to_thread(lambda: self.s3_client.put_object(**put_params))
+        except (ClientError, BotoCoreError) as e:
+            raise StorageUploadError(f"Failed to upload {key} to Spaces: {e}") from e
 
         # Return public URL
         public_url = f"{self.public_endpoint}/{self.bucket}/{key}"

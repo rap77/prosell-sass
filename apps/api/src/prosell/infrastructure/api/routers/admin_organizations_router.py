@@ -350,6 +350,21 @@ class UpdateOrganizationResponse(BaseModel):
     status: str
 
 
+@router.get("/{organization_id}", response_model=OrganizationResponse)
+async def get_organization(
+    organization_id: UUID, current_user: CurrentUser, db: DbSession
+) -> OrganizationResponse:
+    """Get a single organization's details. Requires ORG_ADMIN_VIEW_ALL."""
+    _require_org_admin_view_all(current_user)
+
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
+    if organization is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+
+    return OrganizationResponse.from_entity(organization)
+
+
 @router.patch("/{organization_id}", response_model=UpdateOrganizationResponse)
 async def update_organization(
     organization_id: UUID,

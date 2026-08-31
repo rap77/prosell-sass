@@ -1970,7 +1970,10 @@ async def bulk_upload_preview(
 
     # Execute preview use case
     use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
-    result = await use_case.execute(csv_content, zip_bytes)
+    try:
+        result = await use_case.execute(csv_content, zip_bytes)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     return BulkUploadPreviewResponse(
         total_rows=result.total_rows,
@@ -2058,13 +2061,16 @@ async def bulk_upload_with_images(
         do_spaces_service=spaces,
     )
 
-    result = await use_case.execute(
-        csv_content=csv_content_str,
-        tenant_id=current_user.tenant_id,
-        organization_id=organization_id,
-        category_id=category_id,
-        zip_bytes=zip_bytes,
-    )
+    try:
+        result = await use_case.execute(
+            csv_content=csv_content_str,
+            tenant_id=current_user.tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            zip_bytes=zip_bytes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     return BulkUploadVehiclesResponse(
         total_rows=result.total_rows,
