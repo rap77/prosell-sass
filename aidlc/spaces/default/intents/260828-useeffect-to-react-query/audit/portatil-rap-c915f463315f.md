@@ -3923,3 +3923,884 @@
 **Event**: HUMAN_TURN
 
 ---
+
+## Human Turn
+
+**Timestamp**: 2026-09-01T12:24:18Z
+**Event**: HUMAN_TURN
+
+---
+
+## Human Turn
+
+**Timestamp**: 2026-09-01T16:54:48Z
+**Event**: HUMAN_TURN
+
+---
+
+## Human Turn
+
+**Timestamp**: 2026-09-01T16:58:38Z
+**Event**: HUMAN_TURN
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:00:15Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7ff8c439
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:00:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7ff8c439
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+**Duration ms**: 14981
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:00:32Z
+**Event**: SENSOR_FIRED
+**Fire id**: a6d9b168
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:00:35Z
+**Event**: SENSOR_PASSED
+**Fire id**: a6d9b168
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+**Duration ms**: 3473
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:00:35Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3665a45d
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Failed
+
+**Timestamp**: 2026-09-01T17:00:39Z
+**Event**: SENSOR_FAILED
+**Fire id**: 3665a45d
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Detail path**: aidlc/spaces/default/intents/260828-useeffect-to-react-query/.aidlc-sensors/build-and-test/type-check-3665a45d.md
+**Findings count**: 2
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:00:39Z
+**Event**: SENSOR_FIRED
+**Fire id**: ecc1fee6
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:00:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: ecc1fee6
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 3847
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:00:56Z
+**Event**: SENSOR_FIRED
+**Fire id**: d152de41
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:01:00Z
+**Event**: SENSOR_PASSED
+**Fire id**: d152de41
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 3389
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:01:14Z
+**Event**: SENSOR_FIRED
+**Fire id**: c5f019a1
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:01:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: c5f019a1
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+**Duration ms**: 4825
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:01:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: a25abe17
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:01:24Z
+**Event**: SENSOR_PASSED
+**Fire id**: a25abe17
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+**Duration ms**: 5215
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:01:31Z
+**Event**: SENSOR_FIRED
+**Fire id**: 54227ad7
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Failed
+
+**Timestamp**: 2026-09-01T17:01:36Z
+**Event**: SENSOR_FAILED
+**Fire id**: 54227ad7
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Detail path**: aidlc/spaces/default/intents/260828-useeffect-to-react-query/.aidlc-sensors/build-and-test/type-check-54227ad7.md
+**Findings count**: 1
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:01:36Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2416327e
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:01:39Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2416327e
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Duration ms**: 3403
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:01:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: a992f55f
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:01:55Z
+**Event**: SENSOR_PASSED
+**Fire id**: a992f55f
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Duration ms**: 3542
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:02:21Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2b33f967
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:02:25Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2b33f967
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+**Duration ms**: 3341
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:02:36Z
+**Event**: SENSOR_FIRED
+**Fire id**: 417d98c4
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.test.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:02:40Z
+**Event**: SENSOR_PASSED
+**Fire id**: 417d98c4
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.test.ts
+**Duration ms**: 4011
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:04:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 321a78a9
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:04:31Z
+**Event**: SENSOR_PASSED
+**Fire id**: 321a78a9
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+**Duration ms**: 3499
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:04:32Z
+**Event**: SENSOR_FIRED
+**Fire id**: b744e760
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:04:35Z
+**Event**: SENSOR_PASSED
+**Fire id**: b744e760
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+**Duration ms**: 3218
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:04:35Z
+**Event**: SENSOR_FIRED
+**Fire id**: d349218b
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:04:38Z
+**Event**: SENSOR_PASSED
+**Fire id**: d349218b
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+**Duration ms**: 3200
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:04:38Z
+**Event**: SENSOR_FIRED
+**Fire id**: 784ac51e
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:04:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: 784ac51e
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+**Duration ms**: 4478
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:05:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: 298d45b2
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:05:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 298d45b2
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.test.tsx
+**Duration ms**: 3228
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:11Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7f61ed3f
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/app/invite/[token]/page.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:28:25Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7f61ed3f
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/app/invite/[token]/page.tsx
+**Duration ms**: 14647
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:35Z
+**Event**: SENSOR_FIRED
+**Fire id**: 821db2da
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:28:39Z
+**Event**: SENSOR_PASSED
+**Fire id**: 821db2da
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 3767
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:41Z
+**Event**: SENSOR_FIRED
+**Fire id**: 28d1a2d7
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:28:44Z
+**Event**: SENSOR_PASSED
+**Fire id**: 28d1a2d7
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 3717
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:45Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2798dbfd
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:28:48Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2798dbfd
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+**Duration ms**: 3425
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:48Z
+**Event**: SENSOR_FIRED
+**Fire id**: d9d7eb83
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:28:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: d9d7eb83
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+**Duration ms**: 3376
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: a14935b2
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:28:56Z
+**Event**: SENSOR_PASSED
+**Fire id**: a14935b2
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Duration ms**: 4245
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:28:56Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5e047d0f
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:29:00Z
+**Event**: SENSOR_PASSED
+**Fire id**: 5e047d0f
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Duration ms**: 3545
+
+---
+
+## Human Turn
+
+**Timestamp**: 2026-09-01T17:42:41Z
+**Event**: HUMAN_TURN
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:43:35Z
+**Event**: SENSOR_FIRED
+**Fire id**: 707ffd49
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/orgApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:43:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: 707ffd49
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/orgApi.ts
+**Duration ms**: 16285
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:43:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: 8c719f19
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/orgApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:43:57Z
+**Event**: SENSOR_PASSED
+**Fire id**: 8c719f19
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/orgApi.ts
+**Duration ms**: 4882
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:44:21Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4bc887c7
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:44:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4bc887c7
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+**Duration ms**: 4874
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:44:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4f7c4470
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:44:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4f7c4470
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/lib/api/teamApi.ts
+**Duration ms**: 3886
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:44:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6bdf5d40
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:44:51Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6bdf5d40
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 4903
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:45:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 0c3926f8
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:45:24Z
+**Event**: SENSOR_PASSED
+**Fire id**: 0c3926f8
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 4152
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:45:24Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4eab201b
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:45:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4eab201b
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 3693
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:45:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: 59e1379e
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:45:50Z
+**Event**: SENSOR_PASSED
+**Fire id**: 59e1379e
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Duration ms**: 4234
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:45:50Z
+**Event**: SENSOR_FIRED
+**Fire id**: bf976ecf
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:45:56Z
+**Event**: SENSOR_PASSED
+**Fire id**: bf976ecf
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/teams/TeamSwitcher.tsx
+**Duration ms**: 5685
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:46:10Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7ae6d6f9
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:46:13Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7ae6d6f9
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+**Duration ms**: 3272
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:46:13Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5afec993
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:46:16Z
+**Event**: SENSOR_PASSED
+**Fire id**: 5afec993
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/hooks/useTeams.ts
+**Duration ms**: 3263
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:50:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3dfbd606
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:50:36Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3dfbd606
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 16822
+
+---
+
+## Sensor Fired
+
+**Timestamp**: 2026-09-01T17:50:36Z
+**Event**: SENSOR_FIRED
+**Fire id**: 148d9e77
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+
+---
+
+## Sensor Passed
+
+**Timestamp**: 2026-09-01T17:50:40Z
+**Event**: SENSOR_PASSED
+**Fire id**: 148d9e77
+**Sensor ID**: type-check
+**Stage slug**: build-and-test
+**Output path**: apps/web/src/components/forms/TeamForm.tsx
+**Duration ms**: 3647
+
+---
