@@ -30,7 +30,6 @@ import { logger } from "@/lib/logger";
 
 export interface TeamListParams {
   org_id: string;
-  tenant_id: string;
   skip?: number;
   limit?: number;
 }
@@ -59,7 +58,7 @@ export interface TeamState {
 
   // Actions
   fetchTeamsByOrg: (params: TeamListParams) => Promise<void>;
-  fetchTeamById: (teamId: string, tenantId: string) => Promise<void>;
+  fetchTeamById: (teamId: string) => Promise<void>;
   createTeam: (data: CreateTeamRequest) => Promise<Team>;
   updateTeam: (teamId: string, data: UpdateTeamRequest) => Promise<void>;
   addMember: (
@@ -91,11 +90,10 @@ export const useTeamStore = create<TeamState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await teamApi.listByOrg(
-            params.org_id,
-            params.tenant_id,
-            { skip: params.skip, limit: params.limit },
-          );
+          const response = await teamApi.listByOrg(params.org_id, {
+            skip: params.skip,
+            limit: params.limit,
+          });
 
           set({
             teams: response.teams,
@@ -123,11 +121,11 @@ export const useTeamStore = create<TeamState>()(
       },
 
       // Fetch team by ID
-      fetchTeamById: async (teamId, tenantId) => {
+      fetchTeamById: async (teamId) => {
         set({ isLoading: true, error: null });
 
         try {
-          const team = await teamApi.getById(teamId, tenantId);
+          const team = await teamApi.getById(teamId);
 
           // Update in list if exists
           const { teams } = get();

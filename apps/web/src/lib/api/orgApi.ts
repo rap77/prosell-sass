@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * orgApi Client - HTTP client for organization endpoints
  *
@@ -8,7 +10,8 @@
  * - Error handling with ApiError
  */
 
-import type { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { z } from "zod";
 import {
   OrganizationSchema,
   OrganizationListResponseSchema,
@@ -68,21 +71,29 @@ export class ApiError extends Error {
   }
 }
 
+const errorBodySchema = z.object({
+  detail: z
+    .union([z.string(), z.array(z.object({ msg: z.string() }))])
+    .optional(),
+  message: z.string().optional(),
+});
+
 async function handleResponse<T>(
   response: Response,
   schema: z.ZodType<T>,
 ): Promise<T> {
   if (!response.ok) {
-    const errorData = await response
+    const rawError: unknown = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
+    const errorData = errorBodySchema.safeParse(rawError).data;
     let message: string;
-    if (Array.isArray(errorData.detail)) {
-      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
-    } else if (typeof errorData.detail === "string") {
+    if (Array.isArray(errorData?.detail)) {
+      message = errorData.detail.map((e) => e.msg).join(", ");
+    } else if (typeof errorData?.detail === "string") {
       message = errorData.detail;
     } else {
-      message = errorData.message || "Error en la petición";
+      message = errorData?.message || "Error en la petición";
     }
 
     throw new ApiError(message, response.status);
@@ -247,3 +258,23 @@ export const orgApi = {
     return handleResponse(response, OrganizationSchema);
   },
 };
+
+// ============================================
+// REACT QUERY HOOKS
+// ============================================
+
+export const ORG_ME_QUERY_KEY = ["org", "me"] as const;
+
+/**
+ * Fetch the current user's organization.
+ * `retry: false` mirrors the previous useEffect's single-attempt behavior —
+ * a new user with no organization yet should see the wizard immediately,
+ * not after several retry delays.
+ */
+export function useMyOrganization() {
+  return useQuery({
+    queryKey: ORG_ME_QUERY_KEY,
+    queryFn: () => orgApi.getMyOrganization(),
+    retry: false,
+  });
+}

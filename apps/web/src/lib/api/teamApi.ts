@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * teamApi Client - HTTP client for team endpoints
  *
@@ -8,7 +10,8 @@
  * - Error handling with ApiError
  */
 
-import type { z } from "zod";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { z } from "zod";
 import {
   TeamSchema,
   TeamMemberSchema,
@@ -32,7 +35,8 @@ export type {
 
 export interface CreateTeamRequest {
   name: string;
-  tenant_id: string;
+  // NEVER accept tenant_id from the client — the backend always derives it
+  // from the authenticated user and ignores any client-supplied value.
   organization_id: string;
 }
 
@@ -43,7 +47,8 @@ export interface UpdateTeamRequest {
 export interface AddTeamMemberRequest {
   team_id: string;
   user_id: string;
-  tenant_id?: string; // Optional - backend derives from current_user
+  // NEVER accept tenant_id from the client — the backend always derives it
+  // from the authenticated user and ignores any client-supplied value.
   role?: TeamMemberRole;
   commission_rate?: number | null;
 }
@@ -85,21 +90,29 @@ export class ApiError extends Error {
   }
 }
 
+const errorBodySchema = z.object({
+  detail: z
+    .union([z.string(), z.array(z.object({ msg: z.string() }))])
+    .optional(),
+  message: z.string().optional(),
+});
+
 async function handleResponse<T>(
   response: Response,
   schema: z.ZodType<T>,
 ): Promise<T> {
   if (!response.ok) {
-    const errorData = await response
+    const rawError: unknown = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
+    const errorData = errorBodySchema.safeParse(rawError).data;
     let message: string;
-    if (Array.isArray(errorData.detail)) {
-      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
-    } else if (typeof errorData.detail === "string") {
+    if (Array.isArray(errorData?.detail)) {
+      message = errorData.detail.map((e) => e.msg).join(", ");
+    } else if (typeof errorData?.detail === "string") {
       message = errorData.detail;
     } else {
-      message = errorData.message || "Error en la petición";
+      message = errorData?.message || "Error en la petición";
     }
 
     throw new ApiError(message, response.status);
@@ -133,17 +146,18 @@ export const teamApi = {
   /**
    * List teams for an organization
    * GET /api/v1/teams/org/{org_id}
+   *
+   * Tenant scoping is server-side only — the backend derives tenant_id from
+   * the authenticated user and does not accept it as a query param.
    */
   async listByOrg(
     orgId: string,
-    tenantId: string,
     params?: {
       skip?: number;
       limit?: number;
     },
   ): Promise<TeamListResponse> {
     const searchParams = new URLSearchParams();
-    searchParams.set("tenant_id", tenantId);
     if (params?.skip !== undefined)
       searchParams.set("skip", params.skip.toString());
     if (params?.limit !== undefined)
@@ -163,15 +177,12 @@ export const teamApi = {
   /**
    * Get team by ID
    * GET /api/v1/teams/{team_id}
+   *
+   * Tenant scoping is server-side only — the backend derives tenant_id from
+   * the authenticated user and does not accept it as a query param.
    */
-  async getById(teamId: string, tenantId: string): Promise<Team> {
-    const searchParams = new URLSearchParams();
-    searchParams.set("tenant_id", tenantId);
-
-    const query = searchParams.toString();
-    const url = `${API_BASE_URL}/api/v1/teams/${teamId}${query ? `?${query}` : ""}`;
-
-    const response = await fetch(url, {
+  async getById(teamId: string): Promise<Team> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/teams/${teamId}`, {
       method: "GET",
       credentials: "include",
     });
@@ -244,3 +255,36 @@ export const teamApi = {
     return handleResponse(response, TeamMemberSchema);
   },
 };
+
+// ============================================
+// REACT QUERY HOOKS
+// ============================================
+
+/**
+ * Accept a team invitation by token.
+ * No onError/onSuccess here — callers need the raw thrown ApiError to reach
+ * their own onError so status-based branching (expired/already-member/401)
+ * keeps working exactly as before.
+ */
+export function useAcceptInvitation() {
+  return useMutation({
+    mutationFn: (data: AcceptTeamInvitationRequest) =>
+      teamApi.acceptInvitation(data),
+  });
+}
+
+export const TEAMS_BY_ORG_QUERY_KEY = (orgId: string) =>
+  ["teams", "org", orgId] as const;
+
+/**
+ * List teams for an organization.
+ * Replaces the mount-fetch useEffect in TeamSwitcher — same single-request
+ * semantics, no query-param tenant_id (the backend derives it server-side).
+ */
+export function useTeamsByOrg(orgId: string) {
+  return useQuery({
+    queryKey: TEAMS_BY_ORG_QUERY_KEY(orgId),
+    queryFn: () => teamApi.listByOrg(orgId),
+    enabled: Boolean(orgId),
+  });
+}

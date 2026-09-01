@@ -83,16 +83,11 @@ describe("Header", () => {
   });
 
   it("accepts organization prop with id", () => {
-    render(
-      <Header
-        organization={{ id: "org-1", name: "Test Brancheship" }}
-        tenantId="tenant-1"
-      />,
-    );
+    render(<Header organization={{ id: "org-1", name: "Test Brancheship" }} />);
     expect(screen.getByTestId("team-switcher")).toBeInTheDocument();
   });
 
-  it("does not render TeamSwitcher without organization id and tenantId", () => {
+  it("does not render TeamSwitcher without organization id", () => {
     render(<Header organization={{ name: "Test Brancheship" }} />);
     expect(screen.queryByTestId("team-switcher")).not.toBeInTheDocument();
   });

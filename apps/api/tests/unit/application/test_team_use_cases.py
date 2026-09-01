@@ -70,12 +70,11 @@ class TestCreateTeamUseCase:
         request = CreateTeamRequest(
             name=team.name,
             org_id=team.org_id,
-            tenant_id=team.tenant_id,
             description="A sales team",
         )
         use_case = CreateTeamUseCase(team_repository=team_repo)
 
-        result = await use_case.execute(request)
+        result = await use_case.execute(request, tenant_id=team.tenant_id)
 
         assert result.name == team.name
         assert result.org_id == team.org_id
@@ -88,12 +87,11 @@ class TestCreateTeamUseCase:
         request = CreateTeamRequest(
             name="Existing Team",
             org_id=uuid4(),
-            tenant_id=uuid4(),
         )
         use_case = CreateTeamUseCase(team_repository=team_repo)
 
         with pytest.raises(TeamAlreadyExistsException):
-            await use_case.execute(request)
+            await use_case.execute(request, tenant_id=uuid4())
 
 
 # =============================================================================

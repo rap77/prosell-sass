@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTeamStore } from "@/stores/teamStore";
+import { useShallow } from "zustand/react/shallow";
+import { useTeamsByOrg } from "@/lib/api/teamApi";
 import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
 
 /**
  * Props for TeamSwitcher component
@@ -21,8 +23,6 @@ import { logger } from "@/lib/logger";
 interface TeamSwitcherProps {
   /** Organization ID to fetch teams for */
   organizationId: string;
-  /** Tenant ID for multi-tenancy */
-  tenantId: string;
 }
 
 /**
@@ -37,32 +37,19 @@ interface TeamSwitcherProps {
  *
  * @example
  * ```tsx
- * <TeamSwitcher
- *   organizationId="org-123"
- *   tenantId="tenant-123"
- * />
+ * <TeamSwitcher organizationId="org-123" />
  * ```
  */
-export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
+export function TeamSwitcher({ organizationId }: TeamSwitcherProps) {
   const router = useRouter();
-  const {
-    teams,
-    currentTeam,
-    isLoading,
-    error,
-    fetchTeamsByOrg,
-    setCurrentTeam,
-  } = useTeamStore();
-
-  // Fetch teams on mount if not already loaded
-  useEffect(() => {
-    if (teams.length === 0 && !isLoading) {
-      fetchTeamsByOrg({
-        org_id: organizationId,
-        tenant_id: tenantId,
-      });
-    }
-  }, [organizationId, tenantId, teams.length, isLoading, fetchTeamsByOrg]);
+  const { currentTeam, setCurrentTeam } = useTeamStore(
+    useShallow((state) => ({
+      currentTeam: state.currentTeam,
+      setCurrentTeam: state.setCurrentTeam,
+    })),
+  );
+  const { data, isLoading, error } = useTeamsByOrg(organizationId);
+  const teams = data?.teams ?? [];
 
   // Handle team selection
   const handleTeamSelect = (teamId: string) => {
@@ -131,7 +118,7 @@ export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
           <DropdownMenuItem
             key={team.id}
             onClick={() => handleTeamSelect(team.id)}
-            className={currentTeam?.id === team.id ? "bg-accent" : ""}
+            className={cn(currentTeam?.id === team.id && "bg-accent")}
           >
             <Users className="mr-2 h-4 w-4" />
             <span>{team.name}</span>

@@ -18,19 +18,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useTeamStore } from "@/stores";
+import { useShallow } from "zustand/react/shallow";
 import { useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores";
 import { toast } from "sonner";
 
 // ============================================
 // TYPES
 // ============================================
 
-export type TeamFormMode = "create" | "edit";
+export const TEAM_FORM_MODE = {
+  CREATE: "create",
+  EDIT: "edit",
+} as const;
+
+export type TeamFormMode = (typeof TEAM_FORM_MODE)[keyof typeof TEAM_FORM_MODE];
 
 // ============================================
 // SCHEMA
@@ -50,6 +55,13 @@ export type TeamFormValues = z.infer<typeof teamSchema>;
 // ============================================
 // PROPS
 // ============================================
+
+function getSubmitLabel(mode: TeamFormMode, isBusy: boolean): string {
+  if (isBusy) {
+    return mode === "create" ? "Creating..." : "Saving...";
+  }
+  return mode === "create" ? "Create Team" : "Save Changes";
+}
 
 export interface TeamFormProps {
   mode?: TeamFormMode;
@@ -83,13 +95,16 @@ export function TeamForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // Get tenant_id from auth store
-  const { user } = useAuthStore();
-  const tenantId = user?.id || ""; // Use user ID as tenant_id for now
-
   // Get store methods
-  const { createTeam, updateTeam, isLoading, error, clearError } =
-    useTeamStore();
+  const { createTeam, updateTeam, isLoading, error, clearError } = useTeamStore(
+    useShallow((state) => ({
+      createTeam: state.createTeam,
+      updateTeam: state.updateTeam,
+      isLoading: state.isLoading,
+      error: state.error,
+      clearError: state.clearError,
+    })),
+  );
 
   // React Hook Form setup
   const {
@@ -131,9 +146,8 @@ export function TeamForm({
 
     try {
       if (mode === "create") {
-        const team = await createTeam({
+        await createTeam({
           name: data.name,
-          tenant_id: tenantId,
           organization_id: organizationId,
         });
 
@@ -155,7 +169,7 @@ export function TeamForm({
           onSuccess();
         }
       }
-    } catch (err) {
+    } catch {
       // Error is handled by store
       toast.error("Failed to submit team form");
     }
@@ -217,13 +231,7 @@ export function TeamForm({
       {/* Actions */}
       <div className="flex gap-3">
         <Button type="submit" disabled={isDisabled} className="flex-1">
-          {isLoading || isPending
-            ? mode === "create"
-              ? "Creating..."
-              : "Saving..."
-            : mode === "create"
-              ? "Create Team"
-              : "Save Changes"}
+          {getSubmitLabel(mode, isLoading || isPending)}
         </Button>
         <Button
           type="button"

@@ -10,7 +10,6 @@ class CreateTeamRequest(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255)
     org_id: UUID
-    tenant_id: UUID
     description: str | None = None
     parent_team_id: UUID | None = None
 
@@ -20,6 +19,7 @@ class AddTeamMemberRequest(BaseModel):
 
     team_id: UUID
     user_id: UUID
-    tenant_id: UUID | None = None  # Optional - backend derives from current_user if not provided
+    # NEVER accept tenant_id from the client — always derived from the
+    # authenticated user (see add_team_member in team_router.py).
     role: str = Field(default="vendor", pattern="^(manager|vendor)$")
     commission_rate: float | None = Field(default=None, ge=0, le=100)

@@ -20,7 +20,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { teamApi, ApiError } from "@/lib/api/teamApi";
+import { ApiError, useAcceptInvitation } from "@/lib/api/teamApi";
 import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -39,6 +39,11 @@ const INVITATION_STATES = {
 type InvitationState =
   (typeof INVITATION_STATES)[keyof typeof INVITATION_STATES];
 
+type InvitationErrorState = {
+  kind: Exclude<InvitationState, "loading" | "success">;
+  message: string;
+};
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -48,68 +53,94 @@ export default function AcceptInvitationPage() {
   const router = useRouter();
   const token = Array.isArray(params.token) ? params.token[0] : params.token;
 
-  const [state, setState] = useState<InvitationState>("loading");
-  const [message, setMessage] = useState<string>("");
-  const [, setTeamName] = useState<string>("");
+  const [errorState, setErrorState] = useState<InvitationErrorState | null>(
+    null,
+  );
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
+  const mutation = useAcceptInvitation();
+
+  // Trigger the invitation-acceptance mutation once on mount. The idle-status
+  // check is the anti-double-fire guard: once mutate() is called the status
+  // moves away from "idle", so a re-run of this effect (including React 18
+  // Strict Mode's dev double-invoke) never fires it twice.
   useEffect(() => {
-    if (!token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- guard pattern, not a cascade
-      setState("error");
-      setMessage("No se proporcionó el token de invitación");
-      return;
-    }
+    if (!token) return;
+    if (mutation.status !== "idle") return;
 
-    const acceptInvitation = async () => {
-      try {
-        const member = await teamApi.acceptInvitation({ token });
+    mutation.mutate(
+      { token },
+      {
+        onSuccess: () => {
+          setSuccessMessage("Te uniste exitosamente al equipo.");
+          setTimeout(() => {
+            router.push("/dashboard?welcome=team");
+          }, 2000);
+        },
+        onError: (error) => {
+          if (!(error instanceof ApiError)) {
+            setErrorState({
+              kind: "error",
+              message: "Ocurrió un error inesperado. Intentá de nuevo.",
+            });
+            return;
+          }
 
-        setState("success");
-        setTeamName(member.team_id || "el equipo");
-        setMessage("Te uniste exitosamente al equipo.");
-
-        // Redirigir al dashboard después de 2 segundos
-        setTimeout(() => {
-          router.push("/dashboard?welcome=team");
-        }, 2000);
-      } catch (error) {
-        if (error instanceof ApiError) {
           const errorMessage = error.message.toLowerCase();
 
           if (errorMessage.includes("expired")) {
-            setState("expired");
-            setMessage(
-              "Esta invitación venció. Pedile al administrador que te envíe una nueva.",
-            );
-          } else if (
+            setErrorState({
+              kind: "expired",
+              message:
+                "Esta invitación venció. Pedile al administrador que te envíe una nueva.",
+            });
+            return;
+          }
+
+          if (
             errorMessage.includes("already") ||
             errorMessage.includes("member")
           ) {
-            setState("already_member");
-            setMessage("Ya sos parte de este equipo.");
+            setErrorState({
+              kind: "already_member",
+              message: "Ya sos parte de este equipo.",
+            });
             setTimeout(() => {
               router.push("/dashboard");
             }, 2000);
-          } else if (error.status === 401) {
+            return;
+          }
+
+          if (error.status === 401) {
             // No autenticado — redirigir al login con return URL
             const returnUrl = encodeURIComponent(`/invite/${token}`);
             router.push(`/auth/login?returnTo=${returnUrl}`);
-          } else {
-            setState("error");
-            setMessage(
-              error.message ||
-                "No se pudo aceptar la invitación. Intentá de nuevo o contactá al soporte.",
-            );
+            return;
           }
-        } else {
-          setState("error");
-          setMessage("Ocurrió un error inesperado. Intentá de nuevo.");
-        }
-      }
-    };
 
-    void acceptInvitation();
-  }, [token, router]);
+          setErrorState({
+            kind: "error",
+            message:
+              error.message ||
+              "No se pudo aceptar la invitación. Intentá de nuevo o contactá al soporte.",
+          });
+        },
+      },
+    );
+  }, [token, mutation, router]);
+
+  // Derived, not stored: the "no token" case never calls setState, so no
+  // effect-body setState remains anywhere in this component.
+  const state: InvitationState = !token
+    ? "error"
+    : mutation.isSuccess
+      ? "success"
+      : (errorState?.kind ?? "loading");
+  const message = !token
+    ? "No se proporcionó el token de invitación"
+    : mutation.isSuccess
+      ? successMessage
+      : (errorState?.message ?? "");
 
   // ── Contenido por estado ──
   const renderContent = (): React.ReactNode => {

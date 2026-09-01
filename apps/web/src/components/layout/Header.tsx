@@ -40,8 +40,6 @@ interface HeaderOrganization {
 interface HeaderProps {
   user?: HeaderUser;
   organization?: HeaderOrganization;
-  /** Tenant ID for multi-tenancy */
-  tenantId?: string;
 }
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
@@ -92,7 +90,7 @@ function resolveUserData(
  * - Org switcher placeholder (multi-brancheship in Phase 5)
  * - Logout functionality
  */
-export function Header({ user, organization, tenantId }: HeaderProps) {
+export function Header({ user, organization }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, user: authUser, isAdmin } = useAuth();
@@ -216,9 +214,7 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
         )}
 
         {/* Team switcher */}
-        {organization?.id && tenantId && (
-          <TeamSwitcher organizationId={organization.id} tenantId={tenantId} />
-        )}
+        {organization?.id && <TeamSwitcher organizationId={organization.id} />}
 
         {/* Theme toggle */}
         <ThemeToggle />

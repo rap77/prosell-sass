@@ -65,7 +65,6 @@ class TestCreateTeamRequestSchema:
         req = CreateTeamRequest(
             name="Sales Team",
             org_id=uuid4(),
-            tenant_id=uuid4(),
         )
         assert req.name == "Sales Team"
         assert req.description is None
@@ -76,7 +75,6 @@ class TestCreateTeamRequestSchema:
         req = CreateTeamRequest(
             name="Sales Team",
             org_id=uuid4(),
-            tenant_id=uuid4(),
             description="Main sales team",
             parent_team_id=uuid4(),
         )
@@ -88,7 +86,6 @@ class TestCreateTeamRequestSchema:
         with pytest.raises(ValidationError) as exc_info:
             CreateTeamRequest(  # type: ignore[call-arg]
                 org_id=uuid4(),
-                tenant_id=uuid4(),
             )
         errors = exc_info.value.errors()
         field_names = [e["loc"][0] for e in errors]
@@ -100,7 +97,6 @@ class TestCreateTeamRequestSchema:
             CreateTeamRequest(
                 name="",
                 org_id=uuid4(),
-                tenant_id=uuid4(),
             )
 
     def test_name_max_length(self):
@@ -109,7 +105,6 @@ class TestCreateTeamRequestSchema:
             CreateTeamRequest(
                 name="x" * 256,
                 org_id=uuid4(),
-                tenant_id=uuid4(),
             )
 
     def test_org_id_required(self):
@@ -117,22 +112,10 @@ class TestCreateTeamRequestSchema:
         with pytest.raises(ValidationError) as exc_info:
             CreateTeamRequest(  # type: ignore[call-arg]
                 name="Test Team",
-                tenant_id=uuid4(),
             )
         errors = exc_info.value.errors()
         field_names = [e["loc"][0] for e in errors]
         assert "org_id" in field_names
-
-    def test_tenant_id_required(self):
-        """tenant_id is required — missing raises ValidationError."""
-        with pytest.raises(ValidationError) as exc_info:
-            CreateTeamRequest(  # type: ignore[call-arg]
-                name="Test Team",
-                org_id=uuid4(),
-            )
-        errors = exc_info.value.errors()
-        field_names = [e["loc"][0] for e in errors]
-        assert "tenant_id" in field_names
 
 
 # =============================================================================
@@ -148,7 +131,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
             role="manager",
         )
         assert req.role == "manager"
@@ -158,7 +140,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
             role="vendor",
         )
         assert req.role == "vendor"
@@ -168,7 +149,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
         )
         assert req.role == "vendor"
 
@@ -178,7 +158,6 @@ class TestAddTeamMemberRequestSchema:
             AddTeamMemberRequest(
                 team_id=uuid4(),
                 user_id=uuid4(),
-                tenant_id=uuid4(),
                 role="admin",
             )
 
@@ -187,7 +166,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
             commission_rate=15.5,
         )
         assert req.commission_rate == 15.5
@@ -197,7 +175,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
             commission_rate=0,
         )
         assert req.commission_rate == 0
@@ -207,7 +184,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
             commission_rate=100,
         )
         assert req.commission_rate == 100
@@ -218,7 +194,6 @@ class TestAddTeamMemberRequestSchema:
             AddTeamMemberRequest(
                 team_id=uuid4(),
                 user_id=uuid4(),
-                tenant_id=uuid4(),
                 commission_rate=-1,
             )
 
@@ -228,7 +203,6 @@ class TestAddTeamMemberRequestSchema:
             AddTeamMemberRequest(
                 team_id=uuid4(),
                 user_id=uuid4(),
-                tenant_id=uuid4(),
                 commission_rate=100.1,
             )
 
@@ -237,7 +211,6 @@ class TestAddTeamMemberRequestSchema:
         req = AddTeamMemberRequest(
             team_id=uuid4(),
             user_id=uuid4(),
-            tenant_id=uuid4(),
         )
         assert req.commission_rate is None
 

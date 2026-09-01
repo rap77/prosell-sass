@@ -1,5 +1,6 @@
 """Team router for ProSell SaaS API."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -54,21 +55,21 @@ router = APIRouter()
 
 
 def get_team_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyTeamRepository:
     """Get team repository instance."""
     return SqlAlchemyTeamRepository(session)
 
 
 def get_team_member_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyTeamMemberRepository:
     """Get team member repository instance."""
     return SqlAlchemyTeamMemberRepository(session)
 
 
 def get_team_invitation_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyTeamInvitationRepository:
     """Get team invitation repository instance."""
     return SqlAlchemyTeamInvitationRepository(session)
@@ -87,28 +88,21 @@ def get_team_invitation_repository(
 )
 async def create_team(
     request: CreateTeamRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
 ) -> TeamResponse:
     """Create a new team (ORG_ADMIN only)."""
-    # SECURITY: Verify tenant_id matches authenticated user
+    # tenant_id is never accepted from the client — always derived from the
+    # authenticated user (see CreateTeamRequest, which has no tenant_id field).
     if not current_user.tenant_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User does not have an associated organization",
         )
-    if request.tenant_id != current_user.tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tenant ID mismatch - access denied",
-        )
-
-    # Override with user's tenant_id to prevent spoofing
-    request.tenant_id = current_user.tenant_id
 
     use_case = CreateTeamUseCase(team_repository=team_repo)
     try:
-        return await use_case.execute(request)
+        return await use_case.execute(request, tenant_id=current_user.tenant_id)
     except TeamAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.message) from e
     except OrgDomainException as e:
@@ -122,10 +116,10 @@ async def create_team(
 )
 async def list_teams_by_org(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
     skip: int = 0,
     limit: int = 100,
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamListResponse:
     """List all teams for an organization."""
     if not current_user.tenant_id:
@@ -150,8 +144,8 @@ async def list_teams_by_org(
 )
 async def get_team(
     team_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
 ) -> TeamResponse:
     """Get team by ID (with tenant isolation)."""
     if not current_user.tenant_id:
@@ -175,8 +169,8 @@ async def get_team(
 async def update_team(
     team_id: UUID,
     request: UpdateTeamRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
 ) -> TeamResponse:
     """Update team basic info."""
     if not current_user.tenant_id:
@@ -210,9 +204,11 @@ async def update_team(
 async def add_team_member(
     team_id: UUID,
     request: AddTeamMemberRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
-    team_member_repo: SqlAlchemyTeamMemberRepository = Depends(get_team_member_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
+    team_member_repo: Annotated[
+        SqlAlchemyTeamMemberRepository, Depends(get_team_member_repository)
+    ],
 ) -> TeamMemberResponse:
     """Add a user as a member to a team."""
     # SECURITY: Verify user has tenant_id
@@ -255,10 +251,12 @@ async def add_team_member(
 async def invite_team_member(
     team_id: UUID,
     request: CreateTeamInvitationRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
-    invitation_repo: SqlAlchemyTeamInvitationRepository = Depends(get_team_invitation_repository),
-    email_service: AbstractEmailService = Depends(get_email_service),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
+    invitation_repo: Annotated[
+        SqlAlchemyTeamInvitationRepository, Depends(get_team_invitation_repository)
+    ],
+    email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
 ) -> TeamInvitationResponse:
     """Invite a user to join a team via email (ORG_ADMIN or TEAM_MANAGER only)."""
     # SECURITY: Verify user has tenant_id
@@ -296,10 +294,14 @@ async def invite_team_member(
 )
 async def accept_team_invitation(
     request: AcceptTeamInvitationRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
-    team_member_repo: SqlAlchemyTeamMemberRepository = Depends(get_team_member_repository),
-    invitation_repo: SqlAlchemyTeamInvitationRepository = Depends(get_team_invitation_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    team_repo: Annotated[SqlAlchemyTeamRepository, Depends(get_team_repository)],
+    team_member_repo: Annotated[
+        SqlAlchemyTeamMemberRepository, Depends(get_team_member_repository)
+    ],
+    invitation_repo: Annotated[
+        SqlAlchemyTeamInvitationRepository, Depends(get_team_invitation_repository)
+    ],
 ) -> TeamMemberResponse:
     """Accept a team invitation using the token from email."""
     # SECURITY: Verify user has tenant_id

@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { orgApi, type Organization } from "@/lib/api/orgApi";
+import { orgApi, useMyOrganization } from "@/lib/api/orgApi";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import {
   OnboardingStep1,
@@ -35,33 +35,16 @@ const TOTAL_STEPS = 3;
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [org, setOrg] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
+  const { data: org, isLoading: isFetching } = useMyOrganization();
 
-  // Check setup_complete — redirect existing users
+  // Redirect existing users whose setup is already complete. This reacts to
+  // already-fetched query data — it is not the data-fetching effect itself.
   useEffect(() => {
-    let cancelled = false;
-    async function checkSetup() {
-      try {
-        const data = await orgApi.getMyOrganization();
-        if (cancelled) return;
-        if (data.setup_complete) {
-          router.replace("/dashboard");
-          return;
-        }
-        setOrg(data);
-      } catch {
-        // No org or not authenticated — middleware handles redirect
-      } finally {
-        if (!cancelled) setIsFetching(false);
-      }
+    if (org?.setup_complete) {
+      router.replace("/dashboard");
     }
-    void checkSetup();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+  }, [org, router]);
 
   async function completeSetup() {
     setIsLoading(true);
@@ -108,23 +91,11 @@ export default function OnboardingPage() {
   // ── Fetching ─────────────────────────────────────────────────────────────────
   if (isFetching) {
     return (
-      <div
-        style={{
-          display: "flex",
-          minHeight: "100vh",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--ps-bg-base)",
-        }}
-      >
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-screen items-center justify-center bg-ps-bg-base">
         <Loader2
           size={24}
           strokeWidth={2}
-          style={{
-            color: "var(--ps-cyan)",
-            animation: "spin 0.8s linear infinite",
-          }}
+          className="text-ps-cyan animate-spin [animation-duration:0.8s]"
         />
       </div>
     );
@@ -132,74 +103,26 @@ export default function OnboardingPage() {
 
   // ── Wizard ───────────────────────────────────────────────────────────────────
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--ps-bg-base)",
-        padding: 24,
-      }}
-    >
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 480,
-          display: "flex",
-          flexDirection: "column",
-          gap: 28,
-        }}
-      >
+    <div className="flex min-h-screen flex-col items-center justify-center bg-ps-bg-base p-6">
+      <div className="flex w-full max-w-[480px] flex-col gap-7">
         {/* Brand */}
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 12,
-            }}
-          >
+        <div className="text-center">
+          <div className="mb-3 inline-flex items-center gap-2.5">
             <Image
               src="/logo-mark.png"
               alt="ProSell"
               width={271}
               height={294}
-              style={{ height: 28, width: "auto", flexShrink: 0 }}
+              className="h-7 w-auto shrink-0"
             />
-            <span
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "var(--ps-text-primary)",
-              }}
-            >
+            <span className="text-[17px] font-bold tracking-[-0.02em] text-ps-text-primary">
               ProSell
             </span>
           </div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 24,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
+          <h1 className="m-0 text-2xl font-bold tracking-[-0.02em] text-ps-text-primary">
             Bienvenido a ProSell
           </h1>
-          <p
-            style={{
-              margin: "6px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
+          <p className="mt-1.5 text-[13px] text-ps-text-secondary">
             Completá estos pasos rápidos para dejar tu cuenta lista.
           </p>
         </div>
@@ -209,13 +132,8 @@ export default function OnboardingPage() {
 
         {/* Step content card */}
         <div
-          style={{
-            background: "var(--ps-bg-surface)",
-            border: "1px solid var(--ps-border-default)",
-            borderRadius: 14,
-            padding: "28px 28px 24px",
-            boxShadow: "0 4px 24px rgba(6,13,36,0.3)",
-          }}
+          className="rounded-[14px] border border-ps-border-default bg-ps-bg-surface px-7 pt-7 pb-6"
+          style={{ boxShadow: "0 4px 24px rgba(6,13,36,0.3)" }}
         >
           {step === 1 && (
             <OnboardingStep1

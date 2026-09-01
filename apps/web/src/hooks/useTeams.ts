@@ -16,7 +16,8 @@
  * @see {@link useTeamStore} for the underlying store implementation
  */
 import { useTeamStore } from "@/stores/teamStore";
-import type { Team } from "@/lib/api/teamApi";
+import { useShallow } from "zustand/react/shallow";
+import type { Team, TeamMemberRole } from "@/lib/api/teamApi";
 import type { TeamError } from "@/stores/teamStore";
 
 /**
@@ -43,14 +44,12 @@ export interface UseTeamsReturn {
   /** Fetch teams for an organization */
   fetchTeams: (
     orgId: string,
-    tenantId: string,
     params?: { skip?: number; limit?: number },
   ) => Promise<void>;
 
   /** Create a new team */
   createTeam: (data: {
     name: string;
-    tenant_id: string;
     organization_id: string;
   }) => Promise<Team>;
 
@@ -64,8 +63,7 @@ export interface UseTeamsReturn {
       {
         team_id: string;
         user_id: string;
-        tenant_id: string;
-        role?: "manager" | "vendor";
+        role?: TeamMemberRole;
         commission_rate?: number | null;
       },
       "team_id"
@@ -96,7 +94,20 @@ export function useTeams(): UseTeamsReturn {
     updateTeam,
     addMember,
     clearError,
-  } = useTeamStore();
+  } = useTeamStore(
+    useShallow((state) => ({
+      teams: state.teams,
+      currentTeam: state.currentTeam,
+      isLoading: state.isLoading,
+      error: state.error,
+      fetchTeamsByOrg: state.fetchTeamsByOrg,
+      setCurrentTeam: state.setCurrentTeam,
+      createTeam: state.createTeam,
+      updateTeam: state.updateTeam,
+      addMember: state.addMember,
+      clearError: state.clearError,
+    })),
+  );
 
   // Switch to a different team
   const switchTeam = (team: Team) => {
@@ -106,12 +117,10 @@ export function useTeams(): UseTeamsReturn {
   // Fetch teams for an organization
   const fetchTeams = async (
     orgId: string,
-    tenantId: string,
     params?: { skip?: number; limit?: number },
   ) => {
     await fetchTeamsByOrg({
       org_id: orgId,
-      tenant_id: tenantId,
       skip: params?.skip,
       limit: params?.limit,
     });

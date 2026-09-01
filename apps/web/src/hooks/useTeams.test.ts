@@ -95,7 +95,7 @@ describe("useTeams", () => {
     const { result } = renderHook(() => useTeams());
 
     await act(async () => {
-      await result.current.fetchTeams("org-1", "tenant-1", {
+      await result.current.fetchTeams("org-1", {
         skip: 0,
         limit: 10,
       });
@@ -103,7 +103,6 @@ describe("useTeams", () => {
 
     expect(mockFetchTeamsByOrg).toHaveBeenCalledWith({
       org_id: "org-1",
-      tenant_id: "tenant-1",
       skip: 0,
       limit: 10,
     });
@@ -114,7 +113,6 @@ describe("useTeams", () => {
 
     const newTeamData = {
       name: "New Team",
-      tenant_id: "tenant-1",
       organization_id: "org-1",
     };
 
@@ -142,7 +140,6 @@ describe("useTeams", () => {
 
     const memberData = {
       user_id: "user-1",
-      tenant_id: "tenant-1",
       role: "vendor" as const,
     };
 

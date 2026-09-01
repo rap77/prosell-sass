@@ -10,31 +10,18 @@
  * 4. Handles team selection
  * 5. Shows loading state
  * 6. Shows error state
- * 7. Integrates with teamStore
+ * 7. Fetches teams for the organization via React Query
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import { TeamSwitcher } from "./TeamSwitcher";
+import { teamApi, ApiError, type TeamListResponse } from "@/lib/api/teamApi";
 
-// Mock teamApi
-vi.mock("@/lib/api/teamApi", () => ({
-  teamApi: {
-    listByOrg: vi.fn(),
-  },
-  ApiError: class extends Error {
-    constructor(
-      message: string,
-      public status?: number,
-    ) {
-      super(message);
-      this.name = "ApiError";
-    }
-  },
-}));
-
-// Mock teamStore
+// Mock teamStore — only currentTeam/setCurrentTeam remain, fetching moved to
+// useTeamsByOrg (React Query).
 const { mockUseTeamStore } = vi.hoisted(() => ({
   mockUseTeamStore: vi.fn(),
 }));
@@ -59,6 +46,17 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+function renderWithClient(organizationId = "org-1") {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <TeamSwitcher organizationId={organizationId} />
+    </QueryClientProvider>,
+  );
+}
+
 describe("TeamSwitcher", () => {
   const mockTeams = [
     {
@@ -81,137 +79,117 @@ describe("TeamSwitcher", () => {
 
   const mockCurrentTeam = mockTeams[0];
 
+  const mockListResponse = (teams: typeof mockTeams): TeamListResponse => ({
+    teams,
+    total: teams.length,
+    skip: 0,
+    limit: 50,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockRefresh.mockClear();
   });
 
   describe("Rendering", () => {
-    it("renders the team switcher button", () => {
-      const mockState = {
-        teams: mockTeams,
+    it("renders the team switcher button", async () => {
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      const button = screen.getByRole("button");
+      const button = await screen.findByRole("button");
       expect(button).toBeInTheDocument();
     });
 
-    it("displays current team name when available", () => {
-      const mockState = {
-        teams: mockTeams,
+    it("displays current team name when available", async () => {
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      expect(screen.getAllByText("Sales Team A").length).toBeGreaterThan(0);
+      await waitFor(() =>
+        expect(screen.getAllByText("Sales Team A").length).toBeGreaterThan(0),
+      );
     });
 
-    it("displays placeholder when no current team is selected", () => {
-      const mockState = {
-        teams: mockTeams,
+    it("displays placeholder when no current team is selected", async () => {
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: null,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      expect(screen.getByText("Select Team")).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByText("Select Team")).toBeInTheDocument(),
+      );
     });
 
-    it("shows loading state when teams are being fetched", () => {
-      const mockState = {
-        teams: [],
+    it("shows loading state while teams are being fetched", async () => {
+      let resolveFetch: (value: TeamListResponse) => void = () => {};
+      vi.spyOn(teamApi, "listByOrg").mockReturnValue(
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: null,
-        isLoading: true,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
+      resolveFetch(mockListResponse([]));
     });
 
-    it("shows error state when teams fetch fails", () => {
-      const mockState = {
-        teams: [],
+    it("shows error state when teams fetch fails", async () => {
+      vi.spyOn(teamApi, "listByOrg").mockRejectedValue(
+        new ApiError("Failed to load teams"),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: null,
-        isLoading: false,
-        error: { message: "Failed to load teams" },
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      expect(screen.getByText(/error/i)).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByText(/error/i)).toBeInTheDocument(),
+      );
     });
   });
 
   describe("Team Dropdown", () => {
     it("opens dropdown when button is clicked", async () => {
       const user = userEvent.setup();
-      const mockState = {
-        teams: mockTeams,
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      const button = screen.getByRole("button");
+      const button = await screen.findByRole("button");
       await user.click(button);
 
-      // Check if dropdown menu appears - both teams should be visible
       await waitFor(() => {
         expect(screen.getAllByText("Sales Team A").length).toBeGreaterThan(0);
         expect(screen.getAllByText("Sales Team B").length).toBeGreaterThan(0);
@@ -220,23 +198,17 @@ describe("TeamSwitcher", () => {
 
     it("displays all available teams in dropdown", async () => {
       const user = userEvent.setup();
-      const mockState = {
-        teams: mockTeams,
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      const button = screen.getByRole("button");
+      const button = await screen.findByRole("button");
       await user.click(button);
 
       await waitFor(() => {
@@ -250,27 +222,19 @@ describe("TeamSwitcher", () => {
     it("calls setCurrentTeam when a team is selected", async () => {
       const user = userEvent.setup();
       const mockSetCurrentTeam = vi.fn();
-
-      const mockState = {
-        teams: mockTeams,
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockTeams[0],
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: mockSetCurrentTeam,
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      const button = screen.getByRole("button");
+      const button = await screen.findByRole("button");
       await user.click(button);
 
-      // Click on the second team
       const teamOption = await screen.findByText("Sales Team B");
       await user.click(teamOption);
 
@@ -279,25 +243,17 @@ describe("TeamSwitcher", () => {
 
     it("refreshes the router after team selection", async () => {
       const user = userEvent.setup();
-      const mockSetCurrentTeam = vi.fn();
-
-      const mockState = {
-        teams: mockTeams,
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockTeams[0],
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
-        setCurrentTeam: mockSetCurrentTeam,
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
+        setCurrentTeam: vi.fn(),
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      const button = screen.getByRole("button");
+      const button = await screen.findByRole("button");
       await user.click(button);
 
       const teamOption = await screen.findByText("Sales Team B");
@@ -309,95 +265,40 @@ describe("TeamSwitcher", () => {
     });
   });
 
-  describe("Integration with teamStore", () => {
-    it("fetches teams on mount when teams list is empty", () => {
-      const mockFetchTeams = vi.fn();
-      const mockState = {
-        teams: [],
+  describe("Fetching", () => {
+    it("fetches teams for the given organization", async () => {
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: null,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: mockFetchTeams,
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient("org-1");
 
-      expect(mockFetchTeams).toHaveBeenCalledWith({
-        org_id: "org-1",
-        tenant_id: "tenant-1",
-      });
-    });
-
-    it("does not fetch teams on mount when teams list is not empty", () => {
-      const mockFetchTeams = vi.fn();
-      const mockState = {
-        teams: mockTeams,
-        currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: mockFetchTeams,
-        setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
-      });
-
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
-
-      expect(mockFetchTeams).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(teamApi.listByOrg).toHaveBeenCalledWith("org-1"),
+      );
     });
   });
 
   describe("Accessibility", () => {
-    it("has proper button label for screen readers", () => {
-      const mockState = {
-        teams: mockTeams,
+    it("has proper button label for screen readers", async () => {
+      vi.spyOn(teamApi, "listByOrg").mockResolvedValue(
+        mockListResponse(mockTeams),
+      );
+      mockUseTeamStore.mockReturnValue({
         currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
         setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
       });
 
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
+      renderWithClient();
 
-      const button = screen.getByRole("button");
+      const button = await screen.findByRole("button", {
+        name: /select team/i,
+      });
       expect(button).toHaveAttribute("aria-label");
-    });
-
-    it("shows team icon", () => {
-      const mockState = {
-        teams: mockTeams,
-        currentTeam: mockCurrentTeam,
-        isLoading: false,
-        error: null,
-        fetchTeamsByOrg: vi.fn(),
-        setCurrentTeam: vi.fn(),
-      };
-
-      mockUseTeamStore.mockImplementation((selector) => {
-        if (!selector) return mockState;
-        return selector(mockState);
-      });
-
-      render(<TeamSwitcher organizationId="org-1" tenantId="tenant-1" />);
-
-      // Check for Users/Teams icon
-      const button = screen.getByRole("button");
-      expect(button).toBeInTheDocument();
     });
   });
 });
