@@ -1,18 +1,36 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-08-31 (última actualización: scan enfocado del intent `260831-invalid-tailwind-classes`)
-**Commit analizado**: `8939ec10` (rama `main`) — incluye `624819e3` ("fix(web): extend Tailwind spacing scale for invalid h-9.5/px-4.5/h-8.5 classes"), ya mergeado antes de este intent.
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260830-ci-fixes-round2` (a su vez aditivo sobre `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Scan enfocado — intent `260831-invalid-tailwind-classes`" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo.
+**Fecha**: 2026-08-31 (última actualización: scan enfocado del intent `260828-useeffect-to-react-query`)
+**Commit analizado**: `3d5b1d7d` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260831-invalid-tailwind-classes` (a su vez aditivo sobre `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260831-invalid-tailwind-classes` continúa el seguimiento de deuda de clases Tailwind inválidas ya catalogada en pases previos (`code-quality-assessment.md` Signal #3, `component-inventory.md` § "Inventario de bug — clases Tailwind inválidas"). El foco de este pase fue re-verificar el estado ACTUAL de esa deuda tras el fix de escala de spacing (`624819e3`) ya mergeado a `main` antes de que este intent arrancara: confirmar cuáles de las clases previamente catalogadas siguen siendo inválidas hoy, y cuáles quedaron resueltas por la extensión de `theme.extend.spacing`.
+El intent `260828-useeffect-to-react-query` migra dos flujos de negocio sensibles (`onboarding/page.tsx`, `invite/[token]/page.tsx`) de `useEffect` para fetch/mutación a React Query, corrigiendo la violación explícita de `AGENTS.md:333` ya catalogada en `project.md` como aprendizaje de un pase anterior. El store existente cubría el área de Tailwind/config a profundidad (intent `260831-invalid-tailwind-classes`) pero no había profundizado en `orgApi.ts`/`teamApi.ts`/`notificationsApi.ts`/`fetchWithAuth.ts` ni en las dos páginas objetivo — se decidió un scan enfocado adicional en vez de reuse (el store era `STALE` para esta área) o full rescan.
 
 ## Verificación de overwrite (codekb-scope-diff)
 
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco Tailwind config/clases inválidas, intent `260831-invalid-tailwind-classes`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (frontend onboarding/invite/cliente API, no Tailwind). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+## Developer Code Scan Results — foco onboarding / invite / migración React Query (intent `260828-useeffect-to-react-query`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `apps/web/src/app/onboarding/page.tsx`, `apps/web/src/app/invite/[token]/page.tsx`, `apps/web/src/app/invite/org/[token]/page.tsx` (flujo hermano, solo contraste), `apps/web/src/lib/api/orgApi.ts`, `apps/web/src/lib/api/teamApi.ts`, `apps/web/src/lib/api/schemas/orgApi.ts`, `apps/web/src/lib/api/schemas/teamApi.ts` (solo shape de `TeamMemberSchema`), `apps/web/src/lib/api/notificationsApi.ts`, `apps/web/src/lib/api/fetchWithAuth.ts`, `apps/web/src/lib/api/extractErrorMessage.ts`, `apps/web/src/components/providers/ReactQueryProvider.tsx`, `apps/web/src/lib/api/leads.test.tsx` (solo patrón de test), `apps/web/src/components/leads/TeamLeadList.test.tsx` (solo patrón de test), `apps/web/tests/app/auth/login/page.test.tsx` (solo patrón de test), `apps/web/package.json`, `AGENTS.md` línea 333 (texto verbatim de la regla).
+- **Skimmed only**: `apps/web/src/hooks/useAuth.ts`, `apps/web/src/stores/authStore.ts` (grep de `useEffect`, sin hallazgos relevantes), `apps/web/src/lib/auth/deriveRole.ts` (ubicación confirmada, fuera del call path de ambas páginas), `apps/web/src/lib/api/leads.ts` (firmas de hooks vía graphify solamente).
+- **No tocado**: resto del repositorio (scan enfocado, no full rescan).
+
+Ver `api-documentation.md`, `architecture.md` § Interaction Diagrams (diagramas 8 y 9), `component-inventory.md`, `code-structure.md`, `dependencies.md` y `code-quality-assessment.md` (hallazgos #36-42) para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260831-invalid-tailwind-classes`)
+
+El intent `260831-invalid-tailwind-classes` continúa el seguimiento de deuda de clases Tailwind inválidas ya catalogada en pases previos (`code-quality-assessment.md` Signal #3, `component-inventory.md` § "Inventario de bug — clases Tailwind inválidas"). El foco de este pase fue re-verificar el estado ACTUAL de esa deuda tras el fix de escala de spacing (`624819e3`) ya mergeado a `main` antes de que este intent arrancara: confirmar cuáles de las clases previamente catalogadas siguen siendo inválidas hoy, y cuáles quedaron resueltas por la extensión de `theme.extend.spacing`.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260831-invalid-tailwind-classes`
+
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco batch review/bulk upload/appointments/fb-sync, intent `260830-ci-fixes-round2`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (frontend Tailwind/config, no backend). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
-## Developer Code Scan Results — foco Tailwind config / clases inválidas (intent `260831-invalid-tailwind-classes`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco Tailwind config / clases inválidas (intent `260831-invalid-tailwind-classes`)
 
 ### Scan Coverage
 
@@ -169,10 +187,34 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260831-invalid-tailwind-classes
-fingerprint: 139441935b526fed5ca91509d3827c4eff61bcc3
+intent: 260828-useeffect-to-react-query
+fingerprint: 72b56af71dcf9e5f9db559545af4cbe2ceb89225
 analyzed:
   paths:
+    - apps/web/src/app/onboarding/page.tsx
+    - apps/web/src/app/invite/[token]/page.tsx
+    - apps/web/src/app/invite/org/[token]/page.tsx
+    - apps/web/src/lib/api/orgApi.ts
+    - apps/web/src/lib/api/teamApi.ts
+    - apps/web/src/lib/api/schemas/orgApi.ts
+    - apps/web/src/lib/api/schemas/teamApi.ts
+    - apps/web/src/lib/api/notificationsApi.ts
+    - apps/web/src/lib/api/fetchWithAuth.ts
+    - apps/web/src/lib/api/extractErrorMessage.ts
+    - apps/web/src/components/providers/ReactQueryProvider.tsx
+    - apps/web/package.json
+  components:
+    - OnboardingPage()
+    - InvitePage()
+    - orgApi
+    - teamApi
+    - notificationsApi
+shallow:
+  paths:
+    - apps/web/src/hooks/useAuth.ts
+    - apps/web/src/stores/authStore.ts
+    - apps/web/src/lib/auth/deriveRole.ts
+    - apps/web/src/lib/api/leads.ts
     - apps/web/src/app/privacy/page.tsx
     - apps/web/src/app/terms/page.tsx
     - apps/web/src/app/(seller)/publications/page.tsx
@@ -180,13 +222,6 @@ analyzed:
     - apps/web/src/components/appointments/AppointmentForm.tsx
     - apps/web/tailwind.config.ts
     - apps/web/tests/unit/config/tailwind.config.test.ts
-    - apps/web/package.json
-  components:
-    - prosell-web (Next.js frontend)
-    - Tailwind config / spacing scale
-    - "publications page ((seller) route group)"
-shallow:
-  paths:
     - apps/api/tests/integration/api/test_batch_review_api.py
     - apps/api/tests/integration/use_cases/test_batch_approve_products.py
     - apps/api/tests/integration/conftest.py

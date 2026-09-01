@@ -49,6 +49,12 @@ Nuevo hallazgo del scan enfocado `260830-ci-seed-data`: el job `test-python` de 
 - **`tests/e2e` (`@prosell/e2e`)**: miembro de workspace independiente con su propio `package.json`, consume ambos `apps/web` y `apps/api` solo como stack levantado en runtime (Playwright contra URLs reales), sin dependencia de código en build-time.
 - **`apps/app`**: micro-app huérfana de un solo archivo (`privacy/page.tsx`), sin `package.json` propio, no participa del grafo de build activo del workspace pnpm.
 
+## Dependencias internas nuevas — scan enfocado `260828-useeffect-to-react-query` (onboarding / invite)
+
+- **`orgApi.ts` ↔ `teamApi.ts`**: duplicación verbatim de la clase `ApiError` y de `handleResponse<T>()` entre ambos módulos — no es una dependencia formal (cada uno tiene su propia copia), pero es el punto natural de consolidación si se crea un archivo de hooks/utilidades compartido para envolver ambos en React Query.
+- **`onboarding/page.tsx` → `orgApi.ts`**, **`invite/[token]/page.tsx` → `teamApi.ts`**: ninguno de los dos flujos pasa por `fetchWithAuth.ts` — a diferencia de `notificationsApi.ts`/`leads.ts`/`useInferCategory.ts`, que sí lo usan. Consecuencia: ambos flujos carecen hoy de auto-refresh de sesión en 401 (silencioso, no reportado como incidente pero sí como riesgo latente); envolver en React Query sin resolver esto preserva el gap tal cual.
+- **`invite/[token]/page.tsx` → `ApiError` (tipo)**: dependencia de comportamiento no obvia — el branching de error de la página (`error.message.toLowerCase().includes(...)`, `error.status === 401`) depende de que el error lanzado conserve `status`/`message` reales del backend. Cualquier envoltura futura en `useMutation` que sustituya `ApiError` por un `Error` genérico (como hace `notificationsApi.ts`) rompería este branching.
+
 ## Dependencias de infraestructura de calidad (dev-time)
 
 - **GGA (Gentleman Guardian Angel)** — revisor de código con IA, proveedor `codex`, bloqueante en pre-commit, primero en el orden de hooks. Explícitamente NO es un SAST (no detecta injection/XSS/SSRF/deserialización insegura de forma determinística) — ver `code-quality-assessment.md`.

@@ -105,6 +105,14 @@ Nuevo componente inventariado en el scan enfocado del intent `260830-ci-seed-dat
 - **Responsabilidad**: pruebas end-to-end del flujo completo (navegador real contra stack levantado).
 - **Ubicación**: `tests/e2e/`, paquete pnpm independiente con `package.json` propio (`@prosell/e2e`), 34 specs bajo `specs/`.
 
+## Onboarding / Invite — migración pendiente a React Query (frontend, scan enfocado `260828-useeffect-to-react-query`)
+
+- **`OnboardingPage()`** (`apps/web/src/app/onboarding/page.tsx`) — **Responsabilidad**: wizard multi-paso de alta de organización nueva. **Dependencias**: `orgApi.ts` (`getMyOrganization` en `useEffect` de mount, `update`/`completeSetup` imperativos por click), `sonner` (toasts), 4 componentes de paso (`OnboardingStep*`). **Estado**: violación literal de `AGENTS.md:333` (useEffect para data-fetching); cero tests.
+- **`InvitePage()`** (`apps/web/src/app/invite/[token]/page.tsx`) — **Responsabilidad**: aceptación de invitación de equipo vía token. **Dependencias**: `teamApi.ts` (`acceptInvitation` disparado como mutación en `useEffect` de mount, no solo query). **Estado**: mismo tipo de violación pero con mutación, no solo lectura; branching de error por string-match + `status === 401`; 1 supresor `react-hooks/set-state-in-effect` (L57, "guard pattern, not a cascade"); cero tests.
+- **`orgApi`** (`apps/web/src/lib/api/orgApi.ts`) — 9 métodos, ver `api-documentation.md` para la superficie completa. Duplica `ApiError`/`handleResponse<T>` con `teamApi.ts`; sin `fetchWithAuth`.
+- **`teamApi`** (`apps/web/src/lib/api/teamApi.ts`) — 6 métodos, ver `api-documentation.md`. Mismo defecto de duplicación y ausencia de `fetchWithAuth`.
+- **`notificationsApi`** (`apps/web/src/lib/api/notificationsApi.ts`) — **Responsabilidad**: único precedente en el repo de hooks React Query colocados en el módulo de API — patrón de referencia para la migración pendiente (con la salvedad del manejo de error genérico, ver `code-quality-assessment.md`).
+
 ---
 
 ## Inventario de bug — clases Tailwind inválidas

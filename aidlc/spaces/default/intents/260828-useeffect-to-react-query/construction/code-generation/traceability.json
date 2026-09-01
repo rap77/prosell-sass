@@ -1,0 +1,84 @@
+{
+  "stage": "code-generation",
+  "unit": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "NFR1",
+    "NFR2",
+    "NFR3"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/orgApi.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/app/onboarding/page.tsx"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/web/tests/app/onboarding/page.test.tsx"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "apps/web/src/app/onboarding/page.tsx"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "apps/web/src/app/onboarding/page.tsx"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/teamApi.ts"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/app/invite/[token]/page.tsx"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "apps/web/tests/app/invite/[token]/page.test.tsx"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "apps/web/src/app/invite/[token]/page.tsx"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "apps/web/src/app/invite/[token]/page.tsx"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/tests/app/onboarding/page.test.tsx"
+    },
+    {
+      "id": "NFR2",
+      "status": "Deferred",
+      "target": "build-and-test: full repo test suite run"
+    },
+    {
+      "id": "NFR3",
+      "status": "Deferred",
+      "target": "build-and-test: full repo lint run"
+    }
+  ]
+}

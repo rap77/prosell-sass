@@ -166,3 +166,44 @@ No es un defecto del endpoint ni de su contrato — el handler `unpublish_callba
 Un futuro pase de `functional-design` o `contract-design` que necesite especificar contratos exactos endpoint-por-endpoint debe re-escanear `apps/api/src/prosell/infrastructure/api/routers/` y `apps/web/src/app/api/` a profundidad completa.
 
 **Gap de permisos confirmado (`260830-ci-fixes-round2`)**: `fb_credential_migration_router.py` y su test (`test_fb_credential_migration_router.py`) no pudieron leerse en este pase — `.claude/settings.local.json` tiene `"deny": ["Read(**/*credential*)"]`, que bloquea tanto `Read` como `Bash` (cat/bat/rg) sobre cualquier ruta que contenga "credential". Es un límite de permisos real del entorno local, no un bug de la herramienta. Un futuro scan que necesite cubrir este router a profundidad requiere ajustar esa regla de `deny` o ejecutarse desde un entorno sin esa restricción.
+
+## `orgApi` / `teamApi` — superficie completa (scan enfocado `260828-useeffect-to-react-query`)
+
+Documentado a profundidad porque es la superficie que una futura capa de hooks (`useQuery`/`useMutation`) tendrá que envolver íntegra, no solo los métodos que hoy consumen `onboarding/page.tsx` e `invite/[token]/page.tsx`.
+
+### `orgApi` (`apps/web/src/lib/api/orgApi.ts`) — 9 métodos
+
+| Método              | Consumido hoy por                                                       | Notas                          |
+| ------------------- | ----------------------------------------------------------------------- | ------------------------------ |
+| `create`            | (otro flujo, fuera de alcance)                                          | —                              |
+| `list`              | (otro flujo, fuera de alcance)                                          | —                              |
+| `getMyOrganization` | `onboarding/page.tsx` (dentro del `useEffect` de mount, `checkSetup()`) | Candidato directo a `useQuery` |
+| `getById`           | (otro flujo, fuera de alcance)                                          | —                              |
+| `update`            | `onboarding/page.tsx` (`handleStep1`, llamada imperativa por click)     | Candidato a `useMutation`      |
+| `verify`            | (otro flujo, fuera de alcance)                                          | —                              |
+| `reject`            | (otro flujo, fuera de alcance)                                          | —                              |
+| `completeSetup`     | `onboarding/page.tsx` (llamada imperativa final, por click)             | Candidato a `useMutation`      |
+| `suspend`           | (otro flujo, fuera de alcance)                                          | —                              |
+
+Implementación: raw `fetch()` + `credentials: "include"`, clase `ApiError` propia y `handleResponse<T>()` propios (duplicados verbatim respecto a `teamApi.ts` — ver `code-quality-assessment.md`). **NO usa `fetchWithAuth`** — ninguna llamada de este módulo se beneficia del auto-refresh de sesión en 401 que sí tiene, por ejemplo, `notificationsApi.ts`.
+
+### `teamApi` (`apps/web/src/lib/api/teamApi.ts`) — 6 métodos
+
+| Método                  | Consumido hoy por                                                                                | Notas                                                                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `acceptInvitation`      | `invite/[token]/page.tsx` (dentro del `useEffect` de mount — dispara una MUTACIÓN, no una query) | Candidato a `useMutation`; el branching de error de la página (string-match sobre `error.message` + `error.status === 401`) depende de que se preserve `ApiError` o un shape tipado equivalente |
+| (5 métodos adicionales) | (otros flujos, fuera de alcance)                                                                 | Mismo patrón raw-fetch + `ApiError`/`handleResponse<T>` que `orgApi.ts`                                                                                                                         |
+
+Misma implementación que `orgApi.ts`: raw `fetch()`, `ApiError`/`handleResponse<T>()` propios (duplicados), sin `fetchWithAuth`.
+
+### Precedente de patrón — `notificationsApi.ts` (único caso de hooks React Query colocados en el módulo de API)
+
+`useNotifications()` (query, `staleTime` 20s, `refetchInterval` 30s), `useMarkNotificationRead()`, `useMarkAllNotificationsRead()` (mutaciones, invalidan `NOTIFICATIONS_QUERY_KEY` en `onSuccess`). SÍ usa `fetchWithAuth`, pero lanza `new Error(...)` genérico en `!response.ok` — **descarta el detalle de error del backend**, un patrón que NO se puede copiar tal cual para envolver `teamApi.acceptInvitation` sin romper el branching de error de `invite/[token]/page.tsx`. `leads.ts` confirma la misma convención de hooks colocados en el módulo de API a mayor escala (`useLeads`, `useLead`, `useUpdateLeadStatus`, `useReassignLead`, `useLeadDuplicates`, `useLeadAuditTrail`, `useTeamMetrics`).
+
+### Triangulación de manejo de errores en esta área — tres formas incompatibles
+
+1. **`ApiError`** (clase, `orgApi.ts`/`teamApi.ts`) — preserva `status` + `message` del backend; es lo que `invite/[token]/page.tsx` necesita para su branching.
+2. **`Error` genérico** (`notificationsApi.ts`) — descarta el detalle del backend.
+3. **`extractErrorMessage.ts`** (zod-matcher sobre el body de respuesta) — tercer enfoque, usado en otra parte del cliente API.
+
+Esta triangulación es evidencia directa a favor de la convención de equipo ya afirmada (`team.md` Q6: adoptar en frontend un patrón de manejo de errores equivalente al del backend — excepciones tipadas por dominio + manejo centralizado). Ver `code-quality-assessment.md` para el detalle completo del hallazgo.

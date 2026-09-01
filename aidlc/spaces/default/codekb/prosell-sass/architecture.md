@@ -340,6 +340,85 @@ sequenceDiagram
 
 **Nota de fragilidad, no confirmada con corrida real**: la rama `"failed"` depende de que la columna `status` tenga `server_default="queued"` para que el request quede correctamente re-encolado tras un fallo cappeado — un cambio futuro al default de la columna, o una migración que lo pierda, dejaría el status en un valor incorrecto sin que ningún test lo detecte a nivel de lógica del handler. El developer no corrió pytest para confirmar si esto es la causa raíz de la falla real del test asociado — queda como hallazgo a verificar en Requirements Analysis / Code Generation.
 
+### 8. Onboarding de organización — `useEffect` de mount + llamadas imperativas por botón (nuevo, scan enfocado `260828-useeffect-to-react-query`)
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario (dealer nuevo)
+    participant P as OnboardingPage()<br/>(apps/web/src/app/onboarding/page.tsx)
+    participant Eff as useEffect (mount)<br/>checkSetup()
+    participant OrgApi as orgApi.ts<br/>(raw fetch, sin fetchWithAuth)
+    participant BFF as BFF proxy<br/>api/v1/org/**
+    participant R as org_router.py
+
+    U->>P: navega a /onboarding
+    P->>Eff: monta componente
+    Eff->>OrgApi: getMyOrganization()
+    OrgApi->>BFF: GET /api/v1/org/me (credentials: "include")
+    BFF->>R: forward
+    R-->>BFF: 200 OrganizationDTO | 404 sin org
+    BFF-->>OrgApi: response.json()
+    OrgApi-->>Eff: Organization | ApiError
+    Eff->>P: setState(step, organization)<br/>⚠️ violación AGENTS.md:333<br/>(useEffect para data-fetching)
+    P-->>U: renderiza paso del wizard
+
+    U->>P: completa paso 1, click "Siguiente"
+    P->>OrgApi: update(orgId, dto)<br/>(llamada imperativa, NO en useEffect)
+    OrgApi->>BFF: PATCH /api/v1/org/{id}
+    BFF->>R: forward
+    R-->>BFF: 200 OrganizationDTO
+    BFF-->>OrgApi: response.json()
+    OrgApi-->>P: Organization | ApiError
+    P-->>U: avanza a paso 2
+
+    U->>P: completa wizard, click "Finalizar"
+    P->>OrgApi: completeSetup(orgId)
+    OrgApi->>BFF: POST /api/v1/org/{id}/complete-setup
+    BFF->>R: forward
+    R-->>BFF: 200 OrganizationDTO
+    BFF-->>OrgApi: response.json()
+    OrgApi-->>P: Organization | ApiError
+    P-->>U: redirect a dashboard
+```
+
+**Alcance del defecto real vs. candidatos a refactor separados**: la violación literal de `AGENTS.md:333` es únicamente el `useEffect` de mount que dispara `checkSetup()`/`getMyOrganization()` — un candidato directo a `useQuery`. Las llamadas de `handleStep1`/`completeSetup` (disparadas por click, no por efecto) son candidatas naturales a `useMutation` por consistencia y manejo de estado, pero técnicamente NO son la violación de la regla en sí — el scan las señala como pregunta abierta de alcance para Requirements Analysis, sin resolverla de oficio (ver `code-quality-assessment.md`).
+
+### 9. Aceptación de invitación por token — mutación disparada en el mount (nuevo, scan enfocado `260828-useeffect-to-react-query`)
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario invitado (nuevo miembro)
+    participant P as InvitePage()<br/>(apps/web/src/app/invite/[token]/page.tsx)
+    participant Eff as useEffect (mount)
+    participant TeamApi as teamApi.ts<br/>(raw fetch, sin fetchWithAuth)
+    participant BFF as BFF proxy<br/>api/v1/teams/**
+    participant R as team_router.py
+
+    U->>P: navega a /invite/{token} (link de invitación)
+    P->>Eff: monta componente
+    Eff->>TeamApi: acceptInvitation({token})<br/>⚠️ MUTACIÓN disparada en mount,<br/>no solo una query
+    TeamApi->>BFF: POST /api/v1/teams/accept-invitation
+    BFF->>R: forward
+    R-->>BFF: 200 TeamMemberDTO | 400/409/410 error tipado
+    alt éxito
+        BFF-->>TeamApi: response.json()
+        TeamApi-->>Eff: TeamMember
+        Eff->>P: setState("success")
+        P-->>U: UI de bienvenida, redirect a login/dashboard
+    else error (expirado / ya usado / inválido)
+        BFF-->>TeamApi: response.json() (detail de error)
+        TeamApi-->>Eff: throw ApiError (status + message)
+        Eff->>P: setState("error")<br/>branching por string-match:<br/>error.message.toLowerCase().includes("expired"|"already"|"member")<br/>y error.status === 401
+        P-->>U: mensaje de error específico<br/>(5 estados de UI en total)
+    end
+```
+
+**Riesgo de migración identificado**: el branching de error de esta página depende de inspeccionar `error.message` (string-matching) y `error.status` — cualquier envoltura de `useMutation` DEBE preservar `ApiError` (o un shape tipado equivalente) para que esta lógica siga funcionando. El precedente más cercano en el repo (`notificationsApi.ts`, ver más abajo) descarta el detalle del backend en un `Error` genérico — copiarlo tal cual rompería esta página. Ver `code-quality-assessment.md` para el detalle de triangulación de manejo de errores.
+
+### Precedente de patrón — hooks React Query colocados en el módulo de API (`notificationsApi.ts`, `leads.ts`)
+
+`apps/web/src/lib/api/notificationsApi.ts` es el único precedente confirmado en el repo de `useQuery`/`useMutation` definidos directamente en el archivo del cliente API (no en un hook separado): `useNotifications()` (`staleTime` 20s, `refetchInterval` 30s), `useMarkNotificationRead()`, `useMarkAllNotificationsRead()` (invalidan `NOTIFICATIONS_QUERY_KEY` en `onSuccess`). Usa `fetchWithAuth` (a diferencia de `orgApi`/`teamApi`), pero lanza `new Error(...)` genérico en `!response.ok`, perdiendo el detalle del backend — patrón a NO copiar tal cual para `orgApi`/`teamApi` por el riesgo de branching descrito arriba. `leads.ts` es un segundo precedente más grande (`useLeads`, `useLead`, `useUpdateLeadStatus`, `useReassignLead`, `useLeadDuplicates`, `useLeadAuditTrail`, `useTeamMetrics`), confirmando que colocar los hooks en el propio módulo de API (en vez de un archivo de hooks separado) es la convención establecida del proyecto.
+
 ## Key Design Decisions
 
 - **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
@@ -370,3 +449,4 @@ sequenceDiagram
 - Revisar el patrón de fixture `shared_session`/dependency-override compartido en `test_fb_sync_router.py` y `bulk_upload/conftest.py` — es incompatible con cualquier handler que llame `db.commit()` explícitamente dentro del mismo test cuando se necesita más de una llamada al endpoint sobre la misma sesión.
 - Corregir el bug de diseño en `bulk_upload_vehicles.py` (scan `260830-ci-fixes-round2`): el chequeo de "unknown organization codes" corre antes del loop por fila que sí respeta un `organization_id` de fallback provisto por el caller — hoy lanza `ValueError` innecesariamente. Envolver `bulk_upload_preview`/`bulk_upload_with_images` en `try/except ValueError → HTTPException(400)` en `product_router.py`, igual que ya hacen `/brokers` y `/ownership`.
 - Levantar (o pedir excepción puntual para) la política de permisos local que bloquea Read/Bash sobre rutas con "credential" (`.claude/settings.local.json`) para poder cubrir `fb_credential_migration_router.py` a profundidad en un futuro scan — hoy solo se conoce su estructura vía graphify.
+- Migrar `onboarding/page.tsx` e `invite/[token]/page.tsx` de `useEffect` a React Query (`useQuery`/`useMutation`), preservando el shape tipado de `ApiError` para el branching de error de `invite/[token]/page.tsx` — al mismo tiempo, evaluar si conviene cerrar la brecha de `fetchWithAuth` en `orgApi.ts`/`teamApi.ts` (ninguno de los dos módulos la usa hoy, así que ambos flujos carecen silenciosamente de auto-refresh de sesión en 401) y consolidar la duplicación verbatim de `ApiError`/`handleResponse<T>()` entre ambos módulos. Ver `code-quality-assessment.md` para el detalle de riesgo.

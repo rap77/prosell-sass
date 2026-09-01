@@ -113,6 +113,10 @@ El scan enfocado de este intent (foco `apps/web/tailwind.config.ts`, `apps/web/t
 
 El scan enfocado de este intent (foco batch review, bulk upload, appointments, fb-sync) no encontró cambios de versión respecto al pase anterior — pytest, pytest-asyncio, httpx (`AsyncClient` + `ASGITransport`), FastAPI, SQLAlchemy 2.0 async y Pydantic 2.x siguen siendo las mismas versiones documentadas arriba. Se confirma además el patrón recurrente `sqlalchemy.event.listens_for(..., "after_transaction_end")` para los fixtures `shared_session`/`override_session` (`test_fb_sync_router.py`, `bulk_upload/conftest.py`).
 
+## Confirmación de vigencia — scan enfocado `260828-useeffect-to-react-query`
+
+El scan enfocado de este intent (foco `onboarding/page.tsx`, `invite/[token]/page.tsx`, y sus dependencias de cliente API) confirma directamente contra `apps/web/package.json`, sin cambios de versión respecto a lo ya documentado: `@tanstack/react-query: ^5.0.0`, `zod: ^4.4.0` (código sigue en estilo Zod 3, ver `dependencies.md`), `next: ^16.3.3`, `react: ^19.2.8`, `vitest: ^2.1.0`, `@testing-library/react: ^16.1.0`. No introduce ninguna dependencia nueva — la migración objetivo usa el provider de React Query ya wireado (`ReactQueryProvider.tsx`) y el patrón `sonner`/`lucide-react` ya presente en ambas páginas.
+
 ## Drift de documentación conocido
 
 `CLAUDE.md` (raíz) declara "TailwindCSS 4" en la tabla de stack y en "Key Conventions" (línea ~194) — el proyecto real fija `tailwindcss: 3.4.17` (Tailwind 3, no 4). Corregido parcialmente en la tabla de stack por el intent `260828-fix-invalid-tailwind-spa`; la línea de "Key Conventions" sigue sin corregir.
