@@ -1,18 +1,49 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-08-31 (última actualización: scan enfocado del intent `260828-useeffect-to-react-query`)
-**Commit analizado**: `3d5b1d7d` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260831-invalid-tailwind-classes` (a su vez aditivo sobre `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-01 (última actualización: scan enfocado del intent `260901-frontend-test-debt`)
+**Commit analizado**: `21eedc81` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260828-useeffect-to-react-query` (a su vez aditivo sobre `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260828-useeffect-to-react-query` migra dos flujos de negocio sensibles (`onboarding/page.tsx`, `invite/[token]/page.tsx`) de `useEffect` para fetch/mutación a React Query, corrigiendo la violación explícita de `AGENTS.md:333` ya catalogada en `project.md` como aprendizaje de un pase anterior. El store existente cubría el área de Tailwind/config a profundidad (intent `260831-invalid-tailwind-classes`) pero no había profundizado en `orgApi.ts`/`teamApi.ts`/`notificationsApi.ts`/`fetchWithAuth.ts` ni en las dos páginas objetivo — se decidió un scan enfocado adicional en vez de reuse (el store era `STALE` para esta área) o full rescan.
+El intent `260901-frontend-test-debt` repara la deuda de tests unitarios frontend pre-existente ya catalogada en `project.md` desde el intent `260826-prod-bugfixes-batch` ("Hay 13 tests frontend pre-existentes fallando en el baseline de main... mock sin el campo `published_to_marketplace` que el schema real ya requiere"): `apps/web/tests/unit/api/products.test.tsx` (7 de 12 fallando) y `apps/web/tests/unit/lib/api/reverseTransitions.test.tsx` (4 de 9 fallando). El store existente estaba `STALE` para esta área — las rutas relevantes ya habían cambiado desde el último scan (`260828-useeffect-to-react-query`, foco onboarding/invite) y nunca se había profundizado en `apps/web/src/lib/api/products.ts` ni en los dos archivos de test objetivo. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
 
 ## Verificación de overwrite (codekb-scope-diff)
 
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco onboarding/invite/migración React Query, intent `260828-useeffect-to-react-query`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (tests unitarios de `products.ts`/transiciones de estado, no onboarding/invite). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+## Developer Code Scan Results — foco tests unitarios `products.test.tsx` / `reverseTransitions.test.tsx` (intent `260901-frontend-test-debt`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `apps/web/tests/unit/api/products.test.tsx` (574 líneas), `apps/web/tests/unit/lib/api/reverseTransitions.test.tsx` (234 líneas), `apps/web/src/lib/api/products.ts` (1945 líneas: `productSchema`, `parseProductResponse`, `createProductWithVehicle`, `useCreateProduct`, `useReverseProduct`/`useResubmitProduct`/`useRestoreProduct`/`useRevertSaleProduct`, `postReverseTransition`, `useAvailableTransitions`, `useProductAuditLogs`), backend `apps/api/src/prosell/domain/entities/product.py` + `apps/api/src/prosell/infrastructure/models/product_model.py` (diff del commit que lo introdujo solamente), historial git (`git log -S "published_to_marketplace"`, `git show 7315fdf2` diff completo), archivo hermano `apps/web/tests/unit/lib/api/products.test.ts` (el archivo que el mismo commit SÍ arregló, como precedente), ejecución en vivo de `pnpm vitest run` sobre ambos archivos objetivo (los 21 tests), `apps/web/vitest.config.ts`, script de test de `apps/web/package.json`, job `test-node` de `.github/workflows/ci.yml`.
+- **Skimmed only**: `AvailableTransitions.tsx`/`CatalogDetailView.tsx` (consumidores, no implicados en la falla), `apps/web/tests/unit/components/upload/setProductCover.test.ts` (confirmada su existencia, no abierto — señalado como pregunta abierta fuera de alcance).
+- **No tocado**: resto del repositorio (scan enfocado, no full rescan) — el store previo sobre onboarding/invite, auth, batch review, bulk upload, appointments, fb-sync, Tailwind y el resto de la arquitectura backend/frontend sigue vigente tal cual, sin re-verificar en este pase.
+
+### Root cause (única, compartida, confirmada por ejecución de test en vivo)
+
+`productSchema` en `apps/web/src/lib/api/products.ts` (línea ~88 del scan del developer; graphify ubica la declaración en L56 — discrepancia de línea entre herramientas, no de archivo/contenido) exige `published_to_marketplace: z.boolean()` (sin `.optional()`). El backend (`apps/api/src/prosell/domain/entities/product.py`, `apps/api/src/prosell/infrastructure/models/product_model.py`, columna `nullable=False, default=False`) siempre envía este campo — el schema frontend refleja correctamente el contrato real del backend (según la convención Zod-mirror ya establecida del equipo). La ruptura se introdujo en el commit `7315fdf2` (2026-08-22), que endureció el campo de opcional a requerido y arregló un TERCER archivo hermano (`apps/web/tests/unit/lib/api/products.test.ts`, nota: `.ts`, no `.tsx`) pero omitió estos dos archivos `.tsx`. Es deuda de mocks de test desactualizados, NO un bug de código fuente — backfill mecánico, sin ambigüedad de diseño.
+
+### Hallazgo por archivo
+
+- **`apps/web/tests/unit/api/products.test.tsx`**: resultado en vivo: 12 tests, 7 fallando, 5 pasando. Las 7 fallas están todas en el camino feliz (los mocks alimentan `parseProductResponse` → `ZodError`); los 5 tests que pasan son todos de camino de error, que nunca llega a `parseProductResponse`. 7 objetos mock sin el campo (líneas ~54, 115, 174, 298, 357, 408, y uno inline ~512-533).
+- **`apps/web/tests/unit/lib/api/reverseTransitions.test.tsx`**: resultado en vivo: 9 tests, 4 fallando, 5 pasando. Un único helper compartido `mockProductResponse()` (líneas 38-58) sin el campo — un solo punto de fix resuelve las 4 fallas. Los 5 tests que pasan usan esquemas no relacionados (`availableTransitionSchema`, `productAuditLogSchema`) o el camino de error.
+
+### Deuda técnica señalada, fuera de alcance
+
+Un tercer archivo, `apps/web/tests/unit/components/upload/setProductCover.test.ts`, probablemente comparte el mismo síntoma pero no fue nombrado en la descripción verbatim del intent ni fue abierto/verificado en este pase. NO expandir alcance de oficio — queda como pregunta abierta para Requirements Analysis (ver también `code-quality-assessment.md` Signal #6/histórico y `component-inventory.md`).
+
+Ver `api-documentation.md`, `architecture.md` § Interaction Diagrams (diagrama 10), `component-inventory.md`, `code-structure.md` y `code-quality-assessment.md` (hallazgos #43-44) para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260828-useeffect-to-react-query`)
+
+El intent `260828-useeffect-to-react-query` migra dos flujos de negocio sensibles (`onboarding/page.tsx`, `invite/[token]/page.tsx`) de `useEffect` para fetch/mutación a React Query, corrigiendo la violación explícita de `AGENTS.md:333` ya catalogada en `project.md` como aprendizaje de un pase anterior. El store existente cubría el área de Tailwind/config a profundidad (intent `260831-invalid-tailwind-classes`) pero no había profundizado en `orgApi.ts`/`teamApi.ts`/`notificationsApi.ts`/`fetchWithAuth.ts` ni en las dos páginas objetivo — se decidió un scan enfocado adicional en vez de reuse (el store era `STALE` para esta área) o full rescan.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260828-useeffect-to-react-query`
+
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco Tailwind config/clases inválidas, intent `260831-invalid-tailwind-classes`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (frontend onboarding/invite/cliente API, no Tailwind). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
-## Developer Code Scan Results — foco onboarding / invite / migración React Query (intent `260828-useeffect-to-react-query`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco onboarding / invite / migración React Query (intent `260828-useeffect-to-react-query`)
 
 ### Scan Coverage
 
@@ -187,10 +218,36 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260828-useeffect-to-react-query
-fingerprint: 72b56af71dcf9e5f9db559545af4cbe2ceb89225
+intent: 260901-frontend-test-debt
+fingerprint: 4b825dc642cb6eb9a060e54bf8d69288fbee4904
 analyzed:
   paths:
+    - apps/web/tests/unit/api/products.test.tsx
+    - apps/web/tests/unit/lib/api/reverseTransitions.test.tsx
+    - apps/web/src/lib/api/products.ts
+    - apps/api/src/prosell/domain/entities/product.py
+    - apps/api/src/prosell/infrastructure/models/product_model.py
+  components:
+    - productSchema
+    - parseProductResponse
+    - useReverseProduct
+    - useResubmitProduct
+    - useRestoreProduct
+    - useRevertSaleProduct
+    - postReverseTransition
+shallow:
+  paths:
+    - apps/web/src/components/admin/AvailableTransitions.tsx
+    - apps/web/src/components/catalog/CatalogDetailView.tsx
+    - apps/web/tests/unit/components/upload/setProductCover.test.ts
+    - apps/web/tests/unit/lib/api/products.test.ts
+    - apps/web/vitest.config.ts
+    - apps/web/package.json
+    - .github/workflows/ci.yml
+    - apps/web/src/hooks/useAuth.ts
+    - apps/web/src/stores/authStore.ts
+    - apps/web/src/lib/auth/deriveRole.ts
+    - apps/web/src/lib/api/leads.ts
     - apps/web/src/app/onboarding/page.tsx
     - apps/web/src/app/invite/[token]/page.tsx
     - apps/web/src/app/invite/org/[token]/page.tsx
@@ -202,19 +259,6 @@ analyzed:
     - apps/web/src/lib/api/fetchWithAuth.ts
     - apps/web/src/lib/api/extractErrorMessage.ts
     - apps/web/src/components/providers/ReactQueryProvider.tsx
-    - apps/web/package.json
-  components:
-    - OnboardingPage()
-    - InvitePage()
-    - orgApi
-    - teamApi
-    - notificationsApi
-shallow:
-  paths:
-    - apps/web/src/hooks/useAuth.ts
-    - apps/web/src/stores/authStore.ts
-    - apps/web/src/lib/auth/deriveRole.ts
-    - apps/web/src/lib/api/leads.ts
     - apps/web/src/app/privacy/page.tsx
     - apps/web/src/app/terms/page.tsx
     - apps/web/src/app/(seller)/publications/page.tsx

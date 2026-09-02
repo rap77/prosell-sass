@@ -200,6 +200,10 @@ Misma implementación que `orgApi.ts`: raw `fetch()`, `ApiError`/`handleResponse
 
 `useNotifications()` (query, `staleTime` 20s, `refetchInterval` 30s), `useMarkNotificationRead()`, `useMarkAllNotificationsRead()` (mutaciones, invalidan `NOTIFICATIONS_QUERY_KEY` en `onSuccess`). SÍ usa `fetchWithAuth`, pero lanza `new Error(...)` genérico en `!response.ok` — **descarta el detalle de error del backend**, un patrón que NO se puede copiar tal cual para envolver `teamApi.acceptInvitation` sin romper el branching de error de `invite/[token]/page.tsx`. `leads.ts` confirma la misma convención de hooks colocados en el módulo de API a mayor escala (`useLeads`, `useLead`, `useUpdateLeadStatus`, `useReassignLead`, `useLeadDuplicates`, `useLeadAuditTrail`, `useTeamMetrics`).
 
+## `productSchema` — confirmación de contrato vigente (scan enfocado `260901-frontend-test-debt`)
+
+`apps/web/src/lib/api/products.ts` mantiene el Zod-mirror del `Product` del backend. Este pase confirma, vía diff de commit + ejecución real de test, que `published_to_marketplace: z.boolean()` (requerido, sin `.optional()`) refleja correctamente `ProductModel.published_to_marketplace` (`nullable=False, default=False`) — **no hay drift de contrato**, el backend siempre envía el campo. El único problema es que dos suites de test (`products.test.tsx`, `reverseTransitions.test.tsx`) construyen mocks de `Product` que datan de antes de que el commit `7315fdf2` (2026-08-22) volviera requerido este campo — ver `code-quality-assessment.md` y `code-structure.md` para el detalle línea por línea. Las 4 transiciones de "deshacer" documentadas en memoria del proyecto (`reverse`/`resubmit`/`restore`/`revert-sale`, expuestas como `useReverseProduct`/`useResubmitProduct`/`useRestoreProduct`/`useRevertSaleProduct` + `postReverseTransition`) son exactamente lo que `reverseTransitions.test.tsx` ejercita.
+
 ### Triangulación de manejo de errores en esta área — tres formas incompatibles
 
 1. **`ApiError`** (clase, `orgApi.ts`/`teamApi.ts`) — preserva `status` + `message` del backend; es lo que `invite/[token]/page.tsx` necesita para su branching.

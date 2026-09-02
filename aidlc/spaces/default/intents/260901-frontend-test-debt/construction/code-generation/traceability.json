@@ -1,0 +1,68 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR2.1",
+    "FR2.2",
+    "FR3.1",
+    "FR3.2",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "NFR1"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/api/products.test.tsx"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/web/tests/unit/api/products.test.tsx"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/api/reverseTransitions.test.tsx"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/api/reverseTransitions.test.tsx"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/api/setProductCover.test.ts"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/api/setProductCover.test.ts"
+    },
+    {
+      "id": "FR4.1",
+      "status": "N/A",
+      "target": "no production-code file changed (verified: git diff --stat shows only the 3 test files)"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "apps/web/tests/unit/api/products.test.tsx"
+    },
+    {
+      "id": "FR4.3",
+      "status": "N/A",
+      "target": "no shared mock factory introduced (verified: each file's existing per-mock/per-helper structure preserved)"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/api/products.test.tsx"
+    }
+  ]
+}

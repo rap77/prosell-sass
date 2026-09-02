@@ -68,5 +68,12 @@
     "dirName": "260831-invalid-tailwind-classes",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a05f03-ce85-75e5-ad53-26186add20c6",
+    "slug": "frontend-test-debt",
+    "dirName": "260901-frontend-test-debt",
+    "scope": "bugfix",
+    "status": "complete"
   }
 ]

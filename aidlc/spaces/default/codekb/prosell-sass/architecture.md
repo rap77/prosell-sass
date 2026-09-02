@@ -415,6 +415,33 @@ sequenceDiagram
 
 **Riesgo de migración identificado**: el branching de error de esta página depende de inspeccionar `error.message` (string-matching) y `error.status` — cualquier envoltura de `useMutation` DEBE preservar `ApiError` (o un shape tipado equivalente) para que esta lógica siga funcionando. El precedente más cercano en el repo (`notificationsApi.ts`, ver más abajo) descarta el detalle del backend en un `Error` genérico — copiarlo tal cual rompería esta página. Ver `code-quality-assessment.md` para el detalle de triangulación de manejo de errores.
 
+### 10. Contrato `productSchema` vs. mocks de test desactualizados — transición de estado de producto (nuevo, scan enfocado `260901-frontend-test-debt`)
+
+```mermaid
+sequenceDiagram
+    participant Backend as Product entity /<br/>ProductModel (SQLAlchemy)
+    participant Schema as productSchema (Zod)<br/>apps/web/src/lib/api/products.ts
+    participant Parse as parseProductResponse()
+    participant Hook as useReverseProduct /<br/>useResubmitProduct /<br/>useRestoreProduct /<br/>useRevertSaleProduct
+    participant Test as products.test.tsx /<br/>reverseTransitions.test.tsx (mocks)
+
+    Note over Backend: published_to_marketplace<br/>nullable=False, default=False<br/>(SIEMPRE presente en la respuesta real)
+    Backend->>Schema: contrato real (espejado 1:1, Zod-mirror)
+    Note over Schema: commit 7315fdf2 (2026-08-22)<br/>endureció el campo:<br/>optional() → requerido
+    Schema->>Parse: productSchema.parse(json)
+
+    rect rgb(255, 235, 238)
+    Note over Test: Mocks NUNCA actualizados<br/>tras 7315fdf2 (a diferencia del<br/>archivo hermano products.test.ts,<br/>arreglado en el mismo commit)
+    Test->>Parse: mock SIN published_to_marketplace
+    Parse-->>Test: ZodError (7 de 12 tests en<br/>products.test.tsx; 4 de 9 en<br/>reverseTransitions.test.tsx)
+    end
+
+    Hook->>Parse: consume parseProductResponse()<br/>en runtime real — SIEMPRE recibe<br/>el campo del backend, nunca falla
+    Parse-->>Hook: Product (runtime OK,<br/>solo los mocks de test están desactualizados)
+```
+
+**Alcance del fix — mecánico, sin ambigüedad de diseño**: agregar `published_to_marketplace: false` (o el valor booleano relevante al caso) a cada mock de `Product` en los 8 puntos identificados (7 en `products.test.tsx`, 1 helper compartido `mockProductResponse()` en `reverseTransitions.test.tsx` que resuelve las 4 fallas de un solo fix). No hay cambio de comportamiento de producción — el schema ya refleja correctamente el contrato del backend; solo los fixtures de test quedaron atrás. Ver `code-quality-assessment.md` para el detalle línea por línea y `component-inventory.md` para el inventario de mocks afectados. Un tercer archivo con el mismo síntoma probable (`setProductCover.test.ts`) queda señalado pero fuera de alcance de este pase — ver `reverse-engineering-timestamp.md` § Developer Code Scan Results.
+
 ### Precedente de patrón — hooks React Query colocados en el módulo de API (`notificationsApi.ts`, `leads.ts`)
 
 `apps/web/src/lib/api/notificationsApi.ts` es el único precedente confirmado en el repo de `useQuery`/`useMutation` definidos directamente en el archivo del cliente API (no en un hook separado): `useNotifications()` (`staleTime` 20s, `refetchInterval` 30s), `useMarkNotificationRead()`, `useMarkAllNotificationsRead()` (invalidan `NOTIFICATIONS_QUERY_KEY` en `onSuccess`). Usa `fetchWithAuth` (a diferencia de `orgApi`/`teamApi`), pero lanza `new Error(...)` genérico en `!response.ok`, perdiendo el detalle del backend — patrón a NO copiar tal cual para `orgApi`/`teamApi` por el riesgo de branching descrito arriba. `leads.ts` es un segundo precedente más grande (`useLeads`, `useLead`, `useUpdateLeadStatus`, `useReassignLead`, `useLeadDuplicates`, `useLeadAuditTrail`, `useTeamMetrics`), confirmando que colocar los hooks en el propio módulo de API (en vez de un archivo de hooks separado) es la convención establecida del proyecto.
@@ -450,3 +477,4 @@ sequenceDiagram
 - Corregir el bug de diseño en `bulk_upload_vehicles.py` (scan `260830-ci-fixes-round2`): el chequeo de "unknown organization codes" corre antes del loop por fila que sí respeta un `organization_id` de fallback provisto por el caller — hoy lanza `ValueError` innecesariamente. Envolver `bulk_upload_preview`/`bulk_upload_with_images` en `try/except ValueError → HTTPException(400)` en `product_router.py`, igual que ya hacen `/brokers` y `/ownership`.
 - Levantar (o pedir excepción puntual para) la política de permisos local que bloquea Read/Bash sobre rutas con "credential" (`.claude/settings.local.json`) para poder cubrir `fb_credential_migration_router.py` a profundidad en un futuro scan — hoy solo se conoce su estructura vía graphify.
 - Migrar `onboarding/page.tsx` e `invite/[token]/page.tsx` de `useEffect` a React Query (`useQuery`/`useMutation`), preservando el shape tipado de `ApiError` para el branching de error de `invite/[token]/page.tsx` — al mismo tiempo, evaluar si conviene cerrar la brecha de `fetchWithAuth` en `orgApi.ts`/`teamApi.ts` (ninguno de los dos módulos la usa hoy, así que ambos flujos carecen silenciosamente de auto-refresh de sesión en 401) y consolidar la duplicación verbatim de `ApiError`/`handleResponse<T>()` entre ambos módulos. Ver `code-quality-assessment.md` para el detalle de riesgo.
+- Backfillear `published_to_marketplace` en los 8 mocks de `Product` desactualizados de `products.test.tsx` (7) y `reverseTransitions.test.tsx` (1 helper compartido) — fix mecánico sin ambigüedad de diseño, causa raíz confirmada por ejecución real de test (scan `260901-frontend-test-debt`). Evaluar en Requirements Analysis si `setProductCover.test.ts` (mismo síntoma probable, no nombrado en la descripción del intent) entra en el mismo alcance.

@@ -117,6 +117,10 @@ El scan enfocado de este intent (foco batch review, bulk upload, appointments, f
 
 El scan enfocado de este intent (foco `onboarding/page.tsx`, `invite/[token]/page.tsx`, y sus dependencias de cliente API) confirma directamente contra `apps/web/package.json`, sin cambios de versión respecto a lo ya documentado: `@tanstack/react-query: ^5.0.0`, `zod: ^4.4.0` (código sigue en estilo Zod 3, ver `dependencies.md`), `next: ^16.3.3`, `react: ^19.2.8`, `vitest: ^2.1.0`, `@testing-library/react: ^16.1.0`. No introduce ninguna dependencia nueva — la migración objetivo usa el provider de React Query ya wireado (`ReactQueryProvider.tsx`) y el patrón `sonner`/`lucide-react` ya presente en ambas páginas.
 
+## Confirmación de vigencia — scan enfocado `260901-frontend-test-debt`
+
+El scan enfocado de este intent (foco `apps/web/src/lib/api/products.ts`, `products.test.tsx`, `reverseTransitions.test.tsx`) no encontró cambios de versión respecto al pase anterior: Vitest `^2.1.0`, `@testing-library/react` `^16.1.0`, Zod `^4.4.0` instalado (código sigue en estilo Zod 3, sin cambio respecto a lo ya documentado). No introduce ninguna dependencia nueva — es backfill de fixtures de test existentes, sin tocar configuración de build ni de testing.
+
 ## Drift de documentación conocido
 
 `CLAUDE.md` (raíz) declara "TailwindCSS 4" en la tabla de stack y en "Key Conventions" (línea ~194) — el proyecto real fija `tailwindcss: 3.4.17` (Tailwind 3, no 4). Corregido parcialmente en la tabla de stack por el intent `260828-fix-invalid-tailwind-spa`; la línea de "Key Conventions" sigue sin corregir.

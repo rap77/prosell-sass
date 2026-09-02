@@ -113,6 +113,14 @@ Nuevo componente inventariado en el scan enfocado del intent `260830-ci-seed-dat
 - **`teamApi`** (`apps/web/src/lib/api/teamApi.ts`) — 6 métodos, ver `api-documentation.md`. Mismo defecto de duplicación y ausencia de `fetchWithAuth`.
 - **`notificationsApi`** (`apps/web/src/lib/api/notificationsApi.ts`) — **Responsabilidad**: único precedente en el repo de hooks React Query colocados en el módulo de API — patrón de referencia para la migración pendiente (con la salvedad del manejo de error genérico, ver `code-quality-assessment.md`).
 
+## Producto — cliente API y hooks de transición de estado (frontend, scan enfocado `260901-frontend-test-debt`)
+
+- **`productSchema` / `parseProductResponse()`** (`apps/web/src/lib/api/products.ts`) — **Responsabilidad**: Zod-mirror completo del `Product` del backend + punto único de validación runtime. **Dependencias**: consumido por `createProductWithVehicle`, `useCreateProduct`, y todos los hooks de transición de estado. **Estado**: contrato vigente y correcto (espeja `nullable=False, default=False` de `ProductModel`); sin drift.
+- **`useReverseProduct` / `useResubmitProduct` / `useRestoreProduct` / `useRevertSaleProduct`** (`apps/web/src/lib/api/products.ts`) — **Responsabilidad**: las 4 transiciones de "deshacer" del ciclo de vida de producto (ya documentadas en memoria del proyecto). **Dependencias**: `postReverseTransition`, `parseProductResponse`. **Estado**: código de producción sin cambios — el defecto está exclusivamente en los mocks de test que los ejercitan.
+- **`products.test.tsx`** (`apps/web/tests/unit/api/`, 574 líneas) — 12 tests, **7 fallando** (7 mocks de `Product` sin `published_to_marketplace`, líneas ~54, 115, 174, 298, 357, 408, ~512-533). 5 tests de camino de error pasan.
+- **`reverseTransitions.test.tsx`** (`apps/web/tests/unit/lib/api/`, 234 líneas) — 9 tests, **4 fallando** (helper compartido `mockProductResponse()`, líneas 38-58, sin el campo — un fix resuelve las 4). 5 tests pasan (esquemas no relacionados o camino de error).
+- **`setProductCover.test.ts`** (`apps/web/tests/unit/components/upload/`) — confirmada su existencia, no abierto este pase; candidato al mismo síntoma, fuera de alcance explícito del intent.
+
 ---
 
 ## Inventario de bug — clases Tailwind inválidas

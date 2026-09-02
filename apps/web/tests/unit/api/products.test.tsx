@@ -75,6 +75,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       version: 1,
+      published_to_marketplace: false,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -136,6 +137,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       version: 1,
+      published_to_marketplace: false,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -194,6 +196,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       version: 1,
+      published_to_marketplace: false,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -319,6 +322,7 @@ describe("Products API Client - useCreateProduct", () => {
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       version: 1,
+      published_to_marketplace: false,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -373,6 +377,7 @@ describe("Products API Client - useCreateProduct", () => {
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       version: 1,
+      published_to_marketplace: false,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -424,6 +429,7 @@ describe("Products API Client - useCreateProduct", () => {
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
       version: 1,
+      published_to_marketplace: false,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -530,6 +536,7 @@ describe("Products API Client - useCreateProduct", () => {
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
         version: 1,
+        published_to_marketplace: false,
       }),
     } as Response);
 

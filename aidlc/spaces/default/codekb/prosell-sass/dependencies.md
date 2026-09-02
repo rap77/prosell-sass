@@ -55,6 +55,10 @@ Nuevo hallazgo del scan enfocado `260830-ci-seed-data`: el job `test-python` de 
 - **`onboarding/page.tsx` → `orgApi.ts`**, **`invite/[token]/page.tsx` → `teamApi.ts`**: ninguno de los dos flujos pasa por `fetchWithAuth.ts` — a diferencia de `notificationsApi.ts`/`leads.ts`/`useInferCategory.ts`, que sí lo usan. Consecuencia: ambos flujos carecen hoy de auto-refresh de sesión en 401 (silencioso, no reportado como incidente pero sí como riesgo latente); envolver en React Query sin resolver esto preserva el gap tal cual.
 - **`invite/[token]/page.tsx` → `ApiError` (tipo)**: dependencia de comportamiento no obvia — el branching de error de la página (`error.message.toLowerCase().includes(...)`, `error.status === 401`) depende de que el error lanzado conserve `status`/`message` reales del backend. Cualquier envoltura futura en `useMutation` que sustituya `ApiError` por un `Error` genérico (como hace `notificationsApi.ts`) rompería este branching.
 
+## Dependencia interna — mocks de test frontend acoplados al contrato `productSchema` (scan enfocado `260901-frontend-test-debt`)
+
+`products.test.tsx` y `reverseTransitions.test.tsx` construyen objetos `Product` mock a mano (sin factory compartida) que deben mantenerse sincronizados con `productSchema` (`apps/web/src/lib/api/products.ts`), que a su vez espeja `ProductModel` (backend). Cuando el commit `7315fdf2` endureció `published_to_marketplace` de opcional a requerido, arregló el archivo hermano `products.test.ts` pero no estos dos — no hay ningún mecanismo (factory, fixture compartida, contract test) que fuerce a los tests a seguir el schema automáticamente; cada archivo de test mantiene su propia copia del shape de `Product`. Ningún cambio de dependencia nueva — es acoplamiento interno ya existente, sin paquete de por medio.
+
 ## Dependencias de infraestructura de calidad (dev-time)
 
 - **GGA (Gentleman Guardian Angel)** — revisor de código con IA, proveedor `codex`, bloqueante en pre-commit, primero en el orden de hooks. Explícitamente NO es un SAST (no detecta injection/XSS/SSRF/deserialización insegura de forma determinística) — ver `code-quality-assessment.md`.
