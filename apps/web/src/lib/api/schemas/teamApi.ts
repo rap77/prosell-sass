@@ -28,7 +28,7 @@ export const TeamSchema = z
     id: z.string(),
     name: z.string(),
     tenant_id: z.string(),
-    organization_id: z.string(),
+    org_id: z.string(),
     created_at: z.string(),
     updated_at: z.string(),
     members: z.array(TeamMemberSchema).optional(),

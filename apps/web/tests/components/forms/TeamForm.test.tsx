@@ -76,7 +76,7 @@ describe("TeamForm", () => {
       expect(mockCreateTeam).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Sales Team",
-          organization_id: "org-123",
+          org_id: "org-123",
         }),
       );
     });

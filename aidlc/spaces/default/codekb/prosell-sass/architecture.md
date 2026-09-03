@@ -442,6 +442,47 @@ sequenceDiagram
 
 **Alcance del fix — mecánico, sin ambigüedad de diseño**: agregar `published_to_marketplace: false` (o el valor booleano relevante al caso) a cada mock de `Product` en los 8 puntos identificados (7 en `products.test.tsx`, 1 helper compartido `mockProductResponse()` en `reverseTransitions.test.tsx` que resuelve las 4 fallas de un solo fix). No hay cambio de comportamiento de producción — el schema ya refleja correctamente el contrato del backend; solo los fixtures de test quedaron atrás. Ver `code-quality-assessment.md` para el detalle línea por línea y `component-inventory.md` para el inventario de mocks afectados. Un tercer archivo con el mismo síntoma probable (`setProductCover.test.ts`) queda señalado pero fuera de alcance de este pase — ver `reverse-engineering-timestamp.md` § Developer Code Scan Results.
 
+### 11. `teamApi.create` — mismatch de parámetro shadow-implementado por un mock BFF (nuevo, scan enfocado `260902-teamapi-create-param`)
+
+Flujo representativo de por qué un mismatch de contrato de wire entre frontend y backend puede vivir semanas sin manifestarse: la ruta BFF real que enrutaría al backend está apagada por un archivo de ruta mock que Next.js prioriza siempre.
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario (dealer)
+    participant Form as TeamForm.tsx
+    participant Store as teamStore.ts<br/>(createTeam)
+    participant Api as teamApi.ts<br/>create()
+    participant BFFMock as app/api/v1/teams/route.ts<br/>("Mock API Route", in-memory)
+    participant NextCfg as next.config.ts<br/>(rewrite fallback)
+    participant Real as team_router.py<br/>POST ""
+    participant DTO as CreateTeamRequest<br/>(org_id: UUID)
+
+    U->>Form: completa nombre de equipo, submit
+    Form->>Store: createTeam({ name, organization_id })
+    Store->>Api: teamApi.create({ name, organization_id })
+    Api->>BFFMock: POST /api/v1/teams<br/>JSON.stringify({ name, organization_id })
+
+    Note over BFFMock: archivo de ruta real de Next.js —<br/>siempre gana sobre el rewrite "fallback"<br/>de next.config.ts, aunque exista
+
+    BFFMock->>BFFMock: global.__mockTeams.push({ ...body })<br/>lee/escribe "organization_id"<br/>consistentemente (auto-coherente)
+    BFFMock-->>Api: 201 { id, name, organization_id, ... }
+    Api-->>Store: Team (parseado con TeamSchema.organization_id)
+    Store-->>Form: éxito, UI actualizada
+
+    rect rgb(255, 235, 238)
+    Note over NextCfg,DTO: CAMINO NUNCA EJERCITADO HOY:<br/>si el mock no existiera, el rewrite<br/>fallback reenviaría al backend real
+    NextCfg--)Real: (hipotético) forward POST<br/>{ name, organization_id }
+    Real--)DTO: CreateTeamRequest.parse(body)
+    DTO--)Real: 422 Unprocessable Entity<br/>("org_id": campo requerido faltante)
+    end
+```
+
+**Por qué el bug es invisible hoy**: `apps/web/next.config.ts:82-102` declara el rewrite `/api/:path*` → backend como tipo `fallback` — un tipo de rewrite de Next.js que solo se aplica cuando ningún archivo de ruta del propio proyecto coincide. `apps/web/src/app/api/v1/teams/route.ts` SÍ es un archivo de ruta real (una "Mock API Route", según su propio comentario de cabecera) que implementa `POST`/`GET` enteramente en memoria contra `global.__mockTeams`. Como el mock usa `organization_id` tanto para escribir como para leer, es auto-consistente y nunca contradice al frontend — el `422` que el backend real lanzaría (`org_id` faltante) nunca ocurre porque el backend real nunca recibe la petición. Lo mismo aplica al lado de la respuesta: `TeamResponse.org_id` (backend) vs. `TeamSchema.organization_id` (frontend, Zod) nunca chocan porque el mock nunca devuelve una respuesta con forma de `TeamResponse` real.
+
+**Alcance del bug — dos superficies, no una**: el texto original del intent nombra solo el lado de creación (`teamApi.create` → `CreateTeamRequest`), pero el mismo mismatch de nombre existe simétricamente en la respuesta (`TeamResponse.org_id` vs. `TeamSchema.organization_id`, ambos requeridos sin alias/`.optional()`). Arreglar solo el lado de request sin arreglar el de response dejaría el segundo mismatch latente y sin cobertura de test, con el mismo mecanismo de shadowing ocultándolo. `teamApi.update()` es un defecto relacionado pero distinto (el mock de `[id]/route.ts` solo exporta `GET`, no `PATCH` — probable 405 si algún día se ejercitara contra el mock) — no nombrado en el intent, señalado como hallazgo adicional para Requirements Analysis.
+
+**Por qué `test_team_dto_schemas.py` no lo atrapa**: es un test de "contract" solo de nombre — instancia `CreateTeamRequest`/`TeamResponse` de Pydantic en aislamiento, sin leer nunca `teamApi.ts` ni ningún archivo TypeScript. `.skills/contract-testing/SKILL.md` del proyecto ya describe el patrón que resolvería esta clase de bug estructuralmente ("Layer 3: Schema Matching — DTO ↔ TypeScript Drift Detection"), pero no existe una instancia de ese test para el dominio `team` — ver `code-quality-assessment.md` para el detalle completo.
+
 ### Precedente de patrón — hooks React Query colocados en el módulo de API (`notificationsApi.ts`, `leads.ts`)
 
 `apps/web/src/lib/api/notificationsApi.ts` es el único precedente confirmado en el repo de `useQuery`/`useMutation` definidos directamente en el archivo del cliente API (no en un hook separado): `useNotifications()` (`staleTime` 20s, `refetchInterval` 30s), `useMarkNotificationRead()`, `useMarkAllNotificationsRead()` (invalidan `NOTIFICATIONS_QUERY_KEY` en `onSuccess`). Usa `fetchWithAuth` (a diferencia de `orgApi`/`teamApi`), pero lanza `new Error(...)` genérico en `!response.ok`, perdiendo el detalle del backend — patrón a NO copiar tal cual para `orgApi`/`teamApi` por el riesgo de branching descrito arriba. `leads.ts` es un segundo precedente más grande (`useLeads`, `useLead`, `useUpdateLeadStatus`, `useReassignLead`, `useLeadDuplicates`, `useLeadAuditTrail`, `useTeamMetrics`), confirmando que colocar los hooks en el propio módulo de API (en vez de un archivo de hooks separado) es la convención establecida del proyecto.
@@ -460,6 +501,7 @@ sequenceDiagram
 - **Tareas asíncronas vía Taskiq + Redis** en vez de llamadas síncronas a Facebook desde el request-response del router — publicar, republicar, borrar y actualizar un listado, y sincronizar leads/tokens, son todas tareas de background.
 - **OAuth como redirect de navegador completo, no fetch** — `window.location.href` hacia el endpoint de autorización del backend, necesario porque el flujo OAuth2 requiere que el navegador salga del origen de la SPA.
 - **Schema de test bootstrapeado desde ORM (`Base.metadata.create_all()`), no desde Alembic** — decisión deliberada y documentada en el propio `create_test_schema.py` para evitar que CI dependa de una cadena de migraciones con drift conocido (`20260601_recreate_facebook_tables.py` falla contra DB fresca). Trade-off: el schema de CI nunca tiene drift respecto a los modelos, pero tampoco valida que la cadena real de Alembic funcione contra una base nueva — ver `code-quality-assessment.md` para la discusión de si reparar esa cadena entra en el alcance de "arreglar seed data".
+- **Rewrite BFF tipo `fallback` (`next.config.ts`) + archivos de ruta mock coexistiendo con proxies reales** — decisión de arquitectura de test/desarrollo que tiene una consecuencia colateral no buscada: cuando un archivo de ruta mock (p. ej. `app/api/v1/teams/route.ts`) existe para un endpoint, siempre gana sobre el rewrite hacia el backend real, sin importar si el mock quedó desalineado del contrato real. Esto puede ocultar mismatches de contrato de wire indefinidamente (confirmado con `teamApi.create` — ver `code-quality-assessment.md` hallazgo #45) hasta que algo fuerza el camino real (staging, un flujo sin mock como `addMember`/`acceptInvitation`, o remover el mock).
 
 ## Improvement Opportunities
 
@@ -478,3 +520,4 @@ sequenceDiagram
 - Levantar (o pedir excepción puntual para) la política de permisos local que bloquea Read/Bash sobre rutas con "credential" (`.claude/settings.local.json`) para poder cubrir `fb_credential_migration_router.py` a profundidad en un futuro scan — hoy solo se conoce su estructura vía graphify.
 - Migrar `onboarding/page.tsx` e `invite/[token]/page.tsx` de `useEffect` a React Query (`useQuery`/`useMutation`), preservando el shape tipado de `ApiError` para el branching de error de `invite/[token]/page.tsx` — al mismo tiempo, evaluar si conviene cerrar la brecha de `fetchWithAuth` en `orgApi.ts`/`teamApi.ts` (ninguno de los dos módulos la usa hoy, así que ambos flujos carecen silenciosamente de auto-refresh de sesión en 401) y consolidar la duplicación verbatim de `ApiError`/`handleResponse<T>()` entre ambos módulos. Ver `code-quality-assessment.md` para el detalle de riesgo.
 - Backfillear `published_to_marketplace` en los 8 mocks de `Product` desactualizados de `products.test.tsx` (7) y `reverseTransitions.test.tsx` (1 helper compartido) — fix mecánico sin ambigüedad de diseño, causa raíz confirmada por ejecución real de test (scan `260901-frontend-test-debt`). Evaluar en Requirements Analysis si `setProductCover.test.ts` (mismo síntoma probable, no nombrado en la descripción del intent) entra en el mismo alcance.
+- Alinear el nombre de campo `organization_id` (frontend, `teamApi.ts`/`teamApi.ts` schemas) con `org_id` (backend, `CreateTeamRequest`/`TeamResponse`) en AMBOS lados del contrato de `team` — request y response — no solo el lado nombrado en el intent original (scan `260902-teamapi-create-param`). Evaluar en Requirements Analysis si conviene además: (a) reparar `teamApi.update()` (probable 405 contra el mock, `[id]/route.ts` solo exporta `GET`), y (b) agregar un test de Layer 3 (schema-matching DTO↔TypeScript) para `team`, siguiendo el patrón ya documentado en `.skills/contract-testing/SKILL.md`, para que esta clase de bug no vuelva a pasar desapercibida.

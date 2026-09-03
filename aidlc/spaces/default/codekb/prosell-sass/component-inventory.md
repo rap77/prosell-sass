@@ -121,6 +121,19 @@ Nuevo componente inventariado en el scan enfocado del intent `260830-ci-seed-dat
 - **`reverseTransitions.test.tsx`** (`apps/web/tests/unit/lib/api/`, 234 líneas) — 9 tests, **4 fallando** (helper compartido `mockProductResponse()`, líneas 38-58, sin el campo — un fix resuelve las 4). 5 tests pasan (esquemas no relacionados o camino de error).
 - **`setProductCover.test.ts`** (`apps/web/tests/unit/components/upload/`) — confirmada su existencia, no abierto este pase; candidato al mismo síntoma, fuera de alcance explícito del intent.
 
+## `teamApi` — creación de equipo, mismatch de contrato (frontend/backend, scan enfocado `260902-teamapi-create-param`)
+
+- **Responsabilidad**: crear un equipo dentro de una organización (dealer) y gestionar sus miembros/invitaciones.
+- **Ubicación (frontend)**: `apps/web/src/lib/api/teamApi.ts` (6 métodos), `apps/web/src/lib/api/schemas/teamApi.ts` (Zod), consumido por `apps/web/src/stores/teamStore.ts` y `apps/web/src/components/forms/TeamForm.tsx`.
+- **Ubicación (backend)**: `apps/api/src/prosell/infrastructure/api/routers/team_router.py` (6 endpoints), `apps/api/src/prosell/application/dto/team/{create,response}.py`.
+- **Ubicación (BFF)**: `apps/web/src/app/api/v1/teams/{route.ts,[id]/route.ts,org/[orgId]/route.ts}` — los 3 son "Mock API Routes" in-memory declaradas explícitamente, no proxies reales; `next.config.ts` (rewrite `fallback`) explica por qué el mock siempre gana.
+- **Defecto confirmado — mismatch de nombre de parámetro, doble cara**:
+  - Request: `teamApi.create()` envía `organization_id`; `CreateTeamRequest` (backend) espera `org_id` → `422` si llegara al backend real.
+  - Response: `TeamResponse.org_id` (backend) vs. `TeamSchema.organization_id` (frontend, requerido) → `ZodError` si el backend real respondiera.
+  - Nunca se manifestó porque el mock BFF de `POST /api/v1/teams` nunca reenvía al backend — ver `architecture.md` § Interaction Diagrams (diagrama 11).
+- **Defecto relacionado, no nombrado en el intent**: `teamApi.update()` probablemente 405 contra el mock (`[id]/route.ts` solo exporta `GET`).
+- **Gap estructural**: `apps/api/tests/contract/schema_matching/test_team_dto_schemas.py` no puede detectar este bug por diseño (nunca lee TypeScript); `.skills/contract-testing/SKILL.md` ya describe el patrón ("Layer 3") que lo resolvería, sin instancia para `team`.
+
 ---
 
 ## Inventario de bug — clases Tailwind inválidas

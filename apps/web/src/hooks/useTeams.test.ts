@@ -21,7 +21,7 @@ const mockTeams = [
     id: "team-1",
     name: "Sales Team A",
     tenant_id: "tenant-1",
-    organization_id: "org-1",
+    org_id: "org-1",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -29,7 +29,7 @@ const mockTeams = [
     id: "team-2",
     name: "Sales Team B",
     tenant_id: "tenant-1",
-    organization_id: "org-1",
+    org_id: "org-1",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -113,7 +113,7 @@ describe("useTeams", () => {
 
     const newTeamData = {
       name: "New Team",
-      organization_id: "org-1",
+      org_id: "org-1",
     };
 
     await act(async () => {

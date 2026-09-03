@@ -148,7 +148,7 @@ export function TeamForm({
       if (mode === "create") {
         await createTeam({
           name: data.name,
-          organization_id: organizationId,
+          org_id: organizationId,
         });
 
         // Navigate back to teams list after successful creation
@@ -193,7 +193,7 @@ export function TeamForm({
       {/* Name Input */}
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">
-          Team Name <span className="text-destructive">*</span>
+          Team Name <span className="text-ps-error">*</span>
         </Label>
         <Input
           {...register("name")}
@@ -206,11 +206,11 @@ export function TeamForm({
           aria-describedby={error ? "team-error" : undefined}
           className={cn(
             (errors.name || error) &&
-              "border-destructive focus-visible:ring-destructive",
+              "border-ps-error focus-visible:ring-ps-error",
           )}
         />
         {errors.name && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm text-ps-error">
             {errors.name.message}
           </p>
         )}
@@ -220,9 +220,9 @@ export function TeamForm({
       {error && !hasFormErrors && (
         <div
           role="alert"
-          className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+          className="p-3 rounded-lg bg-ps-error/10 border border-ps-error/20"
         >
-          <p id="team-error" className="text-sm text-destructive">
+          <p id="team-error" className="text-sm text-ps-error">
             {error.message}
           </p>
         </div>

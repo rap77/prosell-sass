@@ -121,6 +121,10 @@ El scan enfocado de este intent (foco `onboarding/page.tsx`, `invite/[token]/pag
 
 El scan enfocado de este intent (foco `apps/web/src/lib/api/products.ts`, `products.test.tsx`, `reverseTransitions.test.tsx`) no encontró cambios de versión respecto al pase anterior: Vitest `^2.1.0`, `@testing-library/react` `^16.1.0`, Zod `^4.4.0` instalado (código sigue en estilo Zod 3, sin cambio respecto a lo ya documentado). No introduce ninguna dependencia nueva — es backfill de fixtures de test existentes, sin tocar configuración de build ni de testing.
 
+## Confirmación de vigencia — scan enfocado `260902-teamapi-create-param`
+
+El scan enfocado de este intent (foco `teamApi.ts`, `team_router.py`, DTOs de `team`, rutas BFF de `teams`, `next.config.ts`) no encontró cambios de versión respecto al pase anterior: Pydantic `2.12.5`, Zod `^4.4.0` instalado (código sigue en estilo Zod 3, sin cambio), FastAPI `[standard]==0.128.0`, Next.js `^16.3.3`. No introduce ninguna dependencia nueva — el hallazgo es puramente de nombre de campo en DTOs/schemas ya existentes, y de configuración de rewrite (`next.config.ts`) ya presente. Confirma además el patrón de "Mock API Route" (comentario in-line declarado en el propio archivo) como convención existente en `apps/web/src/app/api/v1/teams/route.ts` y sus dos rutas hermanas.
+
 ## Drift de documentación conocido
 
 `CLAUDE.md` (raíz) declara "TailwindCSS 4" en la tabla de stack y en "Key Conventions" (línea ~194) — el proyecto real fija `tailwindcss: 3.4.17` (Tailwind 3, no 4). Corregido parcialmente en la tabla de stack por el intent `260828-fix-invalid-tailwind-spa`; la línea de "Key Conventions" sigue sin corregir.

@@ -37,7 +37,7 @@ export interface CreateTeamRequest {
   name: string;
   // NEVER accept tenant_id from the client — the backend always derives it
   // from the authenticated user and ignores any client-supplied value.
-  organization_id: string;
+  org_id: string;
 }
 
 export interface UpdateTeamRequest {

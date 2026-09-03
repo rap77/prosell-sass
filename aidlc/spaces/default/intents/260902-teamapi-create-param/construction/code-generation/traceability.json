@@ -1,0 +1,84 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1",
+    "FR1.1",
+    "FR1.2",
+    "FR2",
+    "FR2.1",
+    "FR2.2",
+    "FR3",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR4",
+    "FR4.1",
+    "FR5",
+    "FR5.1",
+    "FR5.2",
+    "NFR1",
+    "NFR2"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/teamApi.ts"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/web/src/components/forms/TeamForm.tsx"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/teamApi.ts"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "apps/web/src/hooks/useTeams.ts"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "apps/web/src/app/api/v1/teams/route.ts (deleted)"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "apps/web/src/app/api/v1/teams/[id]/route.ts (deleted); apps/web/src/app/api/v1/teams/org/[orgId]/route.ts (deleted)"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "apps/api/tests/integration/api/test_team_api.py"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "apps/web/src/app/api/v1/teams/[id]/route.ts (deleted — PATCH now reaches team_router.py directly)"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "apps/api/tests/contract/schema_matching/test_team_schema_drift.py"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "apps/api/tests/contract/schema_matching/test_team_schema_drift.py"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/src/hooks/useTeams.test.ts; apps/web/src/components/teams/TeamSwitcher.test.tsx; apps/web/tests/components/forms/TeamForm.test.tsx"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "no business-rule change — wire contract rename only, verified by unchanged use-case/router logic"
+    }
+  ]
+}

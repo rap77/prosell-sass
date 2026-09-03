@@ -1,18 +1,68 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-01 (última actualización: scan enfocado del intent `260901-frontend-test-debt`)
-**Commit analizado**: `21eedc81` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260828-useeffect-to-react-query` (a su vez aditivo sobre `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-02 (última actualización: scan enfocado del intent `260902-teamapi-create-param`)
+**Commit analizado**: `8525bf54` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260901-frontend-test-debt` (a su vez aditivo sobre `260828-useeffect-to-react-query`, `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260901-frontend-test-debt` repara la deuda de tests unitarios frontend pre-existente ya catalogada en `project.md` desde el intent `260826-prod-bugfixes-batch` ("Hay 13 tests frontend pre-existentes fallando en el baseline de main... mock sin el campo `published_to_marketplace` que el schema real ya requiere"): `apps/web/tests/unit/api/products.test.tsx` (7 de 12 fallando) y `apps/web/tests/unit/lib/api/reverseTransitions.test.tsx` (4 de 9 fallando). El store existente estaba `STALE` para esta área — las rutas relevantes ya habían cambiado desde el último scan (`260828-useeffect-to-react-query`, foco onboarding/invite) y nunca se había profundizado en `apps/web/src/lib/api/products.ts` ni en los dos archivos de test objetivo. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+El intent `260902-teamapi-create-param` corrige el mismatch de nombre de parámetro entre `teamApi.create()` (frontend, envía `organization_id`) y `CreateTeamRequest` (backend, espera `org_id`) al crear un equipo. El store existente cubría el área `orgApi`/`teamApi` a profundidad de superficie de método (intent `260828-useeffect-to-react-query`, foco onboarding/invite), pero nunca había profundizado en el contrato de wire exacto de `teamApi.create()`/`teamApi.update()` contra los DTOs Pydantic del backend, ni en la capa de rutas BFF de `teams` (mocks vs. proxy real), ni en `next.config.ts`. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
 
 ## Verificación de overwrite (codekb-scope-diff)
 
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco tests unitarios `products.ts`/transiciones de estado, intent `260901-frontend-test-debt`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (contrato `teamApi`/`team_router` de creación de equipo, no `products.ts`). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+## Developer Code Scan Results — foco mismatch de parámetro `teamApi.create` (intent `260902-teamapi-create-param`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `apps/web/src/lib/api/teamApi.ts` (archivo completo — 6 métodos + hooks), `apps/web/src/lib/api/schemas/teamApi.ts` (archivo completo — esquemas Zod), `apps/web/src/stores/teamStore.ts` (acciones `createTeam`, `fetchTeamsByOrg`, `updateTeam`), `apps/web/src/components/forms/TeamForm.tsx` (call site de `onSubmit`, líneas 139-170), `apps/web/src/hooks/useTeams.test.ts` (test existente de `createTeam`, líneas 111-124), `apps/web/tests/components/forms/TeamForm.test.tsx` (grep dirigido de uso de `organization_id`/`org_id`), `apps/web/src/app/api/v1/teams/route.ts` (capa BFF de `POST /api/v1/teams`), `apps/web/src/app/api/v1/teams/[id]/route.ts` (capa BFF de `GET /api/v1/teams/{id}`), `apps/web/src/app/api/v1/teams/org/[orgId]/route.ts` (capa BFF de `GET /api/v1/teams/org/{orgId}`), `apps/web/next.config.ts` (config de rewrites, modo `fallback`), `apps/api/src/prosell/infrastructure/api/routers/team_router.py` (archivo completo — 6 endpoints), `apps/api/src/prosell/application/dto/team/create.py` (archivo completo — `CreateTeamRequest`, `AddTeamMemberRequest`), `apps/api/src/prosell/application/dto/team/response.py` (archivo completo — `TeamResponse`, `TeamMemberResponse`, `TeamListResponse`), `apps/api/tests/contract/schema_matching/test_team_dto_schemas.py` (archivo completo — tests de contrato), `.skills/contract-testing/SKILL.md`.
+- **Skimmed only**: `apps/api/src/prosell/application/use_cases/organization/` y `.../org/` (creación de organización, NO de equipo — fuera del camino real de este scan), `apps/api/src/prosell/infrastructure/api/routers/org_router.py`, `apps/api/tests/integration/api/test_team_invitation_api.py`, `test_team_repository.py`, `test_team_use_cases.py`, `test_team_entity.py` (encontrados vía `fd`, no abiertos).
+- **No tocado**: resto del repositorio (scan enfocado, no full rescan) — el store previo sobre `products.ts`, onboarding/invite, auth, batch review, bulk upload, appointments, fb-sync, Tailwind y el resto de la arquitectura backend/frontend sigue vigente tal cual, sin re-verificar en este pase.
+
+### Root cause (doble mismatch, simétrico, confirmado por lectura directa de ambos lados del contrato)
+
+**Lado request**: `apps/web/src/lib/api/teamApi.ts:40` envía `CreateTeamRequest.organization_id: string`, serializado vía `JSON.stringify(data)` en `teamApi.ts:139` hacia `POST /api/v1/teams`. El DTO backend `apps/api/src/prosell/application/dto/team/create.py:12` espera `CreateTeamRequest.org_id: UUID` (requerido, sin alias) — si esta petición llegara alguna vez al backend real, sería un `422`. Caller: `apps/web/src/components/forms/TeamForm.tsx:149-152` construye `{ name: data.name, organization_id: organizationId }`, pasado sin cambios a través de `teamStore.ts:158-162`.
+
+**Lado response (simétrico, hallazgo adicional no nombrado en el texto original del intent)**: `apps/api/src/prosell/application/dto/team/response.py:44` → `TeamResponse.org_id: UUID`. Frontend `apps/web/src/lib/api/schemas/teamApi.ts:31` → `TeamSchema.organization_id: z.string()` (requerido, sin `.optional()`; `.passthrough()` solo tolera campos extra, no relaja uno requerido que falta). Si una respuesta real del backend llegara a `handleResponse()`, `TeamSchema.parse()` lanzaría un `ZodError`.
+
+**Por qué nunca se manifestó como bug visible**: `apps/web/next.config.ts:82-102` configura el rewrite `/api/:path*` → backend como tipo `fallback`, por lo que las rutas de archivo de Next.js siempre ganan. `apps/web/src/app/api/v1/teams/route.ts` es una "Mock API Route" declarada (comentario en línea 2) que implementa `POST /api/v1/teams` enteramente en memoria (`global.__mockTeams`), usando `organization_id` consistentemente tanto al escribir como al leer — nunca contradice al frontend y nunca toca el backend/DB/`team_router.py` real. Igual para `GET /api/v1/teams/org/{orgId}` y `GET /api/v1/teams/{id}` (que además solo implementa GET, no PATCH — `teamApi.update()` probablemente devuelve 405 hoy, defecto relacionado pero separado). `teamApi.addMember` y `teamApi.acceptInvitation` no tienen archivo mock y SÍ llegan al backend real.
+
+Arreglar solo el nombre de campo de `teamApi.ts` tendría efecto observable CERO mientras exista el route file mock — `POST /api/v1/teams` nunca sale del proceso Next.js hoy.
+
+`apps/api/tests/contract/schema_matching/` es contract testing solo de nombre para este par de DTOs: valida el modelo Pydantic contra sí mismo, nunca lee `teamApi.ts`, por lo que estructuralmente no puede atrapar este tipo de bug. `.skills/contract-testing/SKILL.md` del proyecto describe una "Layer 3: Schema Matching (DTO ↔ TypeScript Drift Detection)" diseñada exactamente para esta clase de bug, pero no existe tal test de Layer 3 para `team`.
+
+### Hallazgo por archivo
+
+- **`apps/web/src/lib/api/teamApi.ts`** — 6 métodos: `create`, `listByOrg`, `getById`, `update`, `addMember`, `acceptInvitation`. `create()` (línea 40) construye el body con `organization_id`; serialización en línea 139.
+- **`apps/api/src/prosell/application/dto/team/create.py`** — `CreateTeamRequest.org_id: UUID` (línea 12, requerido, sin alias); `AddTeamMemberRequest` en el mismo archivo, fuera del camino de este bug.
+- **`apps/api/src/prosell/application/dto/team/response.py`** — `TeamResponse.org_id: UUID` (línea 44); `TeamMemberResponse`, `TeamListResponse` en el mismo archivo.
+- **`apps/web/src/lib/api/schemas/teamApi.ts`** — `TeamSchema.organization_id: z.string()` (línea 31, requerido, sin `.optional()`/`.nullable()`).
+- **`apps/web/src/app/api/v1/teams/route.ts`** — mock in-memory (`global.__mockTeams`), auto-consistente en `organization_id`, nunca reenvía al backend real.
+- **`apps/web/src/app/api/v1/teams/[id]/route.ts`** — mock, solo exporta `GET` (sin `PATCH`).
+- **`apps/web/src/app/api/v1/teams/org/[orgId]/route.ts`** — mock, `GET` únicamente.
+- **`apps/web/next.config.ts:82-102`** — rewrite `fallback` que explica por qué los archivos de ruta de Next.js (los mocks) siempre ganan sobre el proxy real hacia FastAPI.
+- **`apps/api/src/prosell/infrastructure/api/routers/team_router.py`** — 6 endpoints reales: `POST ""`, `GET "/org/{org_id}"`, `GET "/{team_id}"`, `PATCH "/{team_id}"`, `POST "/{team_id}/members"`, `POST "/{team_id}/invite"`, `POST "/accept-invitation"` — nunca alcanzados por `create`/`listByOrg`/`getById` mientras el mock exista, sí alcanzados por `addMember`/`acceptInvitation`.
+- **`apps/api/tests/contract/schema_matching/test_team_dto_schemas.py`** — instancia `CreateTeamRequest`/`TeamResponse` en aislamiento; no lee ni conoce `teamApi.ts` — no puede detectar este bug por diseño.
+- **`apps/web/src/hooks/useTeams.test.ts:111-124`** — test existente de `createTeam` mockea la acción del store directamente, sin aserción sobre los nombres de campo del payload de wire.
+- **`apps/web/tests/components/forms/TeamForm.test.tsx`** — grep dirigido confirma que tampoco asertaba nombres de campo del payload.
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Code Generation)
+
+- `teamApi.update()` probablemente 405 en producción real (el mock de `[id]/route.ts` solo exporta `GET`) — defecto relacionado pero distinto del mismatch de parámetro, no nombrado en la descripción verbatim del intent.
+- Ausencia de un test de Layer 3 (schema-matching DTO↔TypeScript) para `team`, pese a que `.skills/contract-testing/SKILL.md` ya describe el patrón — mismo gap estructural que permitió que este bug pasara desapercibido.
+
+Ver `api-documentation.md`, `architecture.md` § Interaction Diagrams (nuevo diagrama 11), `component-inventory.md`, `code-structure.md` y `code-quality-assessment.md` (hallazgos #45-46) para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260901-frontend-test-debt`)
+
+El intent `260901-frontend-test-debt` repara la deuda de tests unitarios frontend pre-existente ya catalogada en `project.md` desde el intent `260826-prod-bugfixes-batch` ("Hay 13 tests frontend pre-existentes fallando en el baseline de main... mock sin el campo `published_to_marketplace` que el schema real ya requiere"): `apps/web/tests/unit/api/products.test.tsx` (7 de 12 fallando) y `apps/web/tests/unit/lib/api/reverseTransitions.test.tsx` (4 de 9 fallando). El store existente estaba `STALE` para esta área — las rutas relevantes ya habían cambiado desde el último scan (`260828-useeffect-to-react-query`, foco onboarding/invite) y nunca se había profundizado en `apps/web/src/lib/api/products.ts` ni en los dos archivos de test objetivo. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260901-frontend-test-debt`
+
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco onboarding/invite/migración React Query, intent `260828-useeffect-to-react-query`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (tests unitarios de `products.ts`/transiciones de estado, no onboarding/invite). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
-## Developer Code Scan Results — foco tests unitarios `products.test.tsx` / `reverseTransitions.test.tsx` (intent `260901-frontend-test-debt`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco tests unitarios `products.test.tsx` / `reverseTransitions.test.tsx` (intent `260901-frontend-test-debt`)
 
 ### Scan Coverage
 
@@ -218,25 +268,48 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260901-frontend-test-debt
+intent: 260902-teamapi-create-param
 fingerprint: 4b825dc642cb6eb9a060e54bf8d69288fbee4904
 analyzed:
   paths:
+    - apps/web/src/lib/api/teamApi.ts
+    - apps/web/src/lib/api/schemas/teamApi.ts
+    - apps/web/src/stores/teamStore.ts
+    - apps/web/src/components/forms/TeamForm.tsx
+    - apps/web/src/app/api/v1/teams/route.ts
+    - apps/web/src/app/api/v1/teams/[id]/route.ts
+    - apps/web/src/app/api/v1/teams/org/[orgId]/route.ts
+    - apps/web/next.config.ts
+    - apps/api/src/prosell/infrastructure/api/routers/team_router.py
+    - apps/api/src/prosell/application/dto/team/create.py
+    - apps/api/src/prosell/application/dto/team/response.py
+    - apps/api/tests/contract/schema_matching/test_team_dto_schemas.py
+  components:
+    - teamApi.create
+    - teamApi.update
+    - teamApi.listByOrg
+    - teamApi.getById
+    - teamApi.addMember
+    - teamApi.acceptInvitation
+    - CreateTeamRequest
+    - TeamResponse
+shallow:
+  paths:
+    - apps/web/src/hooks/useTeams.test.ts
+    - apps/web/tests/components/forms/TeamForm.test.tsx
+    - .skills/contract-testing/SKILL.md
+    - apps/api/src/prosell/application/use_cases/organization/
+    - apps/api/src/prosell/application/use_cases/org/
+    - apps/api/src/prosell/infrastructure/api/routers/org_router.py
+    - apps/api/tests/integration/api/test_team_invitation_api.py
+    - apps/api/tests/integration/api/test_team_repository.py
+    - apps/api/tests/integration/api/test_team_use_cases.py
+    - apps/api/tests/integration/api/test_team_entity.py
     - apps/web/tests/unit/api/products.test.tsx
     - apps/web/tests/unit/lib/api/reverseTransitions.test.tsx
     - apps/web/src/lib/api/products.ts
     - apps/api/src/prosell/domain/entities/product.py
     - apps/api/src/prosell/infrastructure/models/product_model.py
-  components:
-    - productSchema
-    - parseProductResponse
-    - useReverseProduct
-    - useResubmitProduct
-    - useRestoreProduct
-    - useRevertSaleProduct
-    - postReverseTransition
-shallow:
-  paths:
     - apps/web/src/components/admin/AvailableTransitions.tsx
     - apps/web/src/components/catalog/CatalogDetailView.tsx
     - apps/web/tests/unit/components/upload/setProductCover.test.ts
@@ -252,9 +325,7 @@ shallow:
     - apps/web/src/app/invite/[token]/page.tsx
     - apps/web/src/app/invite/org/[token]/page.tsx
     - apps/web/src/lib/api/orgApi.ts
-    - apps/web/src/lib/api/teamApi.ts
     - apps/web/src/lib/api/schemas/orgApi.ts
-    - apps/web/src/lib/api/schemas/teamApi.ts
     - apps/web/src/lib/api/notificationsApi.ts
     - apps/web/src/lib/api/fetchWithAuth.ts
     - apps/web/src/lib/api/extractErrorMessage.ts
@@ -283,7 +354,6 @@ shallow:
     - apps/api/tests/integration/api/routers/test_fb_sync_router.py
     - apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py
     - apps/api/src/prosell/infrastructure/models/fb_unpublish_request_model.py
-    - .github/workflows/ci.yml
     - apps/api/src/prosell/infrastructure/models/
     - apps/web/src/components/
     - apps/api/tests/

@@ -119,6 +119,23 @@ prosell-sass/
 - **`apps/api/src/prosell/domain/entities/product.py`** / **`apps/api/src/prosell/infrastructure/models/product_model.py`** — fuente de verdad del contrato backend (`nullable=False, default=False` en el modelo SQLAlchemy). Solo se leyó el diff del commit que introdujo el campo, no el archivo completo — el contrato ya está documentado en `api-documentation.md`/`business-overview.md` de pases previos.
 - **`apps/web/tests/unit/components/upload/setProductCover.test.ts`** — confirmada su existencia (no abierto), candidato al mismo síntoma; fuera de alcance de este scan, ver `reverse-engineering-timestamp.md`.
 
+### Módulos nuevos inventariados — scan enfocado `260902-teamapi-create-param` (mismatch de parámetro `teamApi.create`)
+
+- **`apps/web/src/lib/api/teamApi.ts`** (archivo completo) — 6 métodos: `create` (línea 40, body con `organization_id`; serialización L139), `listByOrg`, `getById`, `update`, `addMember`, `acceptInvitation`.
+- **`apps/web/src/lib/api/schemas/teamApi.ts`** (archivo completo) — `TeamSchema.organization_id: z.string()` (línea 31, requerido, sin `.optional()`/`.nullable()`).
+- **`apps/web/src/stores/teamStore.ts`** — acciones `createTeam`/`fetchTeamsByOrg`/`updateTeam` (L158-162 pasa el payload de `TeamForm.tsx` sin transformación al cliente API).
+- **`apps/web/src/components/forms/TeamForm.tsx`** — `onSubmit` (L139-170) construye `{ name: data.name, organization_id: organizationId }`.
+- **`apps/web/src/app/api/v1/teams/route.ts`** — "Mock API Route" declarada (comentario L2), `POST`/`GET` in-memory contra `global.__mockTeams`, usa `organization_id` consistentemente al leer y escribir.
+- **`apps/web/src/app/api/v1/teams/[id]/route.ts`** — mock, solo exporta `GET` (sin `PATCH` — `teamApi.update()` probable 405 contra este mock, defecto relacionado no nombrado en el intent).
+- **`apps/web/src/app/api/v1/teams/org/[orgId]/route.ts`** — mock, `GET` únicamente.
+- **`apps/web/next.config.ts`** (líneas 82-102) — rewrite `/api/:path*` → backend tipo `fallback`; explica por qué los archivos de ruta mock de Next.js siempre ganan sobre el proxy real mientras existan.
+- **`apps/api/src/prosell/infrastructure/api/routers/team_router.py`** (archivo completo) — 6 endpoints reales: `POST ""`, `GET "/org/{org_id}"`, `GET "/{team_id}"`, `PATCH "/{team_id}"`, `POST "/{team_id}/members"`, `POST "/{team_id}/invite"`, `POST "/accept-invitation"`.
+- **`apps/api/src/prosell/application/dto/team/create.py`** (archivo completo) — `CreateTeamRequest.org_id: UUID` (línea 12, requerido, sin alias), `AddTeamMemberRequest`.
+- **`apps/api/src/prosell/application/dto/team/response.py`** (archivo completo) — `TeamResponse.org_id: UUID` (línea 44), `TeamMemberResponse`, `TeamListResponse`.
+- **`apps/api/tests/contract/schema_matching/test_team_dto_schemas.py`** (archivo completo) — instancia `CreateTeamRequest`/`TeamResponse` en aislamiento; no lee `teamApi.ts` — no puede detectar drift TS↔Pydantic por diseño.
+- **`.skills/contract-testing/SKILL.md`** — describe "Layer 3: Schema Matching (DTO ↔ TypeScript Drift Detection)", el patrón que resolvería esta clase de bug; no hay instancia de ese test para `team`.
+- **`apps/web/src/hooks/useTeams.test.ts`** (líneas 111-124, skimmed a nivel de esta sección) — test existente de `createTeam` mockea la acción del store directamente, sin asertar nombres de campo del payload de wire.
+
 ## Patrones de código confirmados
 
 - **Clean Architecture backend estricta**: dependencia unidireccional `Infrastructure → Application → Domain`.

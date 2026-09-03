@@ -17,8 +17,21 @@
  */
 import { useTeamStore } from "@/stores/teamStore";
 import { useShallow } from "zustand/react/shallow";
-import type { Team, TeamMemberRole } from "@/lib/api/teamApi";
+import type {
+  Team,
+  CreateTeamRequest,
+  UpdateTeamRequest,
+  AddTeamMemberRequest,
+} from "@/lib/api/teamApi";
 import type { TeamError } from "@/stores/teamStore";
+
+/**
+ * Parameters accepted by {@link UseTeamsReturn.fetchTeams}
+ */
+export interface FetchTeamsParams {
+  skip?: number;
+  limit?: number;
+}
 
 /**
  * Return type for the useTeams hook
@@ -42,32 +55,18 @@ export interface UseTeamsReturn {
   switchTeam: (team: Team) => void;
 
   /** Fetch teams for an organization */
-  fetchTeams: (
-    orgId: string,
-    params?: { skip?: number; limit?: number },
-  ) => Promise<void>;
+  fetchTeams: (orgId: string, params?: FetchTeamsParams) => Promise<void>;
 
   /** Create a new team */
-  createTeam: (data: {
-    name: string;
-    organization_id: string;
-  }) => Promise<Team>;
+  createTeam: (data: CreateTeamRequest) => Promise<Team>;
 
   /** Update team information */
-  updateTeam: (teamId: string, data: { name?: string }) => Promise<void>;
+  updateTeam: (teamId: string, data: UpdateTeamRequest) => Promise<void>;
 
   /** Add a member to a team */
   addMember: (
     teamId: string,
-    data: Omit<
-      {
-        team_id: string;
-        user_id: string;
-        role?: TeamMemberRole;
-        commission_rate?: number | null;
-      },
-      "team_id"
-    >,
+    data: Omit<AddTeamMemberRequest, "team_id">,
   ) => Promise<void>;
 
   /** Clear the current error */
@@ -115,10 +114,7 @@ export function useTeams(): UseTeamsReturn {
   };
 
   // Fetch teams for an organization
-  const fetchTeams = async (
-    orgId: string,
-    params?: { skip?: number; limit?: number },
-  ) => {
+  const fetchTeams = async (orgId: string, params?: FetchTeamsParams) => {
     await fetchTeamsByOrg({
       org_id: orgId,
       skip: params?.skip,

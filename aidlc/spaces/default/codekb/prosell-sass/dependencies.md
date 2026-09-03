@@ -59,6 +59,10 @@ Nuevo hallazgo del scan enfocado `260830-ci-seed-data`: el job `test-python` de 
 
 `products.test.tsx` y `reverseTransitions.test.tsx` construyen objetos `Product` mock a mano (sin factory compartida) que deben mantenerse sincronizados con `productSchema` (`apps/web/src/lib/api/products.ts`), que a su vez espeja `ProductModel` (backend). Cuando el commit `7315fdf2` endureció `published_to_marketplace` de opcional a requerido, arregló el archivo hermano `products.test.ts` pero no estos dos — no hay ningún mecanismo (factory, fixture compartida, contract test) que fuerce a los tests a seguir el schema automáticamente; cada archivo de test mantiene su propia copia del shape de `Product`. Ningún cambio de dependencia nueva — es acoplamiento interno ya existente, sin paquete de por medio.
 
+## Dependencia interna — `teamApi.ts` ↔ `CreateTeamRequest`/`TeamResponse` (contrato de wire, mismatch confirmado, scan enfocado `260902-teamapi-create-param`)
+
+`apps/web/src/lib/api/teamApi.ts` y `apps/web/src/lib/api/schemas/teamApi.ts` dependen implícitamente de mantener el nombre de campo `organization_id`/`org_id` sincronizado con `apps/api/src/prosell/application/dto/team/{create,response}.py` — no hay ningún mecanismo (contract test real, tipo compartido, `packages/*`) que lo fuerce. La dependencia se rompió en ambos sentidos (request y response) sin que ningún test lo detectara, porque `apps/web/src/app/api/v1/teams/route.ts` (mock BFF in-memory) intercepta la petición antes de que llegue al backend real — ver `architecture.md` § Interaction Diagrams (diagrama 11) y `api-documentation.md` para el contrato completo. Es el mismo patrón de fondo que la falta de "Layer 3" (schema-matching DTO↔TypeScript) que `.skills/contract-testing/SKILL.md` ya describe pero no implementa para `team`.
+
 ## Dependencias de infraestructura de calidad (dev-time)
 
 - **GGA (Gentleman Guardian Angel)** — revisor de código con IA, proveedor `codex`, bloqueante en pre-commit, primero en el orden de hooks. Explícitamente NO es un SAST (no detecta injection/XSS/SSRF/deserialización insegura de forma determinística) — ver `code-quality-assessment.md`.

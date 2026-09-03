@@ -75,5 +75,12 @@
     "dirName": "260901-frontend-test-debt",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a05fba-4c0e-79df-b733-ed79d40f086b",
+    "slug": "teamapi-create-param",
+    "dirName": "260902-teamapi-create-param",
+    "scope": "bugfix",
+    "status": "complete"
   }
 ]

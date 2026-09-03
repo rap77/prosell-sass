@@ -211,3 +211,43 @@ Misma implementación que `orgApi.ts`: raw `fetch()`, `ApiError`/`handleResponse
 3. **`extractErrorMessage.ts`** (zod-matcher sobre el body de respuesta) — tercer enfoque, usado en otra parte del cliente API.
 
 Esta triangulación es evidencia directa a favor de la convención de equipo ya afirmada (`team.md` Q6: adoptar en frontend un patrón de manejo de errores equivalente al del backend — excepciones tipadas por dominio + manejo centralizado). Ver `code-quality-assessment.md` para el detalle completo del hallazgo.
+
+## `teamApi` — contrato de creación de equipo, mismatch confirmado (scan enfocado `260902-teamapi-create-param`)
+
+### Request — `POST /api/v1/teams`
+
+| Lado                       | Campo                                        | Notas                                                              |
+| -------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| Frontend (`teamApi.ts:40`) | `{ name: string, organization_id: string }`  | Serializado vía `JSON.stringify(data)` en `teamApi.ts:139`         |
+| Backend (`create.py:12`)   | `CreateTeamRequest.org_id: UUID` (requerido) | Sin alias/`Field(alias=...)` — nombre esperado es literal `org_id` |
+
+Si esta petición llegara al backend real, `Pydantic` respondería `422 Unprocessable Entity` (`org_id` faltante, `organization_id` como campo extra ignorado).
+
+### Response — `TeamResponse` (simétrico, no nombrado en el texto original del intent)
+
+| Lado                               | Campo                                    | Notas                                                                                                                   |
+| ---------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Backend (`response.py:44`)         | `TeamResponse.org_id: UUID`              | —                                                                                                                       |
+| Frontend (`schemas/teamApi.ts:31`) | `TeamSchema.organization_id: z.string()` | Requerido, sin `.optional()`/`.nullable()`; `.passthrough()` solo tolera campos EXTRA, no suple uno requerido que falta |
+
+Si una respuesta real del backend llegara a `handleResponse()`, `TeamSchema.parse()` lanzaría `ZodError` (campo `organization_id` ausente).
+
+### Por qué nunca se manifestó — shadowing por mock BFF
+
+`apps/web/next.config.ts:82-102` declara el rewrite `/api/:path*` → backend como tipo `fallback`: solo se aplica cuando ningún archivo de ruta propio de Next.js coincide. `apps/web/src/app/api/v1/teams/route.ts` es un archivo de ruta real — una "Mock API Route" (comentario en línea 2) — que implementa `POST`/`GET` enteramente en memoria (`global.__mockTeams`), usando `organization_id` de forma auto-consistente al leer y escribir. Como resultado, `POST /api/v1/teams` NUNCA sale del proceso Next.js hoy — ni el `422` del lado request ni el `ZodError` del lado response llegan a ocurrir. Mismo mecanismo para `GET /api/v1/teams/org/{orgId}` y `GET /api/v1/teams/{id}` (mock, `GET` únicamente — sin `PATCH`, por lo que `teamApi.update()` probablemente devuelve 405 si algún día se ejercitara contra este mock, defecto relacionado no nombrado en el intent). `teamApi.addMember` y `teamApi.acceptInvitation` NO tienen archivo mock y SÍ llegan al `team_router.py` real.
+
+### Endpoints reales de `team_router.py` (6, confirmados este pase)
+
+| Endpoint                    | Método | Alcanzado hoy desde `teamApi.ts`                                                                                                                       |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST ""`                   | POST   | NO (shadow por mock)                                                                                                                                   |
+| `GET "/org/{org_id}"`       | GET    | NO (shadow por mock)                                                                                                                                   |
+| `GET "/{team_id}"`          | GET    | NO (shadow por mock)                                                                                                                                   |
+| `PATCH "/{team_id}"`        | PATCH  | NO (sin ruta mock, pero `teamApi.update()` tampoco tiene rewrite real cubierto por un mock — 405 probable contra el mock existente de `[id]/route.ts`) |
+| `POST "/{team_id}/members"` | POST   | SÍ — `teamApi.addMember`, sin mock                                                                                                                     |
+| `POST "/{team_id}/invite"`  | POST   | (fuera de la superficie de `teamApi.ts` documentada este pase)                                                                                         |
+| `POST "/accept-invitation"` | POST   | SÍ — `teamApi.acceptInvitation`, sin mock (ver `architecture.md` diagrama 9)                                                                           |
+
+### Por qué el "contract test" existente no detecta esto
+
+`apps/api/tests/contract/schema_matching/test_team_dto_schemas.py` instancia `CreateTeamRequest`/`TeamResponse` de Pydantic en aislamiento — nunca lee `teamApi.ts` ni ningún archivo TypeScript, por lo que estructuralmente no puede atrapar un drift de nombre de campo entre ambos lados. `.skills/contract-testing/SKILL.md` del proyecto ya describe el patrón que resolvería esta clase de bug ("Layer 3: Schema Matching — DTO ↔ TypeScript Drift Detection"), pero no existe una instancia de ese test para el dominio `team`. Ver `code-quality-assessment.md` para el detalle completo del hallazgo.
