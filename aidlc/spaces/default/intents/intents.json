@@ -82,5 +82,12 @@
     "dirName": "260902-teamapi-create-param",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a066fe-343c-71c7-adaf-8d3729b4074f",
+    "slug": "zod-3-to-4-migration",
+    "dirName": "260828-zod-3-to-4-migration",
+    "scope": "refactor",
+    "status": "complete"
   }
 ]
