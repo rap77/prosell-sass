@@ -1,13 +1,11 @@
 import { z } from "zod";
 
-const apiErrorBodySchema = z
-  .object({
-    detail: z
-      .union([z.string(), z.array(z.object({ msg: z.string() }).passthrough())])
-      .optional(),
-    message: z.string().optional(),
-  })
-  .passthrough();
+const apiErrorBodySchema = z.looseObject({
+  detail: z
+    .union([z.string(), z.array(z.looseObject({ msg: z.string() }))])
+    .optional(),
+  message: z.string().optional(),
+});
 
 /** Extract a human-readable message from a JSON error body shaped like
  * `{ detail }` or `{ message }` (FastAPI's default error shape), falling

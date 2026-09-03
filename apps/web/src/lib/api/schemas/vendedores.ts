@@ -7,18 +7,16 @@
 
 import { z } from "zod";
 
-const BackendVendedorResponseSchema = z
-  .object({
-    id: z.string(),
-    user_id: z.string(),
-    tenant_id: z.string(),
-    name: z.string(),
-    email: z.string(),
-    role: z.string(),
-    created_at: z.string(),
-    updated_at: z.string(),
-  })
-  .passthrough();
+const BackendVendedorResponseSchema = z.looseObject({
+  id: z.string(),
+  user_id: z.string(),
+  tenant_id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  role: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
 
 export const BackendVendedorListResponseSchema = z.object({
   items: z.array(BackendVendedorResponseSchema),

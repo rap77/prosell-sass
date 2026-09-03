@@ -96,8 +96,17 @@ export interface UnifiedProductFormProps {
 }
 
 // Fixed fields schema (price, description)
-const FIXED_FIELDS_SCHEMA = z.object({
+export const FIXED_FIELDS_SCHEMA = z.object({
   // The app currently pins Zod 3.25, whose constraint error key is `message`.
+  price: z.coerce.number().min(0, { message: "Price must be positive" }),
+  description: z.string().max(5000).optional(),
+});
+
+// Loose variant for buildProductPayload's category-attribute extraction below
+// (line ~483): that use site needs to tolerate extra category attributes
+// alongside price/description, unlike the strict `.merge(attrSchema)` use at
+// line ~290, which must keep rejecting unknown top-level fields.
+export const FIXED_FIELDS_SCHEMA_LOOSE = z.looseObject({
   price: z.coerce.number().min(0, { message: "Price must be positive" }),
   description: z.string().max(5000).optional(),
 });
@@ -236,14 +245,15 @@ export function UnifiedProductForm({
     // controlled/uncontrolled transitions. Ignore empty or same value.
     if (!organizationId || organizationId === selectedOrgId) return;
 
-    if (mode === "edit" && selectedOrgId) {
-      // Show confirmation dialog before applying
-      setPendingTransferOrgId(organizationId);
-      setTransferDialogOpen(true);
-    } else {
+    if (mode !== "edit" || !selectedOrgId) {
       // CREATE mode or first selection — apply directly
       applyOrganizationChange(organizationId);
+      return;
     }
+
+    // EDIT mode with an existing org — show confirmation dialog before applying
+    setPendingTransferOrgId(organizationId);
+    setTransferDialogOpen(true);
   };
 
   const confirmTransfer = () => {
@@ -480,7 +490,7 @@ export function UnifiedProductForm({
     coverKey: string | null,
   ) => {
     const { price, description, ...formAttributes } =
-      FIXED_FIELDS_SCHEMA.passthrough().parse(data);
+      FIXED_FIELDS_SCHEMA_LOOSE.parse(data);
 
     // ponytail: simple heuristic — vin = vehicle, operation = real estate, else generic
     const categoryType = getCategoryType(category);
@@ -621,6 +631,17 @@ export function UnifiedProductForm({
       </div>
     );
   }
+
+  const loadingLabel = mode === "create" ? "Creando..." : "Guardando...";
+  const idleLabel = mode === "create" ? "Crear Producto" : "Guardar Cambios";
+  const submitButtonContent = isDisabled ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      {loadingLabel}
+    </>
+  ) : (
+    idleLabel
+  );
 
   const formContent = (
     <form
@@ -935,7 +956,7 @@ export function UnifiedProductForm({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-ps-warning" />
               Transferir producto
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -985,7 +1006,7 @@ export function UnifiedProductForm({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmTransfer}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-ps-warning hover:bg-ps-warning/90"
             >
               Sí, transferir
             </AlertDialogAction>
@@ -1089,7 +1110,7 @@ export function UnifiedProductForm({
                                   ({brokerOption.email})
                                 </span>
                                 {brokerOption.status === "pending" && (
-                                  <span className="text-[10px] text-orange-500">
+                                  <span className="text-[10px] text-ps-warning">
                                     (pendiente)
                                   </span>
                                 )}
@@ -1142,7 +1163,7 @@ export function UnifiedProductForm({
                   className={cn(
                     "text-sm",
                     Math.abs(brokersTotal - 100) < 0.01
-                      ? "text-green-600"
+                      ? "text-ps-success"
                       : "text-destructive",
                   )}
                 >
@@ -1192,16 +1213,7 @@ export function UnifiedProductForm({
       {/* Actions */}
       <div className="flex gap-4">
         <Button type="submit" disabled={isSubmitDisabled}>
-          {isDisabled ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {mode === "create" ? "Creando..." : "Guardando..."}
-            </>
-          ) : mode === "create" ? (
-            "Crear Producto"
-          ) : (
-            "Guardar Cambios"
-          )}
+          {submitButtonContent}
         </Button>
         {onCancel && (
           <Button

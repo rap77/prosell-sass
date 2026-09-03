@@ -22,10 +22,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-const profileSchema = z.object({
+export const profileSchema = z.object({
   firstName: z.string().trim().min(1, { message: "El nombre es requerido" }),
   lastName: z.string().trim().min(1, { message: "El apellido es requerido" }),
-  email: z.string().email({ message: "Correo inválido" }),
+  email: z.email({ error: "Correo inválido" }),
   phone: z.string().trim().optional(),
 });
 

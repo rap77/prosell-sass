@@ -136,6 +136,14 @@ prosell-sass/
 - **`.skills/contract-testing/SKILL.md`** — describe "Layer 3: Schema Matching (DTO ↔ TypeScript Drift Detection)", el patrón que resolvería esta clase de bug; no hay instancia de ese test para `team`.
 - **`apps/web/src/hooks/useTeams.test.ts`** (líneas 111-124, skimmed a nivel de esta sección) — test existente de `createTeam` mockea la acción del store directamente, sin asertar nombres de campo del payload de wire.
 
+### Módulos nuevos inventariados — scan enfocado `260828-zod-3-to-4-migration` (organización de esquemas Zod)
+
+- **`apps/web/src/lib/api/schemas/`** (17 archivos) — ubicación mayoritaria de los esquemas Zod-mirror: `orgApi.ts`, `category.ts`, `vendedores.ts`, `organizations.ts`, `productImageUrls.ts`, `leads.ts`, `walletApi.ts`, `authRoutes.ts`, `appointments.ts`, `authApi.ts`, `teamApi.ts`, y otros. Cada archivo abre con un comentario de cabecera justificando `.passthrough()` ("tolera campos del backend que la UI todavía no renderiza").
+- **`apps/web/src/lib/api/verticals.ts`**, **`apps/web/src/lib/api/products.ts`**, **`apps/web/src/lib/api/extractErrorMessage.ts`** — 3 outliers de ubicación: definen esquemas Zod directamente en `lib/api/` en vez de en `lib/api/schemas/`. Inconsistencia de organización, no de contrato — ver `architecture.md` para el detalle.
+- **`apps/web/src/lib/zod-resolver.ts`** — shim custom de `zodResolver` creado en el commit `d1af1858` (2026-07-20, la migración de #74), **nunca importado en ningún punto del código**. Los 15 call sites reales importan `zodResolver` directo de `@hookform/resolvers/zod`. Código muerto, residuo de un paso intermedio de esa migración — no pedido por este intent, señalado como aside.
+- **`apps/web/src/components/forms/UnifiedProductForm.tsx`** (línea 99: `FIXED_FIELDS_SCHEMA`, línea 290: `.merge(attrSchema)`, línea 483: `.passthrough().parse(data)`) — outlier estructural: `.passthrough()` se invoca en el USE SITE, no en la definición del esquema, y ese mismo esquema se reutiliza en modo estricto en otro punto del archivo. Ver `architecture.md` para el análisis de por qué requiere una decisión explícita en Code Generation.
+- **`apps/web/src/app/(seller)/settings/profile/page.tsx:28`** — un residuo de la migración #74 (ya cerrada): `.string().email({ message: "Correo inválido" })` con la forma encadenada + clave `message`, en vez de `z.email({ error: ... })`. Fuera del alcance declarado de este intent (`.passthrough()`/`z.nativeEnum()`), misma familia de drift de sintaxis — señalado como aside.
+
 ## Patrones de código confirmados
 
 - **Clean Architecture backend estricta**: dependencia unidireccional `Infrastructure → Application → Domain`.

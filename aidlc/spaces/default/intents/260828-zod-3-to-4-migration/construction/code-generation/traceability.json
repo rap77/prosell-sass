@@ -1,0 +1,132 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1",
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2",
+    "FR2.1",
+    "FR2.2",
+    "FR3",
+    "FR4",
+    "FR5",
+    "NFR1",
+    "NFR2"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/orgApi.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/category.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/vendedores.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/organizations.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/productImageUrls.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/leads.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/walletApi.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/authRoutes.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/appointments.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/authApi.ts"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/teamApi.ts"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/verticals.ts"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/extractErrorMessage.ts"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/organizations.ts"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "apps/web/src/components/forms/UnifiedProductForm.tsx"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/leads.ts"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/appointments.ts"
+    },
+    { "id": "FR3", "status": "OK", "target": "AGENTS.md" },
+    {
+      "id": "FR4",
+      "status": "OK",
+      "target": "apps/web/src/lib/zod-resolver.ts (deleted)"
+    },
+    {
+      "id": "FR5",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/settings/profile/page.tsx"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/api/zod4-loose-object.test.ts"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/api/zod4-enum-migration.test.ts"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/tests/unit/lib/schemas/profile-schema.test.ts"
+    },
+    { "id": "NFR2", "status": "OK", "target": "AGENTS.md" }
+  ]
+}

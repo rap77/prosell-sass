@@ -18,35 +18,31 @@ const filterTypeSchema = z.enum([
 ]);
 const attributeTypeSchema = z.enum(["number", "string", "boolean", "select"]);
 
-// ponytail: passthrough — API adds required/filterable/etc, frontend only validates what it uses
-const attributeSchemaEntrySchema = z
-  .object({
-    type: attributeTypeSchema,
-    // ponytail: default to "text" — backend should always send this, but older data may omit it
-    filter_type: filterTypeSchema.default("text"),
-    unit: z.string().optional(),
-    label: z.string().optional(),
-    // ponytail: options can be strings or numbers (cylinders: [3,4,5,6,8], doors: [2,3,4,5])
-    options: z.array(z.union([z.string(), z.number()])).optional(),
-    validation_rules: z
-      .object({
-        min: z.number().optional(),
-        max: z.number().optional(),
-      })
-      .optional(),
-    group: z.string().optional(),
-  })
-  .passthrough();
+// ponytail: looseObject — API adds required/filterable/etc, frontend only validates what it uses
+const attributeSchemaEntrySchema = z.looseObject({
+  type: attributeTypeSchema,
+  // ponytail: default to "text" — backend should always send this, but older data may omit it
+  filter_type: filterTypeSchema.default("text"),
+  unit: z.string().optional(),
+  label: z.string().optional(),
+  // ponytail: options can be strings or numbers (cylinders: [3,4,5,6,8], doors: [2,3,4,5])
+  options: z.array(z.union([z.string(), z.number()])).optional(),
+  validation_rules: z
+    .object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+    })
+    .optional(),
+  group: z.string().optional(),
+});
 
-// ponytail: passthrough — API may add fields, order is optional
-const attributeGroupSchema = z
-  .object({
-    key: z.string(),
-    label: z.string(),
-    order: z.number().optional(),
-    fields: z.array(z.string()).optional(),
-  })
-  .passthrough();
+// ponytail: looseObject — API may add fields, order is optional
+const attributeGroupSchema = z.looseObject({
+  key: z.string(),
+  label: z.string(),
+  order: z.number().optional(),
+  fields: z.array(z.string()).optional(),
+});
 
 // ponytail: card_fields can be strings or objects — API is inconsistent
 const cardFieldSchema = z.union([
@@ -60,14 +56,12 @@ const filterFieldSchema = z.object({
   label: z.string().optional(),
 });
 
-// ponytail: passthrough — API has title_template, etc
-const categoryPresentationSchema = z
-  .object({
-    card_fields: z.array(cardFieldSchema).optional(),
-    subtitle_template: z.string().nullable().optional(),
-    filter_fields: z.array(filterFieldSchema).optional(),
-  })
-  .passthrough();
+// ponytail: looseObject — API has title_template, etc
+const categoryPresentationSchema = z.looseObject({
+  card_fields: z.array(cardFieldSchema).optional(),
+  subtitle_template: z.string().nullable().optional(),
+  filter_fields: z.array(filterFieldSchema).optional(),
+});
 
 interface CategoryNodeShape {
   id: string;
@@ -108,9 +102,7 @@ const orgVerticalsResponseSchema = z.object({
 
 type ParsedOrgVerticalsResponse = z.infer<typeof orgVerticalsResponseSchema>;
 
-const errorBodySchema = z
-  .object({ detail: z.string().optional() })
-  .passthrough();
+const errorBodySchema = z.looseObject({ detail: z.string().optional() });
 
 /**
  * Fetch the verticals + their categories for a given organization.

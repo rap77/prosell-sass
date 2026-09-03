@@ -7,7 +7,7 @@
  * `Category` contract.
  *
  * The schemas are intentionally permissive: `BackendCategorySchema` is
- * `.passthrough()` so the backend may add fields (e.g. `parent_id`,
+ * `z.looseObject()` so the backend may add fields (e.g. `parent_id`,
  * `level`, `icon`, `image_url`, `sort_order`, `field_config`,
  * `tenant_id`) without breaking the frontend. The mapper projects to
  * the subset the frontend actually uses.
@@ -70,23 +70,21 @@ const CategoryPresentationSchema = z.object({
  * (the wire shape) and becomes `Record<string, AttributeSchemaEntry>`
  * after the mapper.
  */
-export const BackendCategorySchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-    attribute_schema: z.record(z.string(), z.unknown()).optional(),
-    is_active: z.boolean(),
-    created_at: z.string(),
-    updated_at: z.string(),
-    /**
-     * The backend's `CategoryResponse` DTO does not currently serialize
-     * `presentation`. Tolerate both states (omitted, null, or present)
-     * so the mapper works against the current and post-fix backends.
-     */
-    presentation: CategoryPresentationSchema.nullable().optional(),
-  })
-  .passthrough();
+export const BackendCategorySchema = z.looseObject({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  attribute_schema: z.record(z.string(), z.unknown()).optional(),
+  is_active: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  /**
+   * The backend's `CategoryResponse` DTO does not currently serialize
+   * `presentation`. Tolerate both states (omitted, null, or present)
+   * so the mapper works against the current and post-fix backends.
+   */
+  presentation: CategoryPresentationSchema.nullable().optional(),
+});
 
 export type BackendCategoryParsed = z.infer<typeof BackendCategorySchema>;
 

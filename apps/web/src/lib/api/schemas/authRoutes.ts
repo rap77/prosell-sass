@@ -8,30 +8,25 @@
 
 import { z } from "zod";
 
-export const BackendRefreshResponseSchema = z
-  .object({
-    access_token: z.string(),
-    refresh_token: z.string(),
-  })
-  .passthrough();
+export const BackendRefreshResponseSchema = z.looseObject({
+  access_token: z.string(),
+  refresh_token: z.string(),
+});
 
-export const AuthStateResponseSchema = z
-  .object({
-    isAuthenticated: z.boolean(),
-    user: z
-      .object({
-        id: z.string(),
-        email: z.string(),
-        first_name: z.string(),
-        last_name: z.string(),
-        role: z.string(),
-        is_email_verified: z.boolean(),
-        is_2fa_enabled: z.boolean(),
-      })
-      .passthrough()
-      .optional(),
-  })
-  .passthrough();
+export const AuthStateResponseSchema = z.looseObject({
+  isAuthenticated: z.boolean(),
+  user: z
+    .looseObject({
+      id: z.string(),
+      email: z.string(),
+      first_name: z.string(),
+      last_name: z.string(),
+      role: z.string(),
+      is_email_verified: z.boolean(),
+      is_2fa_enabled: z.boolean(),
+    })
+    .optional(),
+});
 
 export type BackendRefreshResponse = z.infer<
   typeof BackendRefreshResponseSchema

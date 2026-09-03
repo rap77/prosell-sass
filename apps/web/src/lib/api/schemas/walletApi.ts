@@ -2,7 +2,7 @@
  * Zod schemas for the wallet endpoints.
  *
  * Validates the wire shape at the HTTP boundary instead of trusting the
- * generic `handleResponse<T>` cast on `response.json()`. `.passthrough()`
+ * generic `handleResponse<T>` cast on `response.json()`. `z.looseObject()`
  * tolerates backend fields the wallet UI doesn't render yet (mirrors the
  * `leads.ts`/`appointments.ts` schema convention).
  */
@@ -11,30 +11,26 @@ import { z } from "zod";
 
 export const TransactionTypeSchema = z.enum(["credit", "debit"]);
 
-export const WalletTransactionSchema = z
-  .object({
-    id: z.string(),
-    wallet_id: z.string(),
-    tenant_id: z.string(),
-    transaction_type: TransactionTypeSchema,
-    amount: z.number(),
-    balance_after: z.number(),
-    description: z.string().nullable(),
-    metadata: z.record(z.string(), z.unknown()).nullable(),
-    created_at: z.string(),
-  })
-  .passthrough();
+export const WalletTransactionSchema = z.looseObject({
+  id: z.string(),
+  wallet_id: z.string(),
+  tenant_id: z.string(),
+  transaction_type: TransactionTypeSchema,
+  amount: z.number(),
+  balance_after: z.number(),
+  description: z.string().nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  created_at: z.string(),
+});
 
-export const WalletSchema = z
-  .object({
-    id: z.string(),
-    organization_id: z.string(),
-    tenant_id: z.string(),
-    balance: z.number(),
-    created_at: z.string(),
-    updated_at: z.string(),
-  })
-  .passthrough();
+export const WalletSchema = z.looseObject({
+  id: z.string(),
+  organization_id: z.string(),
+  tenant_id: z.string(),
+  balance: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
 
 export const WalletTransactionsResponseSchema = z.object({
   transactions: z.array(WalletTransactionSchema),

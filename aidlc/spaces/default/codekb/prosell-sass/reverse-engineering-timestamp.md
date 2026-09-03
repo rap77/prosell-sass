@@ -1,18 +1,62 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-02 (última actualización: scan enfocado del intent `260902-teamapi-create-param`)
-**Commit analizado**: `8525bf54` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260901-frontend-test-debt` (a su vez aditivo sobre `260828-useeffect-to-react-query`, `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-02 (última actualización: scan enfocado del intent `260828-zod-3-to-4-migration`)
+**Commit analizado**: `6c906f2aee86e3af3e35b4bbd716911a4515f774` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260902-teamapi-create-param` (a su vez aditivo sobre `260901-frontend-test-debt`, `260828-useeffect-to-react-query`, `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260902-teamapi-create-param` corrige el mismatch de nombre de parámetro entre `teamApi.create()` (frontend, envía `organization_id`) y `CreateTeamRequest` (backend, espera `org_id`) al crear un equipo. El store existente cubría el área `orgApi`/`teamApi` a profundidad de superficie de método (intent `260828-useeffect-to-react-query`, foco onboarding/invite), pero nunca había profundizado en el contrato de wire exacto de `teamApi.create()`/`teamApi.update()` contra los DTOs Pydantic del backend, ni en la capa de rutas BFF de `teams` (mocks vs. proxy real), ni en `next.config.ts`. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+El intent `260828-zod-3-to-4-migration` migra `apps/web` de sintaxis Zod 3 (`.passthrough()`, `z.nativeEnum()`) a sintaxis nativa Zod 4 (`z.looseObject()`, `z.enum()` sobre TS enums), audita el estado real del issue GitHub #74, y actualiza `AGENTS.md` en consecuencia. El store existente cubría a profundidad el contrato de wire de `teamApi`/`team_router` (intent `260902-teamapi-create-param`), pero nunca había profundizado en el área de esquemas Zod (`apps/web/src/lib/api/schemas/`) ni en el estado real de #74. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
 
 ## Verificación de overwrite (codekb-scope-diff)
 
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco contrato de wire `teamApi`/`team_router`, intent `260902-teamapi-create-param`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (sintaxis de validación Zod en `lib/api/schemas/`, no el contrato de creación de equipo). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+```
+NARROWER: replacing the store discards deep knowledge of:
+  - apps/web/src/lib/api/teamApi.ts
+  - apps/web/src/stores/teamStore.ts
+  - apps/web/src/components/forms/TeamForm.tsx
+  - apps/web/src/app/api/v1/teams/route.ts
+  - apps/web/src/app/api/v1/teams/[id]/route.ts
+  - apps/web/src/app/api/v1/teams/org/[orgId]/route.ts
+  - apps/web/next.config.ts
+  - apps/api/src/prosell/infrastructure/api/routers/team_router.py
+  - apps/api/src/prosell/application/dto/team/create.py
+  - apps/api/src/prosell/application/dto/team/response.py
+  - apps/api/tests/contract/schema_matching/test_team_dto_schemas.py
+  components: teamApi.create, teamApi.update, teamApi.listByOrg, teamApi.getById, teamApi.addMember, teamApi.acceptInvitation, CreateTeamRequest, TeamResponse
+(store intent: 260902-teamapi-create-param; incoming intent: 260828-zod-3-to-4-migration)
+```
+
+## Developer Code Scan Results — foco migración Zod 3→4, auditoría issue #74, corrección `AGENTS.md` (intent `260828-zod-3-to-4-migration`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `AGENTS.md` (líneas 100-169, sección completa de excepción legacy Zod + contexto GGA circundante), `apps/web/package.json` (bloque de dependencias), `apps/web/src/lib/api/schemas/` — los 17 archivos (vía scan de contenido completo con `rg`), `apps/web/src/lib/api/*.ts` (escaneado por ocurrencias de `.passthrough()`/`z.nativeEnum()`/`z.enum()`/`z.looseObject()`; `verticals.ts`, `products.ts`, `extractErrorMessage.ts` leídos en profundidad específicamente), `apps/web/src/lib/api/schemas/leads.ts` (leído completo — el archivo más rico, ambos patrones presentes), `apps/web/src/lib/api/schemas/appointments.ts` (líneas 1-45), `apps/web/src/lib/api/extractErrorMessage.ts` (leído completo — el archivo de migración parcial previamente revertida), `apps/web/src/components/forms/MemberForm.tsx` (líneas 80-160, los comentarios de código del "issue #74"), `apps/web/src/components/forms/UnifiedProductForm.tsx` (líneas 470-490 y la definición de `FIXED_FIELDS_SCHEMA` en línea 99 — outlier estructural de `.passthrough()` en el use-site), historial git completo (con timestamps) de cada commit relacionado a Zod desde 2026-06-30 hasta 2026-09-01, más `git show` sobre los dos commits decisivos (`d1af1858`, `ad74ac33`), **GitHub issue #74** (obtenido en vivo vía `gh issue view 74 --json ...`: body, comentarios, state, closedAt, labels), `.gga` (config, confirma `STRICT_MODE=true`), documentos existentes del codekb (`code-quality-assessment.md`, `dependencies.md`, `project.md`) para reconciliar contra la estimación previa.
+- **Solo relevado (skimmed)**: resto de `apps/web` (components, app router pages, hooks, stores, tests) más allá de los archivos específicos arriba — solo grep-matched para los cuatro patrones objetivo. Backend (`apps/api`) intocado — fuera de alcance, este intent es exclusivo de `apps/web`.
+
+### Root cause / hallazgo principal
+
+Ver `code-quality-assessment.md` § "Hallazgos del scan enfocado `260828-zod-3-to-4-migration`" (#50-56) para el detalle completo: issue #74 CERRADO desde 2026-07-20 con alcance propio que nunca cubrió `.passthrough()`/`z.nativeEnum()`; recuento exacto de 36 call sites de `.passthrough()` en 14 archivos y 4 de `z.nativeEnum()` en 2 archivos (corrige la estimación previa de "~41/11"); `AGENTS.md` necesita corrección más allá de actualizar la fecha del issue, porque su frase de cierre ya bloqueó GGA sobre una migración parcial anterior; `UnifiedProductForm.tsx:483` es un outlier estructural que requiere decisión explícita de diseño.
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Code Generation)
+
+- Decisión de diseño para `UnifiedProductForm.tsx` (definición compartida de `FIXED_FIELDS_SCHEMA` vs. use-site aislado en línea 483).
+- Alcance exacto de la corrección de `AGENTS.md` (¿eliminar la sección completa, o acotarla explícitamente a los patrones que #74 sí cubrió?).
+- `apps/web/src/lib/zod-resolver.ts` (código muerto) y `apps/web/src/app/(seller)/settings/profile/page.tsx:28` (residuo de #74) — señalados como aside, no pedidos por este intent.
+
+Ver `architecture.md`, `code-structure.md`, `technology-stack.md`, `dependencies.md` y `code-quality-assessment.md` para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260902-teamapi-create-param`)
+
+El intent `260902-teamapi-create-param` corrige el mismatch de nombre de parámetro entre `teamApi.create()` (frontend, envía `organization_id`) y `CreateTeamRequest` (backend, espera `org_id`) al crear un equipo. El store existente cubría el área `orgApi`/`teamApi` a profundidad de superficie de método (intent `260828-useeffect-to-react-query`, foco onboarding/invite), pero nunca había profundizado en el contrato de wire exacto de `teamApi.create()`/`teamApi.update()` contra los DTOs Pydantic del backend, ni en la capa de rutas BFF de `teams` (mocks vs. proxy real), ni en `next.config.ts`. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260902-teamapi-create-param`
+
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco tests unitarios `products.ts`/transiciones de estado, intent `260901-frontend-test-debt`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (contrato `teamApi`/`team_router` de creación de equipo, no `products.ts`). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
-## Developer Code Scan Results — foco mismatch de parámetro `teamApi.create` (intent `260902-teamapi-create-param`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco mismatch de parámetro `teamApi.create` (intent `260902-teamapi-create-param`)
 
 ### Scan Coverage
 
@@ -268,10 +312,30 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260902-teamapi-create-param
-fingerprint: 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+intent: 260828-zod-3-to-4-migration
+fingerprint: 5fa47c70018bc04b9de51e79b4fc8898c18b5c4f
 analyzed:
   paths:
+    - AGENTS.md
+    - apps/web/package.json
+    - apps/web/src/lib/api/schemas/
+    - apps/web/src/lib/api/verticals.ts
+    - apps/web/src/lib/api/products.ts
+    - apps/web/src/lib/api/extractErrorMessage.ts
+    - apps/web/src/lib/api/schemas/leads.ts
+    - apps/web/src/lib/api/schemas/appointments.ts
+    - apps/web/src/components/forms/MemberForm.tsx
+    - apps/web/src/components/forms/UnifiedProductForm.tsx
+    - .gga
+  components:
+    - zod-3-to-4-migration
+    - passthrough-call-sites
+    - nativeEnum-call-sites
+    - AGENTS.md-zod-exception-section
+shallow:
+  paths:
+    - apps/web (resto, grep-matched solamente para .passthrough()/z.nativeEnum()/z.enum()/z.looseObject())
+    - apps/api (intocado, fuera de alcance de este intent)
     - apps/web/src/lib/api/teamApi.ts
     - apps/web/src/lib/api/schemas/teamApi.ts
     - apps/web/src/stores/teamStore.ts
@@ -284,17 +348,6 @@ analyzed:
     - apps/api/src/prosell/application/dto/team/create.py
     - apps/api/src/prosell/application/dto/team/response.py
     - apps/api/tests/contract/schema_matching/test_team_dto_schemas.py
-  components:
-    - teamApi.create
-    - teamApi.update
-    - teamApi.listByOrg
-    - teamApi.getById
-    - teamApi.addMember
-    - teamApi.acceptInvitation
-    - CreateTeamRequest
-    - TeamResponse
-shallow:
-  paths:
     - apps/web/src/hooks/useTeams.test.ts
     - apps/web/tests/components/forms/TeamForm.test.tsx
     - .skills/contract-testing/SKILL.md

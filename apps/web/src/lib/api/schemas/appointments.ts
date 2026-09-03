@@ -20,20 +20,18 @@ export enum AppointmentStatus {
   CANCELLED = "cancelled",
 }
 
-export const BackendAppointmentResponseSchema = z
-  .object({
-    id: z.string(),
-    tenant_id: z.string(),
-    lead_id: z.string(),
-    user_id: z.string(),
-    product_id: z.string(),
-    scheduled_at: z.string(),
-    status: z.nativeEnum(AppointmentStatus),
-    notes: z.string().nullable(),
-    created_at: z.string(),
-    updated_at: z.string(),
-  })
-  .passthrough();
+export const BackendAppointmentResponseSchema = z.looseObject({
+  id: z.string(),
+  tenant_id: z.string(),
+  lead_id: z.string(),
+  user_id: z.string(),
+  product_id: z.string(),
+  scheduled_at: z.string(),
+  status: z.enum(AppointmentStatus),
+  notes: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
 
 export const BackendAppointmentListResponseSchema = z.object({
   items: z.array(BackendAppointmentResponseSchema),

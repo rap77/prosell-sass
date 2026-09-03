@@ -117,29 +117,6 @@ Use `$skill-name`:
 
 ---
 
-## Legacy Exceptions (DO NOT flag as errors)
-
-These patterns are valid until migration is complete:
-
-### Zod 3 Syntax (until issue #74 is resolved)
-
-The project uses **Zod 3**, NOT Zod 4. The following patterns are VALID:
-
-```typescript
-// VALID - Zod 3 string validators with message argument
-z.string().min(1, "Required");
-z.string().email("Invalid email");
-z.string().url("Invalid URL");
-
-// DO NOT require Zod 4 style:
-// z.string().min(1, { error: "Required" })  ← NOT required yet
-// z.email("message")  ← NOT required yet
-```
-
-**PASS** any code using Zod 3 validator syntax. **DO NOT** flag as "Zod 4 Rule" violation.
-
----
-
 # Code Review Rules
 
 You are reviewing code for a vehicle market analysis platform. The codebase is a monorepo with:
