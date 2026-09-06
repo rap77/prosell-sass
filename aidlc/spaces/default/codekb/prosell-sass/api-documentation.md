@@ -212,6 +212,19 @@ Misma implementación que `orgApi.ts`: raw `fetch()`, `ApiError`/`handleResponse
 
 Esta triangulación es evidencia directa a favor de la convención de equipo ya afirmada (`team.md` Q6: adoptar en frontend un patrón de manejo de errores equivalente al del backend — excepciones tipadas por dominio + manejo centralizado). Ver `code-quality-assessment.md` para el detalle completo del hallazgo.
 
+## Export de catálogo — genérico existente vs. formato cliente pedido (scan enfocado `260903-catalog-client-export`)
+
+| Endpoint                                                                 | Método | Formato                                                                                   | Notas                                                                                                                                                                                               |
+| ------------------------------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/products/export.csv?category_id=` (`product_router.py:635`) | GET    | CSV **genérico**: `UNIVERSAL_COLUMNS_ORDERED` + `attribute_schema` dinámico por categoría | Existente (FEAT-1, intent `260826-prod-bugfixes-batch`). SIN ZIP de imágenes. No es el formato de 24 columnas del cliente.                                                                          |
+| Import cliente (`BulkUploadVehiclesUseCase`)                             | POST   | CSV cliente (24 columnas, `;`) + ZIP opcional de imágenes (`CSVImageMapper`)              | Router GET/POST exacto no confirmado a nivel de línea en este pase — pendiente para Requirements Analysis/Functional Design. Es el "espejo" de import cuyo formato el export nuevo debe reproducir. |
+
+**Consecuencia de diseño**: el endpoint de export existente y el formato que el intent pide (mismo CSV que el cliente usa para importar, más ZIP de imágenes por vehículo) **no son el mismo contrato de columnas** — se necesita decidir explícitamente si se extiende `export.csv` con un parámetro de formato, o si se crea un endpoint nuevo dedicado. Ninguna de las dos opciones requiere dependencias nuevas: `csv`/`zipfile` (stdlib) ya están en uso en el backend.
+
+**Proxy BFF de `products` — confirmado SIN el defecto de `response.json()` ciego**: a diferencia de `categories`/`organizations`/`vehicles`, `apps/web/src/app/api/v1/products/[...path]/route.ts` ya soporta pass-through binario/no-JSON (`response.blob()` + `Content-Disposition` preservado) — confirmado por lectura directa este pase. Corrige la nota general de `project.md` (learned 2026-08-26) para este archivo específico: el defecto de `content-type` ciego sigue vigente en los otros 3 proxies, pero no en `products`.
+
+**Gap de puerto de storage**: `IDOSpacesService` (`application/ports/ido_spaces.py`) no declara ningún método de lectura/descarga de bytes ya almacenados (solo `upload`/`presign`/`delete`/`exists`) — armar el ZIP de imágenes requiere agregar un método al puerto (equivalente a S3 `get_object`) o consumir las `image_urls` públicas ya guardadas en `Product` vía `httpx` (ya es dependencia del proyecto, sin agregar nada nuevo).
+
 ## `teamApi` — contrato de creación de equipo, mismatch confirmado (scan enfocado `260902-teamapi-create-param`)
 
 ### Request — `POST /api/v1/teams`

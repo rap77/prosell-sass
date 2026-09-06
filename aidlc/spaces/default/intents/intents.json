@@ -89,5 +89,12 @@
     "dirName": "260828-zod-3-to-4-migration",
     "scope": "refactor",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0672b-a60a-75ba-bbad-7ccb20efe4d8",
+    "slug": "catalog-client-export",
+    "dirName": "260903-catalog-client-export",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]

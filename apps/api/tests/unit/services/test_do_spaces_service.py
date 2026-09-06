@@ -2,6 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+from botocore.exceptions import ClientError
+
+from prosell.application.ports.ido_spaces import StorageReadError
 from prosell.infrastructure.services.do_spaces_service import (
     DOSpacesService,
     generate_banner_path,
@@ -82,6 +86,49 @@ class TestDOSpacesService:
         result = await service.delete_file("orgs/123/logo.jpg")
 
         assert result is False
+
+    @patch("prosell.infrastructure.services.do_spaces_service.boto3.client")
+    async def test_get_object_returns_bytes(self, mock_boto3_client):
+        """Read an object's bytes from Spaces."""
+        mock_s3 = MagicMock()
+        mock_boto3_client.return_value = mock_s3
+        mock_body = MagicMock()
+        mock_body.read.return_value = b"file-bytes"
+        mock_s3.get_object.return_value = {"Body": mock_body}
+
+        service = DOSpacesService(
+            region="nyc3",
+            bucket_name="test-bucket",
+            access_key="test-key",
+            secret_key="test-secret",
+        )
+        result = await service.get_object("orgs/123/vehicles/photo.jpg")
+
+        assert result == b"file-bytes"
+        mock_s3.get_object.assert_called_once_with(
+            Bucket=service.bucket,
+            Key="orgs/123/vehicles/photo.jpg",
+        )
+
+    @patch("prosell.infrastructure.services.do_spaces_service.boto3.client")
+    async def test_get_object_missing_key_raises_storage_read_error(self, mock_boto3_client):
+        """A missing object (or any client/network failure) raises StorageReadError."""
+        mock_s3 = MagicMock()
+        mock_boto3_client.return_value = mock_s3
+        mock_s3.get_object.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}},
+            "GetObject",
+        )
+
+        service = DOSpacesService(
+            region="nyc3",
+            bucket_name="test-bucket",
+            access_key="test-key",
+            secret_key="test-secret",
+        )
+
+        with pytest.raises(StorageReadError):
+            await service.get_object("orgs/123/vehicles/missing.jpg")
 
     @patch("prosell.infrastructure.services.do_spaces_service.boto3.client")
     async def test_check_file_exists_true(self, mock_boto3_client):

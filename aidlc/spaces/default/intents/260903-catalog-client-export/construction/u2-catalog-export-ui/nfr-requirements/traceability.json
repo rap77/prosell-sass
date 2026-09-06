@@ -1,0 +1,27 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-catalog-export-ui",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "resolución de tenant_id es responsabilidad exclusiva de u1-catalog-export-api (NFR1.1/NFR1.2) — U2 no participa, security-requirements.md § intro"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "U2 no construye ninguna ruta interna de ZIP — sanitización es responsabilidad exclusiva de u1-catalog-export-api (NFR2.1)"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "enforcement del cap es responsabilidad exclusiva de u1-catalog-export-api (NFR3.1) — U2 solo renderiza el mensaje de error"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "postura de piso mínimo de test, se enforce en Build and Test, no en artefactos de diseño NFR de este Unit"
+    }
+  ]
+}

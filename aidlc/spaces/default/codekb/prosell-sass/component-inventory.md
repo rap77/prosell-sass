@@ -134,6 +134,17 @@ Nuevo componente inventariado en el scan enfocado del intent `260830-ci-seed-dat
 - **Defecto relacionado, no nombrado en el intent**: `teamApi.update()` probablemente 405 contra el mock (`[id]/route.ts` solo exporta `GET`).
 - **Gap estructural**: `apps/api/tests/contract/schema_matching/test_team_dto_schemas.py` no puede detectar este bug por diseño (nunca lee TypeScript); `.skills/contract-testing/SKILL.md` ya describe el patrón ("Layer 3") que lo resolvería, sin instancia para `team`.
 
+## Export de catálogo — formato cliente + ZIP de imágenes (backend/frontend, scan enfocado `260903-catalog-client-export`)
+
+- **Responsabilidad**: exportar el catálogo completo en el mismo formato CSV (24 columnas, `;`) que el cliente usa para importar, más un ZIP con las imágenes de cada vehículo, organizadas en carpetas nombradas por convención.
+- **Ubicación (backend)**: `domain/services/csv_export.py` (`build_image_folder_name()`), `domain/services/csv_product_parser.py` (referencia de simetría con el import), `infrastructure/api/routers/product_router.py` (`export.csv`, formato genérico existente), `application/ports/ido_spaces.py` + `infrastructure/services/do_spaces_service.py` (storage).
+- **Ubicación (frontend)**: `apps/web/src/lib/api/products.ts` (`exportCatalogCsv`, `downloadSchemaTemplate`), `apps/web/src/app/(seller)/catalog/page.tsx` (`handleExportCsv`).
+- **Dependencias**: `Organization.code` (para el segmento `{CÓDIGO_ORG}` del nombre de carpeta), `Product.attributes["exterior_color"]` (color real del vehículo), `Product.image_urls`/`cover_image_key`. Sin dependencias nuevas necesarias — `csv`/`zipfile` (stdlib) ya cubren CSV+ZIP; `boto3`/`httpx` ya están instalados.
+- **Defecto confirmado**: `build_image_folder_name()` lee `attrs.get("color")` en vez de `attributes["exterior_color"]` — el segmento COLOR de la carpeta se pierde silenciosamente para vehículos reales.
+- **Gap de diseño pendiente**: el export genérico existente (`export.csv`) usa un contrato de columnas distinto al formato cliente de 24 columnas — se necesita decidir endpoint nuevo vs. extensión del existente. `IDOSpacesService` no tiene método de descarga de bytes — se necesita agregarlo o usar `httpx` contra `image_urls` públicas.
+- **Gap de UX ya conocido**: la UX de "pedir carpeta destino" ya existe (`window.prompt`, FR8.3 del intent `260826-prod-bugfixes-batch`) pero sin valor sugerido por defecto.
+- **Estado del proxy BFF de `products`**: SIN el defecto de `response.json()` ciego (a diferencia de `categories`/`organizations`/`vehicles`) — ya soporta blob + `Content-Disposition`, verificado este pase.
+
 ---
 
 ## Inventario de bug — clases Tailwind inválidas

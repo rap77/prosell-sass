@@ -1,0 +1,13 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US1.2", "US1.3"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "Product" },
+    {
+      "id": "US1.2",
+      "status": "N/A",
+      "target": "interacción puramente client-side (window.prompt), sin componente backend que la realice — ver components.md § Nota de trazabilidad — US1.2"
+    },
+    { "id": "US1.3", "status": "OK", "target": "Product" }
+  ]
+}

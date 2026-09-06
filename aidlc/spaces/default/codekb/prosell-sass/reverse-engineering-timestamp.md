@@ -1,14 +1,63 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-02 (última actualización: scan enfocado del intent `260828-zod-3-to-4-migration`)
-**Commit analizado**: `6c906f2aee86e3af3e35b4bbd716911a4515f774` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260902-teamapi-create-param` (a su vez aditivo sobre `260901-frontend-test-debt`, `260828-useeffect-to-react-query`, `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-03 (última actualización: scan enfocado del intent `260903-catalog-client-export`)
+**Commit analizado**: `30b4b89ce6359be6c046c002c06aacd40a266260` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260828-zod-3-to-4-migration` (a su vez aditivo sobre `260902-teamapi-create-param`, `260901-frontend-test-debt`, `260828-useeffect-to-react-query`, `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260828-zod-3-to-4-migration` migra `apps/web` de sintaxis Zod 3 (`.passthrough()`, `z.nativeEnum()`) a sintaxis nativa Zod 4 (`z.looseObject()`, `z.enum()` sobre TS enums), audita el estado real del issue GitHub #74, y actualiza `AGENTS.md` en consecuencia. El store existente cubría a profundidad el contrato de wire de `teamApi`/`team_router` (intent `260902-teamapi-create-param`), pero nunca había profundizado en el área de esquemas Zod (`apps/web/src/lib/api/schemas/`) ni en el estado real de #74. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+El intent `260903-catalog-client-export` implementa la exportación del catálogo en el mismo formato CSV (24 columnas) que el cliente usa para importar vehículos, más un ZIP con las imágenes de cada vehículo organizadas por carpeta. El store existente cubría a profundidad la migración de sintaxis Zod (intent `260828-zod-3-to-4-migration`), pero nunca había profundizado en el pipeline de export de catálogo (`csv_export.py`), en el import cliente equivalente (`csv_field_mapper.py`/`csv_product_parser.py`/`csv_image_mapper.py`), ni en el puerto de storage (`ido_spaces.py`/`do_spaces_service.py`). El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
 
 ## Verificación de overwrite (codekb-scope-diff)
+
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco migración de sintaxis Zod, intent `260828-zod-3-to-4-migration`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (export de catálogo/CSV/ZIP de imágenes, no esquemas Zod). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+```
+NARROWER: replacing the store discards deep knowledge of:
+  - AGENTS.md
+  - apps/web/package.json
+  - apps/web/src/lib/api/schemas/
+  - apps/web/src/lib/api/verticals.ts
+  - apps/web/src/lib/api/extractErrorMessage.ts
+  - apps/web/src/lib/api/schemas/leads.ts
+  - apps/web/src/lib/api/schemas/appointments.ts
+  - apps/web/src/components/forms/MemberForm.tsx
+  - apps/web/src/components/forms/UnifiedProductForm.tsx
+  - .gga
+  components: zod-3-to-4-migration, passthrough-call-sites, nativeEnum-call-sites, AGENTS.md-zod-exception-section
+(store intent: 260828-zod-3-to-4-migration; incoming intent: 260903-catalog-client-export)
+```
+
+## Developer Code Scan Results — foco export de catálogo formato cliente + ZIP de imágenes (intent `260903-catalog-client-export`)
+
+### Paso 0 (graphify-first) cumplido
+
+Grafo fresco (`graphify-out/graph.json` generado 07:25:35, posterior al HEAD commit 07:24:51). Se usó `graphify query` para orientarse en bulk-upload/CSV/organización/imágenes antes de leer cualquier archivo crudo. Lectura directa reservada a contenido literal no indexado en detalle por graphify (`docs/canonical/F01-bulk-upload-csv-import.md`, `docs/data39.csv`) y a los archivos de código que el propio graphify señaló como núcleo del área.
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `docs/canonical/F01-bulk-upload-csv-import.md` (completo), `docs/data39.csv` (header + parseo real con `csv.DictReader`, 564 filas, muestreo de contenido), `apps/api/src/prosell/domain/entities/organization.py`, `apps/api/src/prosell/domain/services/csv_field_mapper.py`, `apps/api/src/prosell/domain/services/csv_product_parser.py`, `apps/api/src/prosell/domain/services/csv_image_mapper.py`, `apps/api/src/prosell/domain/services/csv_export.py`, `apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py`, `apps/api/src/prosell/application/ports/ido_spaces.py`, `apps/api/src/prosell/infrastructure/services/do_spaces_service.py` (parcial — constructor/config), `apps/api/src/prosell/infrastructure/api/routers/product_router.py` (líneas 620-750: `export.csv` + `list_products`), `apps/web/src/lib/api/products.ts` (líneas 1480-1560: `downloadSchemaTemplate`, `exportCatalogCsv`), `apps/web/src/app/(seller)/catalog/page.tsx` (líneas 360-400: `handleExportCsv`), `apps/web/src/app/api/v1/products/[...path]/route.ts` (proxy BFF completo), `apps/api/pyproject.toml` (dependencias completas), `aidlc/spaces/default/intents/260826-prod-bugfixes-batch/inception/requirements-analysis/requirements.md` (sección FR8 — FEAT-1, spec previa del export genérico).
+- **Skimmed only** (ubicados vía graphify, no leídos en profundidad — quedan `kind: partial` en el codekb): `apps/api/src/prosell/domain/entities/product.py` (grep de campos `image_urls`/`cover_image_key`), `apps/api/src/prosell/application/dto/product/attributes.py`, `apps/api/src/prosell/application/dto/product/response.py`, `apps/web/src/components/admin/BulkImportClientCSV.tsx`, `apps/web/src/components/upload/BulkUploadCSV.tsx`, `apps/web/src/lib/api/bulkImportClient.ts`, `apps/api/src/prosell/infrastructure/api/routers/vehicle_router.py`, `image_router.py`, `org_router.py`, `docs/superpowers/specs/2026-06-09-storage-optimization-design.md`. Tests localizados pero no leídos completos: `test_bulk_upload_vehicles.py`, `test_csv_field_mapper.py`, `test_csv_image_mapper.py` (duplicado aparente en `tests/unit/services/` y `tests/unit/domain/services/`), `test_csv_export.py`, `BulkImportClientCSV.test.tsx`, `bulkUpload.test.tsx`.
+- **No tocado**: resto del repositorio (scan enfocado, no full rescan) — auth, Zod schemas, batch review, seed data, Tailwind y el resto de la arquitectura backend/frontend siguen vigentes tal cual del store previo, sin re-verificar en este pase.
+
+### Root cause / hallazgo principal
+
+Ver `code-quality-assessment.md` § "Hallazgos del scan enfocado `260903-catalog-client-export`" (#57-65) para el detalle completo: el export de catálogo existente (`GET /api/v1/products/export.csv`, FEAT-1) usa un formato de columnas genérico, no las 24 columnas del formato cliente (`docs/data39.csv`) — se necesita un pipeline de export distinto, decisión de diseño pendiente; `build_image_folder_name()` (`csv_export.py`) tiene un bug confirmado de mapeo de campo (`attrs.get("color")` en vez de `attributes["exterior_color"]`); `IDOSpacesService` carece de un método de descarga de bytes, necesario para el ZIP de imágenes; y hay una discrepancia real entre `docs/canonical/F01-bulk-upload-csv-import.md` y los datos reales sobre el uso de las columnas `option`/`description`.
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Code Generation)
+
+- Decisión de diseño: extender `GET /api/v1/products/export.csv` con un parámetro de formato, o crear un endpoint nuevo dedicado al formato cliente + ZIP.
+- Decisión de diseño: agregar un método de descarga a `IDOSpacesService`, o consumir `image_urls` públicas vía `httpx` para armar el ZIP.
+- Confirmar con el usuario si "23 columnas" (descripción verbatim del intent) excluye la columna `id` de las 24 reales de `docs/data39.csv`.
+- Verificar si `setProductCover.test.ts`/`test_csv_image_mapper.py` duplicado entran en el alcance de Build and Test de este intent.
+
+Ver `architecture.md`, `code-structure.md`, `component-inventory.md`, `technology-stack.md`, `dependencies.md` y `code-quality-assessment.md` para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260828-zod-3-to-4-migration`)
+
+El intent `260828-zod-3-to-4-migration` migra `apps/web` de sintaxis Zod 3 (`.passthrough()`, `z.nativeEnum()`) a sintaxis nativa Zod 4 (`z.looseObject()`, `z.enum()` sobre TS enums), audita el estado real del issue GitHub #74, y actualiza `AGENTS.md` en consecuencia. El store existente cubría a profundidad el contrato de wire de `teamApi`/`team_router` (intent `260902-teamapi-create-param`), pero nunca había profundizado en el área de esquemas Zod (`apps/web/src/lib/api/schemas/`) ni en el estado real de #74. El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260828-zod-3-to-4-migration`
 
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco contrato de wire `teamApi`/`team_router`, intent `260902-teamapi-create-param`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (sintaxis de validación Zod en `lib/api/schemas/`, no el contrato de creación de equipo). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
@@ -29,7 +78,7 @@ NARROWER: replacing the store discards deep knowledge of:
 (store intent: 260902-teamapi-create-param; incoming intent: 260828-zod-3-to-4-migration)
 ```
 
-## Developer Code Scan Results — foco migración Zod 3→4, auditoría issue #74, corrección `AGENTS.md` (intent `260828-zod-3-to-4-migration`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco migración Zod 3→4, auditoría issue #74, corrección `AGENTS.md` (intent `260828-zod-3-to-4-migration`)
 
 ### Scan Coverage
 
@@ -312,30 +361,42 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260828-zod-3-to-4-migration
-fingerprint: 5fa47c70018bc04b9de51e79b4fc8898c18b5c4f
+intent: 260903-catalog-client-export
+fingerprint: 42238d343465de94cdaa8fcea6bfd7931c83232a
 analyzed:
   paths:
+    - docs/canonical/F01-bulk-upload-csv-import.md
+    - docs/data39.csv
+    - apps/api/src/prosell/domain/entities/organization.py
+    - apps/api/src/prosell/domain/services/csv_field_mapper.py
+    - apps/api/src/prosell/domain/services/csv_product_parser.py
+    - apps/api/src/prosell/domain/services/csv_image_mapper.py
+    - apps/api/src/prosell/domain/services/csv_export.py
+    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
+    - apps/api/src/prosell/application/ports/ido_spaces.py
+    - apps/api/src/prosell/infrastructure/services/do_spaces_service.py
+    - apps/api/src/prosell/infrastructure/api/routers/product_router.py
+    - apps/web/src/lib/api/products.ts
+    - apps/web/src/app/(seller)/catalog/page.tsx
+    - apps/web/src/app/api/v1/products/[...path]/route.ts
+    - apps/api/pyproject.toml
+  components:
+    - catalog-client-csv-export
+    - vehicle-image-zip-export
+shallow:
+  paths:
     - AGENTS.md
-    - apps/web/package.json
     - apps/web/src/lib/api/schemas/
     - apps/web/src/lib/api/verticals.ts
-    - apps/web/src/lib/api/products.ts
     - apps/web/src/lib/api/extractErrorMessage.ts
     - apps/web/src/lib/api/schemas/leads.ts
     - apps/web/src/lib/api/schemas/appointments.ts
     - apps/web/src/components/forms/MemberForm.tsx
     - apps/web/src/components/forms/UnifiedProductForm.tsx
     - .gga
-  components:
-    - zod-3-to-4-migration
-    - passthrough-call-sites
-    - nativeEnum-call-sites
-    - AGENTS.md-zod-exception-section
-shallow:
-  paths:
+    - apps/web/package.json
     - apps/web (resto, grep-matched solamente para .passthrough()/z.nativeEnum()/z.enum()/z.looseObject())
-    - apps/api (intocado, fuera de alcance de este intent)
+    - apps/api (cobertura parcial acumulada de pases previos — ver analyzed.paths de este bloque para lo nuevo de este pase)
     - apps/web/src/lib/api/teamApi.ts
     - apps/web/src/lib/api/schemas/teamApi.ts
     - apps/web/src/stores/teamStore.ts
@@ -360,7 +421,6 @@ shallow:
     - apps/api/tests/integration/api/test_team_entity.py
     - apps/web/tests/unit/api/products.test.tsx
     - apps/web/tests/unit/lib/api/reverseTransitions.test.tsx
-    - apps/web/src/lib/api/products.ts
     - apps/api/src/prosell/domain/entities/product.py
     - apps/api/src/prosell/infrastructure/models/product_model.py
     - apps/web/src/components/admin/AvailableTransitions.tsx
@@ -368,7 +428,6 @@ shallow:
     - apps/web/tests/unit/components/upload/setProductCover.test.ts
     - apps/web/tests/unit/lib/api/products.test.ts
     - apps/web/vitest.config.ts
-    - apps/web/package.json
     - .github/workflows/ci.yml
     - apps/web/src/hooks/useAuth.ts
     - apps/web/src/stores/authStore.ts
@@ -381,7 +440,6 @@ shallow:
     - apps/web/src/lib/api/schemas/orgApi.ts
     - apps/web/src/lib/api/notificationsApi.ts
     - apps/web/src/lib/api/fetchWithAuth.ts
-    - apps/web/src/lib/api/extractErrorMessage.ts
     - apps/web/src/components/providers/ReactQueryProvider.tsx
     - apps/web/src/app/privacy/page.tsx
     - apps/web/src/app/terms/page.tsx
@@ -396,11 +454,8 @@ shallow:
     - apps/api/tests/integration/bulk_upload/conftest.py
     - apps/api/tests/integration/bulk_upload/test_bulk_upload_with_images.py
     - apps/api/tests/integration/bulk_upload/test_bulk_upload_preview.py
-    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
     - apps/api/src/prosell/application/use_cases/product/bulk_upload_preview.py
-    - apps/api/src/prosell/domain/services/csv_field_mapper.py
     - apps/api/src/prosell/infrastructure/models/organization_model.py
-    - apps/api/src/prosell/infrastructure/api/routers/product_router.py
     - apps/api/tests/integration/api/test_appointment_api.py
     - apps/api/src/prosell/infrastructure/api/routers/appointment_router.py
     - apps/api/src/prosell/infrastructure/api/main.py
@@ -416,6 +471,19 @@ shallow:
     - apps/api/scripts/
     - apps/api/src/prosell/application/dto/appointment/
     - apps/api/src/prosell/infrastructure/repositories/appointment_repository_impl.py
+    - apps/api/src/prosell/application/dto/product/attributes.py
+    - apps/api/src/prosell/application/dto/product/response.py
+    - apps/web/src/components/admin/BulkImportClientCSV.tsx
+    - apps/web/src/components/upload/BulkUploadCSV.tsx
+    - apps/web/src/lib/api/bulkImportClient.ts
+    - apps/api/src/prosell/infrastructure/api/routers/vehicle_router.py
+    - apps/api/src/prosell/infrastructure/api/routers/image_router.py
+    - docs/superpowers/specs/2026-06-09-storage-optimization-design.md
+    - apps/api/tests/unit/services/
+    - apps/api/tests/unit/domain/services/
+    - apps/api/tests/unit/application/use_cases/product/
+    - apps/web/tests/unit/components/admin/
+    - aidlc/spaces/default/intents/260826-prod-bugfixes-batch/inception/requirements-analysis/requirements.md
 blocked:
   paths:
     - apps/api/tests/integration/api/test_fb_credential_migration_router.py

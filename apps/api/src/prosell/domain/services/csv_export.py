@@ -85,6 +85,142 @@ def build_export_headers(schema_keys: list[str], known_columns: frozenset[str]) 
     )
 
 
+# The 24 exact columns of the client-format CSV (u1-catalog-export-api,
+# FR1.3/BR1.3) — structurally identical to docs/data39.csv: same header,
+# same order, ';' separator. Unlike `build_export_headers()` above (the
+# FEAT-1 generic export, whose column set is derived per-category from
+# `attribute_schema`), this header is a fixed constant — the whole point
+# of this format is byte-for-byte compatibility with an external tool.
+CLIENT_FORMAT_COLUMNS: tuple[str, ...] = (
+    "id",
+    "cod_dealer",
+    "price",
+    "category",
+    "type",
+    "location",
+    "year",
+    "make",
+    "model",
+    "mileage",
+    "body_style",
+    "exterior_color",
+    "interior_color",
+    "clean_title",
+    "state",
+    "fuel_type",
+    "transmission",
+    "option",
+    "description",
+    "path",
+    "groups",
+    "label",
+    "publicado",
+    "VIN",
+)
+
+# Columns sourced directly from `attributes` (same key as the column
+# name) — every column except the ones this function derives explicitly
+# from a dedicated product field (id, cod_dealer, price, description) or
+# hardcodes as a business rule (option, publicado). `exterior_color` is
+# the FR2.3/BR2.3 regression-fix key: it must read `attributes["exterior_color"]`,
+# never a legacy `attrs.get("color")`.
+_CLIENT_FORMAT_ATTRIBUTE_COLUMNS: frozenset[str] = frozenset(
+    {
+        "category",
+        "type",
+        "location",
+        "year",
+        "make",
+        "model",
+        "mileage",
+        "body_style",
+        "exterior_color",
+        "interior_color",
+        "clean_title",
+        "state",
+        "fuel_type",
+        "transmission",
+        "path",
+        "groups",
+        "label",
+        "VIN",
+    }
+)
+
+
+def build_organization_code_segment(org_code: object | None) -> str:
+    """Sanitized organization-code path segment for the export ZIP (BR2.2).
+
+    Falls back to the literal placeholder "sin-codigo" when the
+    organization has no code (`Organization.code` is `str | None`,
+    1-5 characters) — never an empty path segment.
+    """
+    return _slug_part(org_code) or "sin-codigo"
+
+
+def build_client_format_row(
+    *,
+    product_id: object,
+    org_code: object | None,
+    price_cents: int,
+    description: str | None,
+    attributes: Mapping[str, object],
+) -> list[str]:
+    """Build one row of the client-format CSV (u1-catalog-export-api).
+
+    Column values not covered by a dedicated product field come directly
+    from `attributes` under the same column name (BR1.3 "mapeo directo de
+    atributos"). `option` is always empty — the original value isn't
+    persisted in the product model (FR1.4, BR1.4). `publicado` is always
+    "1" — this function is only ever called for `published` products
+    (BR1.1), which is exactly what the sample client CSV encodes with a
+    literal "1" in that column.
+    """
+    values: dict[str, object | None] = {
+        "id": product_id,
+        "cod_dealer": org_code,
+        "price": f"{price_cents / 100:.2f}",
+        "description": description,
+        "option": "",
+        "publicado": "1",
+    }
+    for column in _CLIENT_FORMAT_ATTRIBUTE_COLUMNS:
+        values[column] = attributes.get(column)
+
+    return [
+        "" if values.get(column) is None else str(values[column])
+        for column in CLIENT_FORMAT_COLUMNS
+    ]
+
+
+def build_vehicle_zip_folder_name(
+    *,
+    year: object | None,
+    make: object | None,
+    model: object | None,
+    mileage: object | None,
+    color: object | None,
+    org_code: object | None,
+) -> str:
+    """Full two-level ZIP folder path for one vehicle's images (BR2.1, BR2.2).
+
+    Pattern: `{org_segment}/{year}-{make}-{model}-{mileage_k}-{color}-{org_segment}/`
+    — reuses `build_image_folder_name()` for the inner segment (no
+    duplicated sanitization logic, FR2.4) and prepends the sanitized
+    organization-code segment as its own top-level ZIP directory.
+    """
+    org_segment = build_organization_code_segment(org_code)
+    inner_name = build_image_folder_name(
+        year=year,
+        make=make,
+        model=model,
+        mileage=mileage,
+        color=color,
+        org_code=org_code,
+    )
+    return f"{org_segment}/{inner_name}/"
+
+
 def build_export_row(
     *,
     headers: list[str],

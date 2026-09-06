@@ -1531,6 +1531,19 @@ export async function exportCatalogCsv(categoryId: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Export this organization's `published` catalog in the client CSV+ZIP
+ * format (u2-catalog-export-ui). Unlike `exportCatalogCsv`, this returns
+ * the raw `Response` instead of driving the download itself — the caller
+ * must branch on 200/404/413 (empty catalog / export limit exceeded)
+ * before deciding whether to trigger a download or show an error.
+ */
+export async function exportCatalogClientFormat(): Promise<Response> {
+  return fetch("/api/v1/products/export-client-format.zip", {
+    credentials: "include",
+  });
+}
+
 // ─── Product Ownership ─────────────────────────────────────────────────────────
 
 export interface OwnerShare {

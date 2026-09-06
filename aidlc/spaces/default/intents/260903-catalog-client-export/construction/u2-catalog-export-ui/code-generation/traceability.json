@@ -1,0 +1,79 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-catalog-export-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.5",
+    "AC1.1.10",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.3.1",
+    "NFR-PERF-UI-1",
+    "NFR-PERF-UI-2",
+    "NFR-PERF-UI-3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "NFR-PERF-UI-1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "NFR-PERF-UI-2",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    },
+    {
+      "id": "NFR-PERF-UI-3",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "resolución de tenant_id es responsabilidad exclusiva de u1-catalog-export-api — sin código propio en U2"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "sanitización de rutas del ZIP es responsabilidad exclusiva de u1-catalog-export-api — sin código propio en U2"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "enforcement del cap de 500 productos es responsabilidad exclusiva de u1-catalog-export-api — U2 solo renderiza el toast de error (AC1.3.1, ya cubierto arriba)"
+    }
+  ]
+}

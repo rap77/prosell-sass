@@ -13,6 +13,16 @@ class StorageUploadError(Exception):
     """
 
 
+class StorageReadError(Exception):
+    """Raised when a storage backend fails to read an object's bytes.
+
+    Implementations wrap their own client/network exceptions (e.g.
+    botocore's ClientError/BotoCoreError) into this port-level type so
+    callers can catch a specific, documented failure mode instead of a
+    bare Exception.
+    """
+
+
 class IDOSpacesService(ABC):
     """Interface for DigitalOcean Spaces storage service."""
 
@@ -105,6 +115,22 @@ class IDOSpacesService(ABC):
 
         Returns:
             Presigned URL valid for downloading the file
+        """
+        pass
+
+    @abstractmethod
+    async def get_object(self, key: str) -> bytes:
+        """
+        Read a file's raw bytes from Spaces.
+
+        Args:
+            key: Storage key of the file to read
+
+        Returns:
+            The file's raw bytes.
+
+        Raises:
+            StorageReadError: If the object doesn't exist or the read fails.
         """
         pass
 

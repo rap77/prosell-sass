@@ -75,7 +75,7 @@ graph TB
 
 **Regla de dependencia (backend)**: `Infrastructure → Application → Domain`, con Domain sin dependencias externas (Python puro), tal como declara `CLAUDE.md` raíz y confirma la estructura de directorios escaneada.
 
-**Corrección de límites del proxy BFF (deuda activa)**: los proxies dinámicos `apps/web/src/app/api/v1/*/[...path]/route.ts` fuerzan `response.json()` sobre toda respuesta del backend sin verificar `content-type` — un defecto arquitectónico ya documentado en memoria del proyecto que rompe cualquier endpoint no-JSON (ver `api-documentation.md` y `code-quality-assessment.md`).
+**Corrección de límites del proxy BFF (deuda activa, alcance corregido — scan `260903-catalog-client-export`)**: los proxies dinámicos `apps/web/src/app/api/v1/*/[...path]/route.ts` fuerzan `response.json()` sobre toda respuesta del backend sin verificar `content-type` — un defecto arquitectónico ya documentado en memoria del proyecto que rompe cualquier endpoint no-JSON (ver `api-documentation.md` y `code-quality-assessment.md`). **El proxy de `products` ya NO tiene este defecto** — confirmado por lectura directa este pase: `apps/web/src/app/api/v1/products/[...path]/route.ts` pasa a `response.blob()` y preserva `Content-Disposition`, necesario para que el export de catálogo (CSV, y en el futuro ZIP) funcione. El defecto sigue vigente en `categories`, `organizations` y `vehicles`.
 
 ## Data Flow
 
@@ -493,6 +493,43 @@ sequenceDiagram
 
 Un caso especial de acoplamiento entre dos esquemas: `UnifiedProductForm.tsx:483` invoca `.passthrough()` en el USE SITE sobre `FIXED_FIELDS_SCHEMA` (un `z.object({...})` estricto definido en la línea 99 del mismo archivo), pero ese mismo `FIXED_FIELDS_SCHEMA` se usa también en la línea 290 vía `.merge(attrSchema)`, donde SÍ se necesita el comportamiento estricto. Migrar la definición de `FIXED_FIELDS_SCHEMA` a `z.looseObject()` cambiaría el comportamiento en ambos call sites, no solo en el de la línea 483 — requiere una decisión explícita de diseño en Code Generation, no un find/replace ciego. Los enums de dominio (`LeadStatus` en `leads.ts`, `AppointmentStatus` en `appointments.ts`) están declarados como TS `enum` colocados en el mismo archivo que el esquema que los valida, específicamente para evitar un import circular (documentado in-line) — este patrón sobrevive intacto a la migración `z.nativeEnum → z.enum(EnumObject)`, porque Zod 4 acepta un objeto TS enum directamente en `z.enum()`.
 
+### 12. Export de catálogo en formato cliente + ZIP de imágenes por vehículo (nuevo, scan enfocado `260903-catalog-client-export`)
+
+Flujo representativo de por qué "ya existe un export" no significa "el export pedido ya existe": el endpoint actual usa un formato de columnas distinto al que el intent necesita, y el ensamblado de ZIP de imágenes es una capacidad completamente nueva sobre datos que ya están en el catálogo.
+
+```mermaid
+sequenceDiagram
+    participant U as Vendedor/dealer
+    participant W as apps/web (seller)/catalog/page.tsx<br/>handleExportCsv
+    participant BFF as BFF proxy<br/>app/api/v1/products/[...path]/route.ts<br/>(ya soporta blob + Content-Disposition)
+    participant R as product_router.py<br/>export.csv (GENÉRICO, existente)
+    participant Export as csv_export.py<br/>build_image_folder_name()
+    participant Prod as Product entity<br/>(image_urls, attributes)
+    participant S3Port as IDOSpacesService (puerto)<br/>⚠️ sin método get/download hoy
+
+    U->>W: click "Exportar catálogo (formato cliente + fotos)"
+    W->>BFF: GET /api/v1/products/export.csv?...<br/>(formato GENÉRICO, no el de 24 columnas del cliente)
+    BFF->>R: forward
+    R->>Export: arma filas con UNIVERSAL_COLUMNS_ORDERED<br/>+ attribute_schema dinámico
+    Note over R,Export: ⚠️ NO es el formato de 24 columnas<br/>que docs/data39.csv usa para importar —<br/>requiere pipeline nuevo/extendido,<br/>decisión de diseño pendiente
+
+    rect rgb(255, 235, 238)
+    Note over Export,Prod: Capacidad NUEVA a construir: ZIP de imágenes<br/>Export->>Prod: lee attributes de cada Product
+    Export->>Export: build_image_folder_name()<br/>{AÑO}-{MARCA}-{MODELO}-{MILLAS}K-{COLOR}-{CÓDIGO_ORG}
+    Note over Export: BUG CONFIRMADO: lee attrs.get("color")<br/>pero el color real vive en<br/>attributes["exterior_color"] —<br/>segmento COLOR se pierde silenciosamente
+    Export--)S3Port: (necesario) descargar bytes de cada imagen<br/>por image_urls del Product
+    Note over S3Port: IDOSpacesService solo tiene<br/>upload/presign/delete/exists hoy —<br/>falta un método get_object()/download,<br/>o usar httpx contra las image_urls<br/>públicas ya guardadas (sin dependencia nueva)
+    end
+
+    R-->>BFF: 200 CSV (formato genérico actual)
+    BFF-->>W: response.blob() + Content-Disposition preservado
+    W-->>U: descarga CSV (sin ZIP de imágenes todavía)
+```
+
+**Gap de UX ya conocido, no resuelto**: la UX de "pedir carpeta destino" ya existe (`window.prompt`, FR8.3 del intent `260826-prod-bugfixes-batch`) pero sin valor sugerido por defecto — gap real que este intent debe cubrir, no una funcionalidad a construir de cero.
+
+**Corrección de un supuesto de `project.md`**: la nota de aprendizaje persistida sobre el bug de proxy `response.json()` forzado en respuestas no-JSON (learned 2026-08-26) está **desactualizada para este archivo específico** — `apps/web/src/app/api/v1/products/[...path]/route.ts` ya pasa a `response.blob()` y preserva `Content-Disposition`, confirmado por lectura directa este pase. El defecto sigue vigente en los otros 3 proxies catch-all (`categories`, `organizations`, `vehicles`), pero no en `products`.
+
 ## Key Design Decisions
 
 - **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
@@ -528,3 +565,6 @@ Un caso especial de acoplamiento entre dos esquemas: `UnifiedProductForm.tsx:483
 - Backfillear `published_to_marketplace` en los 8 mocks de `Product` desactualizados de `products.test.tsx` (7) y `reverseTransitions.test.tsx` (1 helper compartido) — fix mecánico sin ambigüedad de diseño, causa raíz confirmada por ejecución real de test (scan `260901-frontend-test-debt`). Evaluar en Requirements Analysis si `setProductCover.test.ts` (mismo síntoma probable, no nombrado en la descripción del intent) entra en el mismo alcance.
 - Alinear el nombre de campo `organization_id` (frontend, `teamApi.ts`/`teamApi.ts` schemas) con `org_id` (backend, `CreateTeamRequest`/`TeamResponse`) en AMBOS lados del contrato de `team` — request y response — no solo el lado nombrado en el intent original (scan `260902-teamapi-create-param`). Evaluar en Requirements Analysis si conviene además: (a) reparar `teamApi.update()` (probable 405 contra el mock, `[id]/route.ts` solo exporta `GET`), y (b) agregar un test de Layer 3 (schema-matching DTO↔TypeScript) para `team`, siguiendo el patrón ya documentado en `.skills/contract-testing/SKILL.md`, para que esta clase de bug no vuelva a pasar desapercibida.
 - Migrar los 36 call sites de `.passthrough()` (14 archivos) y los 4 de `z.nativeEnum()` (2 archivos) a `z.looseObject()`/`z.enum(EnumObject)`, decidiendo explícitamente el caso `UnifiedProductForm.tsx` (definición vs. use-site) antes de tocarlo (scan `260828-zod-3-to-4-migration`). Corregir además el bloque de excepción Zod 3 de `AGENTS.md` (líneas 124-139, que dice "hasta resolver issue #74" pese a que el issue está cerrado desde 2026-07-20 y su alcance nunca cubrió estos dos patrones) — la sección probablemente necesita eliminarse o acotarse explícitamente, no solo corregir la fecha/estado, porque GGA ya bloqueó un intento de migración parcial citando su frase de cierre demasiado genérica ("PASS any code using Zod 3 validator syntax"). Ver `code-quality-assessment.md` y `dependencies.md`.
+- Definir explícitamente en Requirements Analysis si el export de catálogo en formato cliente (24 columnas, `docs/data39.csv`) es un endpoint nuevo o una extensión de `GET /api/v1/products/export.csv` (hoy formato genérico `UNIVERSAL_COLUMNS_ORDERED`) — no son el mismo contrato de columnas, y decidirlo antes de tocar `csv_export.py`/`product_router.py` evita construir sobre el pipeline equivocado (scan `260903-catalog-client-export`).
+- Corregir el bug de `build_image_folder_name()` en `csv_export.py`: lee `attrs.get("color")` en vez de `attributes["exterior_color"]`, perdiendo silenciosamente el segmento COLOR del nombre de carpeta para todo vehículo real — fix mecánico y acotado, sin ambigüedad de diseño (scan `260903-catalog-client-export`).
+- Agregar un método de descarga (`get_object`/equivalente) a `IDOSpacesService` (hoy solo `upload`/`presign`/`delete`/`exists`), o resolver el ensamblado del ZIP de imágenes vía `httpx` contra las `image_urls` públicas ya guardadas en `Product` (sin dependencia nueva) — decisión de diseño explícita pendiente para Requirements Analysis/Functional Design (scan `260903-catalog-client-export`).

@@ -7,161 +7,193 @@
 
 ## Way of Working
 
-- Trunk-based development confirmado por evidencia: ramas de feature de
-  corta duración con prefijos convencionales (`fix/`, `feat/`, `chore/`,
-  `refactor/`, `test/`), todas apuntando a `main` como única rama larga.
+- Trunk-based development, ramas de feature de corta duración con prefijos
+  convencionales (`fix/`, `feat/`, `chore/`, `refactor/`, `test/`), todas
+  apuntando a `main` como única rama larga.
 - Convención de nombre de rama: `<tipo>/<slug-descriptivo-en-inglés>`, sin
   número de ticket/issue.
-- **Estrategia de merge — afirmada (Q1): Squash-merge.** El historial
-  mostraba evidencia mixta (merge commits tradicionales en épocas
-  antiguas, patrón compatible con squash en runs recientes); el equipo
-  confirmó explícitamente en la entrevista que la política es
-  squash-merge — cada branch se aplasta a un solo commit en `main`. Esto
-  coincide con el default ya afirmado por `org.md` para Bolts de AI-DLC, y
-  ahora queda confirmado como práctica de equipo general, no solo del
-  framework.
-- Mensajes de commit: **Conventional Commits** estricto y consistente
-  (`fix(scope):`, `feat(scope):`, `chore(scope):`, `refactor(scope):`,
-  `docs(scope):`, `test(scope):`) — confirmado mecánicamente, sin
-  necesidad de pregunta.
+- **Estrategia de merge: Squash-merge** (afirmado Q1 en 260829) — cada
+  branch se aplasta a un solo commit en `main`.
+- Mensajes de commit: **Conventional Commits** estricto (`fix(scope):`,
+  `feat(scope):`, `chore(scope):`, `refactor(scope):`, `docs(scope):`,
+  `test(scope):`).
 - Los commits `chore(aidlc): ...` documentan el propio ciclo de vida del
-  framework AI-DLC (registrar intents, sincronizar audit log, refrescar
-  codekb) como parte normal del historial de `main` — convención propia de
-  este proyecto.
+  framework AI-DLC como parte normal del historial de `main`.
+- Sin especialización nueva para este intent (confirmado por el lead y las
+  tres revisiones ciegas sin objeción): el feature de export es una
+  adición de código dentro de un Unit existente (backend `product` +
+  frontend catálogo), sin necesidad de rama ni convención distinta.
 
 ## Walking Skeleton
 
-- **Afirmado (Q2): No corremos la ceremonia de walking skeleton.** El
-  equipo confirmó explícitamente que no construye una porción mínima
-  end-to-end antes de las features reales — va directo a las features. El
-  patrón visible en el historial (`feat: merge Sprint 5-6...`,
-  `feat(sprint-7): merge Phase 1...`) es de sprints/fases, no de skeleton
-  técnico, consistente con esta respuesta.
+- **Afirmado (Q2 en 260829): no se corre la ceremonia de walking skeleton.**
+  El equipo va directo a las features.
+- Sin especialización nueva para este intent (confirmado por el lead y las
+  tres revisiones ciegas sin objeción): el feature de export es
+  autocontenido — las piezas (backend product, storage de imágenes, proxy
+  Next.js) ya están conectadas y en producción, no requiere una porción
+  end-to-end previa para "probar que las piezas conectan".
 
 ## Testing Posture
 
 - **Methodology**: test-after
 - **Ordering**: implementar la capa aplicable (backend o frontend según el
-  cambio) y luego escribir y correr los tests de esa capa, sin
-  backfillear cobertura en código pre-existente no tocado por el cambio.
-- La distinción entre "Strict TDD Mode: enabled" (memoria global del
-  usuario, configuración personal del asistente aplicable a todas sus
-  sesiones y proyectos) y la práctica real de este equipo/repo
-  (test-after) queda resuelta por evidencia, no por juicio en la
-  entrevista: el threshold de cobertura frontend fue rebajado
-  explícitamente después de medir cobertura ya escrita (patrón inverso a
-  TDD), y los aprendizajes ya persistidos en `project.md` para Code
-  Generation son explícitos y repetidos en esta dirección. La instrucción
-  de `~/.claude/CLAUDE.md` queda fuera de alcance de esta práctica de
-  equipo por ser config de asistente, no una afirmación de práctica de
-  proyecto.
-- **Asimetría de cobertura — aceptada tal cual (Q3).** El frontend tiene un
-  piso de cobertura configurado en `vitest.config.ts`
-  (`lines:40 functions:40 branches:75 statements:40`), rebajado
-  deliberadamente de un objetivo original de 80% tras medir la cobertura
-  real disponible. El backend **no tiene ningún piso de cobertura
-  enforced** (`pytest --cov=prosell --cov-report=xml` en CI genera el
-  reporte pero no pasa `--cov-fail-under`, y `apps/api/pyproject.toml` no
-  declara `fail_under`) — es decir, la asimetría es total, no solo un
-  matiz: ni el 80% que `org.md` fija como default para el scope `classic`
-  activo, ni ningún otro número, aplican al backend hoy. El equipo eligió
-  explícitamente aceptar esta asimetría (40% frontend / sin piso backend)
-  como la práctica vigente, en vez de subir el piso del frontend o de
-  agregar uno nuevo al backend.
-- CI ejecuta la suite completa en cada push/PR a `main` (`test-python`,
-  `test-node` jobs), y el pre-push hook local corre `pytest -q` — el gate
-  de "suite completa en verde antes de merge" SÍ está enforced
-  mecánicamente, aunque el umbral de cobertura backend no lo esté.
-- **Asimetría de gates de lint — intencional (Q4).** El hook `next-lint`
-  (ESLint completo) está deshabilitado en pre-commit y solo corre en CI;
-  `react-doctor`, en cambio, SÍ bloquea en pre-commit pero es solo
-  advisory en CI (`react-doctor.yml` no bloquea merge). El equipo confirmó
-  que esta dirección "invertida" es deliberada: ESLint completo es lento y
-  se reserva para CI; `react-doctor` es rápido y vale la pena que bloquee
-  localmente.
-- Para el scope `classic` activo de este intent (refactor de navegación
-  auth/frontend): el patrón de test correcto de cara a Build and Test es
-  unit/component (Vitest + Testing Library) sobre el código de navegación
-  tocado, no integración/E2E nuevo, consistente con el aprendizaje ya
-  registrado de no generar artefactos de test por ceremonia cuando el
-  cambio no lo amerita.
+  cambio) y luego escribir y correr los tests de esa capa, sin backfillear
+  cobertura en código pre-existente no tocado por el cambio.
+- Asimetría de cobertura aceptada tal cual (Q3 en 260829): piso 40% frontend
+  (`lines:40 functions:40 branches:75 statements:40` en `vitest.config.ts`),
+  sin piso enforced en backend (`pytest --cov=prosell` sin
+  `--cov-fail-under`). No forzar simetría.
+- CI ejecuta la suite completa en cada push/PR a `main`; pre-push local
+  corre `pytest -q` — gate de "suite completa en verde antes de merge" SÍ
+  enforced mecánicamente.
+- Asimetría de gates de lint intencional (Q4 en 260829): `next-lint`
+  deshabilitado en pre-commit (solo CI); `react-doctor` bloqueante en
+  pre-commit, advisory en CI.
+- **Precedente de diseño de test para binarios/ZIP, con precisión de
+  dirección**: el dominio ya tiene `CSVImageMapper`
+  (`apps/api/src/prosell/domain/services/csv_image_mapper.py`) con tests
+  unitarios dedicados a LEER estructuras ZIP que el cliente sube — sentido
+  de IMPORT (`TestReadZipContents`, `TestZipStructureReading`,
+  `TestBuildDoSpacesKey`, `TestSanitizeFilename`). Ese precedente cubre el
+  sentido INVERSO al que este intent necesita: armar un ZIP para EXPORT.
+  El **patrón de diseño de test transfiere** (unit test sobre la
+  función/servicio, bytes-in/bytes-out en memoria, sin storage real), pero
+  la **suite de casos es nueva** — no es "extender" una suite existente,
+  es escribir una suite nueva sobre `csv_export.py` con esa misma
+  filosofía (posición de calidad, confirmada sin objeción por developer y
+  devsecops). Ya existe además un endpoint real de descarga de archivo
+  (`download_bulk_upload_errors_csv()` en `product_router.py`,
+  `StreamingResponse` con `text/csv`) que sirve de precedente directo de
+  formato de respuesta para el nuevo endpoint de export.
+
+- **Piso mínimo obligatorio de test para ESTE INTENT (Q1, afirmado en la
+  entrevista) — no cambia el piso general del proyecto, solo aplica al
+  feature de export CSV+ZIP:**
+  1. Regresión explícita del bug ya confirmado en
+     `build_image_folder_name()` (`csv_export.py`): hoy lee
+     `attrs.get("color")` en vez de `attributes["exterior_color"]`, y el
+     fallo es silencioso (sin excepción ni log). El caso de test debe usar
+     la clave real (`exterior_color`), no solo `color`, para que la
+     regresión quede cubierta permanentemente. El fix va en el archivo de
+     test existente `apps/api/tests/unit/domain/services/test_csv_export.py`
+     (patrón 1:1 ya establecido), no en uno nuevo. Antes de tocar la
+     función, confirmar si es compartida con el endpoint de export
+     genérico ya existente (`GET /api/v1/products/export.csv`, FEAT-1 de
+     `260826-prod-bugfixes-batch`) y correr la suite completa relacionada
+     a ese endpoint, no solo los tests nuevos.
+  2. Casos límite explícitos de `Organization.code` para el segmento
+     `{CÓDIGO_ORG}` del nombre de carpeta: código de 1 carácter, código de
+     5 caracteres, y código ausente (`None`) — `Organization.code` es
+     `str | None` de 1 a 5 caracteres, no fijo en 2 como sugiere el
+     ejemplo feliz de `docs/data39.csv`. No alcanza con un solo caso feliz.
+  3. Test de contrato para `Content-Type`/`Content-Disposition` del nuevo
+     endpoint de export — el repo ya tuvo dos bugs reales confirmados de
+     "proxy fuerza `.json()` sobre contenido no-JSON" en esta clase exacta
+     de superficie (`project.md` learning 260826; `code-quality-assessment.md`
+     #9 y #64). El proxy de `products`
+     (`apps/web/src/app/api/v1/products/[...path]/route.ts`) ya está
+     arreglado para esta ruta específica (confirmado por lectura directa:
+     chequea `Content-Type`, hace `response.blob()` cuando no es JSON) —
+     el test de contrato verifica que ese comportamiento correcto
+     sobrevive el viaje completo proxy→browser para el endpoint nuevo, no
+     que haya que arreglar nada de nuevo.
+
+- **Gaps de cobertura/convención señalados por calidad, a resolver en
+  Build and Test (no piso nuevo de equipo, documentados por trazabilidad)**:
+  cero tests hoy para `handleExportCsv` (`catalog/page.tsx`) y
+  `exportCatalogCsv` (`apps/web/src/lib/api/products.ts`) — es superficie
+  de test nueva, no cobertura pre-existente a "mantener en verde". Además,
+  `catalog/page.tsx` no calza limpio en ninguno de los dos patrones de
+  ubicación de test ya vigentes (`tests/components/{module}/X.test.tsx` vs.
+  co-located `page.test.tsx` de páginas admin) — Build and Test debe
+  resolver cuál aplica antes de escribir los tests nuevos.
+- **Duplicado de archivo de test sin resolver**: `test_csv_image_mapper.py`
+  existe en dos ubicaciones (`tests/unit/services/` y
+  `tests/unit/domain/services/`). Antes de usarlo como referencia de
+  patrón o de extenderlo, Build and Test debe verificar cuál corre en CI.
 
 ## Deployment
 
-- **Deploy-on-merge a staging, confirmado y automatizado**: `deploy.yml`
-  se dispara por `workflow_run` cuando `CI` termina exitoso en `main`
-  (además de `workflow_dispatch` manual) — coincide con el default de
-  `org.md`. Staging corre en un runner self-hosted (la PC local del
-  usuario) — detalle de proyecto, no de equipo genérico.
-- **Gate manual de producción — afirmado como permanente (Q5).**
-  `promote-prod.yml` es `workflow_dispatch`-only, con un input de
-  confirmación de texto exacto (`"deploy"`) como segundo seguro, sin
-  aprobación de una segunda persona (equipo de una sola persona hoy). El
-  equipo confirmó explícitamente que este gate manual queda como
-  salvaguarda intencional de forma permanente, incluso si el equipo crece
-  — no es una adaptación temporal que se reemplace por un approval de
-  segunda persona más adelante.
-- Existe un workflow adicional de **recovery de emergencia**
-  (`recover-prod.yml`) para reiniciar contenedores ya buildeados sin
-  rebuild cuando `promote-prod.yml` falla a mitad de camino.
-- Notificaciones de deploy (staging y producción) vía webhook, y health
-  check post-deploy en producción (`curl` con reintentos contra
-  `/api/v1/health/`) — confirma la práctica de smoke test post-deploy que
-  `phases/operation.md` mandata como guardrail de fase.
-- **Postura de seguridad de pipeline — gaps aceptados, no bloqueantes
-  (Q7).** El equipo confirmó que los siguientes gaps quedan registrados
-  como conocidos y aceptados por ahora, sin bloquear el trabajo actual, a
-  atenderse en un intent de seguridad dedicado más adelante: sin SAST real
-  (GGA es un revisor de estilo/arquitectura con IA, no un analizador
-  estático de vulnerabilidades — no detecta injection, XSS, SSRF,
-  deserialización insegura de forma determinística); sin DAST contra
-  staging pese a que se publica ahí en cada merge; secret-scanning liviano
-  solo en pre-commit local (script custom "gitleaks-style" sin red, sin
-  backstop en CI, sin escaneo de historial); y Dependabot cubriendo
-  exclusivamente el ecosistema `github-actions` — sin ningún escaneo de
-  CVEs para las dependencias reales de la app (npm/pnpm en `apps/web`,
-  Python/uv en `apps/api`).
-- Mérito de supply-chain a preservar: la acción `appleboy/ssh-action` está
-  pineada por SHA completo en los dos workflows con SSH a producción
-  (`promote-prod.yml`, `recover-prod.yml`) — buena práctica explícita,
-  aunque el resto de las Actions siguen pineadas por tag mutable.
+- Deploy-on-merge a staging confirmado y automatizado (`deploy.yml`,
+  `workflow_run` sobre `CI` verde en `main`), staging en runner
+  self-hosted.
+- **Gate manual de producción — permanente (Q5 en 260829)**:
+  `promote-prod.yml` es `workflow_dispatch`-only con confirmación de texto
+  exacto `"deploy"`.
+- Workflow de recovery de emergencia (`recover-prod.yml`) sin rebuild.
+- Notificaciones de deploy + health check post-deploy en producción.
+- Postura de seguridad de pipeline con gaps aceptados y no bloqueantes
+  (Q7 en 260829): sin SAST real, sin DAST, secret-scanning solo local,
+  Dependabot solo `github-actions`. Devsecops confirma sin objeción que
+  ninguno de los riesgos de este intent (zip-slip, DoS por memoria,
+  tenant scoping) justifica por sí solo abrir el intent de seguridad
+  dedicado ya diferido — son manejables en el diseño de este feature.
+- Sin especialización nueva para este intent: el nuevo endpoint de export
+  es un endpoint HTTP más dentro de la API existente, sigue el mismo camino
+  de deploy que cualquier otro cambio de `apps/api`/`apps/web`. No cambia
+  topología de entornos ni introduce un componente nuevo desplegable.
 
 ## Code Style
 
-- **Backend (Python)**: Ruff (lint + format) y Pyright (type check),
-  ejecutados en pre-commit y pre-push.
-- **Frontend (TypeScript/JS)**: Prettier + ESLint flat config con
-  `--max-warnings=0` en CI, con la asimetría de gates ya documentada en
-  Testing Posture (`next-lint` deshabilitado localmente / solo CI;
-  `react-doctor` bloqueante localmente / advisory en CI) — ambas
-  intencionales por afirmación humana (Q4).
-- **GGA (AI code review)** — bloqueante en pre-commit, primero en el
-  orden de hooks, contra las reglas de `AGENTS.md`; proveedor `codex`,
-  `STRICT_MODE=true`. Es un revisor de convenciones de estilo/arquitectura
-  vía IA, explícitamente NO un SAST (ver Deployment § postura de
-  seguridad).
-- Naming: camelCase en TypeScript/JS, snake_case en Python — idiomático
-  por lenguaje, sin regla de rename adicional.
-- **Patrón de manejo de errores — adoptar en frontend como convención de
-  equipo hacia adelante (Q6).** El backend tiene un patrón sólido y
-  reutilizable por dominio: una clase base `<Dominio>DomainException`
-  (`AuthDomainException`, `OrgDomainException`) con subclases específicas
-  (`InvalidCredentialsException`, `UserNotFoundException`,
-  `WeakPasswordException`, `Invalid2FACodeException`,
-  `OAuthConfigurationError`), más un exception handler centralizado por
-  dominio (`auth_domain_exception_handler()`) que mapea la jerarquía a
-  respuestas HTTP. El frontend, en el área de navegación auth que este
-  intent toca, no tiene un equivalente — no existe una taxonomía de error
-  explícita (sesión expirada vs. credenciales inválidas vs. error de red)
-  consistente entre `proxy.ts`, `authStore.ts` y `useAuth.ts`. El equipo
-  confirmó que se adopta un patrón de manejo de errores equivalente al del
-  backend (excepciones tipadas por dominio + manejo centralizado) en el
-  frontend, como convención de equipo hacia adelante — no limitado a
-  resolverse puntualmente en este intent.
-- Patrón positivo a preservar: `deriveRole.ts` documentado explícitamente
-  in-line como single source of truth de derivación de rol, compartido
-  entre `proxy.ts` (server-side) y `authStore.ts` (client-side) — no
-  duplicar durante refactors de navegación.
+- Backend: Ruff (lint + format) + Pyright, en pre-commit y pre-push.
+- Frontend: Prettier + ESLint flat config `--max-warnings=0` en CI, con la
+  asimetría de gates ya documentada en Testing Posture.
+- GGA (AI code review) bloqueante en pre-commit, primero en el orden de
+  hooks, proveedor `codex`, `STRICT_MODE=true` — explícitamente NO un SAST.
+- Naming: camelCase TS/JS, snake_case Python. Confirmado por evidencia
+  (graphify + `code-structure.md`): la familia de servicios de dominio CSV
+  sigue convención consistente (`csv_export.py`, `csv_product_parser.py`,
+  `csv_image_mapper.py`, `csv_field_mapper.py`, todos bajo
+  `domain/services/`, prefijo `csv_`). Cualquier módulo nuevo para el
+  ensamblado del ZIP debe seguir esta misma familia de nombres (decisión
+  de nombre específico queda para Functional Design).
+- **Patrón de manejo de errores — adoptar en frontend hacia adelante
+  (Q6 en 260829)**: excepciones tipadas por dominio + handler centralizado,
+  igual que el patrón backend (`<Dominio>DomainException` + handler por
+  dominio). Esta mandate es de ADOPCIÓN para el frontend porque ahí el
+  patrón no existe — no aplica igual al backend, donde ya es la convención
+  vigente.
+- **Manejo de errores del export — backend (Q2, afirmado en la
+  entrevista)**: `csv_export.py` hoy no lanza ninguna excepción propia (el
+  bug de color pasa silencioso — exactamente el síntoma que
+  `phases/construction.md` prohíbe, "silent failures are not acceptable").
+  El backend ya tiene una jerarquía de excepciones tipada para el dominio
+  Product — `ProductError` (clase base,
+  `apps/api/src/prosell/domain/exceptions/product_exceptions.py`) con
+  subclases específicas (`ProductNotFoundError`,
+  `ProductInvalidStatusTransitionError`, `VehicleAlreadyExistsError`,
+  etc.), mapeada a HTTP en `product_router.py`. El equipo confirmó: se
+  **extiende `ProductError` con una subclase nueva** para los errores de
+  export (p. ej. una imagen referenciada en `image_urls` que no se puede
+  leer al armar el ZIP), en vez de crear una jerarquía separada tipo
+  `CatalogExportException`. Mismo archivo, mismo patrón — para el backend
+  esto es "seguir la convención ya vigente", no una práctica de equipo
+  nueva a afirmar.
+- Patrón positivo a preservar: `deriveRole.ts` como single source of truth
+  de derivación de rol.
+- **Layer boundary confirmado por evidencia (corrige imprecisión de
+  `code-structure.md`)**: los puertos secundarios (`IDOSpacesService`, y
+  cualquier puerto de storage) viven en `application/ports/`, NO en
+  `domain/ports/`. Domain define solo `repositories/` (interfaces de
+  persistencia) y mantiene zero-deps externas. Si la vía elegida para leer
+  bytes de imágenes ya subidas es `httpx` contra `image_urls` públicas
+  (alternativa a agregar `get_object()` al puerto S3), esa llamada HTTP NO
+  puede vivir en `domain/services/` bajo ninguna circunstancia — debe
+  separarse la lógica pura de nombrar la carpeta (dominio, ya existe) de
+  la I/O de red/storage (application/infrastructure). Relevante para este
+  intent porque condiciona dónde vive el código nuevo, pero la decisión
+  específica (get_object vs. httpx) queda para Requirements/Functional
+  Design.
+- **Precedente de sanitización a reutilizar (seguridad + testing)**:
+  `_slug_part()` (`domain/services/csv_export.py:26-37`) ya colapsa
+  caracteres no-alfanuméricos (incluidos separadores de path) antes de
+  construir nombres de carpeta; `_sanitize_filename` /
+  `TestSanitizeFilename` en `CSVImageMapper` es el equivalente probado del
+  otro lado. El código nuevo del ZIP de export DEBE reutilizar uno de
+  estos sanitizadores para nombrar carpetas/archivos dentro del ZIP — no
+  concatenar atributos de producto (`make`, `model`, `color`) sin pasar
+  por sanitización, para no abrir una superficie de zip-slip.
 
 ## Forbidden
 

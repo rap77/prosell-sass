@@ -75,6 +75,34 @@ class ProductVersionConflictError(ProductError):
         )
 
 
+class EmptyCatalogExportError(ProductError):
+    """Raised when a catalog export is requested but there's nothing to export.
+
+    An organization with zero `published` products can't produce a
+    meaningful CSV+ZIP — the export is rejected rather than returning an
+    empty archive (u1-catalog-export-api, BR4.1). Maps to HTTP 404.
+    """
+
+    def __init__(self, tenant_id: str) -> None:
+        self.tenant_id = tenant_id
+        super().__init__(f"No published products to export for organization: {tenant_id}")
+
+
+class ExportLimitExceededError(ProductError):
+    """Raised when a catalog export exceeds the resource cap.
+
+    Protects against building an unbounded ZIP in memory (u1-catalog-export-api,
+    BR3.1). Maps to HTTP 413 Payload Too Large.
+    """
+
+    def __init__(self, count: int, limit: int) -> None:
+        self.count = count
+        self.limit = limit
+        super().__init__(
+            f"Catalog export has {count} published products, exceeding the limit of {limit}"
+        )
+
+
 class ProductRestoreTargetMissingError(ProductError):
     """Raised when restoring an ARCHIVED product with no archived_from_status.
 

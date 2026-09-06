@@ -144,6 +144,19 @@ prosell-sass/
 - **`apps/web/src/components/forms/UnifiedProductForm.tsx`** (línea 99: `FIXED_FIELDS_SCHEMA`, línea 290: `.merge(attrSchema)`, línea 483: `.passthrough().parse(data)`) — outlier estructural: `.passthrough()` se invoca en el USE SITE, no en la definición del esquema, y ese mismo esquema se reutiliza en modo estricto en otro punto del archivo. Ver `architecture.md` para el análisis de por qué requiere una decisión explícita en Code Generation.
 - **`apps/web/src/app/(seller)/settings/profile/page.tsx:28`** — un residuo de la migración #74 (ya cerrada): `.string().email({ message: "Correo inválido" })` con la forma encadenada + clave `message`, en vez de `z.email({ error: ... })`. Fuera del alcance declarado de este intent (`.passthrough()`/`z.nativeEnum()`), misma familia de drift de sintaxis — señalado como aside.
 
+### Módulos nuevos inventariados — scan enfocado `260903-catalog-client-export` (export de catálogo formato cliente + ZIP de imágenes)
+
+- **`domain/services/csv_export.py`** — genera las filas del export genérico actual (`UNIVERSAL_COLUMNS_ORDERED` + `attribute_schema` dinámico) y `build_image_folder_name()` (patrón `{AÑO}-{MARCA}-{MODELO}-{MILLAS}K-{COLOR}-{CÓDIGO_ORG}`, casi listo para el requerimiento del intent). **Bug confirmado**: lee `attrs.get("color")` en vez de `attributes["exterior_color"]` (donde el color real del vehículo se guarda) — el segmento COLOR se pierde silenciosamente.
+- **`domain/services/csv_product_parser.py`** — parseo/mapeo inverso (import) de la fila CSV cliente a estructura de producto; referencia de simetría útil para diseñar el export en el mismo formato.
+- **`domain/entities/organization.py`** — confirma `Organization.code: str | None`, máximo 5 caracteres (NO fijo en 2 — "MF"/"US" del ejemplo de `docs/data39.csv` es dato real, no una regla de schema).
+- **`application/ports/ido_spaces.py`** — puerto de storage; hoy solo declara `upload`/`presign`/`delete`/`exists`. **No existe** un método para leer/descargar bytes ya almacenados — necesario para ensamblar el ZIP de imágenes, salvo que se resuelva vía `httpx` contra las `image_urls` públicas ya guardadas en `Product` (sin dependencia nueva).
+- **`infrastructure/services/do_spaces_service.py`** (parcial — constructor/config leído este pase) — implementación concreta de `IDOSpacesService` contra DigitalOcean Spaces (boto3, compatible S3).
+- **`infrastructure/api/routers/product_router.py`** (líneas 620-750: `export.csv` + `list_products`) — endpoint de export genérico existente, formato distinto al de 24 columnas del cliente.
+- **`apps/web/src/lib/api/products.ts`** (líneas 1480-1560: `downloadSchemaTemplate`, `exportCatalogCsv`) — cliente API del export existente.
+- **`apps/web/src/app/(seller)/catalog/page.tsx`** (líneas 360-400: `handleExportCsv`) — UI que dispara el export.
+- **`docs/canonical/F01-bulk-upload-csv-import.md`** — spec de referencia del formato cliente; confirmado desactualizado respecto al código real en varios puntos (ver `code-quality-assessment.md`).
+- **`docs/data39.csv`** — muestra real del formato cliente: **24 columnas** (`id;cod_dealer;price;category;type;location;year;make;model;mileage;body_style;exterior_color;interior_color;clean_title;state;fuel_type;transmission;option;description;path;groups;label;publicado;VIN`), no 23 como asume la descripción verbatim del intent — el "23" probablemente excluye `id`, a confirmar en Requirements Analysis.
+
 ## Patrones de código confirmados
 
 - **Clean Architecture backend estricta**: dependencia unidireccional `Infrastructure → Application → Domain`.

@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-catalog-export-api",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.1",
+    "NFR-PERF-1",
+    "NFR-PERF-2",
+    "NFR-PERF-3",
+    "NFR-REL-1",
+    "NFR-REL-2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md § Autenticación y autorización — reuso de auth_middleware.py/rbac_middleware.py"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md § Autenticación y autorización — organization_id extraído del claim del JWT"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md § Prevención de zip-slip — _slug_part() como única vía de construcción de segmentos"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design.md § Datos en tránsito y exposición de datos en la respuesta — TLS ya vigente, sin cambio"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design.md § Datos en tránsito y exposición de datos en la respuesta — sin campo nuevo expuesto, acotado por NFR1.2"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "scalability-design.md § Enforcement del cap de recursos — chequeo COUNT(*) antes del armado del ZIP"
+    },
+    {
+      "id": "NFR-PERF-1",
+      "status": "OK",
+      "target": "performance-design.md § Estrategia de concurrencia — semáforo máx. 20 lecturas simultáneas"
+    },
+    {
+      "id": "NFR-PERF-2",
+      "status": "OK",
+      "target": "performance-design.md § Presupuesto de performance por fase"
+    },
+    {
+      "id": "NFR-PERF-3",
+      "status": "OK",
+      "target": "performance-design.md § Estrategia de concurrencia (lectura individual dentro del batch acotado)"
+    },
+    {
+      "id": "NFR-REL-1",
+      "status": "OK",
+      "target": "reliability-design.md § Política de retry — 1 retry con backoff 200ms"
+    },
+    {
+      "id": "NFR-REL-2",
+      "status": "OK",
+      "target": "reliability-design.md § Fallo sistémico del storage — degradación aislada por imagen, sin circuit breaker dedicado"
+    }
+  ]
+}

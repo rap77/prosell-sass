@@ -1,0 +1,29 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-catalog-export-ui",
+  "upstream_ids": ["NFR-PERF-UI-1", "NFR-PERF-UI-2", "NFR-PERF-UI-3"],
+  "coverage": [
+    {
+      "id": "NFR-PERF-UI-1",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — actualización de estado local, sin fetch"
+    },
+    {
+      "id": "NFR-PERF-UI-2",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — cambio de estado síncrono antes del fetch"
+    },
+    {
+      "id": "NFR-PERF-UI-3",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — Toast on-demand"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "security-requirements-no-ids",
+      "status": "N/A",
+      "target": "security-requirements.md no numera IDs propios — declara explícitamente ausencia de superficie de seguridad propia, ver security-design.md de este Unit"
+    }
+  ]
+}

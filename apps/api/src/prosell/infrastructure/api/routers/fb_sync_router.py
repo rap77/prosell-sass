@@ -18,6 +18,7 @@ from sqlalchemy.orm import selectinload
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.core.config import settings
 from prosell.domain.entities.user import User
+from prosell.domain.services.storage_keys import extract_storage_key_from_value
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     FBEncryption,
@@ -26,7 +27,6 @@ from prosell.infrastructure.api.dependencies import (
     verify_bot_token,
 )
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.images.storage_keys import extract_storage_key_from_value
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.fb_account_model import (
     FBAccountGroupModel,

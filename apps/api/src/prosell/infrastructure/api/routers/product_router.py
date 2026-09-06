@@ -89,6 +89,9 @@ from prosell.application.use_cases.product.bulk_upload_vehicles import (
 )
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
 from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
+from prosell.application.use_cases.product.export_catalog_client_format import (
+    ExportCatalogClientFormatUseCase,
+)
 from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
@@ -103,6 +106,8 @@ from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import (
+    EmptyCatalogExportError,
+    ExportLimitExceededError,
     ProductInvalidStatusTransitionError,
     ProductNotFoundError,
     ProductRestoreTargetMissingError,
@@ -118,13 +123,13 @@ from prosell.domain.services.csv_product_parser import (
     CSVParseError,
     CSVProductParser,
 )
+from prosell.domain.services.storage_keys import extract_storage_key_from_value
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
 )
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.images.storage_keys import extract_storage_key_from_value
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
 from prosell.infrastructure.models.fb_account_model import (
     FBPublicationHistoryModel,
@@ -160,10 +165,11 @@ SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
 _KNOWN_KEY_PREFIXES = ("orgs/", "vehicles/")
 
 
-def _key_tenant_allowed(
+async def _key_tenant_allowed(
     key: str,
     product_tenant_prefixes: tuple[str, ...],
     is_org_admin: bool,
+    org_repo: SqlAlchemyOrganizationRepository,
 ) -> bool:
     """Decide whether a storage key is allowed for the current caller.
 
@@ -171,20 +177,19 @@ def _key_tenant_allowed(
     (the contract for non-admin viewers).
 
     For super admins (`is_org_admin=True`), additionally accepts keys whose
-    prefix matches ANY `orgs/<uuid>/` or `vehicles/<uuid>/` pattern — this
-    is needed because the legacy bulk-upload flow accidentally used the
-    uploader's tenant to namespace image paths instead of the product's
-    tenant. The product is itself already tenant-scoped upstream, so this
-    relaxation is safe: a super admin only sees keys for products they
-    could already read.
+    prefix matches an `orgs/<uuid>/` or `vehicles/<uuid>/` pattern for a
+    tenant that actually exists — this is needed because the legacy
+    bulk-upload flow accidentally used the uploader's tenant to namespace
+    image paths instead of the product's tenant. The product is itself
+    already tenant-scoped upstream, so this relaxation is safe: a super
+    admin only sees keys for products they could already read. The
+    existence check confirms the extracted UUID is a real tenant, not just
+    a UUID-shaped string.
     """
     if any(key.startswith(p) for p in product_tenant_prefixes):
         return True
     if not is_org_admin:
         return False
-    # Super-admin fast path: accept any well-formed `<prefix>/<uuid>/` shape
-    # without a DB round-trip. The two known prefixes cover every legacy
-    # code path (`orgs/`, `vehicles/`); the rest is rejected as malformed.
     for prefix in _KNOWN_KEY_PREFIXES:
         if not key.startswith(prefix):
             continue
@@ -192,7 +197,13 @@ def _key_tenant_allowed(
         # Tenant is the first path segment after the prefix; require a UUID
         # shape so we don't accept arbitrary strings.
         head = tail.split("/", 1)[0]
-        if len(head) == 36 and head.count("-") == 4:
+        if len(head) != 36 or head.count("-") != 4:
+            continue
+        try:
+            candidate_tenant_id = UUID(head)
+        except ValueError:
+            continue
+        if await org_repo.get_by_tenant_id(candidate_tenant_id) is not None:
             return True
     return False
 
@@ -683,7 +694,10 @@ async def export_catalog_csv(
                 make=attrs.get("make"),
                 model=attrs.get("model"),
                 mileage=attrs.get("mileage"),
-                color=attrs.get("color"),
+                # FR2.3/BR2.3 regression fix: the real attribute key is
+                # "exterior_color" — "color" doesn't exist on the product
+                # model, so this silently dropped the COLOR segment before.
+                color=attrs.get("exterior_color"),
                 org_code=product.org_code,
             )
             rows.append(
@@ -715,6 +729,53 @@ async def export_catalog_csv(
         iter([output.getvalue().encode("utf-8")]),
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="catalog-export-{category_id}.csv"'},
+    )
+
+
+@router.get("/export-client-format.zip", response_model=None)
+async def export_catalog_client_format(
+    current_user: CurrentUser,
+    db: DbSession,
+    spaces: SpacesService,
+) -> StreamingResponse:
+    """Export this organization's `published` catalog in the client
+    CSV+ZIP format (u1-catalog-export-api).
+
+    A single combined ZIP (BR1.5): the client-format CSV (24 columns,
+    ';' separator, identical to docs/data39.csv, including `id`) at its
+    root, plus one folder per vehicle with its available images.
+    `organization_id` is resolved exclusively from the JWT
+    (`current_user.tenant_id`) — no request parameter can change which
+    organization gets exported (BR1.2, NFR1). Distinct from, and does
+    not replace, the generic `GET /export.csv` endpoint above (FR1.1).
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    product_repo = SqlAlchemyProductRepository(db)
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    use_case = ExportCatalogClientFormatUseCase(
+        product_repository=product_repo,
+        organization_repository=org_repo,
+        do_spaces_service=spaces,
+    )
+
+    try:
+        result = await use_case.execute(tenant_id=current_user.tenant_id)
+    except EmptyCatalogExportError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except ExportLimitExceededError as e:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(e)
+        ) from e
+
+    org_segment = result.organization_code or str(current_user.tenant_id)
+    filename = f"catalogo_{org_segment}_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
+
+    return StreamingResponse(
+        iter([result.zip_bytes]),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -1055,6 +1116,7 @@ async def get_product_image_urls(
         f"orgs/{product.tenant_id}/",
         f"vehicles/{product.tenant_id}/",
     )
+    org_repo = SqlAlchemyOrganizationRepository(db)
 
     # Merge URL candidates from BOTH sources. Legacy data lives in
     # `product.attributes.image_urls` (the pre-migration location); newer
@@ -1085,7 +1147,7 @@ async def get_product_image_urls(
         # matches any tenant in the DB — this unblocks legacy bulk-upload data
         # where the image key was namespaced under the uploader's tenant
         # instead of the product's tenant.
-        if not _key_tenant_allowed(key, product_tenant_prefixes, is_org_admin):
+        if not await _key_tenant_allowed(key, product_tenant_prefixes, is_org_admin, org_repo):
             continue
         signed_images.append(
             ProductImageUrlResponse(
@@ -1683,6 +1745,9 @@ async def get_product_audit_logs(
         )
 
     is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    if current_user.tenant_id is None and not is_org_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
     if not product:

@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
@@ -67,6 +67,41 @@ describe("products proxy route", () => {
           Cookie: "access_token=abc",
         }),
       }),
+    );
+  });
+
+  // AC1.1.9 (260903-catalog-client-export) requires this verified through
+  // the proxy end-to-end, not only against the backend directly — this
+  // proxy's blob-vs-json branch (see the comment above it in `route.ts`)
+  // had no test at all before this one, for any binary response.
+  it("passes a ZIP response through as a blob, preserving Content-Type and Content-Disposition", async () => {
+    const backendResponse = new Response(new Uint8Array([1, 2, 3]), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition":
+          'attachment; filename="catalogo_MF_2026-09-05.zip"',
+      },
+    });
+    const jsonSpy = vi.spyOn(backendResponse, "json");
+    const blobSpy = vi.spyOn(backendResponse, "blob");
+    mockFetch.mockResolvedValue(backendResponse);
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/products/export-client-format.zip",
+      { method: "GET" },
+    );
+
+    const response = await GET(request, {
+      params: Promise.resolve({ path: ["export-client-format.zip"] }),
+    });
+
+    // The blob branch was taken, not the JSON branch — a ZIP body would
+    // throw if `response.json()` ran against it in a real backend call.
+    expect(blobSpy).toHaveBeenCalledTimes(1);
+    expect(jsonSpy).not.toHaveBeenCalled();
+    expect(response.headers.get("Content-Type")).toBe("application/zip");
+    expect(response.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="catalogo_MF_2026-09-05.zip"',
     );
   });
 });

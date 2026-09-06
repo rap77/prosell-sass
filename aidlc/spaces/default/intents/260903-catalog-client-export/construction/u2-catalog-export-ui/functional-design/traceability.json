@@ -1,0 +1,44 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-catalog-export-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.10",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.3.1"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "functional-spec.md § Workflow Paso 6 (respuesta 200) — parte end-to-end: un único archivo ZIP descargado (nunca dos descargas separadas), tras las 2 confirmaciones del flujo (banner + prompt); la precondición backend (respuesta = único ZIP) la cubre u1-catalog-export-api"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "functional-spec.md § Workflow Paso 4 (Loading) — frontend-components.md § ExportClientFormatButton"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "functional-spec.md § Workflow Paso 3 (Prompt)"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "functional-spec.md § Workflow Paso 6 (nombre editado se usa en la descarga)"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "frontend-components.md § Validación de formulario (sin selector de carpeta, solo window.prompt())"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "functional-spec.md § Workflow Paso 6 (413) — parte de renderizado del mensaje; el enforcement real lo cubre u1-catalog-export-api"
+    }
+  ]
+}

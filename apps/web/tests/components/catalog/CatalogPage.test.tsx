@@ -9,9 +9,17 @@
  * Spec: docs/superpowers/specs/2026-06-06-subsystem-b-dynamic-filters-design.md
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  type MockInstance,
+} from "vitest";
+import { toast } from "sonner";
 import type { OrgVerticalsResponse } from "@/types/category";
 import type { Product } from "@/types/product";
 
@@ -75,6 +83,7 @@ vi.mock("@/lib/api/verticals", async (importOriginal) => {
 
 const mockUseInfiniteProducts = vi.fn();
 let mockProducts: Product[] = [];
+const mockExportCatalogClientFormat = vi.fn();
 vi.mock("@/lib/api/products", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/products")>();
   return {
@@ -93,6 +102,8 @@ vi.mock("@/lib/api/products", async (importOriginal) => {
     },
     useDeleteProduct: () => ({ mutate: vi.fn() }),
     useSubmitProductsForApproval: () => ({ mutate: vi.fn(), isPending: false }),
+    exportCatalogClientFormat: (...args: unknown[]) =>
+      mockExportCatalogClientFormat(...args),
   };
 });
 
@@ -238,5 +249,256 @@ describe("CatalogPage — dynamic filters", () => {
       category_id: "c1",
       attributes: { year_min: "2015", year_max: "2020" },
     });
+  });
+});
+
+// ─── Export catálogo (formato cliente) — u2-catalog-export-ui ─────────────────
+
+function makeProduct(overrides: Partial<Product>): Product {
+  return {
+    id: `product-${Math.random().toString(36).slice(2)}`,
+    tenant_id: "org-1",
+    organization_id: "org-1",
+    org_code: "PS",
+    org_color: "#4DB8FF",
+    category_id: "c1",
+    title: "Producto",
+    price_cents: 100,
+    currency: "USD",
+    condition: "used",
+    status: "draft",
+    attributes: { category: "generic" },
+    is_featured: false,
+    view_count: 0,
+    favorite_count: 0,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    version: 1,
+    ...overrides,
+  };
+}
+
+function buildZipResponse(): Response {
+  return {
+    ok: true,
+    status: 200,
+    headers: new Headers({
+      "Content-Type": "application/zip",
+      "Content-Disposition": 'attachment; filename="catalogo.zip"',
+    }),
+    blob: vi
+      .fn()
+      .mockResolvedValue(new Blob(["zip-bytes"], { type: "application/zip" })),
+    json: vi.fn(),
+  } as unknown as Response;
+}
+
+function buildErrorResponse(status: number, detail: string): Response {
+  return {
+    ok: false,
+    status,
+    json: vi.fn().mockResolvedValue({ detail }),
+  } as unknown as Response;
+}
+
+describe("CatalogPage — export catálogo (formato cliente)", () => {
+  let promptSpy: MockInstance<typeof window.prompt>;
+  let anchorClickSpy: MockInstance<() => void>;
+
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockPush.mockClear();
+    mockUseInfiniteProducts.mockClear();
+    mockProductCard.mockClear();
+    mockExportCatalogClientFormat.mockReset();
+    mockProducts = [];
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+    // `.mockReset()` clears call history *and* any leftover return value
+    // from a previous test — `vi.spyOn` returns the same underlying spy
+    // once a method is already spied, so without this, state would leak
+    // across tests in this describe block.
+    promptSpy = vi.spyOn(window, "prompt").mockReset();
+    anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockReset()
+      .mockImplementation(() => {});
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  async function openExportSummary(user: ReturnType<typeof userEvent.setup>) {
+    render(<CatalogPage />);
+    await user.click(screen.getByTestId("dropdown-trigger"));
+    await user.click(
+      screen.getByRole("menuitem", {
+        name: "Exportar catálogo (formato cliente)",
+      }),
+    );
+  }
+
+  it("shows the client-format export menu item and opens the summary banner on click", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+
+    await openExportSummary(user);
+
+    expect(screen.getByTestId("export-summary-banner")).toBeInTheDocument();
+  });
+
+  it("does not fire a new fetch when opening the summary banner", async () => {
+    const user = userEvent.setup();
+    mockProducts = [
+      makeProduct({ status: "published" }),
+      makeProduct({ status: "published" }),
+      makeProduct({ status: "draft" }),
+    ];
+
+    render(<CatalogPage />);
+    // Same filters/args before and after opening the banner — the banner
+    // makes no request of its own; the real "is the catalog empty?" check
+    // happens server-side (404 from the export endpoint), not client-side
+    // against the filtered/paginated grid data (see `code-summary.md`:
+    // that data never represents the org's full published catalog, so a
+    // client-computed count/gate would be actively wrong).
+    const [filtersBeforeOpen] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+    await user.click(screen.getByTestId("dropdown-trigger"));
+    await user.click(
+      screen.getByRole("menuitem", {
+        name: "Exportar catálogo (formato cliente)",
+      }),
+    );
+    const [filtersAfterOpen] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+
+    expect(screen.getByTestId("export-summary-banner")).toBeInTheDocument();
+    expect(filtersAfterOpen).toEqual(filtersBeforeOpen);
+    expect(mockExportCatalogClientFormat).not.toHaveBeenCalled();
+  });
+
+  it("on a 404 (empty catalog, reported by the backend) shows the empty-catalog message", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(
+      new Response(null, { status: 404 }),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "No hay productos publicados para exportar.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("confirming the banner and the prompt triggers the export and guards against a second click while in flight", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    let resolveExport: (value: Response) => void = () => {};
+    mockExportCatalogClientFormat.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveExport = resolve;
+      }),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    expect(mockExportCatalogClientFormat).toHaveBeenCalledTimes(1);
+
+    // Reopen the menu item while the first export is still in flight —
+    // the click handler's own guard (not just the ignored `disabled` prop
+    // under the test's DropdownMenuItem mock) must prevent re-entry.
+    await user.click(
+      screen.getByRole("menuitem", {
+        name: "Exportar catálogo (formato cliente)",
+      }),
+    );
+    expect(
+      screen.queryByTestId("export-summary-banner"),
+    ).not.toBeInTheDocument();
+    expect(mockExportCatalogClientFormat).toHaveBeenCalledTimes(1);
+
+    resolveExport(buildZipResponse());
+    await waitFor(() => expect(anchorClickSpy).toHaveBeenCalledTimes(1));
+  });
+
+  it("on success (200, application/zip) triggers the blob download and a success toast", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(buildZipResponse());
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() => expect(anchorClickSpy).toHaveBeenCalledTimes(1));
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(toast.success).toHaveBeenCalledWith("Catálogo exportado");
+  });
+
+  it("on a 413 (export limit exceeded) shows a specific error toast without downloading", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(
+      buildErrorResponse(413, "El catálogo supera el límite soportado."),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "El catálogo supera el límite soportado.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("on a network failure shows a generic error toast instead of an unhandled rejection", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockRejectedValue(new Error("network down"));
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "No se pudo exportar el catálogo. Verificá tu conexión.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("cancelling the window.prompt does not fire any request", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue(null);
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    expect(mockExportCatalogClientFormat).not.toHaveBeenCalled();
+  });
+
+  it("contract: a 200 response with Content-Type application/zip is consumed as a blob, never as JSON", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    const response = buildZipResponse();
+    mockExportCatalogClientFormat.mockResolvedValue(response);
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() => expect(response.blob).toHaveBeenCalledTimes(1));
+    expect(response.json).not.toHaveBeenCalled();
   });
 });

@@ -8,7 +8,11 @@ import boto3
 from botocore.client import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
-from prosell.application.ports.ido_spaces import IDOSpacesService, StorageUploadError
+from prosell.application.ports.ido_spaces import (
+    IDOSpacesService,
+    StorageReadError,
+    StorageUploadError,
+)
 from prosell.core.config import settings
 
 
@@ -253,6 +257,34 @@ class DOSpacesService(IDOSpacesService):
             )
         )
         return url
+
+    async def get_object(self, key: str) -> bytes:
+        """
+        Read a file's raw bytes from Spaces.
+
+        Args:
+            key: Storage key of the file to read
+
+        Returns:
+            The file's raw bytes.
+
+        Raises:
+            StorageReadError: If the object doesn't exist or the read fails.
+        """
+        try:
+            response = await asyncio.to_thread(
+                self.s3_client.get_object,
+                Bucket=self.bucket,
+                Key=key,
+            )
+        except (ClientError, BotoCoreError) as e:
+            raise StorageReadError(f"Failed to read {key} from Spaces: {e}") from e
+
+        body = response["Body"]
+        try:
+            return await asyncio.to_thread(body.read)
+        except (ClientError, BotoCoreError) as e:
+            raise StorageReadError(f"Failed to read {key} from Spaces: {e}") from e
 
     def get_public_url(self, key: str) -> str:
         """

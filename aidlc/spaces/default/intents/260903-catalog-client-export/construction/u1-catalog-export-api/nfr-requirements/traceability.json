@@ -1,0 +1,27 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-catalog-export-api",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.1, NFR1.2 (security-requirements.md)"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1 (security-requirements.md)"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.1 (scalability-requirements.md) — 500 productos, decisión explícita de esta etapa"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "NFR4 es una postura de piso mínimo de test (methodology), no un atributo de calidad arquitectónico — se enforce en Build and Test (Construction), no en artefactos de diseño NFR"
+    }
+  ]
+}

@@ -25,6 +25,7 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
 from prosell.domain.entities.product import Product
+from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
@@ -50,6 +51,18 @@ def _make_user(tenant_id: UUID = TEST_TENANT_ID) -> User:
         full_name="Test User",
         tenant_id=tenant_id,
     )
+
+
+def _make_org_admin_user(tenant_id: UUID = TEST_TENANT_ID) -> User:
+    """A super_admin/admin user with ORG_ADMIN_VIEW_ALL (org:admin_view_all)."""
+    user = User(
+        id=TEST_USER_ID,
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=tenant_id,
+    )
+    user.roles = [Role.create_system_role(RoleType.ADMIN)]
+    return user
 
 
 def _make_spaces(sign_map: dict[str, str] | None = None) -> AsyncMock:
@@ -574,3 +587,79 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         )
         # Signer called exactly once — only the caller's tenant key.
         assert spaces.generate_download_url.await_count == 1
+
+
+class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
+    """`_key_tenant_allowed`'s org-admin relaxation must confirm the
+    extracted tenant is a REAL organization (DB-backed), not just a
+    UUID-shaped string — GGA-flagged gap, fixed alongside the
+    260903-catalog-client-export intent (product_router.py was already
+    touched by that intent for an unrelated fix)."""
+
+    @pytest.mark.asyncio
+    async def test_org_admin_signs_legacy_key_when_tenant_exists(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """A super_admin/org-admin can still sign a legacy bulk-upload key
+        namespaced under a DIFFERENT (but real) tenant than the product's."""
+        client, spaces = async_client_with_spaces
+        legacy_key = f"orgs/{TEST_OTHER_TENANT_ID}/products/legacy.jpg"
+        product = _make_product_entity(image_urls=[legacy_key], attributes={})
+        admin_user = _make_org_admin_user()
+
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+        try:
+            with (
+                patch(
+                    "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+                ) as mock_repo_cls,
+                patch(
+                    "prosell.infrastructure.api.routers.product_router.SqlAlchemyOrganizationRepository"
+                ) as mock_org_repo_cls,
+            ):
+                mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+                mock_org_repo_cls.return_value.get_by_tenant_id = AsyncMock(
+                    return_value=object()  # any non-None stands in for a real Organization
+                )
+                response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+        finally:
+            app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+        body = response.json()
+        assert [img["key"] for img in body["images"]] == [legacy_key]
+        spaces.generate_download_url.assert_awaited_once_with(legacy_key)
+
+    @pytest.mark.asyncio
+    async def test_org_admin_drops_legacy_key_when_tenant_does_not_exist(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """The security fix: a UUID-shaped prefix that does NOT correspond
+        to a real organization must be rejected, even for an org-admin."""
+        client, spaces = async_client_with_spaces
+        fake_key = f"orgs/{TEST_OTHER_TENANT_ID}/products/legacy.jpg"
+        product = _make_product_entity(image_urls=[fake_key], attributes={})
+        admin_user = _make_org_admin_user()
+
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+        try:
+            with (
+                patch(
+                    "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+                ) as mock_repo_cls,
+                patch(
+                    "prosell.infrastructure.api.routers.product_router.SqlAlchemyOrganizationRepository"
+                ) as mock_org_repo_cls,
+            ):
+                mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+                mock_org_repo_cls.return_value.get_by_tenant_id = AsyncMock(return_value=None)
+                response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+        finally:
+            app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+        body = response.json()
+        assert body["images"] == [], (
+            f"Key for a nonexistent tenant must be dropped, got: {body['images']!r}"
+        )
+        spaces.generate_download_url.assert_not_awaited()

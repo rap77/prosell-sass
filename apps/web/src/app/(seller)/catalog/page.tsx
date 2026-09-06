@@ -39,6 +39,12 @@ import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
 import { CatalogErrorBoundary } from "@/components/catalog/CatalogErrorBoundary";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   StatusBadge,
   type VehicleStatus,
 } from "@/components/datagrid/StatusBadge";
@@ -48,7 +54,9 @@ import {
   useDeleteProduct,
   transformProductToVehicle,
   exportCatalogCsv,
+  exportCatalogClientFormat,
 } from "@/lib/api/products";
+import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
@@ -144,6 +152,47 @@ function EmptyState({
   );
 }
 
+// ─── Export summary banner ──────────────────────────────────────────────────
+
+function ExportSummaryBanner({
+  onContinue,
+  onCancel,
+}: {
+  onContinue: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      role="status"
+      data-testid="export-summary-banner"
+      className="flex items-center justify-between gap-4 px-6 py-3 border-b border-ps-border-subtle bg-ps-elevated"
+    >
+      <p className="m-0 text-[13px] text-ps-text-primary">
+        Se exportará el catálogo completo de productos publicados de tu
+        organización.
+      </p>
+      <div className="flex gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={onContinue}
+          data-testid="export-summary-continue-button"
+          className="h-8 px-3 bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
+        >
+          Continuar
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          data-testid="export-summary-cancel-button"
+          className="h-8 px-3 bg-transparent text-ps-text-secondary border border-ps-border-default rounded-lg text-[13px] font-medium cursor-pointer"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Error state ──────────────────────────────────────────────────────────────
 
 export function ErrorState({
@@ -194,6 +243,8 @@ export default function CatalogPage() {
     title: string;
   } | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [isExportingClientFormat, setIsExportingClientFormat] = useState(false);
+  const [showExportSummary, setShowExportSummary] = useState(false);
 
   // Vertical contracts: presentation + attribute_schema per category.
   // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
@@ -393,6 +444,68 @@ export default function CatalogPage() {
     );
   };
 
+  // Guard lives in the click handler (not only the `disabled` prop) so a
+  // reopened menu item can't re-enter the flow while a previous export is
+  // still in flight.
+  const handleOpenExportSummary = () => {
+    if (isExportingClientFormat) return;
+    setShowExportSummary(true);
+  };
+
+  const handleCancelExportSummary = () => {
+    setShowExportSummary(false);
+  };
+
+  const handleExportClientFormat = async (fileName: string) => {
+    setIsExportingClientFormat(true);
+    try {
+      const res = await exportCatalogClientFormat();
+      if (res.status === 404) {
+        toast.error("No hay productos publicados para exportar.");
+        return;
+      }
+      if (res.status === 413) {
+        const body = await res.json().catch(() => null);
+        toast.error(
+          extractErrorMessage(
+            body,
+            "El catálogo supera el límite soportado por request.",
+          ),
+        );
+        return;
+      }
+      if (!res.ok) {
+        toast.error("No se pudo exportar el catálogo.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${fileName}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Catálogo exportado");
+    } catch {
+      toast.error("No se pudo exportar el catálogo. Verificá tu conexión.");
+    } finally {
+      setIsExportingClientFormat(false);
+    }
+  };
+
+  const handleConfirmExportSummary = () => {
+    setShowExportSummary(false);
+    // FR3.1/FR3.2 — editable suggested name; the browser prompt itself is
+    // the only input surface for this flow (no dedicated form component).
+    const suggestedName = `catalogo-formato-cliente-${new Date().toISOString().slice(0, 10)}`;
+    const fileName = window.prompt(
+      "Nombre sugerido para el archivo exportado (formato cliente):",
+      suggestedName,
+    );
+    if (fileName === null) return;
+    void handleExportClientFormat(fileName || suggestedName);
+  };
+
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -482,22 +595,35 @@ export default function CatalogPage() {
                     )}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleExportCsv}
-                  disabled={!selectedCategoryId}
-                  className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-transparent text-ps-text-primary border border-ps-border-default rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Exportar catálogo a CSV"
-                  data-testid="export-catalog-csv-button"
-                  title={
-                    selectedCategoryId
-                      ? undefined
-                      : "Elegí una categoría para exportar"
-                  }
-                >
-                  <Download size={14} strokeWidth={2.5} />
-                  <span className="hidden md:inline">Exportar CSV</span>
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-transparent text-ps-text-primary border border-ps-border-default rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                      aria-label="Exportar catálogo"
+                      data-testid="export-catalog-menu-trigger"
+                    >
+                      <Download size={14} strokeWidth={2.5} />
+                      <span className="hidden md:inline">Exportar</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={handleExportCsv}
+                      disabled={!selectedCategoryId}
+                      data-testid="export-catalog-csv-button"
+                    >
+                      Exportar CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleOpenExportSummary}
+                      disabled={isExportingClientFormat}
+                      data-testid="export-catalog-client-format-button"
+                    >
+                      Exportar catálogo (formato cliente)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <button
                   type="button"
                   onClick={() => router.push("/catalog/create")}
@@ -534,6 +660,14 @@ export default function CatalogPage() {
               })}
             </div>
           </div>
+
+          {/* Export (formato cliente) summary — inline, no modal */}
+          {showExportSummary && (
+            <ExportSummaryBanner
+              onContinue={handleConfirmExportSummary}
+              onCancel={handleCancelExportSummary}
+            />
+          )}
 
           {/* Active filter pills */}
           <FilterPills fields={filterFields} />

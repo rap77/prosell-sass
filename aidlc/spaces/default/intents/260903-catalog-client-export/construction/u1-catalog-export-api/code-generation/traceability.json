@@ -1,0 +1,224 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-catalog-export-api",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.11",
+    "AC1.3.1",
+    "AC1.3.2",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR3.1",
+    "NFR-PERF-1",
+    "NFR-PERF-2",
+    "NFR-PERF-3",
+    "NFR-REL-1",
+    "NFR-REL-2",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR3.1",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "apps/api/tests/integration/api/routers/test_product_router_export_client_format.py"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "AC1.3.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR-PERF-1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR-PERF-2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR-PERF-3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR-REL-1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "NFR-REL-2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/services/csv_export.py"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/exceptions/product_exceptions.py"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "TLS ya vigente a nivel de infraestructura — sin código de aplicación que lo implemente"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "acotado por el filtro published+tenant ya en BR1.1 — sin código adicional propio"
+    }
+  ]
+}
