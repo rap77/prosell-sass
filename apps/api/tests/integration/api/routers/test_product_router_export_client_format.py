@@ -3,9 +3,13 @@
 
 Covers Step 10 of code-generation-plan.md: Content-Type/Content-Disposition
 contract, 200/404/413, and multi-tenant isolation (NFR1) — a caller from
-one organization never sees another organization's products, and there
-is no request parameter that could change which organization is
-exported (the endpoint takes none).
+one organization never sees another organization's products by default.
+
+Also covers the cross-org export permission fix (intent
+260910-export-cross-org): a caller with `ORG_ADMIN_VIEW_ALL` may pass
+`organization_id` to export a DIFFERENT organization's catalog, a caller
+without that permission is rejected with 403, and every cross-org export
+is audit-logged.
 """
 
 import zipfile
@@ -124,6 +128,26 @@ def _auth_user(org: OrganizationModel) -> User:
         id=uuid4(),
         email=f"export-test-{uuid4().hex[:6]}@example.com",
         full_name="Export Test User",
+        tenant_id=org.tenant_id,
+        status=UserStatus.ACTIVE,
+        email_verified=True,
+        roles=[role],
+    )
+
+
+def _non_admin_user(org: OrganizationModel) -> User:
+    """A caller without ORG_ADMIN_VIEW_ALL (sales_agent), for the 403 path."""
+    role = Role(
+        id=uuid4(),
+        role_type=RoleType.SALES_AGENT,
+        name="Sales Agent",
+        is_system_role=True,
+        tenant_id=org.tenant_id,
+    )
+    return User(
+        id=uuid4(),
+        email=f"export-test-nonadmin-{uuid4().hex[:6]}@example.com",
+        full_name="Non-Admin Export Test User",
         tenant_id=org.tenant_id,
         status=UserStatus.ACTIVE,
         email_verified=True,
@@ -286,3 +310,129 @@ class TestExportClientFormatTenantIsolation:
 
         assert str(product_a.id) in csv_content
         assert str(product_b.id) not in csv_content
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("setup_override")
+class TestExportClientFormatCrossOrgPermission:
+    """Cross-org export permission fix (intent 260910-export-cross-org):
+    a caller with ORG_ADMIN_VIEW_ALL may target another organization via
+    `organization_id`, a caller without it is rejected with 403, and
+    every cross-org export is audit-logged (fail-open, best-effort).
+    """
+
+    async def test_super_admin_with_organization_id_sees_target_org_catalog(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """FR1.2, FR4.2 — the targeted regression for this bugfix."""
+        own_org = await _create_org(shared_session, code="AA")
+        target_org = await _create_org(shared_session, code="BB")
+        target_category = await _create_category(shared_session, target_org.tenant_id)
+        target_product = _make_product(
+            tenant_id=target_org.tenant_id,
+            organization_id=target_org.id,
+            category_id=target_category.id,
+            title="Target Org Vehicle",
+        )
+        shared_session.add(target_product)
+        await shared_session.flush()
+
+        _authenticate_as(_auth_user(own_org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={"organization_id": str(target_org.tenant_id)},
+            )
+
+        assert response.status_code == 200
+        with zipfile.ZipFile(BytesIO(response.content)) as archive:
+            csv_content = archive.read("catalogo.csv").decode("utf-8")
+        assert str(target_product.id) in csv_content
+
+    async def test_non_admin_with_organization_id_returns_403(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """FR1.3, FR4.3."""
+        own_org = await _create_org(shared_session, code="AA")
+        other_org = await _create_org(shared_session, code="BB")
+        _authenticate_as(_non_admin_user(own_org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={"organization_id": str(other_org.tenant_id)},
+            )
+
+        assert response.status_code == 403
+
+    async def test_nonexistent_organization_id_behaves_like_empty_catalog(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """FR1.5 — no existence validation, same as list_products: an
+        organization_id with no published products (real or nonexistent)
+        yields the ordinary empty-catalog 404.
+        """
+        own_org = await _create_org(shared_session, code="AA")
+        _authenticate_as(_auth_user(own_org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={"organization_id": str(uuid4())},
+            )
+
+        assert response.status_code == 404
+
+    async def test_cross_org_export_is_audited(
+        self, shared_session: AsyncSession, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """FR2.1."""
+        own_org = await _create_org(shared_session, code="AA")
+        target_org = await _create_org(shared_session, code="BB")
+        target_category = await _create_category(shared_session, target_org.tenant_id)
+        shared_session.add(
+            _make_product(
+                tenant_id=target_org.tenant_id,
+                organization_id=target_org.id,
+                category_id=target_category.id,
+            )
+        )
+        await shared_session.flush()
+        _authenticate_as(_auth_user(own_org))
+
+        with caplog.at_level("INFO"):
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get(
+                    "/api/v1/products/export-client-format.zip",
+                    params={"organization_id": str(target_org.tenant_id)},
+                )
+
+        assert response.status_code == 200
+        assert "Cross-org catalog export" in caplog.text
+        assert str(target_org.tenant_id) in caplog.text
+
+    async def test_own_org_export_is_not_audited(
+        self, shared_session: AsyncSession, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """FR2.2 — exporting the caller's own organization (default, no
+        organization_id) does not emit the cross-org audit log line.
+        """
+        org = await _create_org(shared_session)
+        category = await _create_category(shared_session, org.tenant_id)
+        shared_session.add(
+            _make_product(tenant_id=org.tenant_id, organization_id=org.id, category_id=category.id)
+        )
+        await shared_session.flush()
+        _authenticate_as(_auth_user(org))
+
+        with caplog.at_level("INFO"):
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/products/export-client-format.zip")
+
+        assert response.status_code == 200
+        assert "Cross-org catalog export" not in caplog.text

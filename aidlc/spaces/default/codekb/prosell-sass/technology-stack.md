@@ -133,6 +133,10 @@ El scan enfocado de este intent (foco `AGENTS.md`, `apps/web/package.json`, `app
 
 El scan enfocado de este intent (foco export de catálogo formato cliente + ZIP de imágenes: `csv_export.py`, `csv_field_mapper.py`, `csv_product_parser.py`, `csv_image_mapper.py`, `bulk_upload_vehicles.py`, `ido_spaces.py`, `do_spaces_service.py`, `product_router.py`, `apps/api/pyproject.toml`) no encontró cambios de versión respecto al pase anterior, y confirma que **no se requiere ninguna dependencia nueva** para esta funcionalidad: `csv` y `zipfile` (stdlib Python) ya están en uso para el flujo de import equivalente y alcanzan para el export; `boto3>=1.35.0` (storage) y `httpx>=0.28.0` (ya declarado en `pyproject.toml`) ya están instalados y disponibles si se opta por descargar imágenes vía `image_urls` públicas en vez de agregar un método de lectura al puerto `IDOSpacesService`. `python-multipart>=0.0.18` también ya está declarado (usado en el import equivalente). Ver `dependencies.md` para el detalle del gap de puerto de storage.
 
+## Confirmación de vigencia — scan enfocado `260910-export-cross-org`
+
+El scan enfocado de este intent (foco modelo de permisos cross-org: `product_router.py`, `role.py`, `user.py`, `export_catalog_client_format.py`, `organization_repository.py`) no encontró cambios de versión respecto al pase anterior, y confirma que **no se requiere ninguna dependencia nueva** para este fix: es una corrección de lógica de autorización dentro de un endpoint ya existente, reutilizando enums/helpers (`RoleType`, `Permission`, `ROLE_PERMISSIONS`, `_check_org_scope_permission()`) ya presentes en el código. FastAPI `[standard]==0.128.0`, Pydantic `2.12.5` sin cambios.
+
 ## Drift de documentación conocido
 
 `CLAUDE.md` (raíz) declara "TailwindCSS 4" en la tabla de stack y en "Key Conventions" (línea ~194) — el proyecto real fija `tailwindcss: 3.4.17` (Tailwind 3, no 4). Corregido parcialmente en la tabla de stack por el intent `260828-fix-invalid-tailwind-spa`; la línea de "Key Conventions" sigue sin corregir.

@@ -737,20 +737,33 @@ async def export_catalog_client_format(
     current_user: CurrentUser,
     db: DbSession,
     spaces: SpacesService,
+    organization_id: UUID | None = None,
 ) -> StreamingResponse:
-    """Export this organization's `published` catalog in the client
+    """Export an organization's `published` catalog in the client
     CSV+ZIP format (u1-catalog-export-api).
 
     A single combined ZIP (BR1.5): the client-format CSV (24 columns,
     ';' separator, identical to docs/data39.csv, including `id`) at its
     root, plus one folder per vehicle with its available images.
-    `organization_id` is resolved exclusively from the JWT
-    (`current_user.tenant_id`) — no request parameter can change which
-    organization gets exported (BR1.2, NFR1). Distinct from, and does
-    not replace, the generic `GET /export.csv` endpoint above (FR1.1).
+
+    Without `organization_id`, exports the caller's own organization
+    (`current_user.tenant_id`), same as always. A caller with
+    `ORG_ADMIN_VIEW_ALL` (e.g. `super_admin`) may pass `organization_id`
+    to export a DIFFERENT organization's catalog instead — same
+    cross-org permission gate as `GET /products` (`_check_org_scope_permission`).
+    Without that permission, passing another organization's `organization_id`
+    is rejected with 403. Every cross-org export is logged for audit.
+    Distinct from, and does not replace, the generic `GET /export.csv`
+    endpoint above (FR1.1).
     """
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
+    # Unlike list_products (which defaults an admin's omitted organization_id
+    # to a global browse, see _check_org_scope_permission's docstring), export
+    # always defaults to the caller's own org when organization_id is omitted
+    # (FR1.4) — cross-org export is opt-in only, never implicit.
+    effective_tenant_id = (
+        organization_id if organization_id is not None and can_view_all_orgs else owner_tenant_id
+    )
 
     product_repo = SqlAlchemyProductRepository(db)
     org_repo = SqlAlchemyOrganizationRepository(db)
@@ -761,7 +774,7 @@ async def export_catalog_client_format(
     )
 
     try:
-        result = await use_case.execute(tenant_id=current_user.tenant_id)
+        result = await use_case.execute(tenant_id=effective_tenant_id)
     except EmptyCatalogExportError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except ExportLimitExceededError as e:
@@ -769,7 +782,13 @@ async def export_catalog_client_format(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(e)
         ) from e
 
-    org_segment = result.organization_code or str(current_user.tenant_id)
+    if effective_tenant_id != owner_tenant_id:
+        logger.info(
+            f"Cross-org catalog export: user={current_user.id} "
+            f"own_org={owner_tenant_id} exported_org={effective_tenant_id}"
+        )
+
+    org_segment = result.organization_code or str(effective_tenant_id)
     filename = f"catalogo_{org_segment}_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
 
     return StreamingResponse(

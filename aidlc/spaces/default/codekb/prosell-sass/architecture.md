@@ -530,6 +530,50 @@ sequenceDiagram
 
 **Corrección de un supuesto de `project.md`**: la nota de aprendizaje persistida sobre el bug de proxy `response.json()` forzado en respuestas no-JSON (learned 2026-08-26) está **desactualizada para este archivo específico** — `apps/web/src/app/api/v1/products/[...path]/route.ts` ya pasa a `response.blob()` y preserva `Content-Disposition`, confirmado por lectura directa este pase. El defecto sigue vigente en los otros 3 proxies catch-all (`categories`, `organizations`, `vehicles`), pero no en `products`.
 
+### 13. Modelo de permisos cross-org de `product_router.py` — tres patrones coexistentes, uno de ellos omitido en el endpoint de export (nuevo, scan enfocado `260910-export-cross-org`)
+
+`product_router.py` resuelve acceso cross-org (un `super_admin`/`ORG_ADMIN_VIEW_ALL` operando sobre la organización de OTRO tenant) con **tres patrones distintos, sin unificar**:
+
+```mermaid
+flowchart TB
+    subgraph "Patrón 1 — list-style (list_products, get_category_filter_values, get_featured_products)"
+        P1a["_check_org_scope_permission(current_user, organization_id)"]
+        P1b["owner_tenant_id, can_view_all_orgs"]
+        P1c["tenant_id = organization_id if (organization_id and can_view_all_orgs) else owner_tenant_id"]
+        P1a --> P1b --> P1c
+    end
+
+    subgraph "Patrón 2 — single-resource inline (get_product, get_product_image_urls, create_product)"
+        P2a["is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)"]
+        P2b["repo.get_by_id(id, None if is_org_admin else current_user.tenant_id)"]
+        P2c["create_product: valida existencia del org-override vía org_repo.get_by_tenant_id()"]
+        P2a --> P2b
+        P2a --> P2c
+    end
+
+    subgraph "Patrón 3 — batch actions (approve/reject masivo)"
+        P3a["tenant_id = None if current_user.has_role('super_admin') else current_user.tenant_id"]
+        Note1["⚠️ chequea ROL literal,<br/>bypassea el permiso ORG_ADMIN_VIEW_ALL"]
+        P3a -.-> Note1
+    end
+
+    subgraph "Endpoint de export — GAP confirmado (scope a ampliar, intent 260910-export-cross-org)"
+        P4a["tenant_id = current_user.tenant_id<br/>(SIEMPRE, sin excepción)"]
+        Note2["⚠️ no usa NINGUNO de los 3 patrones —<br/>super_admin/ORG_ADMIN_VIEW_ALL no tiene<br/>ningún camino para exportar otra organización"]
+        P4a -.-> Note2
+    end
+
+    style Note1 fill:#fff3e0
+    style Note2 fill:#ffebee
+    style P4a fill:#ffebee
+```
+
+**Hallazgo clave**: `GET /api/v1/products/export-client-format.zip` (`product_router.py:735-779`, agregado por el intent `260903-catalog-client-export`) no replica NINGUNO de los tres patrones — resuelve `tenant_id` únicamente de `current_user.tenant_id` (L752-764), sin aceptar `organization_id` como parámetro. Su docstring (L747-750) afirma esta restricción como diseño intencional (cita `BR1.2`/`NFR1` del intent `260903`), y `personas.md` de ese mismo intent confirma que la exclusión de `super_admin` del flujo de export fue alcance de diseño explícito, no un descuido — es una decisión de scope a **revisar y ampliar**, no una regresión a revertir mecánicamente.
+
+**Hallazgo crítico de test — el bug está codificado como comportamiento esperado**: `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (`test_product_router_export_client_format.py`) autentica con `RoleType.SUPER_ADMIN` hardcodeado y asertaa que el producto de la organización B es invisible para el `super_admin` de la organización A. Cualquier fix de este intent necesita revisar explícitamente este test, no solo el código del endpoint.
+
+**Decisión de diseño pendiente para Functional Design**: cuál de los tres patrones replicar. El patrón 1 (`_check_org_scope_permission` + `organization_id`) es el más cercano en semántica — el export es, como `list_products`, una operación de lectura filtrable por organización — pero `_check_org_scope_permission()` hoy no valida que un `organization_id` caller-supplied corresponda a una organización existente (a diferencia de `create_product`, que sí lo hace vía `org_repo.get_by_tenant_id()`), gap ya señalado en `dependencies.md`.
+
 ## Key Design Decisions
 
 - **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
@@ -545,6 +589,7 @@ sequenceDiagram
 - **OAuth como redirect de navegador completo, no fetch** — `window.location.href` hacia el endpoint de autorización del backend, necesario porque el flujo OAuth2 requiere que el navegador salga del origen de la SPA.
 - **Schema de test bootstrapeado desde ORM (`Base.metadata.create_all()`), no desde Alembic** — decisión deliberada y documentada en el propio `create_test_schema.py` para evitar que CI dependa de una cadena de migraciones con drift conocido (`20260601_recreate_facebook_tables.py` falla contra DB fresca). Trade-off: el schema de CI nunca tiene drift respecto a los modelos, pero tampoco valida que la cadena real de Alembic funcione contra una base nueva — ver `code-quality-assessment.md` para la discusión de si reparar esa cadena entra en el alcance de "arreglar seed data".
 - **Rewrite BFF tipo `fallback` (`next.config.ts`) + archivos de ruta mock coexistiendo con proxies reales** — decisión de arquitectura de test/desarrollo que tiene una consecuencia colateral no buscada: cuando un archivo de ruta mock (p. ej. `app/api/v1/teams/route.ts`) existe para un endpoint, siempre gana sobre el rewrite hacia el backend real, sin importar si el mock quedó desalineado del contrato real. Esto puede ocultar mismatches de contrato de wire indefinidamente (confirmado con `teamApi.create` — ver `code-quality-assessment.md` hallazgo #45) hasta que algo fuerza el camino real (staging, un flujo sin mock como `addMember`/`acceptInvitation`, o remover el mock).
+- **Tres patrones de acceso cross-org coexistiendo sin unificar en `product_router.py`** (`_check_org_scope_permission()` + `organization_id`; `is_org_admin` inline single-resource; `has_role("super_admin")` literal en batch actions) — decisión implícita de crecimiento orgánico del router, no un diseño deliberado desde el inicio. El endpoint de export de catálogo (intent `260903-catalog-client-export`) quedó fuera de los tres, resolviendo `tenant_id` exclusivamente del JWT sin ningún camino cross-org — gap de scope confirmado, a resolver en el intent `260910-export-cross-org` eligiendo explícitamente uno de los tres patrones existentes en vez de inventar un cuarto. Ver § Interaction Diagrams diagrama 13.
 
 ## Improvement Opportunities
 
@@ -568,3 +613,4 @@ sequenceDiagram
 - Definir explícitamente en Requirements Analysis si el export de catálogo en formato cliente (24 columnas, `docs/data39.csv`) es un endpoint nuevo o una extensión de `GET /api/v1/products/export.csv` (hoy formato genérico `UNIVERSAL_COLUMNS_ORDERED`) — no son el mismo contrato de columnas, y decidirlo antes de tocar `csv_export.py`/`product_router.py` evita construir sobre el pipeline equivocado (scan `260903-catalog-client-export`).
 - Corregir el bug de `build_image_folder_name()` en `csv_export.py`: lee `attrs.get("color")` en vez de `attributes["exterior_color"]`, perdiendo silenciosamente el segmento COLOR del nombre de carpeta para todo vehículo real — fix mecánico y acotado, sin ambigüedad de diseño (scan `260903-catalog-client-export`).
 - Agregar un método de descarga (`get_object`/equivalente) a `IDOSpacesService` (hoy solo `upload`/`presign`/`delete`/`exists`), o resolver el ensamblado del ZIP de imágenes vía `httpx` contra las `image_urls` públicas ya guardadas en `Product` (sin dependencia nueva) — decisión de diseño explícita pendiente para Requirements Analysis/Functional Design (scan `260903-catalog-client-export`).
+- Extender `GET /api/v1/products/export-client-format.zip` para respetar `ORG_ADMIN_VIEW_ALL`/`super_admin`, replicando el patrón de `_check_org_scope_permission()` + parámetro `organization_id` ya usado por `list_products` (el más cercano en semántica), actualizar el docstring del endpoint que hoy afirma la restricción single-tenant como diseño intencional, y revisar `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (hoy codifica el gap como comportamiento correcto) — decisión de diseño pendiente para Functional Design (scan `260910-export-cross-org`, ver § Interaction Diagrams diagrama 13).

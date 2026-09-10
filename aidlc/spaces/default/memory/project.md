@@ -40,6 +40,8 @@
 
 <!-- Project-specific specialisation. -->
 
+- Para un NFR de auditoria liviana (registrar quien-hizo-que-cuando en un endpoint sensible) en un intent de Depth Minimal, preferir un logger.info() estructurado sobre agregar una tabla de auditoria dedicada, salvo que ya exista un precedente de tabla de auditoria para ese mismo dominio (ej. product_audit_log para cambios de status de Product) — confirmado en el intent 260910-export-cross-org (auditoria de exports cross-org de catalogo). (learned 2026-09-10) <!-- cid:260910-export-cross-org:code-generation:6a43075deb26943f5d86361e2a491ca7f4eefa3755253902bd94bbecfb01c13d -->
+
 ## Tech Stack
 
 <!-- Technology choices locked for this project. -->

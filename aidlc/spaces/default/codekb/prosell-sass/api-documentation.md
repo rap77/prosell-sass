@@ -225,6 +225,27 @@ Esta triangulación es evidencia directa a favor de la convención de equipo ya 
 
 **Gap de puerto de storage**: `IDOSpacesService` (`application/ports/ido_spaces.py`) no declara ningún método de lectura/descarga de bytes ya almacenados (solo `upload`/`presign`/`delete`/`exists`) — armar el ZIP de imágenes requiere agregar un método al puerto (equivalente a S3 `get_object`) o consumir las `image_urls` públicas ya guardadas en `Product` vía `httpx` (ya es dependencia del proyecto, sin agregar nada nuevo).
 
+**Gap de permiso cross-org confirmado (scan enfocado `260910-export-cross-org`)**: el endpoint `export-client-format.zip` (ya implementado, ver tabla arriba) resuelve la organización exclusivamente del JWT del usuario — un `super_admin`/`ORG_ADMIN_VIEW_ALL` no tiene hoy ningún camino para exportar el catálogo de una organización distinta a la propia, a diferencia de `list_products` en la misma tabla. Ver § "Modelo de permisos cross-org de `product_router.py`" más abajo para el detalle completo.
+
+## Modelo de permisos cross-org de `product_router.py` — gap confirmado en el endpoint de export (scan enfocado `260910-export-cross-org`)
+
+`product_router.py` implementa acceso cross-org (un `super_admin`/`ORG_ADMIN_VIEW_ALL` operando sobre una organización distinta a la propia) con **tres patrones no unificados**:
+
+| Patrón                     | Mecanismo                                                                                                                                                                                            | Endpoints                                                                           | Valida existencia del `organization_id` provisto               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 1 — list-style             | `_check_org_scope_permission(current_user, organization_id)` → `(owner_tenant_id, can_view_all_orgs)`; `tenant_id = organization_id if (organization_id and can_view_all_orgs) else owner_tenant_id` | `list_products`, `get_category_filter_values`, `get_featured_products`              | NO                                                             |
+| 2 — single-resource inline | `is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`; `repo.get_by_id(id, None if is_org_admin else current_user.tenant_id)`                                                  | `get_product`, `get_product_image_urls`; `create_product` (variante con validación) | SÍ, solo en `create_product` vía `org_repo.get_by_tenant_id()` |
+| 3 — role literal           | `tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id` — bypassea `ORG_ADMIN_VIEW_ALL` por completo                                                                  | acciones batch (`/batch/approve`, `/batch/reject`)                                  | N/A                                                            |
+| — export-client-format.zip | `tenant_id = current_user.tenant_id` SIEMPRE, sin excepción, sin parámetro `organization_id`                                                                                                         | `GET /api/v1/products/export-client-format.zip`                                     | N/A — no hay camino cross-org                                  |
+
+**`GET /api/v1/products/export-client-format.zip`** (`product_router.py:735-779`, agregado por el intent `260903-catalog-client-export`) es el único endpoint del router que no implementa NINGUNO de los tres patrones — resuelve `tenant_id` exclusivamente de `current_user.tenant_id` (L752-764). Su docstring (L747-750) afirma esta restricción como diseño intencional citando `BR1.2`/`NFR1` del intent `260903-catalog-client-export`; `personas.md` de ese mismo intent confirma que la exclusión de `super_admin` fue alcance de diseño explícito, no una omisión — reencuadra la premisa del intent `260910-export-cross-org`: es una decisión de scope a ampliar, no una regresión de código a "corregir" en sentido estricto.
+
+**Test que codifica el gap como comportamiento esperado**: `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (`test_product_router_export_client_format.py`) autentica con `RoleType.SUPER_ADMIN` y asertaa explícitamente que el producto de otra organización es invisible — un fix de scope necesita revisar este test, no solo el código del endpoint. `_check_org_scope_permission()` no tiene test unitario/directo propio — su rama `403` solo se ejercita implícitamente vía los endpoints que la usan.
+
+**Sin cambio de firma en el use case**: `ExportCatalogClientFormatUseCase.execute()` recibe un único `tenant_id: UUID` — la lógica de resolución de qué `tenant_id` pasar (incluyendo el chequeo de permiso cross-org) pertenece al router, siguiendo la convención ya vigente en `list_products`/`create_product`, no al use case.
+
+Ver `architecture.md` § Interaction Diagrams (diagrama 13), `code-structure.md` y `code-quality-assessment.md` para el detalle completo.
+
 ## `teamApi` — contrato de creación de equipo, mismatch confirmado (scan enfocado `260902-teamapi-create-param`)
 
 ### Request — `POST /api/v1/teams`

@@ -96,5 +96,12 @@
     "dirName": "260903-catalog-client-export",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a08b2f-2861-7196-89c7-b493debfb408",
+    "slug": "export-cross-org",
+    "dirName": "260910-export-cross-org",
+    "scope": "bugfix",
+    "status": "complete"
   }
 ]

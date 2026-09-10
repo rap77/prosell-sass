@@ -1,14 +1,82 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-03 (última actualización: scan enfocado del intent `260903-catalog-client-export`)
-**Commit analizado**: `30b4b89ce6359be6c046c002c06aacd40a266260` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260828-zod-3-to-4-migration` (a su vez aditivo sobre `260902-teamapi-create-param`, `260901-frontend-test-debt`, `260828-useeffect-to-react-query`, `260831-invalid-tailwind-classes`, `260830-ci-fixes-round2`, `260830-ci-seed-data` y el full rescan de `260826-prod-bugfixes-batch`) — ver § "Motivo del pase" más abajo. Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-10 (última actualización: scan enfocado del intent `260910-export-cross-org`)
+**Commit analizado**: `5a3d9afe8c4f064cfb58c464896226adfc554582` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260903-catalog-client-export` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260903-catalog-client-export` implementa la exportación del catálogo en el mismo formato CSV (24 columnas) que el cliente usa para importar vehículos, más un ZIP con las imágenes de cada vehículo organizadas por carpeta. El store existente cubría a profundidad la migración de sintaxis Zod (intent `260828-zod-3-to-4-migration`), pero nunca había profundizado en el pipeline de export de catálogo (`csv_export.py`), en el import cliente equivalente (`csv_field_mapper.py`/`csv_product_parser.py`/`csv_image_mapper.py`), ni en el puerto de storage (`ido_spaces.py`/`do_spaces_service.py`). El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+El intent `260910-export-cross-org` corrige una omisión de scope ya confirmada por los propios artefactos de diseño del intent `260903-catalog-client-export`: el endpoint `GET /api/v1/products/export-client-format.zip` (agregado por ese intent) resuelve `organization_id`/`tenant_id` exclusivamente del JWT del usuario (`current_user.tenant_id`), sin respetar el permiso `ORG_ADMIN_VIEW_ALL` ni el rol `super_admin` que SÍ usan otros endpoints del mismo router (`list_products`, `review-queue`, acciones de auditoría/reverse-transition) vía `_check_org_scope_permission()`. El store existente (`kind: partial`, foco export de catálogo/CSV/ZIP de imágenes del propio intent `260903-catalog-client-export`) nunca había profundizado en el modelo de permisos cross-org (`role.py`, `user.py`, `_check_org_scope_permission()`) ni en los otros patrones de acceso cross-org coexistentes en el router. Scan enfocado sobre esta área específica.
 
 ## Verificación de overwrite (codekb-scope-diff)
+
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco export de catálogo/CSV/ZIP de imágenes, intent `260903-catalog-client-export`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (modelo de permisos cross-org / `_check_org_scope_permission`, no el pipeline de armado de CSV/ZIP en sí). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+```
+NARROWER: replacing the store discards deep knowledge of:
+  - docs/canonical/F01-bulk-upload-csv-import.md
+  - docs/data39.csv
+  - apps/api/src/prosell/domain/entities/organization.py
+  - apps/api/src/prosell/domain/services/csv_field_mapper.py
+  - apps/api/src/prosell/domain/services/csv_product_parser.py
+  - apps/api/src/prosell/domain/services/csv_image_mapper.py
+  - apps/api/src/prosell/domain/services/csv_export.py
+  - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
+  - apps/api/src/prosell/application/ports/ido_spaces.py
+  - apps/api/src/prosell/infrastructure/services/do_spaces_service.py
+  - apps/web/src/lib/api/products.ts
+  - apps/web/src/app/(seller)/catalog/page.tsx
+  - apps/web/src/app/api/v1/products/[...path]/route.ts
+  - apps/api/pyproject.toml
+  components: catalog-client-csv-export, vehicle-image-zip-export
+(store intent: 260903-catalog-client-export; incoming intent: 260910-export-cross-org)
+```
+
+## Developer Code Scan Results — foco permiso cross-org del endpoint de export (intent `260910-export-cross-org`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**:
+  - `apps/api/src/prosell/infrastructure/api/routers/product_router.py` — lectura completa de L1-60 (imports/setup), L160-162 (`CurrentUser`/`DbSession`/`SpacesService`), L255-330 (`_check_org_scope_permission`, `_require_marketplace_publish`, `_require_super_admin`), L426-485 (`create_product` — precedente de org-override con validación de existencia), L700-782 (`/export.csv` cola + `/export-client-format.zip` completo), L782-880 (`list_products`, `effective_tenant`), L960-1030 (`get_category_filter_values`, `get_featured_products`), L1036-1120 (`get_product`, `get_product_image_urls` — patrón `is_org_admin` de lectura single-resource)
+  - `apps/api/src/prosell/domain/entities/role.py` — `RoleType`, `Permission`, `ROLE_PERMISSIONS` (L1-110)
+  - `apps/api/src/prosell/domain/entities/user.py` — `has_role()`, `has_permission()` (L247-274)
+  - `apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py` — firma de `__init__`/`execute` (L67-107)
+  - `apps/api/src/prosell/domain/repositories/organization_repository.py` — firma de `get_by_tenant_id()` (L40-48)
+  - `apps/api/tests/integration/api/routers/test_product_router_export_client_format.py` — archivo completo (las 3 clases de test)
+  - `aidlc/spaces/default/intents/260903-catalog-client-export/inception/user-stories/personas.md` — archivo completo (confirma la premisa del intent: exclusión explícita de `super_admin` del flujo de export en el diseño original)
+- **Skimmed only**: inventario `rg` de todos los endpoints de `product_router.py` (batch approve/reject/reserve/pause/resume/sold, submit, single-resource approve/reject/publish/pause/resume/reserve/mark-sold) para mapear qué patrón de acceso cross-org usa cada uno — números de línea capturados, cuerpos no leídos.
+- **No tocado**: frontend (`apps/web`), otros routers, internals de `Organization` más allá de `tenant_id`/`code` ya conocidos de pases previos, tests unitarios de `role.py`/`user.py`.
+
+### Root cause / hallazgo principal
+
+Confirma la premisa exacta del intent: `GET /api/v1/products/export-client-format.zip` (`product_router.py:735-779`) resuelve `organization_id` exclusivamente de `current_user.tenant_id` (L752-764) y no acepta ningún parámetro de request que permita apuntar a otra organización — su docstring (L747-750) afirma esta restricción como diseño intencional, citando `BR1.2`/`NFR1` del intent `260903-catalog-client-export`. `personas.md` de ese mismo intent confirma textualmente que la exclusión de `super_admin` del flujo de export fue alcance de diseño explícito ("no hay interacción de... super admin en el flujo de export"), no una omisión de implementación — reencuadra la premisa del intent `260910-export-cross-org` con precisión: es una decisión de scope a **revisar y ampliar**, no un bug de código a "corregir" en el sentido de una regresión accidental.
+
+En paralelo, `list_products`, `get_category_filter_values` y `get_featured_products` SÍ honran `organization_id`+`ORG_ADMIN_VIEW_ALL` vía el patrón idéntico:
+
+```python
+owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
+tenant_id = organization_id if organization_id is not None and can_view_all_orgs else owner_tenant_id
+```
+
+El scan detecta además **tres patrones de acceso cross-org coexistiendo sin unificar** en el mismo router: (1) `_check_org_scope_permission()` + parámetro `organization_id` (estilo listado: `list_products`, `get_category_filter_values`, `get_featured_products`); (2) `is_org_admin` standalone inline (lecturas de recurso único: `get_product`, `get_product_image_urls`; y `create_product`, que además valida la existencia del org-override vía `org_repo.get_by_tenant_id()` como defensa IDOR); (3) `has_role("super_admin")` literal, que **bypassea el permiso `ORG_ADMIN_VIEW_ALL` por completo** (acciones batch). El fix de este intent debe elegir explícitamente cuál patrón replicar para el endpoint de export — no copiar ciegamente el primero que aparezca.
+
+**Hallazgo crítico de test**: `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (en `test_product_router_export_client_format.py`) autentica su caller con `RoleType.SUPER_ADMIN` hardcodeado y asertaa que el producto de la organización B es invisible para el `super_admin` que llama desde la organización A — la suite de integración ACTUAL codifica el bug reportado como comportamiento correcto/esperado. Un fix de este intent necesita revisar explícitamente este test. `_check_org_scope_permission()` no tiene test directo/unitario propio — su rama `403` solo se ejercita implícitamente a través de los endpoints que la usan.
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Functional Design)
+
+- Decisión de diseño: cuál de los tres patrones de cross-org access coexistentes replicar en el endpoint de export (el más cercano en semántica es el patrón (1), usado por `list_products` — mismo tipo de operación de lectura filtrable por `organization_id` — pero la decisión final no le corresponde a este scan).
+- Decisión de diseño: si agregar validación de existencia de organización (como hace `create_product` vía `org_repo.get_by_tenant_id()`) al resolver un `organization_id` provisto por el caller en el endpoint de export, dado que `_check_org_scope_permission()` hoy no la tiene — gap ya documentado en `dependencies.md`/`code-quality-assessment.md` del pase `260903-catalog-client-export`.
+- `ExportCatalogClientFormatUseCase.execute()` solo recibe `tenant_id: UUID` — no requiere cambio de firma; la lógica de resolución de organización (incluyendo el chequeo de permiso) pertenece al router, siguiendo la convención ya vigente en `list_products`/`create_product`.
+- Actualizar el docstring del endpoint (L747-750), que hoy afirma la restricción single-tenant como diseño intencional — un fix de scope debe revertir esa afirmación.
+- Revisar `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` para reflejar el comportamiento correcto tras el fix (hoy asertaa exactamente el comportamiento que el intent pide cambiar).
+
+Ver `architecture.md`, `code-structure.md`, `component-inventory.md`, `api-documentation.md`, `code-quality-assessment.md` y `dependencies.md` para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260903-catalog-client-export`)
+
+El intent `260903-catalog-client-export` implementa la exportación del catálogo en el mismo formato CSV (24 columnas) que el cliente usa para importar vehículos, más un ZIP con las imágenes de cada vehículo organizadas por carpeta. El store existente cubría a profundidad la migración de sintaxis Zod (intent `260828-zod-3-to-4-migration`), pero nunca había profundizado en el pipeline de export de catálogo (`csv_export.py`), en el import cliente equivalente (`csv_field_mapper.py`/`csv_product_parser.py`/`csv_image_mapper.py`), ni en el puerto de storage (`ido_spaces.py`/`do_spaces_service.py`). El usuario eligió explícitamente **scan enfocado** sobre rescan completo.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260903-catalog-client-export`
 
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco migración de sintaxis Zod, intent `260828-zod-3-to-4-migration`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área completamente distinta (export de catálogo/CSV/ZIP de imágenes, no esquemas Zod). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
@@ -28,7 +96,7 @@ NARROWER: replacing the store discards deep knowledge of:
 (store intent: 260828-zod-3-to-4-migration; incoming intent: 260903-catalog-client-export)
 ```
 
-## Developer Code Scan Results — foco export de catálogo formato cliente + ZIP de imágenes (intent `260903-catalog-client-export`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco export de catálogo formato cliente + ZIP de imágenes (intent `260903-catalog-client-export`)
 
 ### Paso 0 (graphify-first) cumplido
 
@@ -361,10 +429,22 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260903-catalog-client-export
-fingerprint: 42238d343465de94cdaa8fcea6bfd7931c83232a
+intent: 260910-export-cross-org
+fingerprint: 92113f4904b3ff9c7381179038561540f73cf283
 analyzed:
   paths:
+    - apps/api/src/prosell/infrastructure/api/routers/product_router.py
+    - apps/api/src/prosell/domain/entities/role.py
+    - apps/api/src/prosell/domain/entities/user.py
+    - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
+    - apps/api/src/prosell/domain/repositories/organization_repository.py
+    - apps/api/tests/integration/api/routers/test_product_router_export_client_format.py
+    - aidlc/spaces/default/intents/260903-catalog-client-export/inception/user-stories/personas.md
+  components:
+    - cross-org-export-permission-scope
+shallow:
+  paths:
+    - apps/api/tests/unit/application/use_cases/product/test_export_catalog_client_format.py
     - docs/canonical/F01-bulk-upload-csv-import.md
     - docs/data39.csv
     - apps/api/src/prosell/domain/entities/organization.py
@@ -375,16 +455,10 @@ analyzed:
     - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
     - apps/api/src/prosell/application/ports/ido_spaces.py
     - apps/api/src/prosell/infrastructure/services/do_spaces_service.py
-    - apps/api/src/prosell/infrastructure/api/routers/product_router.py
     - apps/web/src/lib/api/products.ts
     - apps/web/src/app/(seller)/catalog/page.tsx
     - apps/web/src/app/api/v1/products/[...path]/route.ts
     - apps/api/pyproject.toml
-  components:
-    - catalog-client-csv-export
-    - vehicle-image-zip-export
-shallow:
-  paths:
     - AGENTS.md
     - apps/web/src/lib/api/schemas/
     - apps/web/src/lib/api/verticals.ts
