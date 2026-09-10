@@ -124,6 +124,8 @@
   al del backend (excepciones tipadas por dominio + manejo centralizado) (affirmed 2026-09-04)
   como convención de equipo hacia adelante. (affirmed 2026-09-04)
 
+- ALWAYS corregir TODO lo que GGA señale al revisar un archivo tocado, aunque el hallazgo sea preexistente y no esté relacionado con el cambio que motivó tocar ese archivo — directiva explícita del humano reafirmada en el intent 260903-catalog-client-export (Deployment Execution), reconfirmando la política ya vigente. Nunca usar --no-verify ni saltear el hook para evitar el fix. (learned 2026-09-09) <!-- cid:260903-catalog-client-export:deployment-execution:dee9ab0ae8f6ca91403bf13ccb8fba7431204d32cee7c4fdbdd043c6cdc04424 -->
+
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
