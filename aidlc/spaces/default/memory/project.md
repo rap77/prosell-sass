@@ -40,6 +40,8 @@
 
 <!-- Project-specific specialisation. -->
 
+- El pre-commit local de este proyecto corre GGA (revisión de código vía codex) y puede tardar minutos (300s de timeout interno) — si el comando `git commit` se corta externamente (ej. timeout de la herramienta de shell) mientras GGA está corriendo, pre-commit ya ejecutó su paso de "[INFO] Stashing unstaged files to /home/rpadron/.cache/pre-commit/patch<timestamp>-<pid>" ANTES de correr los hooks, y como el proceso murió a mitad de camino, ese patch nunca se reaplica automáticamente — el working tree queda con esos archivos aparentemente "revertidos" (git status los muestra limpios). NO es pérdida de trabajo: el patch completo (diff exacto de los archivos no-stageados en ese momento) queda guardado en `/home/rpadron/.cache/pre-commit/patch<timestamp>-<pid>` — recuperar con `git apply --check <patch>` (dry-run) y luego `git apply <patch>`. Antes de reintentar un commit que timeouteó, correr `git status`/`git stash list` para detectar esta situación, y usar un timeout más largo (5-10 min) en el reintento dado que GGA ya es lento por diseño. (learned 2026-09-11) <!-- cid:260911-export-org-selector:deployment-execution:ae3781dd91f8d14161b8a9e3a035f36b7e242ef0b01c9e9285f345691685faf6 -->
+
 ## Code Style
 
 <!-- Project-specific specialisation. -->

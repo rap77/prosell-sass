@@ -51,3 +51,24 @@ está online. Antes de ejecutar el push, se presenta este plan al humano
 para confirmación explícita (no solo el gate de fin de stage).
 
 [Answer]: Sí, commitear y pushear
+
+## Consolidated Summary Confirmation
+
+Deploy a staging completado: push a `origin/main` (`264d99f1..756ae5e0`),
+CI 7/7 jobs verdes, `Deploy Staging` exitoso en 16m58s, smoke test
+manual OK (frontend 200, `/catalog` 307 esperado, backend 200), sin
+rollback. Ver `deployment-log.md`, `smoke-test-results.md`,
+`health-check-report.md`.
+
+```question
+prompt: "Does this all look correct before I generate the artifacts?"
+header: "Confirmación"
+multiSelect: false
+options:
+  - label: "Looks correct"
+    description: "Todo bien"
+  - label: "Request changes"
+    description: "Algo hay que ajustar"
+```
+
+[Answer]: Looks correct
