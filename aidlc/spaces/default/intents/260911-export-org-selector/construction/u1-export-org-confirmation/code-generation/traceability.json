@@ -1,0 +1,86 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-export-org-confirmation",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "NFR1",
+    "NFR2"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (handleExportClientFormat, organization_id condicional); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: badge con el nombre cuando viewingOrgId apunta a una org resuelta)"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/products.ts (exportCatalogClientFormat, organizationId? opcional); apps/web/tests/unit/lib/api/products.test.ts (caso: sin organizationId)"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (exportOrganization derivado de organizationStore.viewingOrgId); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: mismo store, mismo valor)"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (ExportSummaryBanner, badge en skeleton cuando kind === \"loading\", nunca ausente); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: badge en skeleton, nunca idéntico a own)"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (ExportSummaryBanner, texto \"Exportando catálogo de: {name}\"); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: badge con el nombre)"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (ExportSummaryBanner, sin badge cuando kind === \"own\"); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: no badge y sin organization_id cuando viewingOrgId es null)"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (handleExportClientFormat, toast 404 con nombre); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: 404 cross-org con nombre resuelto)"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (handleExportClientFormat, mensaje 404 propio sin cambios); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: 404 org propia, pin de no-regresión)"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "N/A",
+      "target": "OrganizationPicker.tsx no modificado (ya gateado por ORG_ADMIN_VIEW_ALL, sin cambios de este Unit) — cubierto por regresión existente, no por código nuevo de este Unit"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "apps/web/src/app/(seller)/catalog/page.tsx (organization_id undefined cuando exportOrganization.kind === \"own\"); apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: no badge y sin organization_id cuando viewingOrgId es null)"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "OK",
+      "target": "apps/web/tests/components/catalog/CatalogPage.test.tsx (caso: sin viewingOrgId, cero elementos nuevos relacionados a organización en el DOM del flujo completo)"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "apps/web/src/stores/organizationStore.ts:361-367 (setViewingOrgId guard ya existente, no modificado); apps/web/src/app/(seller)/catalog/page.tsx consume viewingOrgId de solo lectura, sin guard propio nuevo (herencia confirmada en nfr-design/security-design.md)"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "mismo motivo que nfr-requirements/traceability.json y nfr-design/traceability.json — restricción de convención de código (mismo store, sin mecanismo paralelo), no un atributo de calidad clásico; verificado por AC1.1.3/AC1.1.4"
+    }
+  ]
+}

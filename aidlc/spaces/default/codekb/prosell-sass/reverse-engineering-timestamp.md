@@ -1,14 +1,67 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-10 (última actualización: scan enfocado del intent `260910-export-cross-org`)
-**Commit analizado**: `5a3d9afe8c4f064cfb58c464896226adfc554582` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260903-catalog-client-export` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-10 (última actualización: scan enfocado del intent `260911-export-org-selector`)
+**Commit analizado**: `264d99f105297456b7fe1f7fe9eecaba545b31e9` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260910-export-cross-org` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260910-export-cross-org` corrige una omisión de scope ya confirmada por los propios artefactos de diseño del intent `260903-catalog-client-export`: el endpoint `GET /api/v1/products/export-client-format.zip` (agregado por ese intent) resuelve `organization_id`/`tenant_id` exclusivamente del JWT del usuario (`current_user.tenant_id`), sin respetar el permiso `ORG_ADMIN_VIEW_ALL` ni el rol `super_admin` que SÍ usan otros endpoints del mismo router (`list_products`, `review-queue`, acciones de auditoría/reverse-transition) vía `_check_org_scope_permission()`. El store existente (`kind: partial`, foco export de catálogo/CSV/ZIP de imágenes del propio intent `260903-catalog-client-export`) nunca había profundizado en el modelo de permisos cross-org (`role.py`, `user.py`, `_check_org_scope_permission()`) ni en los otros patrones de acceso cross-org coexistentes en el router. Scan enfocado sobre esta área específica.
+El intent `260911-export-org-selector` continúa cerrando el gap que el intent `260910-export-cross-org` dejó explícitamente fuera de su alcance: ese intent resolvió el permiso cross-org del **backend** (`GET /api/v1/products/export-client-format.zip` ya acepta `organization_id` y respeta `ORG_ADMIN_VIEW_ALL`/`super_admin`), pero el botón "Exportar" de `/catalog` sigue sin ningún mecanismo de **UI** para que un actor con ese permiso elija qué organización exportar — `exportCatalogClientFormat()` nunca manda `organization_id`, y no hay selector de organización en `catalog/page.tsx`. El store existente (`kind: partial`, foco modelo de permisos cross-org del backend, intent `260910-export-cross-org`) nunca había profundizado en el lado de frontend de este problema: ni en el mecanismo de selección de organización que ya existe en la app (`OrganizationPicker`/`organizationStore.viewingOrgId`), ni en por qué `catalog/page.tsx` no lo usa. Scan enfocado sobre esta área específica.
 
 ## Verificación de overwrite (codekb-scope-diff)
+
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco modelo de permisos cross-org del backend, intent `260910-export-cross-org`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (selector de organización de UI en frontend, no el modelo de permisos del backend en sí). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+```
+NARROWER: replacing the store discards deep knowledge of:
+  - apps/api/src/prosell/domain/entities/role.py
+  - apps/api/src/prosell/domain/entities/user.py
+  - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
+  - apps/api/src/prosell/domain/repositories/organization_repository.py
+  - apps/api/tests/integration/api/routers/test_product_router_export_client_format.py
+  - aidlc/spaces/default/intents/260903-catalog-client-export/inception/user-stories/personas.md
+  components: cross-org-export-permission-scope
+(store intent: 260910-export-cross-org; incoming intent: 260911-export-org-selector)
+```
+
+## Developer Code Scan Results — foco selector de organización para export de catálogo (intent `260911-export-org-selector`)
+
+### Paso 0 (graphify-first) cumplido
+
+El developer corrió 10 queries/explain de graphify antes de cualquier lectura cruda: `exportCatalogClientFormat`, `catalog page viewingOrgId organizationStore`, `OrganizationPicker`, `organizationStore viewingOrgId`, `useAuth hook isAdmin`, `useOrganizations hook api organizations.ts`, `Permission ORG_ADMIN_VIEW_ALL enum`, `export-client-format.zip router endpoint`, `_check_org_scope_permission definition`, `TeamSwitcher.tsx`, `ExportSummaryBanner component`, `review queue organization filter selector dropdown`. Este pase de síntesis (Step 3) reconfirmó el hallazgo central vía `graphify query "OrganizationPicker organizationStore viewingOrgId"` y `graphify query "ReviewQueueTable"` antes de leer los 9 artefactos existentes.
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `apps/web/src/app/(seller)/catalog/page.tsx` (líneas 1-70, 420-720), `apps/web/src/lib/api/products.ts` (líneas 1500-1600), `apps/web/src/components/admin/OrganizationPicker.tsx` (completo), `apps/web/src/components/admin/OrganizationPicker.test.tsx` (primeras 60 líneas), `apps/web/src/stores/organizationStore.ts` (completo), `apps/web/src/hooks/useAuth.ts` (completo), `apps/web/src/lib/auth/permissions.ts` (completo), `apps/web/src/lib/api/organizations.ts` (completo), `apps/web/src/lib/api/schemas/organizations.ts` (líneas 1-100), `apps/api/src/prosell/infrastructure/api/routers/product_router.py` (líneas 700-799), más grep dirigido post-graphify sobre `viewingOrgId` en todo `apps/web/src`, y sobre `review-queue/page.tsx`+`ReviewQueueTable.tsx` (sin selector de org).
+- **Preservado del codekb existente (`kind: partial`, no re-analizado)**: todo lo demás — backend fuera de `product_router.py`/`export_catalog_client_format.py`, resto del frontend, tests e2e, infra/docker, docs.
+- **No tocado**: resto del repositorio (scan enfocado, no full rescan).
+
+### Root cause / hallazgo principal
+
+`organizationStore.viewingOrgId` existe con un componente selector completo, testeado y en producción (`OrganizationPicker.tsx`, renderizado en `Header.tsx`, global a toda la app) — pero está **dormido**: censo completo de `viewingOrgId` en `apps/web/src` muestra que ningún hook de datos (catálogo, review-queue) lo consume para filtrar nada; solo el propio picker lo lee/escribe. El diseño original de Subsystem D (`docs/superpowers/changes/subsystem-d-dealer-ownership/design.md:27-42`) preveía conectarlo a queries admin, pero nunca se completó más allá del picker.
+
+Bifurcación de diseño (para Requirements/Functional Design, NO resuelta acá):
+
+- **(a)** Cablear el export al `viewingOrgId`/`OrganizationPicker` global existente — sería su primer consumidor real.
+- **(b)** Selector local independiente, acotado solo al flujo de export (ej. dentro de `ExportSummaryBanner`), sin tocar estado global del header.
+
+También: `review-queue/page.tsx` y `ReviewQueueTable.tsx` NO tienen selector de organización propio (grep sin matches) — corrige la premisa de que "el resto de la app ya permite elegir otra organización" a nivel de UI; el único selector cross-org real hoy es `OrganizationPicker`.
+
+Endpoints confirmados: `GET /api/v1/products/export-client-format.zip` en su forma final post-merge `264d99f1` (`organization_id: UUID | None = None`, gateado por `_check_org_scope_permission()`); `GET /api/v1/admin/organizations` (hook `useOrganizations()`), gateado server-side por `ORG_ADMIN_VIEW_ALL`, devuelve `Organization[]` (`OrganizationSchema`) — el endpoint que ya usa `OrganizationPicker` y el candidato natural a reutilizar para el nuevo selector. Distinto de `orgApi.list()` (`@/lib/api/orgApi.ts`), segunda representación de `Organization` usada para CRUD, no para "ver como".
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Functional Design)
+
+- Decisión de diseño: resolver la bifurcación (a)/(b) — cablear al `viewingOrgId` global existente vs. selector local acotado al export.
+- Si se elige (a): decidir si `viewingOrgId` pasa a filtrar también otras vistas admin (review-queue, etc.) como parte del mismo cambio, o si el alcance queda acotado solo al export — el diseño original de Subsystem D sugiere que el estado global fue pensado para más de un consumidor, pero eso excede el alcance verbatim de este intent.
+- Precedente de test directamente reusable: `OrganizationPicker.test.tsx` (mockea `useAuth`, `useOrganizations`, `useOrganizationStore`) — patrón de referencia para el test del selector nuevo, sin importar cuál rama de la bifurcación se elija.
+
+Ver `architecture.md` § Interaction Diagrams (diagrama 14), `code-structure.md`, `component-inventory.md`, `api-documentation.md`, `dependencies.md`, `business-overview.md` y `code-quality-assessment.md` (hallazgos #71-76) para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260910-export-cross-org`)
+
+El intent `260910-export-cross-org` corrige una omisión de scope ya confirmada por los propios artefactos de diseño del intent `260903-catalog-client-export`: el endpoint `GET /api/v1/products/export-client-format.zip` (agregado por ese intent) resuelve `organization_id`/`tenant_id` exclusivamente del JWT del usuario (`current_user.tenant_id`), sin respetar el permiso `ORG_ADMIN_VIEW_ALL` ni el rol `super_admin` que SÍ usan otros endpoints del mismo router (`list_products`, `review-queue`, acciones de auditoría/reverse-transition) vía `_check_org_scope_permission()`. El store existente (`kind: partial`, foco export de catálogo/CSV/ZIP de imágenes del propio intent `260903-catalog-client-export`) nunca había profundizado en el modelo de permisos cross-org (`role.py`, `user.py`, `_check_org_scope_permission()`) ni en los otros patrones de acceso cross-org coexistentes en el router. Scan enfocado sobre esta área específica.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260910-export-cross-org`
 
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco export de catálogo/CSV/ZIP de imágenes, intent `260903-catalog-client-export`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (modelo de permisos cross-org / `_check_org_scope_permission`, no el pipeline de armado de CSV/ZIP en sí). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
@@ -32,7 +85,7 @@ NARROWER: replacing the store discards deep knowledge of:
 (store intent: 260903-catalog-client-export; incoming intent: 260910-export-cross-org)
 ```
 
-## Developer Code Scan Results — foco permiso cross-org del endpoint de export (intent `260910-export-cross-org`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco permiso cross-org del endpoint de export (intent `260910-export-cross-org`)
 
 ### Scan Coverage
 
@@ -392,58 +445,38 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
   - `apps/api/scripts/` (22 scripts — contados)
 - **Fuera de alcance de código** (no tocados): `docs/`, `PRPs/`, `.archive/`
 
-## [PRESERVADO ÍNTEGRO] Scan enfocado — intent `260830-ci-seed-data` (2026-08-30)
-
-**Tipo de pase**: **Scan enfocado** (aditivo sobre el full rescan anterior de esta misma fecha, no lo reemplaza). Motivo: reparar el CI de `main`, en rojo consistente en varios pushes no relacionados (patrón ya aprendido en `project.md`: rojo sistemático = bloqueo de infraestructura de pipeline, no regresión del último commit). El store previo no había cubierto a profundidad el área de seed data/schema de test de CI — solo relevada a nivel de directorio (`apps/api/scripts/`, `apps/api/tests/`).
-
-**Verificación de overwrite (`codekb-scope-diff --compare`)**: veredicto **COVERS** — el scan entrante cubrió todo lo que el store anterior ya había analizado (unión aditiva, sin pérdida de cobertura previa).
-
-### Developer Code Scan Results — foco CI seed data
-
-**Analizado en profundidad este pase**:
-
-- `apps/api/scripts/create_test_schema.py`
-- `apps/api/src/prosell/infrastructure/database/base.py`
-- `apps/api/src/prosell/infrastructure/database/session.py`
-- `apps/api/tests/conftest.py`
-- `apps/api/tests/integration/conftest.py`
-- `apps/api/tests/integration/api/routers/test_fb_sync_router.py` (fixtures + 3 tests relevantes)
-- `apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py` (`_get_active_fb_account`, `unpublish_callback`)
-- `apps/api/tests/integration/database/test_seed_categories.py`
-- `apps/api/tests/integration/database/test_seed_car_attributes.py`
-- `apps/api/src/prosell/infrastructure/database/seed_categories.py`
-- `apps/api/src/prosell/infrastructure/models/product_model.py`
-- `apps/api/tests/integration/use_cases/test_batch_approve_products.py` (grep dirigido)
-- `apps/api/tests/integration/bulk_upload/conftest.py` (fixtures)
-- `apps/api/scripts/init_data.py`
-- `apps/api/alembic/versions/` (listado + búsqueda de FK/enum drift)
-- Git history: `apps/api/scripts/`, `apps/api/tests/conftest.py`, `apps/api/src/prosell/infrastructure/database/`, `apps/api/tests/integration/conftest.py`, `apps/api/src/prosell/infrastructure/models/product_model.py`, `apps/api/tests/integration/database/*`, commit `2166f142`
-- Runs de CI reales: `gh run list` (últimos 15) + `gh run view 33292657961 --log-failed` (log completo, 23499 líneas)
-
-**Solo relevado (skimmed) este pase**: `apps/api/scripts/seed_dev.py`, `seed_marketplace_inventory.py`, `seed_dealers.py`, `seed_test_vehicles.py`, `audit_schema_drift.py`, `test_data_cleanup.py`; `apps/api/alembic/versions/20260601_recreate_facebook_tables.py` (solo referenciado por el docstring de `create_test_schema.py`); job `test-python` de `.github/workflows/ci.yml` (ya cubierto por un pase previo, no releído).
-
-**Fuera de alcance de este scan** (store previo aún vigente sobre esas áreas, no reescaneado): `apps/api/src/prosell/domain/`, `apps/api/src/prosell/application/use_cases/`, `apps/api/src/prosell/infrastructure/api/routers/` (excepto `fb_sync_router.py`), `apps/api/src/prosell/infrastructure/api/middleware/`, `apps/api/src/prosell/infrastructure/services/`, `apps/api/src/prosell/infrastructure/tasks/`, `apps/web/**`, `apps/api/pyproject.toml`, `apps/web/vitest.config.ts`, `.pre-commit-config.yaml`.
-
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260910-export-cross-org
-fingerprint: 92113f4904b3ff9c7381179038561540f73cf283
+intent: 260911-export-org-selector
+fingerprint: 6289213e15392af9fbdd8acb2dcb5bc85e32ef45
 analyzed:
   paths:
+    - apps/web/src/app/(seller)/catalog/page.tsx
+    - apps/web/src/lib/api/products.ts
+    - apps/web/src/components/admin/OrganizationPicker.tsx
+    - apps/web/src/components/admin/OrganizationPicker.test.tsx
+    - apps/web/src/stores/organizationStore.ts
+    - apps/web/src/hooks/useAuth.ts
+    - apps/web/src/lib/auth/permissions.ts
+    - apps/web/src/lib/api/organizations.ts
+    - apps/web/src/lib/api/schemas/organizations.ts
     - apps/api/src/prosell/infrastructure/api/routers/product_router.py
+    - apps/web/src/app/(admin)/admin/review-queue/page.tsx
+    - apps/web/src/components/review/ReviewQueueTable.tsx
+    - docs/superpowers/changes/subsystem-d-dealer-ownership/design.md
+  components:
+    - org-selector-catalog-export-wiring
+shallow:
+  paths:
     - apps/api/src/prosell/domain/entities/role.py
     - apps/api/src/prosell/domain/entities/user.py
     - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
     - apps/api/src/prosell/domain/repositories/organization_repository.py
     - apps/api/tests/integration/api/routers/test_product_router_export_client_format.py
     - aidlc/spaces/default/intents/260903-catalog-client-export/inception/user-stories/personas.md
-  components:
-    - cross-org-export-permission-scope
-shallow:
-  paths:
     - apps/api/tests/unit/application/use_cases/product/test_export_catalog_client_format.py
     - docs/canonical/F01-bulk-upload-csv-import.md
     - docs/data39.csv
@@ -455,10 +488,8 @@ shallow:
     - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
     - apps/api/src/prosell/application/ports/ido_spaces.py
     - apps/api/src/prosell/infrastructure/services/do_spaces_service.py
-    - apps/web/src/lib/api/products.ts
-    - apps/web/src/app/(seller)/catalog/page.tsx
-    - apps/web/src/app/api/v1/products/[...path]/route.ts
     - apps/api/pyproject.toml
+    - apps/web/src/app/api/v1/products/[...path]/route.ts
     - AGENTS.md
     - apps/web/src/lib/api/schemas/
     - apps/web/src/lib/api/verticals.ts
@@ -503,7 +534,6 @@ shallow:
     - apps/web/tests/unit/lib/api/products.test.ts
     - apps/web/vitest.config.ts
     - .github/workflows/ci.yml
-    - apps/web/src/hooks/useAuth.ts
     - apps/web/src/stores/authStore.ts
     - apps/web/src/lib/auth/deriveRole.ts
     - apps/web/src/lib/api/leads.ts

@@ -1,0 +1,17 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-export-org-confirmation",
+  "upstream_ids": ["NFR1", "NFR2"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "security-design.md (documenta la herencia de NFR1.1–NFR1.3 en mecanismos ya existentes, sin diseño técnico nuevo)"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "mismo motivo que en nfr-requirements/traceability.json — no es un NFR clásico de diseño técnico"
+    }
+  ]
+}

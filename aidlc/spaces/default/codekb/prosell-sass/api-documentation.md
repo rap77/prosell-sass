@@ -225,7 +225,7 @@ Esta triangulación es evidencia directa a favor de la convención de equipo ya 
 
 **Gap de puerto de storage**: `IDOSpacesService` (`application/ports/ido_spaces.py`) no declara ningún método de lectura/descarga de bytes ya almacenados (solo `upload`/`presign`/`delete`/`exists`) — armar el ZIP de imágenes requiere agregar un método al puerto (equivalente a S3 `get_object`) o consumir las `image_urls` públicas ya guardadas en `Product` vía `httpx` (ya es dependencia del proyecto, sin agregar nada nuevo).
 
-**Gap de permiso cross-org confirmado (scan enfocado `260910-export-cross-org`)**: el endpoint `export-client-format.zip` (ya implementado, ver tabla arriba) resuelve la organización exclusivamente del JWT del usuario — un `super_admin`/`ORG_ADMIN_VIEW_ALL` no tiene hoy ningún camino para exportar el catálogo de una organización distinta a la propia, a diferencia de `list_products` en la misma tabla. Ver § "Modelo de permisos cross-org de `product_router.py`" más abajo para el detalle completo.
+**Gap de permiso cross-org — RESUELTO en el backend (intent `260910-export-cross-org`), gap de UI vigente (intent `260911-export-org-selector`)**: el endpoint `export-client-format.zip` ya acepta `organization_id`+`ORG_ADMIN_VIEW_ALL`/`super_admin` (ver § "Export de catálogo — endpoint en su forma final" arriba), pero la UI de `/catalog` no tiene todavía ningún mecanismo para que el actor elija esa organización — `exportCatalogClientFormat()` sigue sin mandar el parámetro. Ver § "Modelo de permisos cross-org de `product_router.py`" más abajo para el detalle histórico del gap de backend ya cerrado.
 
 ## Modelo de permisos cross-org de `product_router.py` — gap confirmado en el endpoint de export (scan enfocado `260910-export-cross-org`)
 
@@ -245,6 +245,27 @@ Esta triangulación es evidencia directa a favor de la convención de equipo ya 
 **Sin cambio de firma en el use case**: `ExportCatalogClientFormatUseCase.execute()` recibe un único `tenant_id: UUID` — la lógica de resolución de qué `tenant_id` pasar (incluyendo el chequeo de permiso cross-org) pertenece al router, siguiendo la convención ya vigente en `list_products`/`create_product`, no al use case.
 
 Ver `architecture.md` § Interaction Diagrams (diagrama 13), `code-structure.md` y `code-quality-assessment.md` para el detalle completo.
+
+## Export de catálogo — endpoint en su forma final, gap de wiring de UI (scan enfocado `260911-export-org-selector`)
+
+### `GET /api/v1/products/export-client-format.zip` — forma final confirmada post-merge `264d99f1`
+
+```python
+async def export_catalog_client_format(
+    current_user: CurrentUser, db: DbSession, spaces: SpacesService,
+    organization_id: UUID | None = None,
+) -> StreamingResponse:
+```
+
+(`product_router.py:735-798`). `owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)` — mismo gate que `GET /products`. Sin `organization_id`: exporta la organización propia del caller. Con `organization_id` + `ORG_ADMIN_VIEW_ALL`: exporta la organización indicada. Sin el permiso: `403`. Cada export cross-org queda logueado. **El backend está completo desde el intent `260910-export-cross-org`** — el gap que queda es exclusivamente de UI (ver abajo).
+
+### `GET /api/v1/admin/organizations` — endpoint ya usado por el selector cross-org existente
+
+Hook `useOrganizations()` (`apps/web/src/lib/api/organizations.ts:75`), gateado server-side por `ORG_ADMIN_VIEW_ALL`, devuelve `Organization[]` con shape `{id, name, code, ...}` (`OrganizationSchema`, `apps/web/src/lib/api/schemas/organizations.ts:45`). Es el endpoint que ya consume `OrganizationPicker.tsx` (ver `component-inventory.md`) y el candidato natural a reutilizar para cualquier selector nuevo del flujo de export — sin necesidad de un endpoint adicional. Distinto del `Organization`/`orgApi.list()` de `@/lib/api/orgApi.ts` (segunda representación paralela del mismo concepto, usada para CRUD de organización, no para "ver como" — ver `dependencies.md`).
+
+### Gap de wiring confirmado — el cliente nunca manda `organization_id`
+
+`exportCatalogClientFormat()` (`apps/web/src/lib/api/products.ts:1541`) llama `fetch("/api/v1/products/export-client-format.zip", {credentials:"include"})` sin ningún parámetro — el backend ya acepta `organization_id`, pero ningún caller de la UI lo provee hoy. `catalog/page.tsx` no importa `useAuth` ni `organizationStore`: cero lógica de selección de organización en el flujo de export. Ver `architecture.md` § Interaction Diagrams (diagrama 14) para la bifurcación de diseño pendiente (cablear al `OrganizationPicker`/`viewingOrgId` global existente vs. un selector local acotado al export).
 
 ## `teamApi` — contrato de creación de equipo, mismatch confirmado (scan enfocado `260902-teamapi-create-param`)
 

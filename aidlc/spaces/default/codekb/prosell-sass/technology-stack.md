@@ -137,6 +137,10 @@ El scan enfocado de este intent (foco export de catálogo formato cliente + ZIP 
 
 El scan enfocado de este intent (foco modelo de permisos cross-org: `product_router.py`, `role.py`, `user.py`, `export_catalog_client_format.py`, `organization_repository.py`) no encontró cambios de versión respecto al pase anterior, y confirma que **no se requiere ninguna dependencia nueva** para este fix: es una corrección de lógica de autorización dentro de un endpoint ya existente, reutilizando enums/helpers (`RoleType`, `Permission`, `ROLE_PERMISSIONS`, `_check_org_scope_permission()`) ya presentes en el código. FastAPI `[standard]==0.128.0`, Pydantic `2.12.5` sin cambios.
 
+## Confirmación de vigencia — scan enfocado `260911-export-org-selector`
+
+El scan enfocado de este intent (foco selector de organización para el export de catálogo: `OrganizationPicker.tsx`, `organizationStore.ts`, `useAuth.ts`, `permissions.ts`, `organizations.ts`, `catalog/page.tsx`, `product_router.py`) no encontró cambios de versión respecto al pase anterior, y confirma que **no se requiere ninguna dependencia nueva**: es un problema de wiring de UI entre piezas de frontend ya existentes (Zustand `organizationStore`, TanStack Query `useOrganizations()`, componente `OrganizationPicker` ya montado en `Header.tsx`) contra un endpoint de backend ya completo desde el intent `260910-export-cross-org`. Zustand `^5.0.11`, TanStack Query `^5.0.0`, Next.js `^16.3.3`, React `^19.2.8`, FastAPI `[standard]==0.128.0`, Pydantic `2.12.5` — sin cambios.
+
 ## Drift de documentación conocido
 
 `CLAUDE.md` (raíz) declara "TailwindCSS 4" en la tabla de stack y en "Key Conventions" (línea ~194) — el proyecto real fija `tailwindcss: 3.4.17` (Tailwind 3, no 4). Corregido parcialmente en la tabla de stack por el intent `260828-fix-invalid-tailwind-spa`; la línea de "Key Conventions" sigue sin corregir.

@@ -103,5 +103,12 @@
     "dirName": "260910-export-cross-org",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a08e00-2dc8-7ecf-9e5c-8ef6db7a36ab",
+    "slug": "export-org-selector",
+    "dirName": "260911-export-org-selector",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]

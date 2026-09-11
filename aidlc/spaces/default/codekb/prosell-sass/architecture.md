@@ -574,6 +574,54 @@ flowchart TB
 
 **Decisión de diseño pendiente para Functional Design**: cuál de los tres patrones replicar. El patrón 1 (`_check_org_scope_permission` + `organization_id`) es el más cercano en semántica — el export es, como `list_products`, una operación de lectura filtrable por organización — pero `_check_org_scope_permission()` hoy no valida que un `organization_id` caller-supplied corresponda a una organización existente (a diferencia de `create_product`, que sí lo hace vía `org_repo.get_by_tenant_id()`), gap ya señalado en `dependencies.md`.
 
+### 14. Selector de organización — mecanismo cross-org existente en el frontend, hoy dormido para el flujo de export (nuevo, scan enfocado `260911-export-org-selector`)
+
+El intent `260910-export-cross-org` cerró el gap del **backend**: `GET /api/v1/products/export-client-format.zip` ya acepta `organization_id` y respeta `ORG_ADMIN_VIEW_ALL`/`super_admin` (ver diagrama 13). Este scan confirma que la **UI** no tiene todavía ningún camino para que un actor Super admin/plataforma indique qué organización exportar — y que la app ya cuenta con un mecanismo cross-org de UI completo, testeado y en producción, pero desconectado de este flujo.
+
+```mermaid
+flowchart TB
+    subgraph "Mecanismo cross-org de UI YA EXISTENTE — global, en Header"
+        Header["Header.tsx<br/>(renderizado en toda la app)"]
+        Picker["OrganizationPicker()<br/>apps/web/src/components/admin/OrganizationPicker.tsx"]
+        UseAuth["useAuth().isAdmin<br/>(guard UI: !isAdmin → null)"]
+        UseOrgs["useOrganizations()<br/>GET /api/v1/admin/organizations<br/>(gateado server-side por ORG_ADMIN_VIEW_ALL)"]
+        Store["organizationStore.viewingOrgId<br/>+ setViewingOrgId()<br/>(no-op si el rol no tiene<br/>ORG_ADMIN_VIEW_ALL — defensa en profundidad)"]
+        Header --> Picker
+        Picker --> UseAuth
+        Picker --> UseOrgs
+        Picker --> Store
+    end
+
+    subgraph "Consumidores de viewingOrgId — CENSO COMPLETO en apps/web/src"
+        Nadie["⚠️ NINGUNO — ni catálogo, ni review-queue,<br/>ni ningún hook de datos lee viewingOrgId hoy.<br/>Solo el propio Picker lo lee/escribe."]
+        Store -.->|"censado, sin consumidores"| Nadie
+    end
+
+    subgraph "Flujo de export — catalog/page.tsx, SIN wiring hoy"
+        Dropdown["DropdownMenu 'Exportar'<br/>→ 'Exportar catálogo (formato cliente)'"]
+        Banner["ExportSummaryBanner<br/>(inline, no modal)"]
+        Prompt["window.prompt(nombre de archivo)"]
+        ExportFn["exportCatalogClientFormat()<br/>apps/web/src/lib/api/products.ts:1541<br/>CERO parámetros"]
+        Fetch["fetch('/api/v1/products/export-client-format.zip',<br/>{credentials:'include'})<br/>⚠️ nunca manda organization_id"]
+        Dropdown --> Banner --> Prompt --> ExportFn --> Fetch
+    end
+
+    Backend["Backend (ya listo desde 260910):<br/>organization_id?: UUID | None<br/>+ _check_org_scope_permission()"]
+    Fetch -.->|"llega SIEMPRE sin organization_id,<br/>aunque el backend ya lo acepte"| Backend
+
+    style Nadie fill:#ffebee
+    style Fetch fill:#ffebee
+```
+
+**Hallazgo central**: `catalog/page.tsx` no importa `useAuth` ni `organizationStore` — cero lógica de permisos/selección de organización en ese archivo hoy. `review-queue/page.tsx` y `ReviewQueueTable.tsx` tampoco tienen selector de organización propio (grep sin matches) — corrige la premisa de que "el resto de la app ya permite elegir otra organización" a nivel de UI: el único selector cross-org real hoy es el `OrganizationPicker` global del `Header`, y está desconectado de todo excepto de sí mismo. El diseño original de Subsystem D (`docs/superpowers/changes/subsystem-d-dealer-ownership/design.md:27-42`) preveía conectar `viewingOrgId` a queries admin, pero eso nunca se completó más allá del propio picker.
+
+**Bifurcación de diseño pendiente (Requirements/Functional Design, NO resuelta en este scan)**:
+
+- **(a)** Cablear el export al `viewingOrgId`/`OrganizationPicker` global existente — sería su primer consumidor real en toda la app.
+- **(b)** Selector local independiente, acotado solo al flujo de export (p. ej. dentro de `ExportSummaryBanner`), sin tocar el estado global del header.
+
+Ambas opciones reutilizan el mismo endpoint ya gateado por permiso (`GET /api/v1/admin/organizations`, hook `useOrganizations()`) y el mismo shape mínimo de organización (`{id, name, ...}`, `OrganizationSchema`) — la decisión es de alcance/acoplamiento de estado, no de qué dato traer.
+
 ## Key Design Decisions
 
 - **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
@@ -589,6 +637,7 @@ flowchart TB
 - **OAuth como redirect de navegador completo, no fetch** — `window.location.href` hacia el endpoint de autorización del backend, necesario porque el flujo OAuth2 requiere que el navegador salga del origen de la SPA.
 - **Schema de test bootstrapeado desde ORM (`Base.metadata.create_all()`), no desde Alembic** — decisión deliberada y documentada en el propio `create_test_schema.py` para evitar que CI dependa de una cadena de migraciones con drift conocido (`20260601_recreate_facebook_tables.py` falla contra DB fresca). Trade-off: el schema de CI nunca tiene drift respecto a los modelos, pero tampoco valida que la cadena real de Alembic funcione contra una base nueva — ver `code-quality-assessment.md` para la discusión de si reparar esa cadena entra en el alcance de "arreglar seed data".
 - **Rewrite BFF tipo `fallback` (`next.config.ts`) + archivos de ruta mock coexistiendo con proxies reales** — decisión de arquitectura de test/desarrollo que tiene una consecuencia colateral no buscada: cuando un archivo de ruta mock (p. ej. `app/api/v1/teams/route.ts`) existe para un endpoint, siempre gana sobre el rewrite hacia el backend real, sin importar si el mock quedó desalineado del contrato real. Esto puede ocultar mismatches de contrato de wire indefinidamente (confirmado con `teamApi.create` — ver `code-quality-assessment.md` hallazgo #45) hasta que algo fuerza el camino real (staging, un flujo sin mock como `addMember`/`acceptInvitation`, o remover el mock).
+- **`OrganizationPicker`/`organizationStore.viewingOrgId` como único mecanismo cross-org de UI, hoy sin consumidores de datos** (nuevo, scan `260911-export-org-selector`) — decisión de diseño original (Subsystem D) de centralizar la selección de "ver como otra organización" en un estado global del `Header`, con doble guard (`isAdmin` en UI + no-op en el store si falta `ORG_ADMIN_VIEW_ALL`). Nunca se completó el lado de consumo: ningún hook de datos de la app lee `viewingOrgId` hoy. El export de catálogo es la primera funcionalidad candidata a conectarse a él (o a bifurcar hacia un selector local propio) — ver § Interaction Diagrams diagrama 14.
 - **Tres patrones de acceso cross-org coexistiendo sin unificar en `product_router.py`** (`_check_org_scope_permission()` + `organization_id`; `is_org_admin` inline single-resource; `has_role("super_admin")` literal en batch actions) — decisión implícita de crecimiento orgánico del router, no un diseño deliberado desde el inicio. El endpoint de export de catálogo (intent `260903-catalog-client-export`) quedó fuera de los tres, resolviendo `tenant_id` exclusivamente del JWT sin ningún camino cross-org — gap de scope confirmado, a resolver en el intent `260910-export-cross-org` eligiendo explícitamente uno de los tres patrones existentes en vez de inventar un cuarto. Ver § Interaction Diagrams diagrama 13.
 
 ## Improvement Opportunities
@@ -613,4 +662,5 @@ flowchart TB
 - Definir explícitamente en Requirements Analysis si el export de catálogo en formato cliente (24 columnas, `docs/data39.csv`) es un endpoint nuevo o una extensión de `GET /api/v1/products/export.csv` (hoy formato genérico `UNIVERSAL_COLUMNS_ORDERED`) — no son el mismo contrato de columnas, y decidirlo antes de tocar `csv_export.py`/`product_router.py` evita construir sobre el pipeline equivocado (scan `260903-catalog-client-export`).
 - Corregir el bug de `build_image_folder_name()` en `csv_export.py`: lee `attrs.get("color")` en vez de `attributes["exterior_color"]`, perdiendo silenciosamente el segmento COLOR del nombre de carpeta para todo vehículo real — fix mecánico y acotado, sin ambigüedad de diseño (scan `260903-catalog-client-export`).
 - Agregar un método de descarga (`get_object`/equivalente) a `IDOSpacesService` (hoy solo `upload`/`presign`/`delete`/`exists`), o resolver el ensamblado del ZIP de imágenes vía `httpx` contra las `image_urls` públicas ya guardadas en `Product` (sin dependencia nueva) — decisión de diseño explícita pendiente para Requirements Analysis/Functional Design (scan `260903-catalog-client-export`).
-- Extender `GET /api/v1/products/export-client-format.zip` para respetar `ORG_ADMIN_VIEW_ALL`/`super_admin`, replicando el patrón de `_check_org_scope_permission()` + parámetro `organization_id` ya usado por `list_products` (el más cercano en semántica), actualizar el docstring del endpoint que hoy afirma la restricción single-tenant como diseño intencional, y revisar `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (hoy codifica el gap como comportamiento correcto) — decisión de diseño pendiente para Functional Design (scan `260910-export-cross-org`, ver § Interaction Diagrams diagrama 13).
+- Extender `GET /api/v1/products/export-client-format.zip` para respetar `ORG_ADMIN_VIEW_ALL`/`super_admin`, replicando el patrón de `_check_org_scope_permission()` + parámetro `organization_id` ya usado por `list_products` (el más cercano en semántica), actualizar el docstring del endpoint que hoy afirma la restricción single-tenant como diseño intencional, y revisar `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (hoy codifica el gap como comportamiento correcto) — decisión de diseño pendiente para Functional Design (scan `260910-export-cross-org`, ver § Interaction Diagrams diagrama 13). **Ya implementado** — confirmado en el intent `260910-export-cross-org` (backend), ver `code-quality-assessment.md` para el detalle de verificación en vivo.
+- Cablear la UI de `/catalog` al parámetro `organization_id` que el backend ya acepta desde `260910-export-cross-org` — elegir explícitamente entre reutilizar `organizationStore.viewingOrgId`/`OrganizationPicker` (opción a) o un selector local acotado al flujo de export (opción b), y hacer que `exportCatalogClientFormat()` mande el `organization_id` elegido. Decisión de diseño pendiente para Requirements Analysis/Functional Design del intent `260911-export-org-selector` (ver § Interaction Diagrams diagrama 14).

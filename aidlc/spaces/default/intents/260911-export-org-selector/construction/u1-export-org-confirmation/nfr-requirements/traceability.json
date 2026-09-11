@@ -1,0 +1,13 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-export-org-confirmation",
+  "upstream_ids": ["NFR1", "NFR2"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3" },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "ya cubierto estructuralmente en Functional Design (AC1.1.4, functional-spec.md § Workflow paso 1) — es una restricción de convención de código, no un atributo de calidad de Performance/Security/Scalability/Reliability/Observability en sentido clásico (hallazgo ya señalado por el reviewer de Requirements Analysis)"
+    }
+  ]
+}
