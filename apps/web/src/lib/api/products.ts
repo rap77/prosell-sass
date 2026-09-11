@@ -1537,9 +1537,21 @@ export async function exportCatalogCsv(categoryId: string): Promise<void> {
  * the raw `Response` instead of driving the download itself — the caller
  * must branch on 200/404/413 (empty catalog / export limit exceeded)
  * before deciding whether to trigger a download or show an error.
+ *
+ * `organizationId` is optional (u1-export-org-confirmation): when present,
+ * it is appended as `?organization_id=<id>` so a super_admin/org-admin
+ * "viewing as" another organization exports that organization's catalog
+ * instead of their own (gated server-side by `ORG_ADMIN_VIEW_ALL`, see
+ * `260910-export-cross-org`). Omitted entirely when absent — same URL as
+ * before for the caller's own organization.
  */
-export async function exportCatalogClientFormat(): Promise<Response> {
-  return fetch("/api/v1/products/export-client-format.zip", {
+export async function exportCatalogClientFormat(
+  organizationId?: string,
+): Promise<Response> {
+  const url = organizationId
+    ? `/api/v1/products/export-client-format.zip?organization_id=${encodeURIComponent(organizationId)}`
+    : "/api/v1/products/export-client-format.zip";
+  return fetch(url, {
     credentials: "include",
   });
 }

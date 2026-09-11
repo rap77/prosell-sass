@@ -28,6 +28,7 @@ import {
   AlertCircle,
   RefreshCw,
   Download,
+  Building2,
 } from "lucide-react";
 import { DataGrid } from "@/components/datagrid/DataGrid";
 import { DataGridSkeleton } from "@/components/datagrid/DataGridSkeleton";
@@ -58,8 +59,10 @@ import {
 } from "@/lib/api/products";
 import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
+import { useOrganization } from "@/lib/api/organizations";
 import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
+import { useOrganizationStore } from "@/stores/organizationStore";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
@@ -82,6 +85,40 @@ const VIEW_MODE = {
 } as const;
 
 type ViewMode = (typeof VIEW_MODE)[keyof typeof VIEW_MODE];
+
+// u1-export-org-confirmation: which organization's catalog the export
+// summary banner/confirmation is about. "own" = the caller's own
+// organization (default, no badge). "loading"/"cross-org" only occur when
+// `organizationStore.viewingOrgId` is set (ORG_ADMIN_VIEW_ALL) — "loading"
+// covers both "name not resolved yet" and "organization deleted/
+// inaccessible" (per refined-mockups/interaction-spec.md Q2).
+type ExportOrganization =
+  { kind: "own" } | { kind: "loading" } | { kind: "cross-org"; name: string };
+
+function resolveExportOrganization(
+  viewingOrgId: string | null,
+  viewingOrganizationName: string | undefined,
+): ExportOrganization {
+  if (!viewingOrgId) return { kind: "own" };
+  if (viewingOrganizationName) {
+    return { kind: "cross-org", name: viewingOrganizationName };
+  }
+  return { kind: "loading" };
+}
+
+// u1-export-org-confirmation — AC2.1.1/AC2.1.2: the empty-catalog (404)
+// message names the target organization for a cross-org export, uses a
+// generic fallback when its name hasn't resolved (or it's gone/inaccessible),
+// and keeps the pre-existing own-organization string unchanged.
+function emptyCatalogExportMessage(organization: ExportOrganization): string {
+  if (organization.kind === "cross-org") {
+    return `${organization.name} no tiene catálogo publicado para exportar.`;
+  }
+  if (organization.kind === "loading") {
+    return "Esta organización no tiene catálogo publicado para exportar.";
+  }
+  return "No hay productos publicados para exportar.";
+}
 
 const TABS: { id: ViewMode; label: string; icon: ElementType }[] = [
   { id: VIEW_MODE.GRID, label: "Grilla", icon: LayoutGrid },
@@ -157,37 +194,57 @@ function EmptyState({
 function ExportSummaryBanner({
   onContinue,
   onCancel,
+  organization,
 }: {
   onContinue: () => void;
   onCancel: () => void;
+  organization: ExportOrganization;
 }) {
   return (
     <div
       role="status"
       data-testid="export-summary-banner"
-      className="flex items-center justify-between gap-4 px-6 py-3 border-b border-ps-border-subtle bg-ps-elevated"
+      className="flex flex-col gap-2 px-6 py-3 border-b border-ps-border-subtle bg-ps-elevated"
     >
-      <p className="m-0 text-[13px] text-ps-text-primary">
-        Se exportará el catálogo completo de productos publicados de tu
-        organización.
-      </p>
-      <div className="flex gap-2 shrink-0">
-        <button
-          type="button"
-          onClick={onContinue}
-          data-testid="export-summary-continue-button"
-          className="h-8 px-3 bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
+      {organization.kind !== "own" && (
+        <div
+          data-testid="export-summary-org-badge"
+          className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full bg-ps-cyan/10 text-ps-cyan text-[12px] font-semibold"
         >
-          Continuar
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          data-testid="export-summary-cancel-button"
-          className="h-8 px-3 bg-transparent text-ps-text-secondary border border-ps-border-default rounded-lg text-[13px] font-medium cursor-pointer"
-        >
-          Cancelar
-        </button>
+          <Building2 size={13} strokeWidth={2.5} />
+          {organization.kind === "loading" ? (
+            <span
+              data-testid="export-summary-org-badge-skeleton"
+              className="inline-block h-[14px] w-24 rounded bg-ps-cyan/25 animate-pulse"
+            />
+          ) : (
+            <span>Exportando catálogo de: {organization.name}</span>
+          )}
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-4">
+        <p className="m-0 text-[13px] text-ps-text-primary">
+          Se exportará el catálogo completo de productos publicados de tu
+          organización.
+        </p>
+        <div className="flex gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onContinue}
+            data-testid="export-summary-continue-button"
+            className="h-8 px-3 bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
+          >
+            Continuar
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            data-testid="export-summary-cancel-button"
+            className="h-8 px-3 bg-transparent text-ps-text-secondary border border-ps-border-default rounded-lg text-[13px] font-medium cursor-pointer"
+          >
+            Cancelar
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -253,6 +310,21 @@ export default function CatalogPage() {
   // vertical slug in O(1).)
   const { data: orgProfile } = useCurrentOrganizationProfile();
   const organizationId = orgProfile?.id ?? null;
+
+  // u1-export-org-confirmation: which organization the client-format export
+  // targets. `viewingOrgId` is the same global "view as" state the Header's
+  // `OrganizationPicker` writes — reading it here introduces no second,
+  // parallel state mechanism. `useOrganization` reuses the SAME cached
+  // TanStack Query `OrganizationPicker` already fires (no new network
+  // request, see nfr-design/performance-design.md).
+  const viewingOrgId = useOrganizationStore((state) => state.viewingOrgId);
+  const { organization: viewingOrganization } = useOrganization(
+    viewingOrgId ?? undefined,
+  );
+  const exportOrganization = resolveExportOrganization(
+    viewingOrgId,
+    viewingOrganization?.name,
+  );
   const { data: verticalsData } = useOrgVerticals(organizationId);
   const allCategories = (verticalsData?.verticals ?? []).flatMap(
     (vertical) => vertical.categories,
@@ -459,9 +531,13 @@ export default function CatalogPage() {
   const handleExportClientFormat = async (fileName: string) => {
     setIsExportingClientFormat(true);
     try {
-      const res = await exportCatalogClientFormat();
+      const res = await exportCatalogClientFormat(
+        exportOrganization.kind !== "own"
+          ? (viewingOrgId ?? undefined)
+          : undefined,
+      );
       if (res.status === 404) {
-        toast.error("No hay productos publicados para exportar.");
+        toast.error(emptyCatalogExportMessage(exportOrganization));
         return;
       }
       if (res.status === 413) {
@@ -666,6 +742,7 @@ export default function CatalogPage() {
             <ExportSummaryBanner
               onContinue={handleConfirmExportSummary}
               onCancel={handleCancelExportSummary}
+              organization={exportOrganization}
             />
           )}
 

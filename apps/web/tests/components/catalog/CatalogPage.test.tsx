@@ -124,6 +124,19 @@ vi.mock("@/lib/api/branches", () => ({
   useBulkAssignProductsToBranch: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+// u1-export-org-confirmation: same selector-consuming mock pattern already
+// used by OrganizationPicker.test.tsx for `useOrganizationStore`.
+const mockUseOrganization = vi.fn();
+vi.mock("@/lib/api/organizations", () => ({
+  useOrganization: (...args: unknown[]) => mockUseOrganization(...args),
+}));
+
+let mockViewingOrgId: string | null = null;
+vi.mock("@/stores/organizationStore", () => ({
+  useOrganizationStore: (selector: (state: unknown) => unknown) =>
+    selector({ viewingOrgId: mockViewingOrgId }),
+}));
+
 import CatalogPage from "@/app/(seller)/catalog/page";
 
 describe("CatalogPage — dynamic filters", () => {
@@ -133,6 +146,8 @@ describe("CatalogPage — dynamic filters", () => {
     mockUseInfiniteProducts.mockClear();
     mockProductCard.mockClear();
     mockProducts = [];
+    mockViewingOrgId = null;
+    mockUseOrganization.mockReturnValue({ organization: undefined });
   });
 
   it("does not fall back to the viewer organization when ownership is null", () => {
@@ -301,6 +316,18 @@ function buildErrorResponse(status: number, detail: string): Response {
   } as unknown as Response;
 }
 
+// Moved to module scope (was previously nested inside the describe below)
+// so the u1-export-org-confirmation describe further down can reuse it too.
+async function openExportSummary(user: ReturnType<typeof userEvent.setup>) {
+  render(<CatalogPage />);
+  await user.click(screen.getByTestId("dropdown-trigger"));
+  await user.click(
+    screen.getByRole("menuitem", {
+      name: "Exportar catálogo (formato cliente)",
+    }),
+  );
+}
+
 describe("CatalogPage — export catálogo (formato cliente)", () => {
   let promptSpy: MockInstance<typeof window.prompt>;
   let anchorClickSpy: MockInstance<() => void>;
@@ -312,6 +339,8 @@ describe("CatalogPage — export catálogo (formato cliente)", () => {
     mockProductCard.mockClear();
     mockExportCatalogClientFormat.mockReset();
     mockProducts = [];
+    mockViewingOrgId = null;
+    mockUseOrganization.mockReturnValue({ organization: undefined });
     vi.mocked(toast.success).mockClear();
     vi.mocked(toast.error).mockClear();
     // `.mockReset()` clears call history *and* any leftover return value
@@ -326,16 +355,6 @@ describe("CatalogPage — export catálogo (formato cliente)", () => {
     URL.createObjectURL = vi.fn(() => "blob:mock-url");
     URL.revokeObjectURL = vi.fn();
   });
-
-  async function openExportSummary(user: ReturnType<typeof userEvent.setup>) {
-    render(<CatalogPage />);
-    await user.click(screen.getByTestId("dropdown-trigger"));
-    await user.click(
-      screen.getByRole("menuitem", {
-        name: "Exportar catálogo (formato cliente)",
-      }),
-    );
-  }
 
   it("shows the client-format export menu item and opens the summary banner on click", async () => {
     const user = userEvent.setup();
@@ -500,5 +519,197 @@ describe("CatalogPage — export catálogo (formato cliente)", () => {
 
     await waitFor(() => expect(response.blob).toHaveBeenCalledTimes(1));
     expect(response.json).not.toHaveBeenCalled();
+  });
+});
+
+// ─── CatalogPage — export cross-org (selector de organización) ─────────────
+// u1-export-org-confirmation. Reuses the helpers/mocks from the describe
+// above (`openExportSummary`, `makeProduct`, `buildZipResponse`,
+// `buildErrorResponse`) plus the `useOrganization`/`useOrganizationStore`
+// mocks declared at module scope, following the selector-consuming mock
+// pattern already established by `OrganizationPicker.test.tsx`.
+
+describe("CatalogPage — export cross-org (selector de organización)", () => {
+  let promptSpy: MockInstance<typeof window.prompt>;
+  let anchorClickSpy: MockInstance<() => void>;
+
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockPush.mockClear();
+    mockUseInfiniteProducts.mockClear();
+    mockProductCard.mockClear();
+    mockExportCatalogClientFormat.mockReset();
+    mockProducts = [makeProduct({ status: "published" })];
+    mockViewingOrgId = null;
+    mockUseOrganization.mockReturnValue({ organization: undefined });
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+    promptSpy = vi.spyOn(window, "prompt").mockReset();
+    anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockReset()
+      .mockImplementation(() => {});
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it("no badge and no organization_id when viewingOrgId is null (piso de equipo #1)", async () => {
+    const user = userEvent.setup();
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(buildZipResponse());
+
+    await openExportSummary(user);
+    expect(
+      screen.queryByTestId("export-summary-org-badge"),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith(undefined),
+    );
+  });
+
+  it("badge with the name when viewingOrgId points to a resolved organization (piso de equipo #2)", async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "org-b", name: "Organización B" },
+    });
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(buildZipResponse());
+
+    await openExportSummary(user);
+    expect(
+      screen.getByText("Exportando catálogo de: Organización B"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith("org-b"),
+    );
+  });
+
+  it("skeleton badge (never absent) while the name has not resolved yet", async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({ organization: undefined });
+
+    await openExportSummary(user);
+
+    expect(screen.getByTestId("export-summary-org-badge")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("export-summary-org-badge-skeleton"),
+    ).toBeInTheDocument();
+  });
+
+  it("404 cross-org with resolved name → toast mentions the organization name", async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "org-b", name: "Organización B" },
+    });
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(
+      new Response(null, { status: 404 }),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Organización B no tiene catálogo publicado para exportar.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("404 cross-org with unresolved name (deleted/inaccessible) → generic fallback toast", async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({ organization: undefined });
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(
+      new Response(null, { status: 404 }),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Esta organización no tiene catálogo publicado para exportar.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("404 own organization → existing generic message unchanged (no regression)", async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = null;
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(
+      new Response(null, { status: 404 }),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "No hay productos publicados para exportar.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("same store, same value — no second parallel state mechanism (piso de equipo #3)", async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "org-b", name: "Organización B" },
+    });
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(buildZipResponse());
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith(
+        mockViewingOrgId,
+      ),
+    );
+  });
+
+  it("without viewingOrgId, zero organization-related nodes anywhere in the flow", async () => {
+    const user = userEvent.setup();
+    promptSpy.mockReturnValue(null);
+
+    await openExportSummary(user);
+
+    // NOTE: the pre-existing banner copy already contains the word
+    // "organización" ("...de tu organización.") — matching /organiza/i
+    // against the whole document would false-positive on that unrelated
+    // string. Target the badge-specific copy instead ("Exportando
+    // catálogo de:"), which only renders when kind !== "own".
+    expect(
+      screen.queryByText(/exportando cat\u00e1logo de:/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("export-summary-org-badge"),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    expect(mockExportCatalogClientFormat).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText(/exportando cat\u00e1logo de:/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("export-summary-org-badge"),
+    ).not.toBeInTheDocument();
   });
 });

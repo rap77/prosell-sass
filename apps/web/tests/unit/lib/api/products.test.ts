@@ -17,6 +17,7 @@ import {
   createProductWithVehicle,
   useSetProductBrokers,
   useSubmitProductsForApproval,
+  exportCatalogClientFormat,
 } from "@/lib/api/products";
 import type { CreateProductRequest, Product } from "@/types/product";
 
@@ -786,5 +787,41 @@ describe("useSubmitProductsForApproval - null error_code/message", () => {
     await act(async () => {
       await result.current.mutateAsync(["p1"]);
     });
+  });
+});
+
+// ─── exportCatalogClientFormat — u1-export-org-confirmation ────────────────
+
+describe("exportCatalogClientFormat", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue(new Response(null, { status: 200 }));
+  });
+
+  it("without organizationId fetches the base URL, no query string", async () => {
+    await exportCatalogClientFormat();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/products/export-client-format.zip",
+      { credentials: "include" },
+    );
+  });
+
+  it("with organizationId appends ?organization_id=<id>", async () => {
+    await exportCatalogClientFormat("org-b");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/products/export-client-format.zip?organization_id=org-b",
+      { credentials: "include" },
+    );
+  });
+
+  it("URL-encodes an organizationId with reserved characters", async () => {
+    await exportCatalogClientFormat("org b");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/products/export-client-format.zip?organization_id=org%20b",
+      { credentials: "include" },
+    );
   });
 });
