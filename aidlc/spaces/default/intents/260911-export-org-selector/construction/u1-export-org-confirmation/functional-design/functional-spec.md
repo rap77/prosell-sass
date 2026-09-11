@@ -22,7 +22,7 @@ catálogo (formato cliente)" en `/catalog`.
    d. Si `viewingOrgId` no aparece en el resultado de `useOrganizations()`
    (organización borrada o ya inaccesible para el admin, Q2 afirmada)
    → tratar igual que "nombre no disponible": `organization = { kind:
-   "loading" }` hasta que el usuario confirme el export, momento en el
+"loading" }` hasta que el usuario confirme el export, momento en el
    cual sigue el mismo camino que catálogo vacío (paso 6).
 4. Renderizar `ExportSummaryBanner` con el `organization` resuelto (ver
    `frontend-components.md` para el detalle del prop).
