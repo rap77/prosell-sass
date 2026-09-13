@@ -142,7 +142,22 @@ def _make_product(
     status: str = ProductStatus.PUBLISHED.value,
     title: str = "2020 Ford Explorer",
     image_urls: list[str] | None = None,
+    vin: str | None = None,
 ) -> ProductModel:
+    attributes: dict[str, object] = {
+        "year": 2020,
+        "make": "Ford",
+        "model": "Explorer",
+        "mileage": 70000,
+        "exterior_color": "Gris",
+    }
+    if vin is not None:
+        # A distinguishing per-product value tests can assert on in the
+        # exported CSV — the `id` column is now a sequential position
+        # (BR-id-sequential), not the product's own UUID, so tests that
+        # need to prove "this specific product is/isn't in the export"
+        # need a different marker.
+        attributes["vin"] = vin
     return ProductModel(
         id=uuid4(),
         tenant_id=tenant_id,
@@ -156,13 +171,7 @@ def _make_product(
         status=status,
         image_urls=image_urls or [],
         condition="used",
-        attributes={
-            "year": 2020,
-            "make": "Ford",
-            "model": "Explorer",
-            "mileage": 70000,
-            "exterior_color": "Gris",
-        },
+        attributes=attributes,
     )
 
 
@@ -347,12 +356,14 @@ class TestExportClientFormatTenantIsolation:
             organization_id=org_a.id,
             category_id=category_a.id,
             title="Org A Vehicle",
+            vin="VINORGA000000001",
         )
         product_b = _make_product(
             tenant_id=org_b.tenant_id,
             organization_id=org_b.id,
             category_id=category_b.id,
             title="Org B Vehicle",
+            vin="VINORGB000000002",
         )
         shared_session.add(product_a)
         shared_session.add(product_b)
@@ -369,8 +380,8 @@ class TestExportClientFormatTenantIsolation:
         with zipfile.ZipFile(BytesIO(response.content)) as archive:
             csv_content = archive.read("catalogo.csv").decode("utf-8")
 
-        assert str(product_a.id) in csv_content
-        assert str(product_b.id) not in csv_content
+        assert "VINORGA000000001" in csv_content
+        assert "VINORGB000000002" not in csv_content
 
 
 @pytest.mark.asyncio
@@ -394,6 +405,7 @@ class TestExportClientFormatCrossOrgPermission:
             organization_id=target_org.id,
             category_id=target_category.id,
             title="Target Org Vehicle",
+            vin="VINTARGETORG00001",
         )
         shared_session.add(target_product)
         await shared_session.flush()
@@ -409,7 +421,7 @@ class TestExportClientFormatCrossOrgPermission:
         assert response.status_code == 200
         with zipfile.ZipFile(BytesIO(response.content)) as archive:
             csv_content = archive.read("catalogo.csv").decode("utf-8")
-        assert str(target_product.id) in csv_content
+        assert "VINTARGETORG00001" in csv_content
 
     async def test_non_admin_with_organization_id_returns_403(
         self, shared_session: AsyncSession

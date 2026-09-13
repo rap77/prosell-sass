@@ -387,6 +387,44 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert len(csv_lines) == 1  # header only — the excluded product has no row
 
     @pytest.mark.asyncio
+    async def test_csv_id_column_is_sequential_and_skips_no_number_for_excluded_products(
+        self,
+    ) -> None:
+        # `id` must be a plain 1-based sequential position within the
+        # export (matching the client's own reference CSV, e.g. "527"),
+        # never the product's internal UUID — and a BR1.7-excluded
+        # product in the middle must NOT consume a number (no gap).
+        tenant_id = uuid4()
+        untranslated_category_id = uuid4()
+        included_a = _make_product(tenant_id)
+        excluded = _make_product(tenant_id, category_id=untranslated_category_id)
+        included_b = _make_product(tenant_id)
+        category_repository = _make_category_repository(
+            {untranslated_category_id: "otra-vertical-sin-traduccion"}
+        )
+
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id,
+            product_count=3,
+            products=[included_a, excluded, included_b],
+            category_repository=category_repository,
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="base/",
+            facebook_groups_fallback="",
+        )
+
+        assert result.product_count == 2
+        with zipfile.ZipFile(BytesIO(result.zip_bytes)) as archive:
+            csv_lines = archive.read("catalogo.csv").decode("utf-8").strip("\r\n").splitlines()
+        id_column = CLIENT_FORMAT_COLUMNS.index("id")
+        row_ids = [line.split(";")[id_column] for line in csv_lines[1:]]
+        assert row_ids == ["1", "2"]
+
+    @pytest.mark.asyncio
     async def test_cap_exceeded_in_all_organizations_mode_raises_export_limit_exceeded_error(
         self,
     ) -> None:

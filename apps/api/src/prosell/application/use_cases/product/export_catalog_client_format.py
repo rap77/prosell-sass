@@ -236,7 +236,12 @@ class ExportCatalogClientFormatUseCase:
 
             rows.append(
                 build_client_format_row(
-                    product_id=product.id,
+                    # Sequential position within THIS export, 1-based —
+                    # only counting rows that actually make it in (BR1.7
+                    # exclusions above never consume a number). Matches
+                    # the plain small integers the client's reference
+                    # CSV uses in `id`, never the product's own UUID.
+                    row_id=len(rows) + 1,
                     org_code=org_code,
                     price_cents=product.price_cents,
                     description=product.description,

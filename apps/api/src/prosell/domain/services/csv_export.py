@@ -158,7 +158,7 @@ def build_organization_code_segment(org_code: object | None) -> str:
 
 def build_client_format_row(
     *,
-    product_id: object,
+    row_id: int,
     org_code: object | None,
     price_cents: int,
     description: str | None,
@@ -176,6 +176,12 @@ def build_client_format_row(
     path: str = "",
 ) -> list[str]:
     """Build one row of the client-format CSV (u1-catalog-export-api).
+
+    `row_id` is a 1-based sequential position within the export (the
+    caller assigns it, incrementing only for rows that actually make it
+    into the file — BR1.7 exclusions never consume a number), matching
+    the plain small integers the client's own reference CSV uses in its
+    `id` column — never the product's internal database UUID.
 
     Most column values not covered by a dedicated product field still come
     directly from `attributes` under the same column name (BR1.3 "mapeo
@@ -220,7 +226,7 @@ def build_client_format_row(
     location = f"{location_city or ''} {location_state or ''}".strip()
 
     values: dict[str, object | None] = {
-        "id": product_id,
+        "id": row_id,
         "cod_dealer": org_code,
         "price": f"{price_cents / 100:.2f}",
         "description": description,

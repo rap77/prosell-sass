@@ -171,7 +171,7 @@ def test_client_format_columns_match_data39_header() -> None:
 def test_build_client_format_row_option_always_empty() -> None:
     # FR1.4/BR1.4 — option is always exported empty
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description="Some description",
@@ -183,7 +183,7 @@ def test_build_client_format_row_option_always_empty() -> None:
 def test_build_client_format_row_description_populated() -> None:
     # FR1.4/BR1.4 — description carries the product's saved value
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description="make your appointment",
@@ -195,7 +195,7 @@ def test_build_client_format_row_description_populated() -> None:
 def test_build_client_format_row_exterior_color_from_attributes() -> None:
     # BR2.3 — the exterior_color column reads the real attribute key
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -206,7 +206,7 @@ def test_build_client_format_row_exterior_color_from_attributes() -> None:
 
 def test_build_client_format_row_publicado_always_one() -> None:
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -217,7 +217,7 @@ def test_build_client_format_row_publicado_always_one() -> None:
 
 def test_build_client_format_row_missing_attribute_renders_empty() -> None:
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -265,7 +265,7 @@ def test_build_vehicle_zip_folder_name_uses_placeholder_for_missing_org_code() -
 def test_build_client_format_row_clean_title_status() -> None:
     # BR1.1 — "clean" -> "1" (inverse of CSVFieldMapper.parse_title_status)
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -278,7 +278,7 @@ def test_build_client_format_row_clean_title_status() -> None:
 def test_build_client_format_row_rebuilt_title_status() -> None:
     # BR1.1 — "rebuilt" -> "0"
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -291,7 +291,7 @@ def test_build_client_format_row_rebuilt_title_status() -> None:
 def test_build_client_format_row_unknown_title_status_renders_empty() -> None:
     # BR1.1 — anything else (including None) -> "" (never a raw passthrough)
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -304,7 +304,7 @@ def test_build_client_format_row_unknown_title_status_renders_empty() -> None:
 def test_build_client_format_row_facebook_groups_joined_with_comma() -> None:
     # BR1.2 — list[str] joined with "," when non-empty, fallback ignored
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -318,7 +318,7 @@ def test_build_client_format_row_facebook_groups_joined_with_comma() -> None:
 def test_build_client_format_row_empty_facebook_groups_uses_fallback() -> None:
     # BR2.7 — empty/absent facebook_groups falls back, never an empty string
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -333,7 +333,7 @@ def test_build_client_format_row_vin_body_style_state_from_explicit_params() -> 
     # BR1.5/BR1.6/BR1.8 — read from the real attribute keys, passed in by
     # the caller (not from a matching-but-nonexistent `attributes` key).
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -350,7 +350,7 @@ def test_build_client_format_row_vin_body_style_state_from_explicit_params() -> 
 def test_build_client_format_row_location_combines_city_and_state() -> None:
     # BR1.4 — location_city/location_state are dedicated Product fields
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -363,7 +363,7 @@ def test_build_client_format_row_location_combines_city_and_state() -> None:
 
 def test_build_client_format_row_location_missing_parts_renders_no_stray_space() -> None:
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -377,7 +377,7 @@ def test_build_client_format_row_location_missing_parts_renders_no_stray_space()
 def test_build_client_format_row_category_and_type_from_explicit_params() -> None:
     # BR1.3 — resolved by the caller via category_translation, passed in
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -392,7 +392,7 @@ def test_build_client_format_row_category_and_type_from_explicit_params() -> Non
 def test_build_client_format_row_path_uses_explicit_param() -> None:
     # FR8.4/BR2.6 — the caller passes the already-built path
     row = build_client_format_row(
-        product_id="527",
+        row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
