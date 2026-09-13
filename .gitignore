@@ -181,3 +181,6 @@ aidlc/spaces/*/intents/*/.aidlc-*
 .aidlc/
 .opencode/
 opencode.json
+
+# Local scratch exports dropped in docs/ (not project deliverables)
+docs/*.zip
