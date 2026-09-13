@@ -1,14 +1,62 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-10 (última actualización: scan enfocado del intent `260911-export-org-selector`)
-**Commit analizado**: `264d99f105297456b7fe1f7fe9eecaba545b31e9` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260910-export-cross-org` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-11 (última actualización: scan enfocado del intent `260911-cross-org-export-ux`)
+**Commit analizado**: `cff92e8d0572e29ed715522b01f27c02773609dd` (rama `main`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260911-export-org-selector` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260911-export-org-selector` continúa cerrando el gap que el intent `260910-export-cross-org` dejó explícitamente fuera de su alcance: ese intent resolvió el permiso cross-org del **backend** (`GET /api/v1/products/export-client-format.zip` ya acepta `organization_id` y respeta `ORG_ADMIN_VIEW_ALL`/`super_admin`), pero el botón "Exportar" de `/catalog` sigue sin ningún mecanismo de **UI** para que un actor con ese permiso elija qué organización exportar — `exportCatalogClientFormat()` nunca manda `organization_id`, y no hay selector de organización en `catalog/page.tsx`. El store existente (`kind: partial`, foco modelo de permisos cross-org del backend, intent `260910-export-cross-org`) nunca había profundizado en el lado de frontend de este problema: ni en el mecanismo de selección de organización que ya existe en la app (`OrganizationPicker`/`organizationStore.viewingOrgId`), ni en por qué `catalog/page.tsx` no lo usa. Scan enfocado sobre esta área específica.
+El intent `260911-export-org-selector` cerró el wiring de UI para exportar el catálogo de UNA organización ajena puntual. El intent `260911-cross-org-export-ux` retoma exactamente donde ese quedó y ataca ocho necesidades restantes, ninguna resuelta por el scan anterior: (1) que el export soporte "todas las organizaciones", no solo una a la vez; (2) renombrar el label del picker `"Todos los concesionarios"` → `"Todas las organizaciones"`; (3) que el picker realmente filtre la grilla de `/catalog` (hoy solo alimenta el export); (4) que el picker liste solo organizaciones con productos; (5) corregir las columnas vacías/incorrectas del CSV cliente (`VIN`, `body_style`, `clean_title`, `groups`, `category`, `type`, `location`) contra el formato real de `docs/data39.csv`; (6) agregar un popup de carpeta base para imágenes; (7) agregar un popup de grupos de Facebook; (8) buena UX/UI en todo lo anterior. El store existente (`kind: partial`, foco wiring de UI del selector, intent `260911-export-org-selector`) nunca había profundizado en el mapeo de valores del CSV cliente más allá de la clave leída, ni en la capacidad de cross-tenant ya presente en la capa de repositorio, ni en el filtrado real de la grilla de catálogo. Scan enfocado sobre esta área específica.
 
 ## Verificación de overwrite (codekb-scope-diff)
+
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco wiring de UI del selector de organización, intent `260911-export-org-selector`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área parcialmente distinta (capacidad de repositorio para "todas las organizaciones" y mapeo de valores del CSV, no el wiring de permisos/`useAuth`/review-queue del pase anterior). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+```
+NARROWER: replacing the store discards deep knowledge of:
+  - apps/web/src/components/admin/OrganizationPicker.test.tsx
+  - apps/web/src/hooks/useAuth.ts
+  - apps/web/src/lib/auth/permissions.ts
+  - apps/web/src/app/(admin)/admin/review-queue/page.tsx
+  - apps/web/src/components/review/ReviewQueueTable.tsx
+  - docs/superpowers/changes/subsystem-d-dealer-ownership/design.md
+  components: org-selector-catalog-export-wiring
+(store intent: 260911-export-org-selector; incoming intent: 260911-cross-org-export-ux)
+```
+
+## Developer Code Scan Results — foco export "todas las organizaciones", filtrado real del catálogo, formato CSV cliente correcto (intent `260911-cross-org-export-ux`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `apps/web/src/components/admin/OrganizationPicker.tsx` (completo, líneas 1-75), `apps/web/src/stores/organizationStore.ts` (completo), `apps/web/src/lib/api/organizations.ts` (completo, línea 75), `apps/web/src/lib/api/schemas/organizations.ts` (líneas 42, 79), `apps/web/src/app/(seller)/catalog/page.tsx` (líneas 95-121, 312-394, 499-583), `apps/web/src/lib/api/products.ts` (líneas 1170-1185, 531-570), `apps/api/src/prosell/domain/services/csv_export.py` (líneas 94-221), `apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py` (líneas 40, 86-147, 171-287), `apps/api/src/prosell/infrastructure/api/routers/product_router.py` (líneas 265-293, 735-798, ~837), `apps/api/src/prosell/domain/entities/product.py` (línea 45, 28, 65-67), `apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py` (líneas 185, 400), `apps/api/src/prosell/infrastructure/repositories/category_repository_impl.py` (líneas 120-129), `apps/api/src/prosell/domain/services/csv_field_mapper.py` (líneas 171-231), `apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py` (líneas 430-469), `apps/api/src/prosell/infrastructure/database/seed_categories.py` (líneas 699-738), `docs/data39.csv` (líneas 1-40), `apps/api/src/prosell/infrastructure/models/product_model.py` (líneas 74-76).
+- **Preservado del codekb existente (`kind: partial`, no re-analizado)**: todo lo demás — `useAuth.ts`/`permissions.ts` (ya profundizados en el pase anterior), review-queue, diseño original de Subsystem D, tests e2e, infra/docker, resto de docs.
+- **No tocado**: `apps/api/src/prosell/infrastructure/models/category_model.py` fue incluido en el pathspec minteado por completitud referencial (relacionado 1:1 con `category_repository_impl.py`) pero no aportó hallazgo propio distinto de lo ya confirmado en `category_repository_impl.py`. Resto del repositorio: scan enfocado, no full rescan.
+
+### Root cause / hallazgos principales
+
+1. **Label**: 2 ocurrencias literales de `"Todos los concesionarios"` en `OrganizationPicker.tsx` (línea 35, fallback de `displayName`; línea 58, ítem de menú "limpiar selección") — fix mecánico.
+2. **Filtrado por `product_count`**: el backend YA devuelve `product_count: number` por organización en `GET /api/v1/admin/organizations` (`OrganizationSchema`, `schemas/organizations.ts:42,79`) — filtrar el picker a solo organizaciones con productos es puramente client-side, cero cambio de backend.
+3. **Filtrado real de la grilla — gap confirmado**: `catalog/page.tsx` lee `organizationId` (línea 312, org propia) solo para `useOrgVerticals()`; `apiFilters` (líneas 379-384) pasado a `useInfiniteProducts(apiFilters, 50)` (línea 394) no tiene `organization_id`; `viewingOrgId` (línea 320) solo alimenta `exportOrganization`/`resolveExportOrganization` (líneas 95-121, 313-327). `ProductFilters` (`products.ts:1170-1185`) tampoco declara el campo. El backend (`list_products`, `product_router.py:801-816`) YA acepta y enforcea `organization_id` vía el mismo `_check_org_scope_permission()` que el export — fix 100% frontend.
+4. **Mapeo de columnas CSV — mayor alcance del asumido, valor no solo clave**: cruzando `csv_export.py` (94-193) contra `bulk_upload_vehicles.py:430-469` y `csv_field_mapper.py`: `body_style`→`body_type` y `VIN`→`vin` son renames puros; `clean_title` necesita mapeo INVERSO de valor (`title_status` string `"clean"`/`"rebuilt"` → `"1"`/`"0"`, inverso de `csv_field_mapper.py:194-212`); `groups` necesita `",".join()` sobre `facebook_groups` (`list[str]`, inverso de `csv_field_mapper.py:214-231`), no `str(lista)`; `state` no tiene clave equivalente — la más cercana es `title_state` (descriptor de condición libre, ej. `"Muy bueno"`, confirmado contra `docs/data39.csv` fila 2 — NO es un estado de EE.UU. pese al nombre de columna); `category`/`type` no existen en `attributes`, deben derivarse de `product.category_id` (resoluble sin query nueva vía `category_repository_impl.py:120-129`) pero el árbol real tiene 3-4 niveles (`seed_categories.py:699-738`) que no mapea limpio a las 2 columnas planas del CSV; `location` requiere combinar `location_city`/`location_state` (campos separados en `product.py:65-67`/`product_model.py:74-76`), con pérdida de fidelidad porque `location_state` se persiste como código, no el nombre completo que el CSV de muestra espera.
+5. **Export "todas las organizaciones" — capacidad de repositorio ya presente, use case no la expone**: `product_repository_impl.py` ya soporta `tenant_id: UUID | None` en `get_all()` (línea 185) y `count()` (línea 400, docstring "tenant_id=None lifts tenant isolation"). El blocker es `ExportCatalogClientFormatUseCase.execute(self, *, tenant_id: UUID)` (línea 86, no-opcional) y que la organización se resuelve UNA VEZ (línea 111), reutilizando su `org_code` para TODO el loop (líneas 127-147) — un `tenant_id=None` ingenuo corrompería el nombre de carpeta de todos los productos salvo la primera organización resuelta. Fix real: (a) relajar la firma, (b) llamar con `tenant_id=None`, (c) resolver `org_code` POR PRODUCTO. `_read_all_images`/`_assemble_zip` (líneas 171-287) ya son agnósticos de organización.
+6. **`EXPORT_MAX_PRODUCTS = 500`** (línea 40) es hoy un cap por-tenant — un export "todas" sobre ~29 organizaciones es mucho más propenso a pisarlo; reconsiderar como cap global.
+7. **Asimetría de convención confirmada**: el endpoint de export (`product_router.py:735-798`, docstring línea 763) documenta que omitir `organization_id` significa "mi propia organización" — asimétrico respecto a `list_products` (~línea 837), donde significa "todas" para un admin. El diseño de un sentinel nuevo "todas" para el export debe decidir explícitamente su relación con esta asimetría ya documentada como diseño intencional, no heredarla ciegamente de `list_products`.
+8. **Patrón de UX reusable para los popups nuevos**: `window.prompt()` con valor por defecto sugerido + `null`=cancelar (`handleConfirmExportSummary`, `catalog/page.tsx:572-583`) es el único patrón de este tipo en `apps/web/src` — a seguir para los popups de carpeta base (ítem 6) y grupos de Facebook (ítem 7), en vez de inventar un patrón nuevo. `handleExportCsv` (líneas 499-517) es el mismo mecanismo pero SIN default — el patrón de referencia correcto es el de `handleConfirmExportSummary`.
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Functional Design)
+
+- Decisión de diseño: qué forma toma el sentinel "todas las organizaciones" en `organizationStore.viewingOrgId` (overload del campo existente vs. enum paralelo) y su relación con la asimetría ya documentada del endpoint de export.
+- Decisión de diseño: qué nivel del árbol de categorías (3-4 niveles reales) mapea a cada una de las 2 columnas planas `category`/`type` del CSV cliente.
+- Decisión de diseño: cómo tratar `location`/`state` dado que `location_state` se persiste como código y el CSV espera nombre completo — agregar tabla de reverse-lookup, aceptar exportar el código, u otra vía.
+- Decisión de diseño: si `EXPORT_MAX_PRODUCTS` sube, se elimina, o se mantiene aceptando que "exportar todas" puede fallar en catálogos grandes.
+
+Ver `architecture.md` § Interaction Diagrams (diagrama 15), `code-structure.md`, `component-inventory.md`, `api-documentation.md`, `dependencies.md`, `business-overview.md` y `code-quality-assessment.md` (hallazgos #77-86) para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260911-export-org-selector`)
+
+El intent `260911-export-org-selector` continúa cerrando el gap que el intent `260910-export-cross-org` dejó explícitamente fuera de su alcance: ese intent resolvió el permiso cross-org del **backend** (`GET /api/v1/products/export-client-format.zip` ya acepta `organization_id` y respeta `ORG_ADMIN_VIEW_ALL`/`super_admin`), pero el botón "Exportar" de `/catalog` sigue sin ningún mecanismo de **UI** para que un actor con ese permiso elija qué organización exportar — `exportCatalogClientFormat()` nunca manda `organization_id`, y no hay selector de organización en `catalog/page.tsx`. El store existente (`kind: partial`, foco modelo de permisos cross-org del backend, intent `260910-export-cross-org`) nunca había profundizado en el lado de frontend de este problema: ni en el mecanismo de selección de organización que ya existe en la app (`OrganizationPicker`/`organizationStore.viewingOrgId`), ni en por qué `catalog/page.tsx` no lo usa. Scan enfocado sobre esta área específica.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260911-export-org-selector`
 
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco modelo de permisos cross-org del backend, intent `260910-export-cross-org`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (selector de organización de UI en frontend, no el modelo de permisos del backend en sí). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
@@ -24,7 +72,7 @@ NARROWER: replacing the store discards deep knowledge of:
 (store intent: 260910-export-cross-org; incoming intent: 260911-export-org-selector)
 ```
 
-## Developer Code Scan Results — foco selector de organización para export de catálogo (intent `260911-export-org-selector`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco selector de organización para export de catálogo (intent `260911-export-org-selector`)
 
 ### Paso 0 (graphify-first) cumplido
 
@@ -450,42 +498,49 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260911-export-org-selector
-fingerprint: 6289213e15392af9fbdd8acb2dcb5bc85e32ef45
+intent: 260911-cross-org-export-ux
+fingerprint: 9308e7789124518343f94bc6eb831182417da60c
 analyzed:
   paths:
-    - apps/web/src/app/(seller)/catalog/page.tsx
-    - apps/web/src/lib/api/products.ts
     - apps/web/src/components/admin/OrganizationPicker.tsx
-    - apps/web/src/components/admin/OrganizationPicker.test.tsx
     - apps/web/src/stores/organizationStore.ts
-    - apps/web/src/hooks/useAuth.ts
-    - apps/web/src/lib/auth/permissions.ts
     - apps/web/src/lib/api/organizations.ts
     - apps/web/src/lib/api/schemas/organizations.ts
+    - apps/web/src/app/(seller)/catalog/page.tsx
+    - apps/web/src/lib/api/products.ts
+    - apps/api/src/prosell/domain/services/csv_export.py
+    - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
     - apps/api/src/prosell/infrastructure/api/routers/product_router.py
+    - apps/api/src/prosell/infrastructure/api/routers/admin_organizations_router.py
+    - apps/api/src/prosell/domain/entities/product.py
+    - apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py
+    - apps/api/src/prosell/infrastructure/repositories/category_repository_impl.py
+    - apps/api/src/prosell/domain/services/csv_field_mapper.py
+    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
+    - apps/api/src/prosell/infrastructure/database/seed_categories.py
+    - docs/data39.csv
+    - apps/api/src/prosell/infrastructure/models/product_model.py
+    - apps/api/src/prosell/infrastructure/models/category_model.py
+  components:
+    - cross-org-export-all-orgs-and-csv-mapping
+shallow:
+  paths:
+    - apps/web/src/components/admin/OrganizationPicker.test.tsx
+    - apps/web/src/hooks/useAuth.ts
+    - apps/web/src/lib/auth/permissions.ts
     - apps/web/src/app/(admin)/admin/review-queue/page.tsx
     - apps/web/src/components/review/ReviewQueueTable.tsx
     - docs/superpowers/changes/subsystem-d-dealer-ownership/design.md
-  components:
-    - org-selector-catalog-export-wiring
-shallow:
-  paths:
     - apps/api/src/prosell/domain/entities/role.py
     - apps/api/src/prosell/domain/entities/user.py
-    - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
     - apps/api/src/prosell/domain/repositories/organization_repository.py
     - apps/api/tests/integration/api/routers/test_product_router_export_client_format.py
     - aidlc/spaces/default/intents/260903-catalog-client-export/inception/user-stories/personas.md
     - apps/api/tests/unit/application/use_cases/product/test_export_catalog_client_format.py
     - docs/canonical/F01-bulk-upload-csv-import.md
-    - docs/data39.csv
     - apps/api/src/prosell/domain/entities/organization.py
-    - apps/api/src/prosell/domain/services/csv_field_mapper.py
     - apps/api/src/prosell/domain/services/csv_product_parser.py
     - apps/api/src/prosell/domain/services/csv_image_mapper.py
-    - apps/api/src/prosell/domain/services/csv_export.py
-    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
     - apps/api/src/prosell/application/ports/ido_spaces.py
     - apps/api/src/prosell/infrastructure/services/do_spaces_service.py
     - apps/api/pyproject.toml
@@ -526,8 +581,6 @@ shallow:
     - apps/api/tests/integration/api/test_team_entity.py
     - apps/web/tests/unit/api/products.test.tsx
     - apps/web/tests/unit/lib/api/reverseTransitions.test.tsx
-    - apps/api/src/prosell/domain/entities/product.py
-    - apps/api/src/prosell/infrastructure/models/product_model.py
     - apps/web/src/components/admin/AvailableTransitions.tsx
     - apps/web/src/components/catalog/CatalogDetailView.tsx
     - apps/web/tests/unit/components/upload/setProductCover.test.ts

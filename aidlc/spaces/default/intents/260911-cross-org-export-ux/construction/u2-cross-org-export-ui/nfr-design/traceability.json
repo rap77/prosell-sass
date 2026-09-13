@@ -1,0 +1,39 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-cross-org-export-ui",
+  "upstream_ids": [
+    "NFR-PERF-UI-1",
+    "NFR-PERF-UI-2",
+    "NFR-PERF-UI-3",
+    "NFR-PERF-UI-4"
+  ],
+  "coverage": [
+    {
+      "id": "NFR-PERF-UI-1",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — tipo de banner derivado de estado local"
+    },
+    {
+      "id": "NFR-PERF-UI-2",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — setIsExporting síncrono"
+    },
+    {
+      "id": "NFR-PERF-UI-3",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — Toast on-demand, incluye caso 403"
+    },
+    {
+      "id": "NFR-PERF-UI-4",
+      "status": "OK",
+      "target": "performance-design.md § Técnicas de implementación — filtro client-side por product_count"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "security-requirements-no-ids",
+      "status": "N/A",
+      "target": "security-requirements.md no numera IDs propios — declara explícitamente ausencia de superficie de seguridad propia, ver security-design.md de este Unit"
+    }
+  ]
+}

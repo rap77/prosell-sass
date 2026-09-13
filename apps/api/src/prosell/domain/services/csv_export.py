@@ -120,30 +120,28 @@ CLIENT_FORMAT_COLUMNS: tuple[str, ...] = (
 
 # Columns sourced directly from `attributes` (same key as the column
 # name) — every column except the ones this function derives explicitly
-# from a dedicated product field (id, cod_dealer, price, description) or
-# hardcodes as a business rule (option, publicado). `exterior_color` is
-# the FR2.3/BR2.3 regression-fix key: it must read `attributes["exterior_color"]`,
-# never a legacy `attrs.get("color")`.
+# from a dedicated product field (id, cod_dealer, price, description),
+# hardcodes as a business rule (option, publicado), or takes as an already
+# -resolved explicit parameter (category, type, location, VIN, body_style,
+# clean_title, state, groups, path — u1-cross-org-export-api, FR7). Those 9
+# columns used to be misread straight from `attributes` under a matching key
+# that doesn't exist on the product model (the FR7 bug); the caller now
+# resolves each of them (from `attributes` under its REAL key, from
+# dedicated `Product` fields, or via `category_translation.py`) and passes
+# them in already resolved. `exterior_color` is the FR2.3/BR2.3
+# regression-fix key: it must read `attributes["exterior_color"]`, never a
+# legacy `attrs.get("color")`.
 _CLIENT_FORMAT_ATTRIBUTE_COLUMNS: frozenset[str] = frozenset(
     {
-        "category",
-        "type",
-        "location",
         "year",
         "make",
         "model",
         "mileage",
-        "body_style",
         "exterior_color",
         "interior_color",
-        "clean_title",
-        "state",
         "fuel_type",
         "transmission",
-        "path",
-        "groups",
         "label",
-        "VIN",
     }
 )
 
@@ -165,17 +163,62 @@ def build_client_format_row(
     price_cents: int,
     description: str | None,
     attributes: Mapping[str, object],
+    vin: str | None = None,
+    body_style: str | None = None,
+    title_status: str | None = None,
+    facebook_groups: list[str] | None = None,
+    facebook_groups_fallback: str = "",
+    state: str | None = None,
+    category: str | None = None,
+    vehicle_type: str | None = None,
+    location_city: str | None = None,
+    location_state: str | None = None,
+    path: str = "",
 ) -> list[str]:
     """Build one row of the client-format CSV (u1-catalog-export-api).
 
-    Column values not covered by a dedicated product field come directly
-    from `attributes` under the same column name (BR1.3 "mapeo directo de
-    atributos"). `option` is always empty — the original value isn't
-    persisted in the product model (FR1.4, BR1.4). `publicado` is always
-    "1" — this function is only ever called for `published` products
-    (BR1.1), which is exactly what the sample client CSV encodes with a
-    literal "1" in that column.
+    Most column values not covered by a dedicated product field still come
+    directly from `attributes` under the same column name (BR1.3 "mapeo
+    directo de atributos"). Nine columns are the FR7 exception: `category`,
+    `type`, `location`, `VIN`, `body_style`, `clean_title`, `state`,
+    `groups` and `path` are NOT read from `attributes` under a matching key
+    (that key doesn't exist on the product model) — the caller resolves
+    each one and passes it in explicitly:
+
+    - `vin`/`body_style`/`state` — the caller reads them from `attributes`
+      under their REAL key (`vin`, `body_type`, `title_state` — BR1.5,
+      BR1.6, BR1.8).
+    - `title_status` — the caller reads `attributes["title_status"]`; this
+      function derives `clean_title` from it with the INVERSE mapping of
+      `CSVFieldMapper.parse_title_status()` (BR1.1): `"clean"` -> `"1"`,
+      `"rebuilt"` -> `"0"`, anything else (including `None`) -> `""`.
+    - `facebook_groups`/`facebook_groups_fallback` — `groups` is
+      `",".join(facebook_groups)` when non-empty, else
+      `facebook_groups_fallback` (BR1.2/BR2.7).
+    - `category`/`vehicle_type` (CSV column `type`) — the caller resolves
+      these via `category_translation.resolve_client_category_type()`
+      (BR1.3); this function never talks to a category repository.
+    - `location_city`/`location_state` — dedicated `Product` fields (not
+      `attributes`); combined here as `"{city} {state}".strip()` (BR1.4).
+    - `path` — the caller builds it with `build_client_format_path()`
+      (BR2.6) and passes the finished string.
+
+    `option` is always empty — the original value isn't persisted in the
+    product model (FR1.4, BR1.4). `publicado` is always "1" — this function
+    is only ever called for `published` products (BR1.1), which is exactly
+    what the sample client CSV encodes with a literal "1" in that column.
     """
+    if title_status == "clean":
+        clean_title = "1"
+    elif title_status == "rebuilt":
+        clean_title = "0"
+    else:
+        clean_title = ""
+
+    groups = ",".join(facebook_groups) if facebook_groups else facebook_groups_fallback
+
+    location = f"{location_city or ''} {location_state or ''}".strip()
+
     values: dict[str, object | None] = {
         "id": product_id,
         "cod_dealer": org_code,
@@ -183,6 +226,15 @@ def build_client_format_row(
         "description": description,
         "option": "",
         "publicado": "1",
+        "VIN": vin,
+        "body_style": body_style,
+        "clean_title": clean_title,
+        "groups": groups,
+        "state": state,
+        "category": category,
+        "type": vehicle_type,
+        "location": location,
+        "path": path,
     }
     for column in _CLIENT_FORMAT_ATTRIBUTE_COLUMNS:
         values[column] = attributes.get(column)
@@ -191,6 +243,15 @@ def build_client_format_row(
         "" if values.get(column) is None else str(values[column])
         for column in CLIENT_FORMAT_COLUMNS
     ]
+
+
+def build_client_format_path(
+    base_folder: str, org_code: str | None, product_folder_name: str
+) -> str:
+    """FR8.4, BR2.6 — carpeta base confirmada + código de organización del
+    producto + nombre de carpeta del producto (`build_vehicle_zip_folder_name()`'s
+    inner segment, not the full two-level ZIP path)."""
+    return f"{base_folder}{org_code or ''}/{product_folder_name}"
 
 
 def build_vehicle_zip_folder_name(

@@ -1,0 +1,104 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-cross-org-export-api",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR-PERF-1",
+    "NFR-PERF-2",
+    "NFR-PERF-3",
+    "NFR-PERF-4",
+    "NFR-PERF-5",
+    "NFR-REL-1",
+    "NFR-REL-2",
+    "NFR-REL-3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md § Autenticación y autorización — reuso de auth_middleware.py/rbac_middleware.py"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md § Autenticación y autorización — organization_id extraído del claim del JWT"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md § Prevención de zip-slip — _slug_part() como única vía de construcción de segmentos, incluyendo org_code batch-resuelto"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design.md § Datos en tránsito y exposición de datos en la respuesta — TLS ya vigente"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design.md § Datos en tránsito y exposición de datos en la respuesta — sin masking adicional, acotado por NFR2.4"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "security-design.md § Autorización — modo todas las organizaciones — extensión de _check_org_scope_permission()"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "scalability-design.md § Enforcement del cap — método único parametrizado, caso puntual"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "scalability-design.md § Enforcement del cap — método único parametrizado, organization_id=None en modo todas"
+    },
+    {
+      "id": "NFR-PERF-1",
+      "status": "OK",
+      "target": "performance-design.md § Estrategia de concurrencia — semáforo máx. 20 lecturas simultáneas"
+    },
+    {
+      "id": "NFR-PERF-2",
+      "status": "OK",
+      "target": "performance-design.md § Presupuesto de performance por fase"
+    },
+    {
+      "id": "NFR-PERF-3",
+      "status": "OK",
+      "target": "performance-design.md § Estrategia de concurrencia (lectura individual dentro del batch acotado)"
+    },
+    {
+      "id": "NFR-PERF-4",
+      "status": "OK",
+      "target": "performance-design.md § Presupuesto de performance por fase, modo todas (18s)"
+    },
+    {
+      "id": "NFR-PERF-5",
+      "status": "OK",
+      "target": "performance-design.md § Resolución batch de org_code"
+    },
+    {
+      "id": "NFR-REL-1",
+      "status": "OK",
+      "target": "reliability-design.md § Política de retry — 1 retry con backoff 200ms"
+    },
+    {
+      "id": "NFR-REL-2",
+      "status": "OK",
+      "target": "reliability-design.md § Fallo sistémico del storage — degradación aislada por imagen"
+    },
+    {
+      "id": "NFR-REL-3",
+      "status": "OK",
+      "target": "reliability-design.md § Riesgo residual de memoria a escala de plataforma — sin mitigación nueva, riesgo aceptado"
+    }
+  ]
+}

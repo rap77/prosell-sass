@@ -92,3 +92,53 @@ async def test_update_organization_merges_settings_json(db_session, test_user) -
     assert fetched.settings.get("theme") == "dark"
     assert fetched.verified_by == test_user.id
     assert fetched.verified_at is not None
+
+
+@pytest.mark.asyncio
+async def test_get_by_ids_returns_exactly_the_matching_organizations(
+    db_session,
+) -> None:
+    """u1-cross-org-export-api, BR2.3 — batch `org_code` resolution: given
+    a set of 2+ organization IDs, returns exactly those organizations
+    (not the whole table), in one query."""
+    repo = SqlAlchemyOrganizationRepository(db_session)
+
+    org_a = Organization.create(name="Org A", tenant_id=uuid4())
+    org_a.update_basic_info(code="AA")
+    org_a = await repo.create(org_a)
+    org_b = Organization.create(name="Org B", tenant_id=uuid4())
+    org_b.update_basic_info(code="BB")
+    org_b = await repo.create(org_b)
+    # A third org that must NOT come back — proves the query is scoped to
+    # the requested IDs, not an unfiltered `get_all()`.
+    org_c = Organization.create(name="Org C", tenant_id=uuid4())
+    org_c.update_basic_info(code="CC")
+    await repo.create(org_c)
+
+    result = await repo.get_by_ids([org_a.id, org_b.id])
+
+    assert {org.id for org in result} == {org_a.id, org_b.id}
+    assert {org.code for org in result} == {"AA", "BB"}
+
+
+@pytest.mark.asyncio
+async def test_get_by_ids_omits_unknown_id_without_error(db_session) -> None:
+    """An ID with no matching row is silently omitted, never an error."""
+    repo = SqlAlchemyOrganizationRepository(db_session)
+    org = Organization.create(name="Real Org", tenant_id=uuid4())
+    org.update_basic_info(code="RO")
+    org = await repo.create(org)
+
+    result = await repo.get_by_ids([org.id, uuid4()])
+
+    assert [o.id for o in result] == [org.id]
+
+
+@pytest.mark.asyncio
+async def test_get_by_ids_empty_list_returns_empty_list(db_session) -> None:
+    """No query is even needed for an empty input — returns `[]` directly."""
+    repo = SqlAlchemyOrganizationRepository(db_session)
+
+    result = await repo.get_by_ids([])
+
+    assert result == []

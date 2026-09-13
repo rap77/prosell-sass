@@ -127,11 +127,18 @@ vi.mock("@/lib/api/branches", () => ({
 // u1-export-org-confirmation: same selector-consuming mock pattern already
 // used by OrganizationPicker.test.tsx for `useOrganizationStore`.
 const mockUseOrganization = vi.fn();
+// u2-cross-org-export-ui: minimal stub so the page's `useOrganizations()`
+// call (for the "all-orgs" count) doesn't crash the existing suite. Empty
+// by default — the "all-orgs" count/wiring scenarios themselves are
+// exercised by the Step 10 dispatch, not here.
+const mockUseOrganizations = vi.fn();
+mockUseOrganizations.mockReturnValue({ data: [] });
 vi.mock("@/lib/api/organizations", () => ({
   useOrganization: (...args: unknown[]) => mockUseOrganization(...args),
+  useOrganizations: (...args: unknown[]) => mockUseOrganizations(...args),
 }));
 
-let mockViewingOrgId: string | null = null;
+let mockViewingOrgId: string | "ALL_ORGS" | null = null;
 vi.mock("@/stores/organizationStore", () => ({
   useOrganizationStore: (selector: (state: unknown) => unknown) =>
     selector({ viewingOrgId: mockViewingOrgId }),
@@ -437,8 +444,13 @@ describe("CatalogPage — export catálogo (formato cliente)", () => {
         name: "Exportar catálogo (formato cliente)",
       }),
     );
+    // Banner stays mounted in its "exporting" state (FR8/refined-mockups
+    // Q2) — it does not fully unmount until the request settles.
     expect(
-      screen.queryByTestId("export-summary-banner"),
+      screen.getByTestId("export-summary-state-exporting-single"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("export-summary-continue-button"),
     ).not.toBeInTheDocument();
     expect(mockExportCatalogClientFormat).toHaveBeenCalledTimes(1);
 
@@ -474,6 +486,28 @@ describe("CatalogPage — export catálogo (formato cliente)", () => {
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(
         "El catálogo supera el límite soportado.",
+      ),
+    );
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("on a 403 (no permission for this export) shows a specific error toast without downloading", async () => {
+    const user = userEvent.setup();
+    mockProducts = [makeProduct({ status: "published" })];
+    promptSpy.mockReturnValue("mi-catalogo");
+    mockExportCatalogClientFormat.mockResolvedValue(
+      buildErrorResponse(
+        403,
+        "No tenés permiso para exportar todas las organizaciones.",
+      ),
+    );
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "No tenés permiso para exportar todas las organizaciones.",
       ),
     );
     expect(anchorClickSpy).not.toHaveBeenCalled();
@@ -566,7 +600,12 @@ describe("CatalogPage — export cross-org (selector de organización)", () => {
     await user.click(screen.getByTestId("export-summary-continue-button"));
 
     await waitFor(() =>
-      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith(undefined),
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith({
+        organizationId: undefined,
+        allOrganizations: false,
+        baseFolder: "mi-catalogo",
+        facebookGroupsFallback: "mi-catalogo",
+      }),
     );
   });
 
@@ -587,7 +626,12 @@ describe("CatalogPage — export cross-org (selector de organización)", () => {
     await user.click(screen.getByTestId("export-summary-continue-button"));
 
     await waitFor(() =>
-      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith("org-b"),
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith({
+        organizationId: "org-b",
+        allOrganizations: false,
+        baseFolder: "mi-catalogo",
+        facebookGroupsFallback: "mi-catalogo",
+      }),
     );
   });
 
@@ -678,9 +722,12 @@ describe("CatalogPage — export cross-org (selector de organización)", () => {
     await user.click(screen.getByTestId("export-summary-continue-button"));
 
     await waitFor(() =>
-      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith(
-        mockViewingOrgId,
-      ),
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith({
+        organizationId: mockViewingOrgId,
+        allOrganizations: false,
+        baseFolder: "mi-catalogo",
+        facebookGroupsFallback: "mi-catalogo",
+      }),
     );
   });
 
@@ -711,5 +758,175 @@ describe("CatalogPage — export cross-org (selector de organización)", () => {
     expect(
       screen.queryByTestId("export-summary-org-badge"),
     ).not.toBeInTheDocument();
+  });
+});
+
+// ─── CatalogPage — u2-cross-org-export-ui: wiring real (Step 10) ──────────
+// Piso mínimo de equipo #4 (organization_id llega a useInfiniteProducts para
+// los 3 estados de viewingOrgId), #5 ya cubierto en OrganizationPicker.test.tsx,
+// #6 (los 2 popups nuevos: cancelar aborta el flujo completo), más el
+// conteo del banner "todas las organizaciones" (mismo listado cacheado por
+// useOrganizations(), sin request nueva).
+
+describe("CatalogPage — cross-org grid filtering + popups nuevos (u2)", () => {
+  let promptSpy: MockInstance<typeof window.prompt>;
+  let anchorClickSpy: MockInstance<() => void>;
+
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockPush.mockClear();
+    mockUseInfiniteProducts.mockClear();
+    mockProductCard.mockClear();
+    mockExportCatalogClientFormat.mockReset();
+    mockProducts = [makeProduct({ status: "published" })];
+    mockViewingOrgId = null;
+    mockUseOrganization.mockReturnValue({ organization: undefined });
+    mockUseOrganizations.mockReturnValue({ data: [] });
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+    promptSpy = vi.spyOn(window, "prompt").mockReset();
+    anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockReset()
+      .mockImplementation(() => {});
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it("viewingOrgId null → organization_id sent to useInfiniteProducts is the viewer's own org (never omitted)", () => {
+    mockViewingOrgId = null;
+
+    render(<CatalogPage />);
+
+    const [filters] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+    expect(filters).toMatchObject({ organization_id: "org-1" });
+  });
+
+  it("viewingOrgId = a point organization → that organization_id reaches useInfiniteProducts", () => {
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "org-b", name: "Organización B" },
+    });
+
+    render(<CatalogPage />);
+
+    const [filters] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+    expect(filters).toMatchObject({ organization_id: "org-b" });
+  });
+
+  it('viewingOrgId = "ALL_ORGS" → organization_id is omitted from useInfiniteProducts (backend defaults to all orgs)', () => {
+    mockViewingOrgId = "ALL_ORGS";
+
+    render(<CatalogPage />);
+
+    const [filters] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+    expect(filters).toMatchObject({ organization_id: undefined });
+  });
+
+  it("switching the picker's organization (viewingOrgId change) triggers a refetch with the new filter", () => {
+    mockViewingOrgId = "org-b";
+    mockUseOrganization.mockReturnValue({
+      organization: { id: "org-b", name: "Organización B" },
+    });
+    const { rerender } = render(<CatalogPage />);
+    const [firstFilters] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+    expect(firstFilters).toMatchObject({ organization_id: "org-b" });
+
+    mockViewingOrgId = "ALL_ORGS";
+    rerender(<CatalogPage />);
+    const [secondFilters] = mockUseInfiniteProducts.mock.calls.at(-1) ?? [];
+    expect(secondFilters).toMatchObject({ organization_id: undefined });
+  });
+
+  it("cancelling the base-folder popup (2nd prompt) aborts the export — no request fired", async () => {
+    const user = userEvent.setup();
+    promptSpy
+      .mockReturnValueOnce("mi-catalogo") // filename
+      .mockReturnValueOnce(null); // base folder — cancel
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    expect(promptSpy).toHaveBeenCalledTimes(2);
+    expect(mockExportCatalogClientFormat).not.toHaveBeenCalled();
+  });
+
+  it("cancelling the facebook-groups popup (3rd prompt) aborts the export even after the base folder was confirmed", async () => {
+    const user = userEvent.setup();
+    promptSpy
+      .mockReturnValueOnce("mi-catalogo") // filename
+      .mockReturnValueOnce("Users/juanl/IMG/") // base folder
+      .mockReturnValueOnce(null); // facebook groups fallback — cancel
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    expect(promptSpy).toHaveBeenCalledTimes(3);
+    expect(mockExportCatalogClientFormat).not.toHaveBeenCalled();
+  });
+
+  it("confirming all 3 popups sends base_folder and facebook_groups_fallback through to the export call", async () => {
+    const user = userEvent.setup();
+    promptSpy
+      .mockReturnValueOnce("mi-catalogo") // filename
+      .mockReturnValueOnce("Users/juanl/IMG/") // base folder
+      .mockReturnValueOnce("4,5,6"); // facebook groups fallback
+    mockExportCatalogClientFormat.mockResolvedValue(buildZipResponse());
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith({
+        organizationId: undefined,
+        allOrganizations: false,
+        baseFolder: "Users/juanl/IMG/",
+        facebookGroupsFallback: "4,5,6",
+      }),
+    );
+  });
+
+  it('banner shows the count of organizations with published catalog when viewingOrgId = "ALL_ORGS"', async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "ALL_ORGS";
+    mockUseOrganizations.mockReturnValue({
+      data: [
+        { id: "org-a", name: "Org A", product_count: 3 },
+        { id: "org-b", name: "Org B", product_count: 0 },
+        { id: "org-c", name: "Org C" }, // product_count ausente
+        { id: "org-d", name: "Org D", product_count: 1 },
+      ],
+    });
+
+    await openExportSummary(user);
+
+    // Solo org-a y org-d tienen product_count > 0 (mismo criterio ya
+    // usado por OrganizationPicker) → conteo esperado: 2.
+    expect(
+      screen.getByTestId("export-summary-all-orgs-count"),
+    ).toHaveTextContent("2");
+  });
+
+  it('confirming the export in "ALL_ORGS" mode sends allOrganizations: true and no organizationId', async () => {
+    const user = userEvent.setup();
+    mockViewingOrgId = "ALL_ORGS";
+    promptSpy
+      .mockReturnValueOnce("catalogo-todas")
+      .mockReturnValueOnce("Users/juanl/IMG/")
+      .mockReturnValueOnce("1,2,3");
+    mockExportCatalogClientFormat.mockResolvedValue(buildZipResponse());
+
+    await openExportSummary(user);
+    await user.click(screen.getByTestId("export-summary-continue-button"));
+
+    await waitFor(() =>
+      expect(mockExportCatalogClientFormat).toHaveBeenCalledWith({
+        organizationId: undefined,
+        allOrganizations: true,
+        baseFolder: "Users/juanl/IMG/",
+        facebookGroupsFallback: "1,2,3",
+      }),
+    );
+    expect(anchorClickSpy).toHaveBeenCalledTimes(1);
   });
 });

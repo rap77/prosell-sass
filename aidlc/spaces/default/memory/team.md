@@ -16,34 +16,54 @@ Baseline afirmada (sin cambios propuestos):
 - Squash-merge (afirmado Q1 en 260829).
 - Conventional Commits estricto.
 
-**Sin especialización nueva para este intent (confirmado por el lead y
-las tres revisiones ciegas sin objeción)**: el feature es una adición de
-código dentro de una Unit frontend ya existente (catálogo), mismo patrón
-que el precedente ya documentado en `team.md` para
-`260903-catalog-client-export` ("el feature de export es una adición de
-código dentro de un Unit existente... sin necesidad de rama ni convención
-distinta"). No hay razón para tratar este intent distinto.
+**Sin especialización nueva propuesta para este intent.** Este intent
+toca dos deployables — `apps/api` y `apps/web` — con cambios
+genuinamente independientes entre sí (el fix de mapeo de valores del CSV
+y el soporte cross-org del backend no dependen de que la UI del picker
+ya filtre la grilla, y viceversa). **Corrección factual sobre el
+precedente citado** (señalada por quality): esto NO es la primera vez
+que un Bolt de este proyecto cruza `apps/api` + `apps/web` — el intent
+`260903-catalog-client-export` ya bundleó `u1-catalog-export-api`
+(backend) + `u2-catalog-export-ui` (frontend) en un solo Bolt, porque
+ninguna de las dos Units entregaba valor de usuario independiente por sí
+sola (aprendizaje ya persistido en `project.md`). Este intent es una
+**reconfirmación** de ese patrón ya probado, no una situación nueva —
+el precedente correcto es `260903-catalog-client-export`, no la ausencia
+de precedente. La conclusión de fondo del draft original se sostiene con
+el precedente corregido: el mecanismo ya afirmado de trunk-based +
+squash-merge no distingue por número de deployables tocados dentro de un
+mismo Bolt — cada Bolt sigue siendo una rama de feature de corta
+duración que se squash-mergea a `main` como un solo commit,
+independientemente de cuántos `apps/*` toque. No hay evidencia de que
+este intent necesite una convención de branch distinta (ej. una rama por
+deployable) — eso sería sobre-ingeniería para un feature que, aunque
+más grande, sigue siendo un solo Bolt cohesivo de un solo intent. La
+pregunta genuina de secuenciación (¿backend y frontend en el mismo Bolt,
+o en Bolts separados dentro del mismo intent?) es una decisión de
+Delivery Planning, no de Way of Working — no corresponde a esta etapa.
 
 ## Walking Skeleton
 
 Baseline afirmada: no se corre la ceremonia de walking skeleton (Q2 en
 260829, NEVER en `project.md`).
 
-**Sin especialización nueva para este intent (confirmado por el lead y
-las tres revisiones ciegas sin objeción)**: el feature es más
-autocontenido todavía que `260903-catalog-client-export` — reutiliza (o
-construye junto a) un componente (`OrganizationPicker`) y un store
-(`organizationStore`) ya existentes, probados y en producción (aunque hoy
-sin consumidores de datos); no requiere ninguna porción end-to-end nueva
-para "probar que las piezas conectan". El backend ya está resuelto y
-verificado en vivo desde el intent anterior.
+**Sin especialización nueva propuesta.** El feature agrega superficie
+real (nuevo caso de uso cross-tenant, corrección de mapeo de valores,
+nuevo filtrado de grilla, dos popups nuevos) pero ninguna pieza depende
+de una porción end-to-end nueva para "probar que conecta" — la capa de
+repositorio cross-tenant, el permiso `ORG_ADMIN_VIEW_ALL`, y el
+mecanismo de picker/store ya existen y están en producción desde
+intents anteriores. El trabajo de este intent es extender lógica ya
+verificada en vivo (autorización, resolución de organización, wiring de
+`viewingOrgId`), no bootstrapear una arquitectura nueva.
 
 ## Testing Posture
 
 - **Methodology**: test-after
-- **Ordering**: implementar la capa aplicable (en este intent, frontend)
-  y luego escribir y correr los tests de esa capa, sin backfillear
-  cobertura en código pre-existente no tocado por el cambio.
+- **Ordering**: implementar cada capa aplicable (backend: dominio/casos
+  de uso/repositorio; frontend: componente/hook/página) y luego escribir
+  y correr los tests de esa capa, sin backfillear cobertura en código
+  pre-existente no tocado por el cambio.
 - Piso de cobertura asimétrico aceptado (40% frontend, sin piso enforced
   en backend) — no forzar simetría.
 - CI corre la suite completa en cada push/PR; pre-push local corre
@@ -51,54 +71,139 @@ verificado en vivo desde el intent anterior.
 - Asimetría de gates de lint intencional (`next-lint` solo CI,
   `react-doctor` bloqueante en pre-commit).
 
-**Sin especialización nueva de fondo para este intent** en metodología,
-ordering, piso de cobertura general ni gates de CI — el marco general
-sigue vigente sin cambios (confirmado por el lead y las tres revisiones
-ciegas sin objeción).
+**Sin especialización de metodología, ordering, piso general de
+cobertura ni gates de CI** — el marco general (`classic` → piso de 80%
+de cobertura de línea + ejecución en CI, per `org.md`) sigue vigente sin
+cambios.
+
+**Nota de cobertura CI cross-stack (observación de quality, no decisión
+nueva)**: `team.md` ya documenta la asimetría de que pre-push local solo
+corre `pytest -q` (sin Vitest) — convención ya aceptada, mismo espíritu
+que la asimetría de gates de lint ya aceptada. Para este Bolt en
+particular, que introduce dependencias reales cruzadas entre `apps/api`
+y `apps/web` (el filtrado de grilla depende de que el backend acepte
+`organization_id`; el sentinel "todas" depende de que el backend relaje
+`tenant_id`), la cobertura real cross-stack (ambos lenguajes, suite
+completa) ocurre recién en push/PR (CI), no en pre-push local. No es una
+especialización nueva de proceso — es la aplicación tal cual de la
+convención ya documentada, señalada acá para que quede explícito que el
+gate local no atrapa una regresión de Vitest introducida por este Bolt
+antes de que llegue a CI.
 
 **Piso mínimo obligatorio de test para ESTE INTENT (Q1, afirmado en la
-entrevista: "A. Sí, afirmar los 3 puntos tal cual") — no cambia el piso
-general del proyecto, solo aplica al feature de selector de organización
-para export:**
+entrevista: "Sí, afirmar los 6 puntos tal cual" — no cambia el piso
+general del proyecto, solo aplica a la superficie nueva de export
+cross-org "todas las organizaciones" + fix de mapeo de valores CSV +
+filtrado real de grilla):**
 
-1. **Regresión negativa explícita de gating por permiso, no solo camino
-   feliz**: un caso de test donde el usuario NO tiene
-   `ORG_ADMIN_VIEW_ALL` debe demostrar que (a) el selector no se
-   renderiza / no está disponible en el flujo de export, y (b)
-   `exportCatalogClientFormat()` se invoca sin `organization_id` (o con
-   el comportamiento por defecto del propio tenant), nunca con un
-   `organization_id` ajeno — sigue el patrón ya establecido en `team.md`
-   de exigir casos límite explícitos, no solo un camino feliz.
-2. **Test del wiring nuevo**: confirmar que el `organization_id` elegido
-   llega correctamente a `exportCatalogClientFormat()` — es superficie de
-   test completamente nueva, no hay nada pre-existente que "mantener en
-   verde" acá.
-3. **Si la vía de diseño elegida en Requirements/Functional Design
-   reutiliza `organizationStore.viewingOrgId`** (el mecanismo global ya
-   existente): verificar que consumirlo desde el flujo de export no
-   rompe el consumo existente del `OrganizationPicker` en el header —
-   mismo store, dos consumidores; alcanza con confirmar que el selector
-   de export lee/escribe el mismo store sin introducir un segundo
-   mecanismo de estado paralelo, no hace falta un test de integración
-   cross-componente completo.
+1. **Regresión de valor, no solo de clave, para `clean_title` y
+   `groups` en `build_client_format_row()`**: el bug real es de
+   TRANSFORMACIÓN DE VALOR (`title_status` string → `"1"`/`"0"` inverso
+   de `csv_field_mapper.py`; `facebook_groups: list[str]` →
+   `",".join()`), no de rename de clave — un test que solo verifique que
+   la columna existe y tiene ALGÚN valor no detectaría una inversión de
+   signo o un join incorrecto. El test debe fijar un valor de entrada
+   conocido (ej. `title_status="clean"`, `facebook_groups=["A","B"]`) y
+   afirmar el valor de SALIDA exacto esperado por el formato cliente
+   (`"1"`, `"A,B"`), con un caso adicional para el valor inverso
+   (`title_status="rebuilt"` → `"0"`, `facebook_groups=[]` → `""`).
+   Justificación: impacto real de un bug no detectado es dato incorrecto
+   enviado a un sistema externo del cliente — mayor severidad que el
+   piso general de `classic` para un cambio de UI.
+2. **Regresión negativa explícita del comportamiento por defecto
+   post-sentinel**: después de introducir el sentinel "todas las
+   organizaciones", un test debe demostrar que el comportamiento por
+   defecto (sin pasar el sentinel, sin pasar `organization_id`) sigue
+   resolviendo a "mi propia organización", nunca a "todas" — blinda la
+   asimetría ya documentada (hallazgo #85) contra que se deslice hacia
+   el criterio de `list_products` por copiar el patrón sin querer.
+   Incluye además el caso ya afirmado en `260911-export-org-selector`:
+   un usuario SIN `ORG_ADMIN_VIEW_ALL` debe demostrar que (a) la opción
+   "todas las organizaciones" no está disponible en la UI, y (b) el use
+   case de export "todas" rechaza la llamada aun si se invoca
+   directamente sin pasar por la UI (defensa en profundidad, igual
+   criterio que `_check_org_scope_permission()` ya aplica al sentinel
+   puntual de una org ajena).
+3. **Test de la resolución de `org_code` por-producto**: dado un export
+   "todas las organizaciones" con productos de 2+ organizaciones
+   distintas, cada producto en el ZIP resultante debe aparecer en la
+   carpeta/segmento de SU PROPIA organización — no la de la primera
+   organización resuelta en el loop. Es la regresión directa del bug
+   real detectado en el scan (hallazgo #83 de `code-quality-assessment.md`).
+4. **Test de wiring del filtrado real de la grilla**: confirmar que
+   `organization_id` (derivado de `viewingOrgId`) efectivamente llega a
+   `useInfiniteProducts()`/`ProductFilters` y que cambiar de organización
+   en el picker dispara un refetch con el filtro nuevo — superficie de
+   test completamente nueva (hoy `viewingOrgId` solo alimenta el export,
+   nunca la query de productos).
+5. **Test del filtro del picker por `product_count`**: el nuevo
+   `.filter(o => (o.product_count ?? 0) > 0)` debe confirmarse con un
+   caso límite real — una organización con `product_count: 0` (o el
+   campo ausente, cubierto por `?? 0`) debe desaparecer de la lista.
+   Sin este test, un cambio futuro en `useOrganizations()`/
+   `OrganizationSchema` puede romper el filtro silenciosamente.
+6. **Test de wiring de los dos popups nuevos** (`window.prompt()` de
+   carpeta base y de grupos de Facebook): al menos un test por prompt
+   que confirme que un valor no-null ingresado llega al parámetro
+   correcto del llamado de export, y que `null` (cancelar) no dispara la
+   acción — misma categoría de "superficie de test completamente nueva"
+   que justifica el punto 4.
 
-`OrganizationPicker.test.tsx` es directamente reusable como precedente de
-mocks (`useAuth`, `useOrganizations`, `useOrganizationStore`) para
-cualquiera de las dos vías de diseño — Build and Test debe reusar ese
-mismo patrón de mocks en vez de inventar uno nuevo.
+`OrganizationPicker.test.tsx` y el patrón de mocks ya establecido
+(`useAuth`, `useOrganizations`, `useOrganizationStore`) siguen siendo el
+precedente reusable para los puntos 2, 4, 5 y 6. Para los puntos 1 y 3
+(backend), el precedente reusable es la suite existente de
+`csv_export.py`/`csv_field_mapper.py` (mismo patrón de fixtures ya usado
+para el mapeo directo del import).
 
-**Gap heredado, no resuelto por este intent (documentado por
-trazabilidad, no piso nuevo)**: `team.md` ya deja pendiente para Build
-and Test cuál convención de ubicación de test aplica a
-`catalog/page.tsx` (no calza limpio en
-`tests/components/{module}/X.test.tsx` ni en el patrón co-located de
-páginas admin). Este intent agrega tests nuevos exactamente en esa zona
-gris — Build and Test debe resolver explícitamente cuál convención aplica
-antes de escribir los tests del selector/wiring, para no reabrir la
-ambigüedad por segunda vez sin decisión. Si la vía elegida reutiliza
-`OrganizationPicker`, el precedente ya es claro (co-located en
-`components/admin/`); si es un selector local nuevo, hereda la misma
-ambigüedad que `catalog/page.tsx`.
+**Gap heredado, no resuelto por este intent**: sigue sin resolverse
+formalmente cuál convención de ubicación de test aplica a
+`catalog/page.tsx` — este intent agrega tests nuevos en la misma zona
+gris ya documentada en `team.md`. Build and Test debe decidir
+explícitamente antes de escribir los tests del filtrado de grilla, para
+no reabrir la ambigüedad una tercera vez sin decisión.
+
+**Precedente de implementación — resolución batch de `org_code`
+por-producto (Code Style, guía de implementación, no práctica de equipo
+nueva)**: el patrón exacto a seguir ya existe en producción en
+`apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py`
+— `_resolve_org_codes()` (línea 126) pre-resuelve TODOS los códigos de
+organización necesarios en una sola query batch antes del loop por fila,
+y el loop hace lookups O(1) contra ese dict (línea 171), nunca una query
+por fila dentro del loop. El caso del export "todas" es incluso más
+simple de resolver con el mismo patrón (cada `Product` ya trae su propio
+`organization_id` como FK conocido, sin necesidad de matching de string
+como en el import): un batch `get_all_by_ids()`-style sobre las
+organizaciones distintas del lote de productos, construyendo un dict
+`{organization_id: org_code}` antes del loop de export. Functional
+Design debe heredar este patrón directamente — no hace falta medir
+volumen de organizaciones distintas para justificar el batch (como
+sugería una versión anterior de este documento); ya es el patrón elegido
+por el equipo para exactamente este tipo de problema en el flujo
+hermano (import).
+
+**Precedente de implementación — capas para la función de mapeo
+árbol-de-categorías → columnas planas del CSV (Code Style, guía de
+implementación, no práctica de equipo nueva)**: `csv_export.py` hoy es
+un domain service con CERO dependencias externas (solo `re` y
+`collections.abc.Mapping`) — consistente con la regla de Clean
+Architecture del proyecto ("Domain layer has ZERO external
+dependencies") y con el patrón ya usado por las funciones existentes del
+archivo, que siempre reciben datos YA RESUELTOS (nunca llaman a un
+repositorio). La resolución `category_id → nodo del árbol` SÍ requiere
+`CategoryRepository.get_by_id_cross_tenant()` — esa llamada NO debe vivir
+dentro de `csv_export.py` (rompería su pureza de domain service), sino
+en la capa de use case (`export_catalog_client_format.py` o un helper que
+este invoque, que ya tiene acceso a repositorios inyectados), siguiendo
+el mismo patrón ya usado hoy para `org_code`/`Organization.code`
+(resuelto afuera, pasado ya resuelto adentro). El **mapeo puro** (nombres
+de nivel ya resueltos → 2 columnas planas `category`/`type`) sí puede
+vivir en `csv_export.py`, junto a `build_client_format_row()`, tomando
+como entrada datos ya resueltos — igual que hace hoy
+`build_image_folder_name()` con `Organization.code`. Functional Design
+decide explícitamente esta separación resolución/mapeo, no la
+formulación de "todo en el mismo archivo" de una versión anterior de
+este documento.
 
 ## Deployment
 
@@ -106,18 +211,75 @@ Baseline afirmada: deploy-on-merge a staging, gate manual de producción
 permanente, health check post-deploy, postura de seguridad de pipeline
 con gaps aceptados y no bloqueantes.
 
-**Sin especialización nueva para este intent (confirmado por el lead y
-las tres revisiones ciegas sin objeción)**: es un cambio de UI dentro de
-`apps/web` que sigue el mismo camino de deploy que cualquier otro cambio
-frontend — no cambia topología de entornos ni introduce un componente
-nuevo desplegable. Ninguno de los riesgos de este intent (exposición de
-datos cross-org a un usuario sin permiso, en caso de bug de gating) es
-nuevo respecto a los riesgos ya evaluados y aceptados para
-`OrganizationPicker` cuando se construyó originalmente (Subsystem D). La
-autorización real y auditable de los datos exportados sigue viviendo
-100% en el backend (`_check_org_scope_permission()`, ya auditado y
-testeado en `260910-export-cross-org`); el gating de UI de este intent es
-una capa de UX de seguridad, no la barrera real de exfiltración de datos.
+**Sin especialización nueva de topología ni de proceso de deploy
+propuesta** — este intent no introduce un componente desplegable nuevo
+ni cambia entornos. Precisión de aplicación (no práctica nueva) que
+Delivery Planning/Deployment Pipeline deben tener presente:
+
+- Este Bolt toca `apps/api` Y `apps/web` a la vez. El pipeline de CI/CD
+  ya existente (`ci.yml`, `deploy.yml`) construye y despliega ambos
+  deployables desde el mismo push a `main` — no hay evidencia de que
+  el pipeline actual trate el deploy de uno como condicional al otro.
+  Si Requirements/Delivery Planning deciden que backend y frontend
+  pueden entregarse en Bolts separados (por ejemplo, el fix de mapeo de
+  CSV primero, el filtrado de grilla después), cada Bolt sigue el mismo
+  camino de deploy-on-merge ya afirmado, sin necesidad de coordinación
+  especial — el backend con el bug de mapeo corregido pero sin
+  frontend aún consumiéndolo no rompe nada en producción (el CSV
+  simplemente empieza a salir correcto).
+- El mecanismo de autorización (un usuario sin permiso viendo/exportando
+  el catálogo de otra organización) NO es nuevo respecto a los riesgos ya
+  evaluados y aceptados para `OrganizationPicker`/`ORG_ADMIN_VIEW_ALL` en
+  intents previos. La autorización real sigue viviendo en el backend
+  (`_check_org_scope_permission()`); el nuevo caso de uso "exportar
+  todas" debe aplicar el MISMO chequeo, no uno nuevo.
+- **Corrección de alcance (señalada por devsecops)**: "mismo control, sin
+  superficie de riesgo nueva" es incompleto. El MECANISMO de autorización
+  no cambia, pero el **radio de explosión** de que ese mismo control
+  falle una sola vez sí cambia: hoy un fallo de
+  `_check_org_scope_permission()` expone el catálogo de UNA organización
+  ajena por request; con "exportar todas" el mismo fallo expone las
+  organizaciones completas de la plataforma en una sola descarga. Es un
+  cambio real de impacto, aunque la probabilidad de falla y el mecanismo
+  de gate no cambien. Dos decisiones puntuales, ya afirmadas en la
+  entrevista (Q2), quedan documentadas acá como guía de implementación
+  para Functional/NFR Design — NO se promueven a `discovered-rules.md`
+  § Mandated, son decisiones de diseño de producto/seguridad acotadas a
+  este intent:
+  - **Auditoría distinguible para "todas" (afirmado: sí)**: el
+    `logger.info()` ya existente en `product_router.py:786-789`
+    (`"Cross-org catalog export: user=... own_org=... exported_org=..."`)
+    está pensado para UN target puntual — no hay hoy ningún camino de
+    código que arme ese mismo log para "exporté todas las
+    organizaciones a la vez", porque ese camino de código no existe
+    todavía. El mecanismo (`logger.info()` estructurado, sin tabla de
+    auditoría dedicada, per el learning ya persistido en `project.md`
+    del precedente `260910-export-cross-org`) sigue vigente tal cual —
+    lo que cambia es el CONTENIDO: el log para el caso "todas" necesita
+    un campo/valor que lo distinga explícitamente de un target puntual
+    (ej. `scope=ALL_ORGS` o un evento separado), para que sea
+    respondible por grep si alguna vez se exportó el catálogo completo
+    de la plataforma.
+  - **Confirmación de UI más fuerte para "todas" (afirmado: sí)**: el
+    banner ya existente para exportar una organización ajena puntual
+    (badge + Continuar/Cancelar) no alcanza para la acción de mayor
+    radio de explosión que es exportar todas las organizaciones de una
+    vez — necesita un paso de confirmación más fuerte (texto de
+    advertencia adicional, palabra de confirmación tipeada, u otro
+    mecanismo). El mecanismo EXACTO queda como pregunta abierta para
+    Functional Design (ver `evidence.md`), no resuelto en esta etapa.
+  - **Nota de agotamiento de recursos (devsecops, ya señalada como
+    pregunta abierta en `evidence.md`, no resuelta acá)**: el ZIP del
+    export se arma completo en memoria antes de que el
+    `StreamingResponse` empiece a enviar nada — el consumo de memoria de
+    una sola request "todas" escala con el total de productos+imágenes
+    de TODA la plataforma, no de un tenant. `EXPORT_MAX_PRODUCTS=500`
+    (hoy por-tenant) necesita revisarse para el modo "todas" — decisión
+    de Functional/NFR Design, sin rate-limiting nuevo propuesto (la
+    infraestructura genérica de `slowapi` ya existente acota frecuencia,
+    no costo por-request; queda como riesgo residual aceptado,
+    consistente con la postura de pipeline ya afirmada con gaps
+    aceptados y no bloqueantes).
 
 ## Code Style
 
@@ -126,54 +288,28 @@ Baseline afirmada: Ruff+Pyright backend, Prettier+ESLint frontend
 camelCase TS/snake_case Python, patrón de manejo de errores centralizado
 en frontend (mandate Q6 en 260829, aplica a código nuevo).
 
-**Sin especialización nueva de convención de nombres o formatter para
-este intent (confirmado por el lead y las tres revisiones ciegas sin
-objeción)**. Precisiones de aplicación de la convención ya vigente,
-documentadas para Requirements/Functional Design (no son prácticas
-nuevas, son la convención ya afirmada aplicada a esta superficie
-puntual):
+**Sin especialización nueva de formatter/linter propuesta.** Los dos
+precedentes de implementación para los conceptos backend genuinamente
+nuevos de este intent (resolución batch de `org_code` por-producto;
+separación resolución/mapeo para la función de categorías→columnas)
+quedan documentados arriba en § Testing Posture, junto al piso de tests
+que los ejercita — evitar repetirlos acá para no duplicar la misma
+decisión en dos secciones. Ambos son guía de implementación para
+Functional Design, no práctica de equipo nueva.
 
-- Si la bifurcación (a)/(b) se resuelve por (a), el nuevo código de
-  consumo debe seguir el patrón ya existente en `organizationStore.ts`
-  (Zustand) sin agregar un segundo mecanismo de estado paralelo para lo
-  mismo.
-- Naming en el boundary: cualquier variable/prop nueva del lado frontend
-  (el id de organización elegido) se nombra en camelCase
-  (`organizationId` / `selectedOrgId`) y se convierte a
-  `organization_id` recién en el punto de armado del query
-  param/body hacia `exportCatalogClientFormat()` — igual que ya resuelve
-  el resto de `products.ts` para otros parámetros snake_case del
-  backend.
+- Naming en el boundary del filtrado real de grilla: mismo criterio ya
+  afirmado en `260911-export-org-selector` — `organizationId` en
+  camelCase del lado frontend, convertido a `organization_id` recién en
+  el punto de armado del query param hacia el backend (ya resuelto por
+  `products.ts` para otros parámetros).
 - El mandate Q6 de manejo de errores centralizado en frontend aplica
-  igual que en `260903-catalog-client-export` a cualquier boundary nuevo.
-  Agregar el parámetro `organization_id` a
-  `exportCatalogClientFormat()` no abre un boundary de error nuevo —
-  hereda el manejo ya existente (200/404/413/`!res.ok` + `catch` de red,
-  ya persistido como learning de `project.md`). Si la vía elegida es (a)
-  y este es el primer consumidor real de `viewingOrgId`, el hook
-  `useOrganizations()` (TanStack Query) es un boundary de LECTURA con su
-  propio manejo de error (`isError`/`error` de la query) — no
-  necesariamente el mismo patrón de excepción tipada + toast que Q6
-  describe para acciones/mutaciones; Functional Design debe dejarlo
-  explícito para no forzar el patrón de mutación sobre un query de
-  lectura ya resuelto por el hook existente.
-- Gating por permiso: el condicional del componente nuevo debe chequear
-  el permiso puntual `ORG_ADMIN_VIEW_ALL` directamente (mismo criterio
-  que ya verifica el backend), no un proxy de rol como `isAdmin` —
-  consistente con `deriveRole.ts` como single source of truth ya
-  establecido en el proyecto. Esto evita que un futuro cambio de rol
-  desalinee el gating de UI del criterio real de autorización, aunque no
-  hay fuga de datos posible (el store/backend igual bloquean) porque el
-  guard de UI es una capa adicional de UX de seguridad, no la barrera de
-  autorización real.
-- Organización de archivos: `OrganizationPicker.tsx` vive bajo
-  `apps/web/src/components/admin/` y se consume hoy desde un contexto
-  global/admin (`Header.tsx`); el flujo que este intent toca es
-  `apps/web/src/app/(seller)/catalog/page.tsx` (route group `(seller)`).
-  Si la vía (a) prospera, Functional Design debe decidir explícitamente
-  si el import cross-route-group se acepta tal cual o si el picker se
-  mueve/re-exporta a una ubicación neutral (ej. `components/shared/`),
-  en vez de dejarlo implícito en el código generado.
+  igual que en intents previos a cualquier boundary nuevo — en
+  particular, el nuevo camino de `useInfiniteProducts()` con
+  `organization_id` hereda el manejo de error ya existente del hook
+  (no abre un boundary nuevo), y los dos `window.prompt()` nuevos
+  (carpeta base, grupos de Facebook) no introducen manejo de error propio
+  — siguen siendo síncronos, sin llamada de red, igual que los dos
+  `window.prompt()` ya existentes.
 
 ## Forbidden
 

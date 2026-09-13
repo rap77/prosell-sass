@@ -1,0 +1,27 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-cross-org-export-ui",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "el evento de auditoría distinguible scope=ALL_ORGS es responsabilidad exclusiva de u1-cross-org-export-api (observability-requirements.md de ese Unit) — U2 no participa en logging de auditoría"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "la autorización ORG_ADMIN_VIEW_ALL para all_organizations=true es responsabilidad exclusiva de u1-cross-org-export-api (NFR2.4, security-requirements.md de ese Unit) — U2 solo oculta la opción en la UI (AC2.1.1), sin ser el chequeo autoritativo"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "el enforcement del cap global de recursos (413) y el riesgo residual de memoria son responsabilidad exclusiva de u1-cross-org-export-api (NFR3.2/NFR-REL-3 de ese Unit) — U2 solo renderiza el mensaje de error"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "postura de piso mínimo de test (methodology), se enforce en Build and Test, no en artefactos de diseño NFR de este Unit — mismo criterio ya afirmado en 260903-catalog-client-export"
+    }
+  ]
+}

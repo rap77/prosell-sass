@@ -59,7 +59,7 @@ import {
 } from "@/lib/api/products";
 import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
-import { useOrganization } from "@/lib/api/organizations";
+import { useOrganization, useOrganizations } from "@/lib/api/organizations";
 import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { useOrganizationStore } from "@/stores/organizationStore";
@@ -89,16 +89,27 @@ type ViewMode = (typeof VIEW_MODE)[keyof typeof VIEW_MODE];
 // u1-export-org-confirmation: which organization's catalog the export
 // summary banner/confirmation is about. "own" = the caller's own
 // organization (default, no badge). "loading"/"cross-org" only occur when
-// `organizationStore.viewingOrgId` is set (ORG_ADMIN_VIEW_ALL) — "loading"
-// covers both "name not resolved yet" and "organization deleted/
-// inaccessible" (per refined-mockups/interaction-spec.md Q2).
+// `organizationStore.viewingOrgId` is set to a specific organization
+// (ORG_ADMIN_VIEW_ALL) — "loading" covers both "name not resolved yet" and
+// "organization deleted/inaccessible" (per refined-mockups/interaction-spec.md
+// Q2). "all-orgs" (u2-cross-org-export-ui, FR2/FR5.1) occurs when
+// `viewingOrgId === "ALL_ORGS"` — `count` is the number of organizations
+// with published catalog (`product_count > 0`), same criterion as the
+// picker's own filter.
 type ExportOrganization =
-  { kind: "own" } | { kind: "loading" } | { kind: "cross-org"; name: string };
+  | { kind: "own" }
+  | { kind: "loading" }
+  | { kind: "cross-org"; name: string }
+  | { kind: "all-orgs"; count: number };
 
 function resolveExportOrganization(
-  viewingOrgId: string | null,
+  viewingOrgId: string | "ALL_ORGS" | null,
   viewingOrganizationName: string | undefined,
+  allOrganizationsCount: number,
 ): ExportOrganization {
+  if (viewingOrgId === "ALL_ORGS") {
+    return { kind: "all-orgs", count: allOrganizationsCount };
+  }
   if (!viewingOrgId) return { kind: "own" };
   if (viewingOrganizationName) {
     return { kind: "cross-org", name: viewingOrganizationName };
@@ -110,12 +121,17 @@ function resolveExportOrganization(
 // message names the target organization for a cross-org export, uses a
 // generic fallback when its name hasn't resolved (or it's gone/inaccessible),
 // and keeps the pre-existing own-organization string unchanged.
+// u2-cross-org-export-ui — "all-orgs" gets a platform-wide generic message
+// (there is no single organization name to mention).
 function emptyCatalogExportMessage(organization: ExportOrganization): string {
   if (organization.kind === "cross-org") {
     return `${organization.name} no tiene catálogo publicado para exportar.`;
   }
   if (organization.kind === "loading") {
     return "Esta organización no tiene catálogo publicado para exportar.";
+  }
+  if (organization.kind === "all-orgs") {
+    return "Ninguna organización tiene catálogo publicado para exportar.";
   }
   return "No hay productos publicados para exportar.";
 }
@@ -195,11 +211,20 @@ function ExportSummaryBanner({
   onContinue,
   onCancel,
   organization,
+  isExporting,
 }: {
   onContinue: () => void;
   onCancel: () => void;
   organization: ExportOrganization;
+  isExporting: boolean;
 }) {
+  // u2-cross-org-export-ui, FR5.1/Practices Discovery Q2b: "todas las
+  // organizaciones" has a strictly larger blast radius than a single
+  // cross-org export (one permission-check failure exposes every
+  // organization's catalog, not just one), so it gets an explicit warning
+  // callout naming the count N — same Continuar/Cancelar mechanism, no
+  // typed confirmation word (already decided against in Practices Discovery).
+  const isAllOrgs = organization.kind === "all-orgs";
   return (
     <div
       role="status"
@@ -217,34 +242,71 @@ function ExportSummaryBanner({
               data-testid="export-summary-org-badge-skeleton"
               className="inline-block h-[14px] w-24 rounded bg-ps-cyan/25 animate-pulse"
             />
+          ) : isAllOrgs ? (
+            <span data-testid="export-summary-all-orgs-count">
+              Exportando catálogo de TODAS las organizaciones (
+              {organization.count} en total)
+            </span>
           ) : (
             <span>Exportando catálogo de: {organization.name}</span>
           )}
         </div>
       )}
+      {isAllOrgs && (
+        <div
+          data-testid="export-summary-all-orgs-warning"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-ps-error-bg text-ps-error text-[12px] font-medium"
+        >
+          <AlertCircle size={13} strokeWidth={2.5} />
+          <span>
+            Vas a exportar el catálogo de TODAS las organizaciones (
+            {organization.count} en total), no solo la tuya.
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-4">
         <p className="m-0 text-[13px] text-ps-text-primary">
-          Se exportará el catálogo completo de productos publicados de tu
-          organización.
+          {isExporting
+            ? "Exportando catálogo, no cierres esta pestaña..."
+            : isAllOrgs
+              ? "Se exportará el catálogo completo de productos publicados de todas las organizaciones de la plataforma."
+              : "Se exportará el catálogo completo de productos publicados de tu organización."}
         </p>
-        <div className="flex gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onContinue}
-            data-testid="export-summary-continue-button"
-            className="h-8 px-3 bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
+        {isExporting ? (
+          // FR8/refined-mockups Q2: while the real export request is in
+          // flight, the banner switches to a distinguishable "exporting"
+          // state instead of unmounting — no Continuar/Cancelar to click
+          // twice mid-export.
+          <span
+            data-testid={
+              isAllOrgs
+                ? "export-summary-state-exporting-all"
+                : "export-summary-state-exporting-single"
+            }
+            className="shrink-0 text-[13px] font-semibold text-ps-cyan"
           >
-            Continuar
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            data-testid="export-summary-cancel-button"
-            className="h-8 px-3 bg-transparent text-ps-text-secondary border border-ps-border-default rounded-lg text-[13px] font-medium cursor-pointer"
-          >
-            Cancelar
-          </button>
-        </div>
+            Exportando...
+          </span>
+        ) : (
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onContinue}
+              data-testid="export-summary-continue-button"
+              className="h-8 px-3 bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer"
+            >
+              Continuar
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              data-testid="export-summary-cancel-button"
+              className="h-8 px-3 bg-transparent text-ps-text-secondary border border-ps-border-default rounded-lg text-[13px] font-medium cursor-pointer"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -319,11 +381,19 @@ export default function CatalogPage() {
   // request, see nfr-design/performance-design.md).
   const viewingOrgId = useOrganizationStore((state) => state.viewingOrgId);
   const { organization: viewingOrganization } = useOrganization(
-    viewingOrgId ?? undefined,
+    viewingOrgId && viewingOrgId !== "ALL_ORGS" ? viewingOrgId : undefined,
   );
+  // u2-cross-org-export-ui — same cached list (and same product_count > 0
+  // criterion) the picker already uses; no new network request (TanStack
+  // Query dedupes by queryKey).
+  const { data: organizationsForExportCount = [] } = useOrganizations();
+  const allOrganizationsCount = organizationsForExportCount.filter(
+    (organization) => (organization.product_count ?? 0) > 0,
+  ).length;
   const exportOrganization = resolveExportOrganization(
     viewingOrgId,
     viewingOrganization?.name,
+    allOrganizationsCount,
   );
   const { data: verticalsData } = useOrgVerticals(organizationId);
   const allCategories = (verticalsData?.verticals ?? []).flatMap(
@@ -376,11 +446,21 @@ export default function CatalogPage() {
     if (value) attributes[key] = value;
   }
 
+  // u2-cross-org-export-ui, FR3 — per the `consumer_contract` in
+  // `contract-summary.md` Contract 1: NEVER omitted in the default case
+  // (`viewingOrgId === null`) — the caller's own organization is sent
+  // explicitly, so an admin with `ORG_ADMIN_VIEW_ALL` doesn't silently
+  // inherit `list_products`' "no organization_id ⇒ every organization"
+  // behavior without having chosen "Todas las organizaciones" explicitly.
   const apiFilters = {
     search: search || undefined,
     status,
     category_id: selectedCategoryId ?? undefined,
     attributes,
+    organization_id:
+      viewingOrgId === "ALL_ORGS"
+        ? undefined
+        : (viewingOrgId ?? organizationId ?? undefined),
   };
 
   const {
@@ -528,16 +608,40 @@ export default function CatalogPage() {
     setShowExportSummary(false);
   };
 
-  const handleExportClientFormat = async (fileName: string) => {
+  const handleExportClientFormat = async (
+    fileName: string,
+    baseFolder: string,
+    facebookGroupsFallback: string,
+  ) => {
     setIsExportingClientFormat(true);
     try {
-      const res = await exportCatalogClientFormat(
-        exportOrganization.kind !== "own"
-          ? (viewingOrgId ?? undefined)
-          : undefined,
-      );
+      const res = await exportCatalogClientFormat({
+        // u2-cross-org-export-ui: organizationId only for a specific
+        // cross-org target (whether its name has resolved yet or not —
+        // same criterion "today" applied before "all-orgs" existed, since
+        // both "cross-org" and "loading" share the same underlying
+        // viewingOrgId). Never sent for "own" or "all-orgs".
+        organizationId:
+          exportOrganization.kind === "cross-org" ||
+          exportOrganization.kind === "loading"
+            ? (viewingOrgId ?? undefined)
+            : undefined,
+        allOrganizations: viewingOrgId === "ALL_ORGS",
+        baseFolder,
+        facebookGroupsFallback,
+      });
       if (res.status === 404) {
         toast.error(emptyCatalogExportMessage(exportOrganization));
+        return;
+      }
+      if (res.status === 403) {
+        const body = await res.json().catch(() => null);
+        toast.error(
+          extractErrorMessage(
+            body,
+            "No tenés permiso para realizar esta exportación.",
+          ),
+        );
         return;
       }
       if (res.status === 413) {
@@ -579,7 +683,31 @@ export default function CatalogPage() {
       suggestedName,
     );
     if (fileName === null) return;
-    void handleExportClientFormat(fileName || suggestedName);
+
+    // FR8.2 — u2-cross-org-export-ui: carpeta base de imágenes, se
+    // concatena con el código de organización y la carpeta del producto
+    // para completar la columna `path` del CSV. Cualquier cancelación en
+    // esta secuencia de 3 popups aborta el flujo completo (AC8.1.2).
+    const baseFolder = window.prompt(
+      "Carpeta base de imágenes:",
+      "Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/",
+    );
+    if (baseFolder === null) return;
+
+    // FR9.2 — u2-cross-org-export-ui: grupos de Facebook, usados SOLO
+    // como fallback para productos sin `facebook_groups` propio
+    // (AC9.1.2/AC9.1.3).
+    const facebookGroupsFallback = window.prompt(
+      "Grupos de Facebook (separados por coma):",
+      "1,2,3",
+    );
+    if (facebookGroupsFallback === null) return;
+
+    void handleExportClientFormat(
+      fileName || suggestedName,
+      baseFolder,
+      facebookGroupsFallback,
+    );
   };
 
   // Infinite scroll sentinel
@@ -737,12 +865,16 @@ export default function CatalogPage() {
             </div>
           </div>
 
-          {/* Export (formato cliente) summary — inline, no modal */}
-          {showExportSummary && (
+          {/* Export (formato cliente) summary — inline, no modal.
+              Stays mounted through the real export request (not just the
+              confirm step) so the "exporting" state (FR8/refined-mockups
+              Q2) has a banner to render into. */}
+          {(showExportSummary || isExportingClientFormat) && (
             <ExportSummaryBanner
               onContinue={handleConfirmExportSummary}
               onCancel={handleCancelExportSummary}
               organization={exportOrganization}
+              isExporting={isExportingClientFormat}
             />
           )}
 

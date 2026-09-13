@@ -1,0 +1,98 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-cross-org-export-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.2.1",
+    "AC3.1.1",
+    "AC3.2.1",
+    "AC3.3.1",
+    "AC5.1.1",
+    "AC8.1.1",
+    "AC8.1.2",
+    "AC9.1.1",
+    "AC9.1.2",
+    "AC9.1.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 1 paso 2 — Unit kind ui, sin rules.md/BRx.y; target apunta a la sección de functional-spec.md que lo especifica"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "N/A",
+      "target": "frontend-components.md § OrganizationPicker (filtro product_count > 0)"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "N/A",
+      "target": "frontend-components.md § OrganizationPicker (filtro product_count > 0)"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 1 paso 2"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "N/A",
+      "target": "Cubierto por u1-cross-org-export-api (rechazo de permiso a nivel de use case, defensa en profundidad) — per unit-of-work-story-map.md § Historias cross-cutting. U2 solo contribuye la ocultación de la opción en la UI, ya cubierta por AC2.1.1 (functional-spec.md Workflow 1 paso 2)."
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 1 paso 4 (organization_id explícito por defecto)"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 1 pasos 4-6"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 1 pasos 4-6 (sentinel ALL_ORGS)"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "N/A",
+      "target": "functional-spec.md § Casos de borde (Marcos sin permiso)"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 2 paso 2-3"
+    },
+    {
+      "id": "AC8.1.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 3 paso 2"
+    },
+    {
+      "id": "AC8.1.2",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 3 paso 2"
+    },
+    {
+      "id": "AC9.1.1",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 3 paso 3"
+    },
+    {
+      "id": "AC9.1.2",
+      "status": "N/A",
+      "target": "functional-spec.md Workflow 3 paso 3"
+    },
+    {
+      "id": "AC9.1.3",
+      "status": "N/A",
+      "target": "functional-spec.md § Casos de borde (confirmar carpeta, cancelar grupos)"
+    }
+  ]
+}

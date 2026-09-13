@@ -1185,6 +1185,15 @@ export interface ProductFilters {
   category_id?: string;
   /** Category-driven attribute filters, mapped to `attr.<key>` (Task 12). */
   attributes?: Record<string, string>;
+  /**
+   * Filters by organization (u2-cross-org-export-ui, FR3). Per the
+   * `consumer_contract` in `contract-summary.md` Contract 1, the caller must
+   * pass the current user's own organization explicitly when no "view as"
+   * organization is active — an admin with `ORG_ADMIN_VIEW_ALL` omitting this
+   * param entirely would otherwise receive every organization's products
+   * (existing backend behavior for `GET /api/v1/products`).
+   */
+  organization_id?: string;
 }
 
 /**
@@ -1206,6 +1215,8 @@ export function useInfiniteProducts(
   if (filters?.search) queryParams.append("search", filters.search);
   if (filters?.category_id)
     queryParams.append("category_id", filters.category_id);
+  if (filters?.organization_id)
+    queryParams.append("organization_id", filters.organization_id);
   for (const [key, value] of Object.entries(filters?.attributes ?? {})) {
     if (value) queryParams.append(`attr.${key}`, value);
   }
@@ -1532,28 +1543,50 @@ export async function exportCatalogCsv(categoryId: string): Promise<void> {
 }
 
 /**
- * Export this organization's `published` catalog in the client CSV+ZIP
- * format (u2-catalog-export-ui). Unlike `exportCatalogCsv`, this returns
- * the raw `Response` instead of driving the download itself — the caller
- * must branch on 200/404/413 (empty catalog / export limit exceeded)
- * before deciding whether to trigger a download or show an error.
+ * Export the catalog in the client CSV+ZIP format
+ * (u2-catalog-export-ui / u2-cross-org-export-ui). Unlike
+ * `exportCatalogCsv`, this returns the raw `Response` instead of driving
+ * the download itself — the caller must branch on 200/403/404/413 (no
+ * permission / empty catalog / export limit exceeded) before deciding
+ * whether to trigger a download or show an error.
  *
- * `organizationId` is optional (u1-export-org-confirmation): when present,
- * it is appended as `?organization_id=<id>` so a super_admin/org-admin
- * "viewing as" another organization exports that organization's catalog
- * instead of their own (gated server-side by `ORG_ADMIN_VIEW_ALL`, see
- * `260910-export-cross-org`). Omitted entirely when absent — same URL as
- * before for the caller's own organization.
+ * Per `contract-summary.md` Contract 2 (260911-cross-org-export-ux):
+ * - `organizationId` (optional): appended as `organization_id` so a
+ *   super_admin/org-admin "viewing as" another organization exports that
+ *   organization's catalog instead of their own (`ORG_ADMIN_VIEW_ALL`,
+ *   see `260910-export-cross-org`). Ignored server-side when
+ *   `allOrganizations` is `true`.
+ * - `allOrganizations` (optional, default `false`): when `true`, appended
+ *   as `all_organizations=true` — exports every organization's published
+ *   catalog in one response (requires `ORG_ADMIN_VIEW_ALL`/`super_admin`).
+ * - `baseFolder`/`facebookGroupsFallback` (required): always sent as
+ *   `base_folder`/`facebook_groups_fallback` — confirmed by the caller via
+ *   `window.prompt()` popups (FR8/FR9), required on every export.
+ *
+ * Breaking change of signature (from a single optional positional param
+ * to an options object) — the only call site (`catalog/page.tsx`) is
+ * updated in the same Bolt (u2-cross-org-export-ui).
  */
-export async function exportCatalogClientFormat(
-  organizationId?: string,
-): Promise<Response> {
-  const url = organizationId
-    ? `/api/v1/products/export-client-format.zip?organization_id=${encodeURIComponent(organizationId)}`
-    : "/api/v1/products/export-client-format.zip";
-  return fetch(url, {
-    credentials: "include",
-  });
+export async function exportCatalogClientFormat(params: {
+  organizationId?: string;
+  allOrganizations?: boolean;
+  baseFolder: string;
+  facebookGroupsFallback: string;
+}): Promise<Response> {
+  const queryParams = new URLSearchParams();
+  if (params.allOrganizations) {
+    queryParams.append("all_organizations", "true");
+  } else if (params.organizationId) {
+    queryParams.append("organization_id", params.organizationId);
+  }
+  queryParams.append("base_folder", params.baseFolder);
+  queryParams.append("facebook_groups_fallback", params.facebookGroupsFallback);
+  return fetch(
+    `/api/v1/products/export-client-format.zip?${queryParams.toString()}`,
+    {
+      credentials: "include",
+    },
+  );
 }
 
 // ─── Product Ownership ─────────────────────────────────────────────────────────

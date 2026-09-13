@@ -66,4 +66,20 @@ describe("organizationStore.viewingOrgId", () => {
 
     expect(useOrganizationStore.getState().viewingOrgId).toBeNull();
   });
+
+  it("sets viewingOrgId to the ALL_ORGS sentinel for an admin", () => {
+    setRole("admin");
+
+    useOrganizationStore.getState().setViewingOrgId("ALL_ORGS");
+
+    expect(useOrganizationStore.getState().viewingOrgId).toBe("ALL_ORGS");
+  });
+
+  it("is a no-op for the ALL_ORGS sentinel without ORG_ADMIN_VIEW_ALL (sales_user)", () => {
+    setRole("sales_user");
+
+    useOrganizationStore.getState().setViewingOrgId("ALL_ORGS");
+
+    expect(useOrganizationStore.getState().viewingOrgId).toBeNull();
+  });
 });

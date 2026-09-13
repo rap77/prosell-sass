@@ -622,6 +622,61 @@ flowchart TB
 
 Ambas opciones reutilizan el mismo endpoint ya gateado por permiso (`GET /api/v1/admin/organizations`, hook `useOrganizations()`) y el mismo shape mínimo de organización (`{id, name, ...}`, `OrganizationSchema`) — la decisión es de alcance/acoplamiento de estado, no de qué dato traer.
 
+**Nota de vigencia (scan `260911-cross-org-export-ux`)**: la bifurcación (a)/(b) descrita arriba ya se resolvió a favor de (a) — `catalog/page.tsx` cablea el export de un solo `viewingOrgId` a `exportCatalogClientFormat()`. Lo que sigue abierto es más angosto: filtrar además la GRILLA de productos por `viewingOrgId` (hoy solo lo usa el export, no la query de `useInfiniteProducts`), poblar el picker solo con organizaciones con productos, y agregar un modo "todas las organizaciones" que hoy no existe en absoluto. Ver diagrama 15 más abajo.
+
+### 15. Export "todas las organizaciones" + filtrado real del catálogo + formato CSV cliente correcto (nuevo, scan enfocado `260911-cross-org-export-ux`)
+
+Este intent retoma el diagrama 14 con la UI de single-org ya cableada (`260911-export-org-selector`, ver nota arriba) y ataca cuatro gaps restantes: (1) un modo "todas las organizaciones" en el export, (2) que el picker realmente filtre lo que `/catalog` muestra, (3) que el picker solo liste organizaciones con productos, y (4) que el CSV exportado tenga los valores reales en vez de columnas vacías/incorrectas.
+
+```mermaid
+flowchart TB
+    subgraph "Picker — gaps de listado (frontend)"
+        Picker["OrganizationPicker.tsx<br/>label: 'Todos los concesionarios'<br/>→ debe decir 'Todas las organizaciones'"]
+        UseOrgs["useOrganizations()<br/>YA devuelve product_count por org<br/>(OrganizationSchema, sin cambio de backend)"]
+        Filter["⚠️ FALTA: .filter(o => product_count > 0)<br/>hoy lista las ~29 sin filtrar"]
+        Picker --> UseOrgs --> Filter
+    end
+
+    subgraph "Grilla de catálogo — gap de filtrado (frontend)"
+        ViewingOrg["viewingOrgId (organizationStore)"]
+        ApiFilters["apiFilters → useInfiniteProducts()<br/>⚠️ SIN organization_id hoy"]
+        ListProducts["Backend: list_products()<br/>YA acepta organization_id<br/>+ _check_org_scope_permission()"]
+        ViewingOrg -.->|"leído solo para el banner de export,<br/>NUNCA para la query de productos"| ApiFilters
+        ApiFilters -.->|"fix: agregar organization_id<br/>a ProductFilters"| ListProducts
+    end
+
+    subgraph "Export 'todas las organizaciones' — gap de orquestación (backend)"
+        UseCase["ExportCatalogClientFormatUseCase.execute(tenant_id: UUID)<br/>⚠️ no-opcional, resuelve org_code UNA VEZ"]
+        RepoAll["ProductRepository.get_all(tenant_id=None)<br/>✅ YA soporta cross-tenant"]
+        PerProduct["⚠️ FALTA: resolver org_code POR PRODUCTO<br/>(no reusar el de la primera org resuelta)"]
+        Cap["EXPORT_MAX_PRODUCTS = 500<br/>⚠️ hoy es cap por-tenant, reconsiderar como cap global"]
+        UseCase -.->|"tenant_id=None ya posible en el repo"| RepoAll
+        RepoAll --> PerProduct
+        UseCase --> Cap
+    end
+
+    subgraph "Mapeo de columnas CSV — bug de valor, no solo de clave (backend)"
+        Attrs["Product.attributes dict"]
+        RowBuilder["build_client_format_row()<br/>csv_export.py:161-193"]
+        BadCols["8 columnas afectadas:<br/>VIN/body_style = rename puro<br/>clean_title/groups = mapeo de VALOR inverso<br/>state = clave inexistente (usar title_state)<br/>category/type = derivar de category_id (árbol N niveles)<br/>location = reconstrucción lossy (código de estado, no nombre)"]
+        Attrs --> RowBuilder --> BadCols
+    end
+
+    style Filter fill:#ffebee
+    style ApiFilters fill:#ffebee
+    style PerProduct fill:#ffebee
+    style Cap fill:#fff3cd
+    style BadCols fill:#ffebee
+```
+
+**Hallazgos clave** (detalle completo en `code-quality-assessment.md` hallazgos #77-#86, `api-documentation.md` y `dependencies.md`):
+
+- El picker y el filtrado de catálogo son fixes puramente frontend — el backend de `list_products` y el `product_count` del listado de organizaciones ya existen, sin cambio de contrato.
+- "Exportar todas las organizaciones" es alcanzable sin tocar la capa de repositorio (`get_all(tenant_id=None)` ya soportado) — el trabajo real es en `ExportCatalogClientFormatUseCase` (resolver `org_code` por producto, no una vez) y en reconsiderar `EXPORT_MAX_PRODUCTS` como límite global.
+- El endpoint de export ya tiene una convención documentada de que omitir `organization_id` significa "mi propia organización" (asimétrico respecto a `list_products`, donde significa "todas") — el diseño de un sentinel nuevo "todas" debe decidir explícitamente su relación con esa asimetría ya existente, no ignorarla.
+- El mapeo de columnas CSV tiene 5 de 8 columnas que requieren transformación de VALOR (no solo rename de clave): `clean_title` necesita mapeo inverso `"clean"→"1"`/`"rebuilt"→"0"`, `groups` necesita `",".join()` sobre una lista, `category`/`type` requieren decidir qué nivel del árbol de 3-4 niveles mapea a cada columna plana, y `location` es lossy sin agregar una tabla de código→nombre completo de estado.
+- Los popups nuevos de `path`/`groups` (ítems 6 y 7 del intent) tienen un patrón de UX ya establecido en el mismo archivo (`window.prompt` con valor por defecto sugerido, `null` = cancelar, usado hoy por `handleConfirmExportSummary`) — no hay que inventar un patrón de interacción nuevo.
+
 ## Key Design Decisions
 
 - **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
@@ -639,6 +694,8 @@ Ambas opciones reutilizan el mismo endpoint ya gateado por permiso (`GET /api/v1
 - **Rewrite BFF tipo `fallback` (`next.config.ts`) + archivos de ruta mock coexistiendo con proxies reales** — decisión de arquitectura de test/desarrollo que tiene una consecuencia colateral no buscada: cuando un archivo de ruta mock (p. ej. `app/api/v1/teams/route.ts`) existe para un endpoint, siempre gana sobre el rewrite hacia el backend real, sin importar si el mock quedó desalineado del contrato real. Esto puede ocultar mismatches de contrato de wire indefinidamente (confirmado con `teamApi.create` — ver `code-quality-assessment.md` hallazgo #45) hasta que algo fuerza el camino real (staging, un flujo sin mock como `addMember`/`acceptInvitation`, o remover el mock).
 - **`OrganizationPicker`/`organizationStore.viewingOrgId` como único mecanismo cross-org de UI, hoy sin consumidores de datos** (nuevo, scan `260911-export-org-selector`) — decisión de diseño original (Subsystem D) de centralizar la selección de "ver como otra organización" en un estado global del `Header`, con doble guard (`isAdmin` en UI + no-op en el store si falta `ORG_ADMIN_VIEW_ALL`). Nunca se completó el lado de consumo: ningún hook de datos de la app lee `viewingOrgId` hoy. El export de catálogo es la primera funcionalidad candidata a conectarse a él (o a bifurcar hacia un selector local propio) — ver § Interaction Diagrams diagrama 14.
 - **Tres patrones de acceso cross-org coexistiendo sin unificar en `product_router.py`** (`_check_org_scope_permission()` + `organization_id`; `is_org_admin` inline single-resource; `has_role("super_admin")` literal en batch actions) — decisión implícita de crecimiento orgánico del router, no un diseño deliberado desde el inicio. El endpoint de export de catálogo (intent `260903-catalog-client-export`) quedó fuera de los tres, resolviendo `tenant_id` exclusivamente del JWT sin ningún camino cross-org — gap de scope confirmado, a resolver en el intent `260910-export-cross-org` eligiendo explícitamente uno de los tres patrones existentes en vez de inventar un cuarto. Ver § Interaction Diagrams diagrama 13.
+- **Omitir `organization_id` en el endpoint de export significa "mi propia organización", no "todas"** (nuevo, scan `260911-cross-org-export-ux`) — convención documentada explícitamente (docstring L763) y asimétrica respecto a `list_products`, donde omitirlo significa navegación GLOBAL para un admin. Decisión de scope deliberada del diseño original, no un descuido — cualquier sentinel nuevo "exportar todas las organizaciones" debe decidir su relación con esta asimetría ya existente en vez de copiar ciegamente la convención del endpoint hermano. Ver § Interaction Diagrams diagrama 15.
+- **La capa de repositorio ya soporta cross-tenant (`tenant_id=None`), pero el use case de export no** — decisión de diseño pendiente sobre cómo propagar esa capacidad ya existente (`ProductRepository.get_all()`/`count()`) a `ExportCatalogClientFormatUseCase`, que hoy resuelve `org_code` una sola vez por ejecución en vez de por producto. Ver § Interaction Diagrams diagrama 15.
 
 ## Improvement Opportunities
 
@@ -663,4 +720,9 @@ Ambas opciones reutilizan el mismo endpoint ya gateado por permiso (`GET /api/v1
 - Corregir el bug de `build_image_folder_name()` en `csv_export.py`: lee `attrs.get("color")` en vez de `attributes["exterior_color"]`, perdiendo silenciosamente el segmento COLOR del nombre de carpeta para todo vehículo real — fix mecánico y acotado, sin ambigüedad de diseño (scan `260903-catalog-client-export`).
 - Agregar un método de descarga (`get_object`/equivalente) a `IDOSpacesService` (hoy solo `upload`/`presign`/`delete`/`exists`), o resolver el ensamblado del ZIP de imágenes vía `httpx` contra las `image_urls` públicas ya guardadas en `Product` (sin dependencia nueva) — decisión de diseño explícita pendiente para Requirements Analysis/Functional Design (scan `260903-catalog-client-export`).
 - Extender `GET /api/v1/products/export-client-format.zip` para respetar `ORG_ADMIN_VIEW_ALL`/`super_admin`, replicando el patrón de `_check_org_scope_permission()` + parámetro `organization_id` ya usado por `list_products` (el más cercano en semántica), actualizar el docstring del endpoint que hoy afirma la restricción single-tenant como diseño intencional, y revisar `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (hoy codifica el gap como comportamiento correcto) — decisión de diseño pendiente para Functional Design (scan `260910-export-cross-org`, ver § Interaction Diagrams diagrama 13). **Ya implementado** — confirmado en el intent `260910-export-cross-org` (backend), ver `code-quality-assessment.md` para el detalle de verificación en vivo.
-- Cablear la UI de `/catalog` al parámetro `organization_id` que el backend ya acepta desde `260910-export-cross-org` — elegir explícitamente entre reutilizar `organizationStore.viewingOrgId`/`OrganizationPicker` (opción a) o un selector local acotado al flujo de export (opción b), y hacer que `exportCatalogClientFormat()` mande el `organization_id` elegido. Decisión de diseño pendiente para Requirements Analysis/Functional Design del intent `260911-export-org-selector` (ver § Interaction Diagrams diagrama 14).
+- Cablear la UI de `/catalog` al parámetro `organization_id` que el backend ya acepta desde `260910-export-cross-org` — elegir explícitamente entre reutilizar `organizationStore.viewingOrgId`/`OrganizationPicker` (opción a) o un selector local acotado al flujo de export (opción b), y hacer que `exportCatalogClientFormat()` mande el `organization_id` elegido. Decisión de diseño pendiente para Requirements Analysis/Functional Design del intent `260911-export-org-selector` (ver § Interaction Diagrams diagrama 14). **Ya implementado** — el export de un solo `viewingOrgId` ya está cableado; ver `260911-cross-org-export-ux` abajo para los gaps restantes (filtrado de grilla, "todas las organizaciones", listado por `product_count`).
+- Renombrar el label `"Todos los concesionarios"` → `"Todas las organizaciones"` en `OrganizationPicker.tsx` (2 ocurrencias, líneas 35 y 58) — fix mecánico, cero ambigüedad (scan `260911-cross-org-export-ux`).
+- Filtrar el listado del picker a solo organizaciones con `product_count > 0` — puramente client-side, el backend ya expone `product_count` en `GET /api/v1/admin/organizations` (scan `260911-cross-org-export-ux`, ver `dependencies.md`).
+- Agregar `organization_id` a `ProductFilters` y pasar `viewingOrgId` a `useInfiniteProducts()` en `catalog/page.tsx`, para que el picker realmente filtre la grilla mostrada — el backend (`list_products`) ya acepta y enforcea el parámetro; el gap es 100% frontend (scan `260911-cross-org-export-ux`).
+- Extender `ExportCatalogClientFormatUseCase` para soportar `tenant_id: UUID | None`, resolviendo `org_code` por producto (no una vez por ejecución) para habilitar el modo "todas las organizaciones" — la capa de repositorio ya soporta `tenant_id=None`; reconsiderar `EXPORT_MAX_PRODUCTS` como cap global en el mismo cambio (scan `260911-cross-org-export-ux`, ver diagrama 15).
+- Corregir el mapeo de columnas del CSV cliente (`build_client_format_row()`): renombrar claves puras (`VIN`→`vin`, `body_style`→`body_type`), agregar mapeo de VALOR inverso para `clean_title` (`"clean"→"1"`/`"rebuilt"→"0"`) y `groups` (`",".join()` sobre la lista), resolver `category`/`type` desde `category_id` (decidiendo qué nivel del árbol de 3-4 niveles corresponde a cada columna plana — Requirements Analysis), y decidir el tratamiento de `location`/`state` (lossy sin tabla de código→nombre completo) — scan `260911-cross-org-export-ux`, ver `code-quality-assessment.md` hallazgo #80-82.

@@ -10,6 +10,13 @@ Also covers the cross-org export permission fix (intent
 `organization_id` to export a DIFFERENT organization's catalog, a caller
 without that permission is rejected with 403, and every cross-org export
 is audit-logged.
+
+Also covers the "all organizations" export mode (intent
+260911-cross-org-export-ux, u1-cross-org-export-api): `base_folder` and
+`facebook_groups_fallback` are now required in EVERY mode (FR8.1/FR9.1),
+so every pre-existing test below now sends them; `all_organizations=true`
+requires `ORG_ADMIN_VIEW_ALL` (BR2.1) and produces a distinct
+`catalogo_TODAS_*.zip` filename (BR2.8).
 """
 
 import zipfile
@@ -41,6 +48,13 @@ from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
 
+# FR8.1/FR9.1 — required in every mode. Every call below that doesn't
+# test their absence merges this in.
+_REQUIRED_EXPORT_PARAMS = {
+    "base_folder": "orgs/",
+    "facebook_groups_fallback": "General",
+}
+
 
 @pytest_asyncio.fixture
 async def shared_session() -> AsyncGenerator[AsyncSession]:
@@ -70,13 +84,49 @@ async def _create_org(session: AsyncSession, *, code: str | None = "MF") -> Orga
     return org
 
 
-async def _create_category(session: AsyncSession, tenant_id: UUID) -> CategoryModel:
+async def _create_vertical(session: AsyncSession) -> CategoryModel:
+    """The root "vehiculos-y-transporte" vertical (BR1.3) that every leaf
+    category in this file resolves up to via `parent_id`. Its `slug` must
+    match `CATEGORY_TRANSLATION_TABLE` exactly (`category_translation.py`)
+    — `tenant_id=None` (a real root-vertical row is a global template per
+    `category_model.py`'s own docstring, and `categories.tenant_id` has a
+    FK to `organizations`, so an arbitrary UUID here would violate it).
+    `slug` is globally UNIQUE, so a test that needs more than one leaf
+    category must create this once and share it (see `_create_category`'s
+    `vertical` param).
+    """
+    vertical = CategoryModel(
+        id=uuid4(),
+        tenant_id=None,
+        name="Vehiculos y Transporte",
+        slug="vehiculos-y-transporte",
+        level=0,
+        field_config=[],
+    )
+    session.add(vertical)
+    await session.flush()
+    return vertical
+
+
+async def _create_category(
+    session: AsyncSession, tenant_id: UUID, vertical: CategoryModel | None = None
+) -> CategoryModel:
+    """A leaf category (level=1) under the shared vehicles vertical
+    (BR1.3) — a product's `category_id` always points at a leaf like this
+    one, never at the vertical itself. Without a resolvable vertical, the
+    product is silently excluded from the export (BR1.7), which would
+    empty every CSV assertion in this file. Pass an already-created
+    `vertical` when a test needs more than one leaf category.
+    """
+    if vertical is None:
+        vertical = await _create_vertical(session)
     cat = CategoryModel(
         id=uuid4(),
         tenant_id=tenant_id,
+        parent_id=vertical.id,
         name=f"Test Category {uuid4().hex[:6]}",
         slug=f"test-cat-{uuid4().hex[:8]}",
-        level=0,
+        level=1,
         field_config=[],
     )
     session.add(cat)
@@ -204,7 +254,9 @@ class TestExportClientFormatContract:
         _authenticate_as(_auth_user(org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/api/v1/products/export-client-format.zip")
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/zip"
@@ -226,7 +278,9 @@ class TestExportClientFormatStatusCodes:
         _authenticate_as(_auth_user(org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/api/v1/products/export-client-format.zip")
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
 
         assert response.status_code == 404
 
@@ -244,7 +298,9 @@ class TestExportClientFormatStatusCodes:
         _authenticate_as(_auth_user(org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/api/v1/products/export-client-format.zip")
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
 
         # BR1.1 — only `published` products count; a draft-only org is
         # indistinguishable from an empty catalog for this endpoint.
@@ -265,7 +321,9 @@ class TestExportClientFormatStatusCodes:
         _authenticate_as(_auth_user(org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/api/v1/products/export-client-format.zip")
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
 
         assert response.status_code == 413
 
@@ -280,8 +338,9 @@ class TestExportClientFormatTenantIsolation:
     ) -> None:
         org_a = await _create_org(shared_session, code="AA")
         org_b = await _create_org(shared_session, code="BB")
-        category_a = await _create_category(shared_session, org_a.tenant_id)
-        category_b = await _create_category(shared_session, org_b.tenant_id)
+        vertical = await _create_vertical(shared_session)
+        category_a = await _create_category(shared_session, org_a.tenant_id, vertical)
+        category_b = await _create_category(shared_session, org_b.tenant_id, vertical)
 
         product_a = _make_product(
             tenant_id=org_a.tenant_id,
@@ -302,7 +361,9 @@ class TestExportClientFormatTenantIsolation:
         _authenticate_as(_auth_user(org_a))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/api/v1/products/export-client-format.zip")
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
 
         assert response.status_code == 200
         with zipfile.ZipFile(BytesIO(response.content)) as archive:
@@ -342,7 +403,7 @@ class TestExportClientFormatCrossOrgPermission:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
                 "/api/v1/products/export-client-format.zip",
-                params={"organization_id": str(target_org.tenant_id)},
+                params={**_REQUIRED_EXPORT_PARAMS, "organization_id": str(target_org.tenant_id)},
             )
 
         assert response.status_code == 200
@@ -361,7 +422,7 @@ class TestExportClientFormatCrossOrgPermission:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
                 "/api/v1/products/export-client-format.zip",
-                params={"organization_id": str(other_org.tenant_id)},
+                params={**_REQUIRED_EXPORT_PARAMS, "organization_id": str(other_org.tenant_id)},
             )
 
         assert response.status_code == 403
@@ -379,7 +440,7 @@ class TestExportClientFormatCrossOrgPermission:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
                 "/api/v1/products/export-client-format.zip",
-                params={"organization_id": str(uuid4())},
+                params={**_REQUIRED_EXPORT_PARAMS, "organization_id": str(uuid4())},
             )
 
         assert response.status_code == 404
@@ -407,7 +468,10 @@ class TestExportClientFormatCrossOrgPermission:
             ) as client:
                 response = await client.get(
                     "/api/v1/products/export-client-format.zip",
-                    params={"organization_id": str(target_org.tenant_id)},
+                    params={
+                        **_REQUIRED_EXPORT_PARAMS,
+                        "organization_id": str(target_org.tenant_id),
+                    },
                 )
 
         assert response.status_code == 200
@@ -432,7 +496,103 @@ class TestExportClientFormatCrossOrgPermission:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
-                response = await client.get("/api/v1/products/export-client-format.zip")
+                response = await client.get(
+                    "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+                )
 
         assert response.status_code == 200
         assert "Cross-org catalog export" not in caplog.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("setup_override")
+class TestExportClientFormatAllOrganizations:
+    """u1-cross-org-export-api: `all_organizations=true` mode (BR2.1, BR2.8,
+    team.md piso mínimo punto 2b — defense in depth for the new sentinel).
+    """
+
+    async def test_non_admin_with_all_organizations_returns_403(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """BR2.1 — rejected even when invoked directly (not through the UI)
+        with otherwise-valid required parameters.
+        """
+        org = await _create_org(shared_session)
+        _authenticate_as(_non_admin_user(org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={**_REQUIRED_EXPORT_PARAMS, "all_organizations": "true"},
+            )
+
+        assert response.status_code == 403
+
+    async def test_admin_with_all_organizations_returns_zip_named_todas(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """BR2.8 — the filename distinguishes the ALL_ORGS export from any
+        single-organization export.
+        """
+        org_a = await _create_org(shared_session, code="AA")
+        org_b = await _create_org(shared_session, code="BB")
+        vertical = await _create_vertical(shared_session)
+        category_a = await _create_category(shared_session, org_a.tenant_id, vertical)
+        category_b = await _create_category(shared_session, org_b.tenant_id, vertical)
+        shared_session.add(
+            _make_product(
+                tenant_id=org_a.tenant_id, organization_id=org_a.id, category_id=category_a.id
+            )
+        )
+        shared_session.add(
+            _make_product(
+                tenant_id=org_b.tenant_id, organization_id=org_b.id, category_id=category_b.id
+            )
+        )
+        await shared_session.flush()
+        _authenticate_as(_auth_user(org_a))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={**_REQUIRED_EXPORT_PARAMS, "all_organizations": "true"},
+            )
+
+        assert response.status_code == 200
+        content_disposition = response.headers["content-disposition"]
+        assert "catalogo_TODAS_" in content_disposition
+        assert content_disposition.endswith('.zip"')
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("setup_override")
+class TestExportClientFormatRequiredParams:
+    """FR8.1/FR9.1 — `base_folder`/`facebook_groups_fallback` are required
+    in EVERY mode, not only `all_organizations=true`.
+    """
+
+    async def test_missing_base_folder_returns_422(self, shared_session: AsyncSession) -> None:
+        org = await _create_org(shared_session)
+        _authenticate_as(_auth_user(org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={"facebook_groups_fallback": "General"},
+            )
+
+        assert response.status_code == 422
+
+    async def test_missing_facebook_groups_fallback_returns_422(
+        self, shared_session: AsyncSession
+    ) -> None:
+        org = await _create_org(shared_session)
+        _authenticate_as(_auth_user(org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params={"base_folder": "orgs/"},
+            )
+
+        assert response.status_code == 422

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2 } from "lucide-react";
+import { Building2, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,8 +31,18 @@ export function OrganizationPicker() {
     return null;
   }
 
-  const currentOrganization = organizations.find((d) => d.id === viewingOrgId);
-  const displayName = currentOrganization?.name ?? "Todos los concesionarios";
+  // Only organizations with published products are worth switching to (US1.2).
+  const visibleOrganizations = organizations.filter(
+    (organization) => (organization.product_count ?? 0) > 0,
+  );
+
+  const currentOrganization = visibleOrganizations.find(
+    (organization) => organization.id === viewingOrgId,
+  );
+  const displayName =
+    viewingOrgId === "ALL_ORGS"
+      ? "Todas las organizaciones"
+      : (currentOrganization?.name ?? "Mi organización");
 
   return (
     <DropdownMenu>
@@ -41,24 +51,32 @@ export function OrganizationPicker() {
           variant="outline"
           className="gap-2"
           disabled={isLoading}
-          aria-label={`Ver como concesionario. Actual: ${displayName}`}
+          aria-label={`Ver como organización. Actual: ${displayName}`}
         >
           <Building2 className="h-4 w-4" />
           <span className="hidden md:inline">{displayName}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Concesionarios</DropdownMenuLabel>
+        <DropdownMenuLabel>Organizaciones</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => setViewingOrgId(null)}
           className={viewingOrgId === null ? "bg-accent" : ""}
         >
           <Building2 className="mr-2 h-4 w-4" />
-          <span>Todos los concesionarios</span>
+          <span>Mi organización</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {organizations.map((organization) => (
+        <DropdownMenuItem
+          onClick={() => setViewingOrgId("ALL_ORGS")}
+          className={viewingOrgId === "ALL_ORGS" ? "bg-accent" : ""}
+        >
+          <Layers className="mr-2 h-4 w-4" />
+          <span>Todas las organizaciones</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {visibleOrganizations.map((organization) => (
           <DropdownMenuItem
             key={organization.id}
             onClick={() => setViewingOrgId(organization.id)}

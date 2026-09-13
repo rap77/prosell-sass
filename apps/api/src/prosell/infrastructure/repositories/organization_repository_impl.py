@@ -185,6 +185,15 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         result = await self.session.execute(stmt)
         return {row[0].upper() for row in result.all() if row[0]}
 
+    async def get_by_ids(self, org_ids: list[UUID]) -> list[Organization]:
+        """Get organizations by ID set, one batch query (`WHERE id IN (...)`)."""
+        if not org_ids:
+            return []
+        stmt = select(OrganizationModel).where(OrganizationModel.id.in_(org_ids))
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
     def _to_entity(self, model: OrganizationModel) -> Organization:
         """Convert ORM model to domain entity."""
         return Organization.model_validate(model, from_attributes=True)

@@ -1,0 +1,27 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-cross-org-export-api",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "observability-requirements.md (evento 'Export completado, modo all_organizations=true', campo scope=ALL_ORGS); security-requirements.md (radio de explosión, BR2.5)"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "security-requirements.md NFR2.4 (autorización ORG_ADMIN_VIEW_ALL para all_organizations=true, BR2.1)"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "scalability-requirements.md NFR3.2 (cap global de 500 productos, BR2.4); reliability-requirements.md NFR-REL-3 (riesgo residual de memoria, formalización explícita)"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "NFR4 es una postura de piso mínimo de test (methodology), no un atributo de calidad arquitectónico — se enforce en Build and Test (Construction), no en artefactos de diseño NFR. Mismo criterio ya afirmado en 260903-catalog-client-export."
+    }
+  ]
+}

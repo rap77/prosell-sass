@@ -1,0 +1,122 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-cross-org-export-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.2.1",
+    "AC3.1.1",
+    "AC3.2.1",
+    "AC3.3.1",
+    "AC5.1.1",
+    "AC8.1.1",
+    "AC8.1.2",
+    "AC9.1.1",
+    "AC9.1.2",
+    "AC9.1.3",
+    "NFR-PERF-UI-1",
+    "NFR-PERF-UI-2",
+    "NFR-PERF-UI-3",
+    "NFR-PERF-UI-4"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "src/components/admin/OrganizationPicker.tsx (ítem \"Todas las organizaciones\", ícono Layers, solo si isAdmin) — src/components/admin/OrganizationPicker.test.tsx"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "OrganizationPicker.tsx (visibleOrganizations filtra product_count > 0) — OrganizationPicker.test.tsx (organización con product_count: 0 desaparece)"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "OrganizationPicker.tsx (?? 0 cubre product_count ausente) — OrganizationPicker.test.tsx (organización sin product_count desaparece)"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "OrganizationPicker.tsx (ítem \"Todas las organizaciones\" condicionado a isAdmin) — OrganizationPicker.test.tsx"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "N/A",
+      "target": "Responsabilidad exclusiva de u1-cross-org-export-api (rechazo de permiso a nivel de use case/endpoint, defensa en profundidad) — ya cubierto en construction/u1-cross-org-export-api/code-generation/traceability.json (AC4.4.1/BR2.1). U2 solo oculta la opción en la UI (AC2.1.1)."
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "app/(seller)/catalog/page.tsx (apiFilters.organization_id = viewingOrgId ?? organizationId ?? undefined, NUNCA omitido en el caso default) — tests/components/catalog/CatalogPage.test.tsx::\"CatalogPage — cross-org grid filtering + popups nuevos (u2)\" › \"viewingOrgId null → organization_id sent to useInfiniteProducts is the viewer's own org (never omitted)\""
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "catalog/page.tsx (apiFilters.organization_id per los 3 casos de viewingOrgId) + lib/api/products.ts (useInfiniteProducts agrega organization_id al query) — CatalogPage.test.tsx › 3 tests de los 3 estados (null/uuid/ALL_ORGS) + \"switching the picker's organization... triggers a refetch\""
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "OK",
+      "target": "stores/organizationStore.ts (viewingOrgId: string | \"ALL_ORGS\" | null) + OrganizationPicker.tsx (ítem ALL_ORGS) + catalog/page.tsx (rama ALL_ORGS → organization_id undefined) — tests/unit/stores/organizationStoreViewingOrgId.test.ts + OrganizationPicker.test.tsx + CatalogPage.test.tsx (test 'ALL_ORGS' → organization_id omitido)"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "OrganizationPicker.tsx (ítem ALL_ORGS ausente sin isAdmin) + organizationStore.ts (setViewingOrgId no-op sin permiso, comportamiento preexistente extendido al sentinel) — OrganizationPicker.test.tsx + organizationStoreViewingOrgId.test.ts"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "catalog/page.tsx (resolveExportOrganization → {kind:\"all-orgs\", count: N}, N = organizaciones con product_count > 0 del mismo useOrganizations() ya cargado) — CatalogPage.test.tsx › \"banner shows the count of organizations with published catalog when viewingOrgId = 'ALL_ORGS'\""
+    },
+    {
+      "id": "AC8.1.1",
+      "status": "OK",
+      "target": "catalog/page.tsx (handleConfirmExportSummary, 2do popup: window.prompt carpeta base) — CatalogPage.test.tsx › \"confirming all 3 popups sends base_folder and facebook_groups_fallback through to the export call\""
+    },
+    {
+      "id": "AC8.1.2",
+      "status": "OK",
+      "target": "catalog/page.tsx (baseFolder === null → return, aborta el flujo) — CatalogPage.test.tsx › \"cancelling the base-folder popup (2nd prompt) aborts the export\""
+    },
+    {
+      "id": "AC9.1.1",
+      "status": "OK",
+      "target": "catalog/page.tsx (handleConfirmExportSummary, 3er popup: window.prompt grupos de Facebook) — CatalogPage.test.tsx › \"confirming all 3 popups sends base_folder and facebook_groups_fallback through to the export call\""
+    },
+    {
+      "id": "AC9.1.2",
+      "status": "OK",
+      "target": "catalog/page.tsx (facebookGroupsFallback === null → return, aborta el flujo) — CatalogPage.test.tsx › \"cancelling the facebook-groups popup (3rd prompt) aborts the export\""
+    },
+    {
+      "id": "AC9.1.3",
+      "status": "OK",
+      "target": "catalog/page.tsx (cancelar el 3er popup aborta aunque el 2do ya se haya confirmado con un valor no-null) — CatalogPage.test.tsx › \"cancelling the facebook-groups popup (3rd prompt) aborts the export even after the base folder was confirmed\""
+    },
+    {
+      "id": "NFR-PERF-UI-1",
+      "status": "OK",
+      "target": "catalog/page.tsx (ExportSummaryBanner deriva su variante de organization.kind, estado ya calculado en memoria, sin request nueva) — CatalogPage.test.tsx (variantes own/cross-org/loading/all-orgs, todas ya cubiertas)"
+    },
+    {
+      "id": "NFR-PERF-UI-2",
+      "status": "OK",
+      "target": "catalog/page.tsx (setIsExportingClientFormat(true) síncrono al inicio de handleExportClientFormat, ANTES del await; banner permanece montado en su variante \"exporting\" — Workflow 2 paso 4/refined-mockups Q2, gap cerrado en este dispatch: el banner ya no se desmontaba antes de que el fetch real empezara) — CatalogPage.test.tsx › \"confirming the banner and the prompt triggers the export and guards against a second click while in flight\" (asserts export-summary-state-exporting-single)"
+    },
+    {
+      "id": "NFR-PERF-UI-3",
+      "status": "OK",
+      "target": "catalog/page.tsx (handleExportClientFormat: toast.error on-demand para 403/404/413/fallo de red, cada uno con mensaje específico vía extractErrorMessage()) — CatalogPage.test.tsx › tests de 404/413/403/network failure (403 agregado en este dispatch para cerrar el gap de cobertura de NFR-PERF-UI-3)"
+    },
+    {
+      "id": "NFR-PERF-UI-4",
+      "status": "OK",
+      "target": "OrganizationPicker.tsx + catalog/page.tsx (allOrganizationsCount): filtro client-side product_count > 0 sobre el mismo listado ya cargado por useOrganizations(), sin request nueva — OrganizationPicker.test.tsx + CatalogPage.test.tsx (\"does not fire a new fetch when opening the summary banner\", conteo del banner \"todas\")"
+    }
+  ]
+}

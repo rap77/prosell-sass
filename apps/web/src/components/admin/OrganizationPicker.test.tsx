@@ -27,8 +27,8 @@ vi.mock("@/stores/organizationStore", () => ({
 }));
 
 const mockOrganizations = [
-  { id: "organization-1", name: "Organization One" },
-  { id: "organization-2", name: "Organization Two" },
+  { id: "organization-1", name: "Organization One", product_count: 3 },
+  { id: "organization-2", name: "Organization Two", product_count: 5 },
 ];
 
 describe("OrganizationPicker", () => {
@@ -74,5 +74,97 @@ describe("OrganizationPicker", () => {
     await waitFor(() => {
       expect(mockSetViewingOrgId).toHaveBeenCalledWith("organization-2");
     });
+  });
+
+  it('shows the "Todas las organizaciones" option for an admin and calls setViewingOrgId("ALL_ORGS") on click', async () => {
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+
+    render(<OrganizationPicker />);
+
+    await user.click(screen.getByRole("button"));
+
+    const option = await screen.findByText("Todas las organizaciones");
+    await user.click(option);
+
+    await waitFor(() => {
+      expect(mockSetViewingOrgId).toHaveBeenCalledWith("ALL_ORGS");
+    });
+  });
+
+  it("hides an organization with product_count: 0 from the list", async () => {
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseOrganizations.mockReturnValue({
+      data: [
+        ...mockOrganizations,
+        { id: "organization-empty", name: "Empty Org", product_count: 0 },
+      ],
+      isLoading: false,
+    });
+
+    render(<OrganizationPicker />);
+
+    await user.click(screen.getByRole("button"));
+
+    expect(await screen.findByText("Organization Two")).toBeInTheDocument();
+    expect(screen.queryByText("Empty Org")).not.toBeInTheDocument();
+  });
+
+  it("hides an organization with product_count absent from the list", async () => {
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseOrganizations.mockReturnValue({
+      data: [
+        ...mockOrganizations,
+        { id: "organization-no-count", name: "No Count Org" },
+      ],
+      isLoading: false,
+    });
+
+    render(<OrganizationPicker />);
+
+    await user.click(screen.getByRole("button"));
+
+    expect(await screen.findByText("Organization Two")).toBeInTheDocument();
+    expect(screen.queryByText("No Count Org")).not.toBeInTheDocument();
+  });
+
+  it('shows "Mi organización" as the trigger label when viewingOrgId is null', () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseOrganizationStore.mockReturnValue({
+      viewingOrgId: null,
+      setViewingOrgId: mockSetViewingOrgId,
+    });
+
+    render(<OrganizationPicker />);
+
+    expect(screen.getByRole("button")).toHaveTextContent("Mi organización");
+  });
+
+  it('shows "Todas las organizaciones" as the trigger label when viewingOrgId is "ALL_ORGS"', () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseOrganizationStore.mockReturnValue({
+      viewingOrgId: "ALL_ORGS",
+      setViewingOrgId: mockSetViewingOrgId,
+    });
+
+    render(<OrganizationPicker />);
+
+    expect(screen.getByRole("button")).toHaveTextContent(
+      "Todas las organizaciones",
+    );
+  });
+
+  it("shows the organization name as the trigger label when viewingOrgId is a specific organization", () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseOrganizationStore.mockReturnValue({
+      viewingOrgId: "organization-2",
+      setViewingOrgId: mockSetViewingOrgId,
+    });
+
+    render(<OrganizationPicker />);
+
+    expect(screen.getByRole("button")).toHaveTextContent("Organization Two");
   });
 });

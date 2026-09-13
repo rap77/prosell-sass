@@ -263,7 +263,10 @@ def _merged_image_url_candidates(product: Product) -> list[str]:
 
 
 def _check_org_scope_permission(
-    current_user: User, organization_id: UUID | None
+    current_user: User,
+    organization_id: UUID | None,
+    *,
+    all_organizations: bool = False,
 ) -> tuple[UUID, bool]:
     """Validate organization-scoping authorization shared by every product list
     endpoint that accepts `organization_id`.
@@ -276,11 +279,22 @@ def _check_org_scope_permission(
     because they don't all mean the same thing by "no organization_id given"
     (e.g. `list_products` defaults to a global browse for admins,
     `get_featured_products` defaults to the caller's own tenant).
+
+    `all_organizations` (BR2.1/NFR2.4, u1-cross-org-export-api) gates the
+    "every organization at once" mode some callers support — same
+    underlying permission as the point cross-org case, checked here
+    regardless of `organization_id` (which is ignored by the caller when
+    `all_organizations=True`, so its own value never bypasses this).
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    if all_organizations and not can_view_all_orgs:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot export all organizations without ORG_ADMIN_VIEW_ALL permission",
+        )
     if (
         organization_id is not None
         and not can_view_all_orgs
@@ -737,26 +751,45 @@ async def export_catalog_client_format(
     current_user: CurrentUser,
     db: DbSession,
     spaces: SpacesService,
+    base_folder: str,
+    facebook_groups_fallback: str,
     organization_id: UUID | None = None,
+    all_organizations: bool = False,
 ) -> StreamingResponse:
-    """Export an organization's `published` catalog in the client
-    CSV+ZIP format (u1-catalog-export-api).
+    """Export the catalog in the client CSV+ZIP format (u1-catalog-export-api,
+    u1-cross-org-export-api).
 
     A single combined ZIP (BR1.5): the client-format CSV (24 columns,
     ';' separator, identical to docs/data39.csv, including `id`) at its
     root, plus one folder per vehicle with its available images.
 
-    Without `organization_id`, exports the caller's own organization
-    (`current_user.tenant_id`), same as always. A caller with
-    `ORG_ADMIN_VIEW_ALL` (e.g. `super_admin`) may pass `organization_id`
-    to export a DIFFERENT organization's catalog instead — same
-    cross-org permission gate as `GET /products` (`_check_org_scope_permission`).
-    Without that permission, passing another organization's `organization_id`
-    is rejected with 403. Every cross-org export is logged for audit.
+    `base_folder` and `facebook_groups_fallback` are REQUIRED in every
+    mode (FR8.1/FR9.1) — they complete the `path`/`groups` columns
+    (BR2.6/BR2.7).
+
+    Without `organization_id` and without `all_organizations`, exports
+    the caller's own organization (`current_user.tenant_id`), same as
+    always (BR2.2). A caller with `ORG_ADMIN_VIEW_ALL` (e.g.
+    `super_admin`) may pass `organization_id` to export a DIFFERENT
+    organization's catalog instead — same cross-org permission gate as
+    `GET /products` (`_check_org_scope_permission`). Without that
+    permission, passing another organization's `organization_id` is
+    rejected with 403. Every cross-org export is logged for audit.
+
+    `all_organizations=true` (BR2.1, u1-cross-org-export-api) exports
+    every organization's `published` catalog in a single ZIP — requires
+    `ORG_ADMIN_VIEW_ALL`/`super_admin`, same as above, checked
+    regardless of whether `organization_id` is also present (which is
+    then ignored). `EXPORT_MAX_PRODUCTS` applies as a GLOBAL cap in this
+    mode (BR2.4), and the download filename is `catalogo_TODAS_*.zip`
+    (BR2.8) instead of the per-organization pattern below.
+
     Distinct from, and does not replace, the generic `GET /export.csv`
     endpoint above (FR1.1).
     """
-    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
+    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(
+        current_user, organization_id, all_organizations=all_organizations
+    )
     # Unlike list_products (which defaults an admin's omitted organization_id
     # to a global browse, see _check_org_scope_permission's docstring), export
     # always defaults to the caller's own org when organization_id is omitted
@@ -767,14 +800,21 @@ async def export_catalog_client_format(
 
     product_repo = SqlAlchemyProductRepository(db)
     org_repo = SqlAlchemyOrganizationRepository(db)
+    category_repo = SqlAlchemyCategoryRepository(db)
     use_case = ExportCatalogClientFormatUseCase(
         product_repository=product_repo,
         organization_repository=org_repo,
         do_spaces_service=spaces,
+        category_repository=category_repo,
     )
 
     try:
-        result = await use_case.execute(tenant_id=effective_tenant_id)
+        result = await use_case.execute(
+            organization_id=None if all_organizations else effective_tenant_id,
+            all_organizations=all_organizations,
+            base_folder=base_folder,
+            facebook_groups_fallback=facebook_groups_fallback,
+        )
     except EmptyCatalogExportError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except ExportLimitExceededError as e:
@@ -782,14 +822,32 @@ async def export_catalog_client_format(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(e)
         ) from e
 
-    if effective_tenant_id != owner_tenant_id:
+    if all_organizations:
+        # BR2.5/FR6.1 — a NEW, distinguishable log line (not a reuse of
+        # the point cross-org message below): the use case's own
+        # "catalog_export.completed_all_orgs" log (extended for this
+        # Unit) has no identity context, so this is where user/own_org
+        # are attached to the ALL_ORGS scope for grep-ability.
+        logger.info(
+            "Cross-org catalog export (ALL_ORGS): scope=ALL_ORGS user=%s own_org=%s "
+            "organization_count=%s",
+            current_user.id,
+            owner_tenant_id,
+            result.organization_count,
+        )
+    elif effective_tenant_id != owner_tenant_id:
         logger.info(
             f"Cross-org catalog export: user={current_user.id} "
             f"own_org={owner_tenant_id} exported_org={effective_tenant_id}"
         )
 
-    org_segment = result.organization_code or str(effective_tenant_id)
-    filename = f"catalogo_{org_segment}_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
+    if all_organizations:
+        # BR2.8 — fixed pattern, no per-organization segment (a single
+        # organization_code would be ambiguous across 2+ organizations).
+        filename = f"catalogo_TODAS_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
+    else:
+        org_segment = result.organization_code or str(effective_tenant_id)
+        filename = f"catalogo_{org_segment}_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
 
     return StreamingResponse(
         iter([result.zip_bytes]),
@@ -2055,7 +2113,7 @@ async def bulk_upload_preview(
     # Execute preview use case
     use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
     try:
-        result = await use_case.execute(csv_content, zip_bytes)
+        result = await use_case.execute(csv_content, zip_bytes, tenant_id=current_user.tenant_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 

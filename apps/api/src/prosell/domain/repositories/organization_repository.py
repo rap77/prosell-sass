@@ -143,3 +143,23 @@ class AbstractOrganizationRepository(ABC):
     async def get_used_colors(self) -> set[str]:
         """Get all colors currently in use by organizations."""
         pass
+
+    @abstractmethod
+    async def get_by_ids(self, org_ids: list[UUID]) -> list[Organization]:
+        """
+        Get organizations by a set of IDs, in a single batch query.
+
+        Used to pre-resolve `{organization_id: code}` in one round trip
+        before a per-product loop (u1-cross-org-export-api, BR2.3) — the
+        cross-tenant mirror of `get_by_codes()`, whose direction the
+        bulk-upload import path already uses for the same batching
+        pattern (`bulk_upload_vehicles.py:_resolve_org_codes`).
+
+        Args:
+            org_ids: Organization UUIDs to fetch.
+
+        Returns:
+            The matching organizations. An unknown ID is silently
+            omitted from the result, never an error.
+        """
+        pass

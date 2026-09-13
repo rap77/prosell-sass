@@ -790,7 +790,7 @@ describe("useSubmitProductsForApproval - null error_code/message", () => {
   });
 });
 
-// ─── exportCatalogClientFormat — u1-export-org-confirmation ────────────────
+// ─── exportCatalogClientFormat — u1-export-org-confirmation, u2-cross-org-export-ui ────────────────
 
 describe("exportCatalogClientFormat", () => {
   beforeEach(() => {
@@ -798,29 +798,57 @@ describe("exportCatalogClientFormat", () => {
     mockFetch.mockResolvedValue(new Response(null, { status: 200 }));
   });
 
-  it("without organizationId fetches the base URL, no query string", async () => {
-    await exportCatalogClientFormat();
+  it("without organizationId/allOrganizations (own organization, default) sends only base_folder/facebook_groups_fallback", async () => {
+    await exportCatalogClientFormat({
+      baseFolder: "Users/juanl/IMG/Vehiculos/",
+      facebookGroupsFallback: "1,2,3",
+    });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/v1/products/export-client-format.zip",
+      "/api/v1/products/export-client-format.zip?base_folder=Users%2Fjuanl%2FIMG%2FVehiculos%2F&facebook_groups_fallback=1%2C2%2C3",
       { credentials: "include" },
     );
   });
 
-  it("with organizationId appends ?organization_id=<id>", async () => {
-    await exportCatalogClientFormat("org-b");
+  it("with organizationId (cross-org puntual) appends organization_id", async () => {
+    await exportCatalogClientFormat({
+      organizationId: "org-b",
+      baseFolder: "base",
+      facebookGroupsFallback: "1,2,3",
+    });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/v1/products/export-client-format.zip?organization_id=org-b",
+      "/api/v1/products/export-client-format.zip?organization_id=org-b&base_folder=base&facebook_groups_fallback=1%2C2%2C3",
       { credentials: "include" },
     );
   });
 
   it("URL-encodes an organizationId with reserved characters", async () => {
-    await exportCatalogClientFormat("org b");
+    await exportCatalogClientFormat({
+      organizationId: "org b",
+      baseFolder: "base",
+      facebookGroupsFallback: "1,2,3",
+    });
+
+    // URLSearchParams encodes spaces as "+" (form-urlencoded), not "%20" —
+    // consistent with the rest of products.ts (useInfiniteProducts already
+    // builds its query string via URLSearchParams).
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/v1/products/export-client-format.zip?organization_id=org+b&base_folder=base&facebook_groups_fallback=1%2C2%2C3",
+      { credentials: "include" },
+    );
+  });
+
+  it("with allOrganizations=true appends all_organizations=true and ignores organizationId", async () => {
+    await exportCatalogClientFormat({
+      organizationId: "org-b",
+      allOrganizations: true,
+      baseFolder: "base",
+      facebookGroupsFallback: "1,2,3",
+    });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/v1/products/export-client-format.zip?organization_id=org%20b",
+      "/api/v1/products/export-client-format.zip?all_organizations=true&base_folder=base&facebook_groups_fallback=1%2C2%2C3",
       { credentials: "include" },
     );
   });

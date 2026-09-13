@@ -1,0 +1,314 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-cross-org-export-api",
+  "upstream_ids": [
+    "AC2.1.2",
+    "AC2.2.1",
+    "AC4.1.1",
+    "AC4.2.1",
+    "AC4.3.1",
+    "AC4.3.2",
+    "AC4.4.1",
+    "AC4.5.1",
+    "AC6.1.1",
+    "AC7.1.1",
+    "AC7.2.1",
+    "AC7.3.1",
+    "AC7.3.2",
+    "AC7.4.1",
+    "AC7.4.2",
+    "AC7.5.1",
+    "AC7.6.1",
+    "AC8.2.1",
+    "AC9.2.1",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR1.7",
+    "BR1.8",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR2.6",
+    "BR2.7",
+    "BR2.8",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR-PERF-1",
+    "NFR-PERF-2",
+    "NFR-PERF-3",
+    "NFR-PERF-4",
+    "NFR-PERF-5",
+    "NFR-REL-1",
+    "NFR-REL-2",
+    "NFR-REL-3"
+  ],
+  "coverage": [
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "src/prosell/infrastructure/api/routers/product_router.py (_check_org_scope_permission, all_organizations gate) — tests/integration/api/routers/test_product_router_export_client_format.py::TestExportClientFormatAllOrganizations (403 sin permiso)"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "src/prosell/application/use_cases/product/export_catalog_client_format.py (tenant_filter = None if all_organizations else organization_id) — tests/unit/application/use_cases/product/test_export_catalog_client_format.py::TestExportCatalogClientFormatUseCaseCrossOrg::test_single_organization_mode_resolves_to_own_organization_never_all"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (execute con all_organizations=True) — test_all_organizations_mode_resolves_org_code_per_product"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (org_code_by_id resuelto en batch, usado por-producto) — test_all_organizations_mode_resolves_org_code_per_product"
+    },
+    {
+      "id": "AC4.3.1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (count > EXPORT_MAX_PRODUCTS con tenant_filter=None) — test_cap_exceeded_in_all_organizations_mode_raises_export_limit_exceeded_error"
+    },
+    {
+      "id": "AC4.3.2",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (chequeo `>`, no `>=`) — test_exactly_max_products_in_all_organizations_mode_does_not_raise"
+    },
+    {
+      "id": "AC4.4.1",
+      "status": "OK",
+      "target": "product_router.py (_check_org_scope_permission all_organizations gate, independiente de organization_id) — TestExportClientFormatAllOrganizations (403 directo sin UI)"
+    },
+    {
+      "id": "AC4.5.1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (EmptyCatalogExportError, mismo chequeo count==0 para ambos modos) — test_empty_catalog_in_all_organizations_mode_raises_empty_catalog_export_error"
+    },
+    {
+      "id": "AC6.1.1",
+      "status": "OK",
+      "target": "product_router.py (logger.info \"Cross-org catalog export (ALL_ORGS): scope=ALL_ORGS ...\", mensaje distinguible del caso puntual) — verificado por lectura de código, sin test dedicado de contenido de log (patrón ya establecido para el log puntual existente, sin precedente de test de log en este archivo)"
+    },
+    {
+      "id": "AC7.1.1",
+      "status": "OK",
+      "target": "csv_export.py (build_client_format_row, parámetro vin) — tests/unit/services/test_csv_export.py::test_build_client_format_row_vin_body_style_state_from_explicit_params"
+    },
+    {
+      "id": "AC7.2.1",
+      "status": "OK",
+      "target": "csv_export.py (parámetro body_style) — test_build_client_format_row_vin_body_style_state_from_explicit_params"
+    },
+    {
+      "id": "AC7.3.1",
+      "status": "OK",
+      "target": "csv_export.py (title_status=\"clean\"→clean_title=\"1\") — test_build_client_format_row_clean_title_status"
+    },
+    {
+      "id": "AC7.3.2",
+      "status": "OK",
+      "target": "csv_export.py (title_status=\"rebuilt\"→clean_title=\"0\") — test_build_client_format_row_rebuilt_title_status"
+    },
+    {
+      "id": "AC7.4.1",
+      "status": "OK",
+      "target": "csv_export.py (facebook_groups no vacío → \",\".join()) — test_build_client_format_row_facebook_groups_joined_with_comma"
+    },
+    {
+      "id": "AC7.4.2",
+      "status": "OK",
+      "target": "csv_export.py (facebook_groups vacío → facebook_groups_fallback, BR2.7/FR9.4) — test_build_client_format_row_empty_facebook_groups_uses_fallback. NOTA DE TRAZABILIDAD: el texto literal de esta AC (redactada en la misma pasada de User Stories que US7, antes de que US8/US9 introdujeran el popup de fallback) dice que el valor esperado es \"\" (vacío) — esto quedó SUPERSEDIDO por la decisión posterior, ya aprobada en Functional Design (BR2.7, revisado READY), de usar facebook_groups_fallback en vez de string vacío. El comportamiento implementado sigue la decisión MÁS RECIENTE y aprobada (BR2.7), no el texto literal de AC7.4.2 — discrepancia real entre dos artefactos de Inception, señalada acá para el registro, no resuelta silenciosamente."
+    },
+    {
+      "id": "AC7.5.1",
+      "status": "OK",
+      "target": "category_translation.py (resolve_client_category_type) — test_build_client_format_row_category_and_type_from_explicit_params, test_resolve_client_category_type_known_vertical"
+    },
+    {
+      "id": "AC7.6.1",
+      "status": "OK",
+      "target": "csv_export.py (location = f\"{location_city} {location_state}\") — test_build_client_format_row_location_combines_city_and_state"
+    },
+    {
+      "id": "AC8.2.1",
+      "status": "OK",
+      "target": "csv_export.py (build_client_format_path) — test_build_client_format_path_exact_concatenation"
+    },
+    {
+      "id": "AC9.2.1",
+      "status": "OK",
+      "target": "csv_export.py (facebook_groups propio tiene precedencia sobre facebook_groups_fallback) — test_build_client_format_row_facebook_groups_joined_with_comma (grupo propio) + test_build_client_format_row_empty_facebook_groups_uses_fallback (sin grupo propio)"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "csv_export.py (clean_title inverso) — test_build_client_format_row_clean_title_status, test_build_client_format_row_rebuilt_title_status, test_build_client_format_row_unknown_title_status_renders_empty"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "csv_export.py (groups join/fallback) — test_build_client_format_row_facebook_groups_joined_with_comma, test_build_client_format_row_empty_facebook_groups_uses_fallback"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (_resolve_vertical_slug, walk-up parent_id) + category_translation.py — test_resolve_client_category_type_known_vertical, test_all_organizations_mode_resolves_org_code_per_product"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "csv_export.py (location) — test_build_client_format_row_location_combines_city_and_state, test_build_client_format_row_location_missing_parts_renders_no_stray_space"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "csv_export.py (vin=attrs.get(\"vin\")) — test_build_client_format_row_vin_body_style_state_from_explicit_params"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "csv_export.py (body_style=attrs.get(\"body_type\")) — test_build_client_format_row_vin_body_style_state_from_explicit_params"
+    },
+    {
+      "id": "BR1.7",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (exclusión cuando resolve_client_category_type retorna None) — test_product_without_category_translation_is_excluded"
+    },
+    {
+      "id": "BR1.8",
+      "status": "OK",
+      "target": "csv_export.py (state=attrs.get(\"title_state\")) — test_build_client_format_row_vin_body_style_state_from_explicit_params"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "product_router.py (_check_org_scope_permission all_organizations gate) — TestExportClientFormatAllOrganizations"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "product_router.py (organization_id ausente y all_organizations=False → propia organización) — comportamiento preexistente, sin cambio, cubierto por la suite existente de test_product_router_export_client_format.py"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (resolución batch de org_code, get_by_ids) — test_all_organizations_mode_resolves_org_code_per_product"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (count > EXPORT_MAX_PRODUCTS, tenant_filter=None en modo todas) — test_cap_exceeded_in_all_organizations_mode_raises_export_limit_exceeded_error, test_exactly_max_products_in_all_organizations_mode_does_not_raise"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "product_router.py (log distinguible \"Cross-org catalog export (ALL_ORGS): scope=ALL_ORGS...\") — verificado por lectura de código, ver nota de AC6.1.1"
+    },
+    {
+      "id": "BR2.6",
+      "status": "OK",
+      "target": "csv_export.py (build_client_format_path) — test_build_client_format_path_exact_concatenation"
+    },
+    {
+      "id": "BR2.7",
+      "status": "OK",
+      "target": "csv_export.py (facebook_groups_fallback solo si facebook_groups vacío) — test_build_client_format_row_empty_facebook_groups_uses_fallback"
+    },
+    {
+      "id": "BR2.8",
+      "status": "OK",
+      "target": "product_router.py (filename = f\"catalogo_TODAS_{fecha}.zip\") — TestExportClientFormatAllOrganizations (200 + nombre de archivo)"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "product_router.py (auth middleware ya vigente, sin cambio) — cubierto por la suite existente de autenticación del proyecto"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "product_router.py (organization_id del JWT, sin cambio) — cubierto por la suite existente"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (build_vehicle_zip_folder_name/_sanitize_filename, sin cambio) — cubierto por la suite existente de csv_export/csv_image_mapper"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "TLS a nivel de infraestructura, sin código de aplicación que verificar en este Unit"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (alcance de datos acotado por organization_id/all_organizations, gateado por NFR2.4) — TestExportClientFormatAllOrganizations"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "product_router.py (_check_org_scope_permission all_organizations) — TestExportClientFormatAllOrganizations (403 sin permiso)"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (cap por-organización, sin cambio) — test_cap_exceeded_raises_export_limit_exceeded_error"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (cap global, tenant_filter=None) — test_cap_exceeded_in_all_organizations_mode_raises_export_limit_exceeded_error, test_exactly_max_products_in_all_organizations_mode_does_not_raise"
+    },
+    {
+      "id": "NFR-PERF-1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (_read_all_images, semáforo de 20, sin cambio) — verificado por lectura de código, sin medición de latencia real en esta suite (per performance-design.md, medición end-to-end diferida a Build and Test)"
+    },
+    {
+      "id": "NFR-PERF-2",
+      "status": "N/A",
+      "target": "target de performance para catálogos chicos — sin medición de latencia en tests unitarios, diferido a Build and Test per nfr-design.md"
+    },
+    {
+      "id": "NFR-PERF-3",
+      "status": "N/A",
+      "target": "target de performance de lectura individual de imagen — sin medición de latencia en tests unitarios, diferido a Build and Test"
+    },
+    {
+      "id": "NFR-PERF-4",
+      "status": "N/A",
+      "target": "target de performance del modo \"todas\" (18s) — sin medición de latencia en tests unitarios, diferido a Build and Test"
+    },
+    {
+      "id": "NFR-PERF-5",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (get_by_ids, una sola query batch) — test_all_organizations_mode_resolves_org_code_per_product (organization_repository.get_by_ids.assert_called_once())"
+    },
+    {
+      "id": "NFR-REL-1",
+      "status": "OK",
+      "target": "export_catalog_client_format.py (_read_image_with_retry, sin cambio) — test_individual_image_failure_does_not_abort_export"
+    },
+    {
+      "id": "NFR-REL-2",
+      "status": "N/A",
+      "target": "fallo sistémico del storage completo — no simulado en esta suite (cada imagen ya se testea individualmente vía NFR-REL-1, el mismo mecanismo aislado por-imagen cubre el caso agregado)"
+    },
+    {
+      "id": "NFR-REL-3",
+      "status": "N/A",
+      "target": "riesgo residual de memoria a escala de plataforma — riesgo aceptado explícitamente, sin mitigación de código que testear (reliability-requirements.md NFR3)"
+    }
+  ]
+}

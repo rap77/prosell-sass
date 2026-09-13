@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from io import StringIO
 from typing import cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from prosell.application.dto.product.bulk_upload import (
     PreviewRowResponse,
@@ -51,13 +51,16 @@ class BulkUploadPreviewUseCase:
         self._required_fields = {"VIN", "price", "title"}
 
     async def execute(
-        self, csv_content: str, zip_bytes: bytes | None = None
+        self, csv_content: str, zip_bytes: bytes | None = None, *, tenant_id: UUID
     ) -> PreviewUseCaseResult:
         """Analyze CSV content and produce a preview report.
 
         Args:
             csv_content: Raw CSV string (semicolon-delimited)
             zip_bytes: Optional ZIP file bytes with images
+            tenant_id: Tenant ID from JWT context — org-code existence is
+                scoped to this tenant only, so a preview never discloses
+                whether a code exists in a DIFFERENT organization.
 
         Returns:
             PreviewUseCaseResult with per-row analysis
@@ -121,7 +124,7 @@ class BulkUploadPreviewUseCase:
         existing_org_codes = {
             org.code.strip().upper()
             for org in await self._organization_repository.get_by_codes(
-                sorted(code.upper() for code in detected_org_codes)
+                sorted(code.upper() for code in detected_org_codes), tenant_id=tenant_id
             )
             if org.code
         }

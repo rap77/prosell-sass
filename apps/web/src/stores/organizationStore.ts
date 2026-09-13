@@ -55,7 +55,8 @@ export interface OrganizationState {
   } | null;
   // The organization an admin is currently "viewing as" (Subsystem D OrganizationPicker).
   // null means "viewing my own organization" — the default for everyone.
-  viewingOrgId: string | null;
+  // "ALL_ORGS" is the cross-org sentinel added for cross-org catalog export/filtering.
+  viewingOrgId: string | "ALL_ORGS" | null;
 
   // Actions
   fetchOrganizations: (params?: OrganizationListParams) => Promise<void>;
@@ -75,7 +76,7 @@ export interface OrganizationState {
   // Guarded setter: no-op when the current user lacks
   // Permission.ORG_ADMIN_VIEW_ALL (checked against the live authStore
   // user, not a prop — callers can't bypass the guard by omitting a check).
-  setViewingOrgId: (orgId: string | null) => void;
+  setViewingOrgId: (orgId: string | "ALL_ORGS" | null) => void;
   clearError: () => void;
   reset: () => void;
 }

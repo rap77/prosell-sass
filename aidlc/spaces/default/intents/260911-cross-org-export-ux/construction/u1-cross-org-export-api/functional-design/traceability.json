@@ -1,0 +1,71 @@
+{
+  "stage": "functional-design",
+  "unit": "u1-cross-org-export-api",
+  "upstream_ids": [
+    "AC2.1.2",
+    "AC2.2.1",
+    "AC4.1.1",
+    "AC4.2.1",
+    "AC4.3.1",
+    "AC4.3.2",
+    "AC4.4.1",
+    "AC4.5.1",
+    "AC6.1.1",
+    "AC7.1.1",
+    "AC7.2.1",
+    "AC7.3.1",
+    "AC7.3.2",
+    "AC7.4.1",
+    "AC7.4.2",
+    "AC7.5.1",
+    "AC7.6.1",
+    "AC8.2.1",
+    "AC9.2.1"
+  ],
+  "coverage": [
+    {
+      "id": "AC2.1.2",
+      "status": "N/A",
+      "target": "assertion de UI pura (opción no visible), cubierta por U2 — sin superficie de diseño backend; la defensa en profundidad de U1 está en AC4.4.1"
+    },
+    { "id": "AC2.2.1", "status": "OK", "target": "BR2.2" },
+    { "id": "AC4.1.1", "status": "OK", "target": "BR2.1, BR2.3" },
+    { "id": "AC4.2.1", "status": "OK", "target": "BR2.3" },
+    { "id": "AC4.3.1", "status": "OK", "target": "BR2.4" },
+    { "id": "AC4.3.2", "status": "OK", "target": "BR2.4" },
+    { "id": "AC4.4.1", "status": "OK", "target": "BR2.1" },
+    {
+      "id": "AC4.5.1",
+      "status": "OK",
+      "target": "Workflow 2 paso 5 (functional-spec.md)"
+    },
+    { "id": "AC6.1.1", "status": "OK", "target": "BR2.5" },
+    { "id": "AC7.1.1", "status": "OK", "target": "BR1.5" },
+    { "id": "AC7.2.1", "status": "OK", "target": "BR1.6" },
+    { "id": "AC7.3.1", "status": "OK", "target": "BR1.1" },
+    { "id": "AC7.3.2", "status": "OK", "target": "BR1.1" },
+    { "id": "AC7.4.1", "status": "OK", "target": "BR1.2" },
+    { "id": "AC7.4.2", "status": "OK", "target": "BR1.2" },
+    { "id": "AC7.5.1", "status": "OK", "target": "BR1.3" },
+    { "id": "AC7.6.1", "status": "OK", "target": "BR1.4" },
+    { "id": "AC8.2.1", "status": "OK", "target": "BR2.6" },
+    { "id": "AC9.2.1", "status": "OK", "target": "BR2.7" }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.7",
+      "status": "N/A",
+      "target": "regla derivada de Q1 (functional-design-questions.md), sin AC dedicado en stories.md — decisión de diseño tomada en esta etapa"
+    },
+    {
+      "id": "BR1.8",
+      "status": "N/A",
+      "target": "8va columna (state) ya nombrada en unit-of-work.md pero omitida de FR7/stories.md por un gap de redacción en Requirements Analysis — agregada a scope en esta etapa por decisión explícita del humano tras hallazgo verificado del reviewer contra el código real (csv_field_mapper.py/csv_export.py). Sin AC dedicado en stories.md."
+    },
+    {
+      "id": "BR2.8",
+      "status": "N/A",
+      "target": "regla derivada de Q2 (functional-design-questions.md), sin AC dedicado en stories.md — decisión de diseño tomada en esta etapa"
+    }
+  ]
+}
