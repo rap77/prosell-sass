@@ -125,8 +125,14 @@ export function buildGroupsWithFieldOrder(
 
 /**
  * Build the PATCH payload's attribute_schema map from the editor's local
- * field rows. `options` is only persisted for render_as="select" fields —
- * FR3.1/FR3.2: the unified contract carries options through the editor.
+ * field rows. `options` is persisted whenever present, regardless of
+ * render_as — the actual product-form renderer (SchemaFieldRenderer)
+ * decides to show a select purely from `options.length > 0`, never from
+ * render_as. Gating on render_as === "select" here silently dropped
+ * `options` on every save for fields that rely on options alone (e.g.
+ * fuel_type/transmission in the vehicles seed, which only set
+ * filter_type: "select", never render_as) — confirmed root cause of
+ * select fields turning into plain text inputs after a schema save.
  */
 export function toSchemaMap(
   fields: ReadonlyArray<
@@ -173,7 +179,7 @@ export function toSchemaMap(
               group: normalizedGroup,
               render_as,
               vin_decode_key,
-              options: render_as === "select" ? options : undefined,
+              options: options && options.length > 0 ? options : undefined,
             },
           ];
         },
@@ -432,10 +438,15 @@ function SortableRow({
                   </Select>
                 )}
               </div>
-              {/* Options — only when render_as = select. FR3.2: the editor
-                  must be able to populate the values a select field offers,
-                  not just declare that it renders as one. */}
-              {row.render_as === "select" && (
+              {/* Options — shown for any field that isn't VIN-decoded. The
+                  product-form renderer shows a select purely from
+                  `options.length > 0` (never from render_as — most select
+                  fields in the vehicles seed only set filter_type: "select",
+                  render_as is left unset), so gating this editor on
+                  render_as === "select" hid the only way to manage options
+                  for those fields. FR3.2: the editor must be able to
+                  populate the values a select field offers. */}
+              {row.render_as !== "vin_decode" && (
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
                     Options (comma-separated)

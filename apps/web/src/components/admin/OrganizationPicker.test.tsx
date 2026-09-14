@@ -167,4 +167,42 @@ describe("OrganizationPicker", () => {
 
     expect(screen.getByRole("button")).toHaveTextContent("Organization Two");
   });
+
+  it("defaults a super_admin with no viewingOrgId to ALL_ORGS on mount", async () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, isSuperAdmin: true });
+    mockUseOrganizationStore.mockReturnValue({
+      viewingOrgId: null,
+      setViewingOrgId: mockSetViewingOrgId,
+    });
+
+    render(<OrganizationPicker />);
+
+    await waitFor(() => {
+      expect(mockSetViewingOrgId).toHaveBeenCalledWith("ALL_ORGS");
+    });
+  });
+
+  it("does not override an explicit selection back to 'mi organización' for a super_admin", () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, isSuperAdmin: true });
+    mockUseOrganizationStore.mockReturnValue({
+      viewingOrgId: "organization-2",
+      setViewingOrgId: mockSetViewingOrgId,
+    });
+
+    render(<OrganizationPicker />);
+
+    expect(mockSetViewingOrgId).not.toHaveBeenCalled();
+  });
+
+  it("does not default a regular admin (not super_admin) away from 'mi organización'", () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, isSuperAdmin: false });
+    mockUseOrganizationStore.mockReturnValue({
+      viewingOrgId: null,
+      setViewingOrgId: mockSetViewingOrgId,
+    });
+
+    render(<OrganizationPicker />);
+
+    expect(mockSetViewingOrgId).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Building2, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +21,27 @@ import { useOrganizationStore } from "@/stores/organizationStore";
  * backend re-enforces ORG_ADMIN_VIEW_ALL regardless, this is UI-only.
  */
 export function OrganizationPicker() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const { data: organizations = [], isLoading } = useOrganizations();
   const viewingOrgId = useOrganizationStore((state) => state.viewingOrgId);
   const setViewingOrgId = useOrganizationStore(
     (state) => state.setViewingOrgId,
   );
+
+  // viewingOrgId is intentionally excluded from persistence (organizationStore.ts),
+  // so it's always null right after boot/refresh. The platform's own super_admin
+  // account ("prosell") has no products of its own, so "mi organización" always
+  // looks empty for them -- default that account to "ALL_ORGS" once per mount,
+  // without hijacking a later explicit click back to "mi organización". Regular
+  // org admins keep seeing their own inventory by default.
+  const hasSetDefaultRef = useRef(false);
+  useEffect(() => {
+    if (hasSetDefaultRef.current) return;
+    hasSetDefaultRef.current = true;
+    if (viewingOrgId === null && isSuperAdmin) {
+      setViewingOrgId("ALL_ORGS");
+    }
+  }, [viewingOrgId, isSuperAdmin, setViewingOrgId]);
 
   if (!isAdmin) {
     return null;
