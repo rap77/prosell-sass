@@ -48,17 +48,21 @@ class TestApiServiceConfig:
     """Contract: the `api` service must load .env to get critical runtime config."""
 
     def test_api_service_loads_dotenv(self, compose: dict) -> None:
-        """The api service must have env_file: - .env in docker-compose.yml.
+        """The api service must load the repo-root `.env` via env_file.
 
         Without this, DATABASE_URL and other secrets defined only in .env
         are unavailable inside the container, causing ConnectionRefusedError
         on the first DB query.
+
+        The exact path string can vary (bare `.env` or `../.env` — Docker
+        resolves `env_file` relative to the compose file's directory), so we
+        only assert the resolved basename is `.env`.
         """
         api = compose["services"]["api"]
         env_file = api.get("env_file") or []
         # env_file can be a string or a list
         env_files = [env_file] if isinstance(env_file, str) else list(env_file)
-        assert ".env" in env_files, (
+        assert any(Path(p).name == ".env" for p in env_files), (
             f"api service must load .env via env_file. Current env_file={env_file!r}"
         )
 
