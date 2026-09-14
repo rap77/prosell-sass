@@ -9,3 +9,8 @@ tests/e2e/test-results/
 **/.next/
 **/dist/
 **/coverage/
+
+# AI-DLC audit logs (runtime data, regenerated on each workflow run).
+# Already in .gitignore; listed here too because Prettier reads the working
+# tree directly and would otherwise flag these files in pre-push checks.
+aidlc/spaces/*/intents/*/audit/
