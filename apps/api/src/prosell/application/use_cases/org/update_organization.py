@@ -3,7 +3,10 @@
 from uuid import UUID
 
 from prosell.application.dto.org import OrganizationResponse, UpdateOrganizationRequest
-from prosell.domain.exceptions.org_exceptions import OrganizationNotFoundException
+from prosell.domain.exceptions.org_exceptions import (
+    OrganizationCodeAlreadyExistsException,
+    OrganizationNotFoundException,
+)
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.value_objects.organization_contact import OrganizationContact
 
@@ -38,10 +41,16 @@ class UpdateOrganizationUseCase:
         if not org:
             raise OrganizationNotFoundException(str(org_id))
 
+        normalized_code = request.code
+        if request.code is not None:
+            normalized_code = request.code.upper()[:5]
+            if await self.org_repository.exists_by_code(normalized_code, exclude_org_id=org_id):
+                raise OrganizationCodeAlreadyExistsException(normalized_code)
+
         # Apply only provided fields
         org.update_basic_info(
             name=request.name,
-            code=request.code,
+            code=normalized_code,
             color=request.color,
             description=request.description,
             website=request.website,

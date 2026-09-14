@@ -31,6 +31,7 @@ from prosell.domain.entities.role import Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
     OrganizationAlreadyExistsException,
+    OrganizationCodeAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationVerificationException,
     OrgDomainException,
@@ -113,7 +114,7 @@ async def create_organization(
     )
     try:
         return await use_case.execute(request, tenant_id=current_user.tenant_id)
-    except OrganizationAlreadyExistsException as e:
+    except (OrganizationAlreadyExistsException, OrganizationCodeAlreadyExistsException) as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.message) from e
     except OrgDomainException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message) from e
@@ -136,11 +137,12 @@ async def list_organizations(
     - SUPER_ADMIN/ADMIN: sees all orgs (no tenant filter)
     - Others: only see their own org
     """
-    effective_tenant = (
-        None
-        if current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
-        else current_user.tenant_id
-    )
+    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    # A non-admin user with no tenant_id must never fall through to the same
+    # `None` the use case treats as "no filter, every org" for admins.
+    if not can_view_all_orgs and current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    effective_tenant = None if can_view_all_orgs else current_user.tenant_id
     use_case = ListOrganizationsUseCase(org_repository=org_repo)
     return await use_case.execute(tenant_id=effective_tenant, skip=skip, limit=limit)
 
@@ -246,6 +248,8 @@ async def update_organization(
         )
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
+    except OrganizationCodeAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.message) from e
     except OrgDomainException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message) from e
 

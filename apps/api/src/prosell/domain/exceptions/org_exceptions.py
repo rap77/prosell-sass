@@ -30,6 +30,16 @@ class OrganizationAlreadyExistsException(OrgDomainException):
         )
 
 
+class OrganizationCodeAlreadyExistsException(OrgDomainException):
+    """Raised when organization code already exists (must be globally unique)."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(
+            message=f"An organization with code '{code}' already exists",
+            details={"code": code},
+        )
+
+
 class OrganizationNotActiveException(OrgDomainException):
     """Raised when operation requires an active organization."""
 

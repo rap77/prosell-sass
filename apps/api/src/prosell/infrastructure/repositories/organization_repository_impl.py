@@ -158,6 +158,17 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         count: int = result.scalar() or 0
         return count > 0
 
+    async def exists_by_code(self, code: str, exclude_org_id: UUID | None = None) -> bool:
+        """Check if organization with code exists (globally, case-insensitive)."""
+        stmt = select(func.count(OrganizationModel.id)).where(
+            func.upper(OrganizationModel.code) == code.upper(),
+        )
+        if exclude_org_id is not None:
+            stmt = stmt.where(OrganizationModel.id != exclude_org_id)
+        result = await self.session.execute(stmt)
+        count: int = result.scalar() or 0
+        return count > 0
+
     async def count(self, tenant_id: UUID | None = None) -> int:
         """Count organizations."""
         stmt = select(func.count(OrganizationModel.id))

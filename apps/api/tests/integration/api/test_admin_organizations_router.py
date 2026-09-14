@@ -625,6 +625,49 @@ async def test_admin_patch_persists_contact_name(
 
 
 @pytest.mark.asyncio
+async def test_admin_cannot_set_organization_code_already_used_by_another_org(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    other_dealer: OrganizationModel,
+) -> None:
+    """The org code cross-references organizations across tenants (client
+    CSV bulk import, client-format CSV export) -- it must be globally
+    unique, not just unique within a tenant."""
+    other_dealer.code = "VL"
+    await db_session.flush()
+
+    response = await async_client_as_admin.patch(
+        f"/api/v1/admin/organizations/{test_organization.id}",
+        json={"code": "VL"},
+    )
+
+    assert response.status_code == 409, response.text
+    await db_session.refresh(test_organization)
+    assert test_organization.code != "VL"
+
+
+@pytest.mark.asyncio
+async def test_admin_can_keep_organization_own_code_unchanged(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+) -> None:
+    """Re-submitting an org's own current code must not collide with itself."""
+    test_organization.code = "AA"
+    await db_session.flush()
+
+    response = await async_client_as_admin.patch(
+        f"/api/v1/admin/organizations/{test_organization.id}",
+        json={"code": "aa", "name": test_organization.name},
+    )
+
+    assert response.status_code == 200, response.text
+    await db_session.refresh(test_organization)
+    assert test_organization.code == "AA"
+
+
+@pytest.mark.asyncio
 async def test_create_dealer_accepts_brokers_with_phone(
     async_client_as_admin: AsyncClient,
     root_category: CategoryModel,

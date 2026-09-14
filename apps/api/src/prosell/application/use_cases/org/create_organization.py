@@ -5,7 +5,10 @@ from uuid import UUID
 from prosell.application.dto.org import CreateOrganizationRequest, OrganizationResponse
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.wallet import Wallet
-from prosell.domain.exceptions.org_exceptions import OrganizationAlreadyExistsException
+from prosell.domain.exceptions.org_exceptions import (
+    OrganizationAlreadyExistsException,
+    OrganizationCodeAlreadyExistsException,
+)
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.wallet_repository import AbstractWalletRepository
 
@@ -54,7 +57,10 @@ class CreateOrganizationUseCase:
 
         # Apply optional fields
         if request.code is not None:
-            org.code = request.code.upper()[:5]
+            normalized_code = request.code.upper()[:5]
+            if await self.org_repository.exists_by_code(normalized_code):
+                raise OrganizationCodeAlreadyExistsException(normalized_code)
+            org.code = normalized_code
         if request.color is not None:
             org.color = request.color[:7]
         if request.description is not None:

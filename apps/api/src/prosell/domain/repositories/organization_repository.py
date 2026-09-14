@@ -111,6 +111,25 @@ class AbstractOrganizationRepository(ABC):
         pass
 
     @abstractmethod
+    async def exists_by_code(self, code: str, exclude_org_id: UUID | None = None) -> bool:
+        """
+        Check if organization with given code exists (globally, not per-tenant).
+
+        The code is used to cross-reference organizations across tenants
+        (client CSV bulk import, client-format CSV export), so it must be
+        unique platform-wide, not just within a tenant.
+
+        Args:
+            code: Organization code (case-insensitive)
+            exclude_org_id: Organization ID to exclude from the check (for
+                updates, so an org doesn't collide with its own code)
+
+        Returns:
+            True if a different organization already has this code
+        """
+        pass
+
+    @abstractmethod
     async def count(self, tenant_id: UUID | None = None) -> int:
         """
         Count total organizations.

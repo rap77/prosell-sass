@@ -24,6 +24,7 @@ from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.wallet import Wallet
 from prosell.domain.exceptions.org_exceptions import (
     OrganizationAlreadyExistsException,
+    OrganizationCodeAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationVerificationException,
 )
@@ -54,6 +55,7 @@ def make_wallet(org: Organization) -> Wallet:
 def make_org_repo() -> MagicMock:
     repo = MagicMock()
     repo.exists_by_name = AsyncMock(return_value=False)
+    repo.exists_by_code = AsyncMock(return_value=False)
     repo.create = AsyncMock()
     repo.get_by_id = AsyncMock(return_value=None)
     repo.get_by_tenant_id = AsyncMock(return_value=None)
@@ -114,6 +116,25 @@ class TestCreateOrganizationUseCase:
         with pytest.raises(OrganizationAlreadyExistsException):
             await use_case.execute(request, tenant_id=uuid4())
 
+        org_repo.create.assert_not_awaited()
+        wallet_repo.create.assert_not_awaited()
+
+    async def test_create_raises_when_code_exists(self) -> None:
+        """Raises OrganizationCodeAlreadyExistsException when code is taken
+        by another organization (code must be globally unique, not just
+        unique within a tenant, since it cross-references orgs across
+        tenants for CSV bulk import/export)."""
+        org_repo = make_org_repo()
+        wallet_repo = make_wallet_repo()
+        org_repo.exists_by_code.return_value = True
+
+        request = CreateOrganizationRequest(name="New Corp", code="VL")
+        use_case = CreateOrganizationUseCase(org_repo, wallet_repo)
+
+        with pytest.raises(OrganizationCodeAlreadyExistsException):
+            await use_case.execute(request, tenant_id=uuid4())
+
+        org_repo.exists_by_code.assert_awaited_once_with("VL")
         org_repo.create.assert_not_awaited()
         wallet_repo.create.assert_not_awaited()
 
@@ -300,6 +321,39 @@ class TestUpdateOrganizationUseCase:
 
         assert len(org.contacts) == 1
         assert org.contacts[0].name == "Juan Pérez"
+        org_repo.update.assert_awaited_once()
+
+    async def test_update_raises_when_code_exists_on_another_org(self) -> None:
+        """Raises OrganizationCodeAlreadyExistsException when another org
+        already has the requested code (checked globally, excluding self)."""
+        org = make_org()
+        org_repo = make_org_repo()
+        org_repo.get_by_id.return_value = org
+        org_repo.exists_by_code.return_value = True
+
+        request = UpdateOrganizationRequest(code="VL")
+        use_case = UpdateOrganizationUseCase(org_repo)
+
+        with pytest.raises(OrganizationCodeAlreadyExistsException):
+            await use_case.execute(org_id=org.id, tenant_id=org.tenant_id, request=request)
+
+        org_repo.exists_by_code.assert_awaited_once_with("VL", exclude_org_id=org.id)
+        org_repo.update.assert_not_awaited()
+
+    async def test_update_allows_keeping_own_code(self) -> None:
+        """Re-submitting the org's own code (exists_by_code excludes self) succeeds."""
+        org = make_org()
+        org_repo = make_org_repo()
+        org_repo.get_by_id.return_value = org
+        org_repo.exists_by_code.return_value = False
+        org_repo.update.return_value = org
+
+        request = UpdateOrganizationRequest(code="AA")
+        use_case = UpdateOrganizationUseCase(org_repo)
+
+        await use_case.execute(org_id=org.id, tenant_id=org.tenant_id, request=request)
+
+        org_repo.exists_by_code.assert_awaited_once_with("AA", exclude_org_id=org.id)
         org_repo.update.assert_awaited_once()
 
 

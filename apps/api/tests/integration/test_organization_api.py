@@ -360,6 +360,41 @@ class TestListOrganizations:
         assert response.status_code == status.HTTP_200_OK
         mock_org_repo.get_all.assert_awaited_once_with(tenant_id=own_tenant, skip=0, limit=100)
 
+    async def test_non_admin_with_no_tenant_is_rejected_not_given_all_orgs(
+        self, mock_org_repo: MagicMock
+    ) -> None:
+        """A non-admin user with tenant_id=None must not fall through to the
+        same `None` the use case treats as "no filter, every org" for real
+        admins -- that would leak the full organizations list to a user with
+        no tenant and no ORG_ADMIN_VIEW_ALL permission."""
+        from prosell.domain.entities.role import Role, RoleType
+
+        orphan_user = User(
+            id=uuid4(),
+            email="orphan@example.com",
+            full_name="Orphan User",
+            tenant_id=None,
+            status=UserStatus.ACTIVE,
+            email_verified=True,
+            roles=[Role.create_system_role(RoleType.SALES_AGENT)],
+        )
+
+        from prosell.infrastructure.api.dependencies import (
+            get_current_auth_user,
+            get_current_auth_user_from_cookie,
+        )
+        from prosell.infrastructure.api.routers.org_router import get_org_repository
+
+        app.dependency_overrides[get_current_auth_user] = lambda: orphan_user
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: orphan_user
+        app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/org")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        mock_org_repo.get_all.assert_not_awaited()
+
 
 # =============================================================================
 # GET /api/v1/org/me - Get Current User's Organization

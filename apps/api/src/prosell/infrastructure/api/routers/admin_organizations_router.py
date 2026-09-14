@@ -384,7 +384,13 @@ async def update_organization(
     if request.name is not None:
         organization.name = request.name
     if request.code is not None:
-        organization.code = request.code
+        normalized_code = request.code.upper()[:5]
+        if await org_repo.exists_by_code(normalized_code, exclude_org_id=organization_id):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"An organization with code '{normalized_code}' already exists",
+            )
+        organization.code = normalized_code
     if request.color is not None:
         organization.color = request.color
     if request.description is not None:
@@ -692,7 +698,13 @@ async def _count_products_per_vertical(
     organization being managed) and `tenant_id` (the requester's tenant)
     so cross-tenant data can never influence the count.
     """
-    # ponytail: recursive CTE traces each product's category up to root (level=0)
+    # ponytail: recursive CTE traces each product's category up to root (level=0).
+    # Raw text() is used deliberately here — SQLAlchemy's ORM-level CTE API
+    # does not cleanly express a recursive self-join with an aggregate over
+    # the anchor set, and the risk of a subtly wrong rewrite of a recursive
+    # query outweighs the style preference for ORM-only SQL. Both parameters
+    # are bound (:org_id, :tenant_id passed via the execute() dict below,
+    # never interpolated into the string), so there is no injection risk.
     query = text("""
         WITH RECURSIVE category_tree AS (
             SELECT c.id as leaf_id, c.id as current_id, c.parent_id, c.level
