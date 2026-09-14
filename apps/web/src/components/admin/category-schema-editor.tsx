@@ -72,6 +72,10 @@ import {
   type AttributeGroup,
   type RenderAs,
 } from "@/lib/api/schemas/categorySchema";
+import {
+  FACEBOOK_VALUES,
+  type FacebookFieldKey,
+} from "@/lib/i18n/facebook-values";
 
 interface FieldRow extends AttributeField {
   key: string;
@@ -456,19 +460,49 @@ function SortableRow({
                       {(row.options ?? []).join(", ") || "—"}
                     </p>
                   ) : (
-                    <Input
-                      placeholder="e.g. Sedan, Hatchback, SUV"
-                      value={(row.options ?? []).join(", ")}
-                      onChange={(e) =>
-                        onUpdate(row._id, {
-                          options: e.target.value
-                            .split(",")
-                            .map((o) => o.trim())
-                            .filter((o) => o.length > 0),
-                        })
-                      }
-                      className="h-8"
-                    />
+                    <>
+                      <Input
+                        placeholder="e.g. Sedan, Hatchback, SUV"
+                        value={(row.options ?? []).join(", ")}
+                        onChange={(e) =>
+                          onUpdate(row._id, {
+                            options: e.target.value
+                              .split(",")
+                              .map((o) => o.trim())
+                              .filter((o) => o.length > 0),
+                          })
+                        }
+                        className="h-8"
+                      />
+                      {/* ponytail: if the field key matches a known Facebook
+                          catalog field (fuel_type, body_style, transmission,
+                          type, state, category), offer a one-click loader that
+                          populates options with the official Spanish strings —
+                          the publisher translates to the org's locale at
+                          publish time, not here. */}
+                      {row.key && row.key in FACEBOOK_FIELD_KEY_MAP && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => {
+                            const fbField =
+                              FACEBOOK_FIELD_KEY_MAP[
+                                row.key as keyof typeof FACEBOOK_FIELD_KEY_MAP
+                              ];
+                            onUpdate(row._id, {
+                              options: FACEBOOK_VALUES[fbField].map(
+                                (v) => v.es,
+                              ),
+                            });
+                          }}
+                          aria-label={`Load official Facebook values for ${row.key}`}
+                        >
+                          Load from Facebook catalog
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -506,6 +540,25 @@ function SortableRow({
 
 const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `field-${Date.now()}-${Math.random()}`;
+
+/**
+ * Maps an `attribute_schema` field key (the stable identifier admins set in
+ * the editor) to a Facebook catalog field. Used to surface a one-click loader
+ * that populates options with the official Spanish strings Facebook accepts.
+ *
+ * Extend this when the project adopts more Facebook fields. Keys not present
+ * here fall through to the manual "Options" input.
+ */
+const FACEBOOK_FIELD_KEY_MAP: Record<string, FacebookFieldKey> = {
+  category: "category",
+  type: "type",
+  body_style: "body_style",
+  body_type: "body_style",
+  condition: "state",
+  state: "state",
+  fuel_type: "fuel_type",
+  transmission: "transmission",
+};
 
 const FIELD_TYPES = {
   string: "string",
