@@ -148,16 +148,25 @@ class CSVImageMapper:
 
             # Try two matching strategies to handle both cases:
             # 1. Full path match: "Ford/Explorer/2020" → "Ford/Explorer/2020/img1.jpg"
-            # 2. Last segment match: "Users/.../2016-KIA-OPTIMA" → "2016-KIA-OPTIMA/img1.jpg"
+            # 2. Last segment match, at any nesting depth: "Users/.../2016-KIA-OPTIMA"
+            #    matches both "2016-KIA-OPTIMA/img1.jpg" (folder at ZIP root) and
+            #    "DK/2016-KIA-OPTIMA/img1.jpg" (client zips multiple vehicles for
+            #    the same org together under one org-code parent folder, so the
+            #    vehicle folder is nested one level deeper than the ZIP root).
 
             # Strategy 1: exact prefix match (original behavior)
             prefix = csv_path + "/"
             matching_keys = [k for k in zip_contents if k.startswith(prefix)]
 
-            # Strategy 2: if no match, try last segment (for client's long paths)
+            # Strategy 2: if no match, try last segment as a full path
+            # component anywhere in the key (not just at the ZIP root).
+            # Wrapping both sides in "/" requires the segment to be a whole
+            # folder name at a "/" boundary, so "VL" never matches inside
+            # "OTHER-VL-EXTRA" — only an exact folder named "VL".
             if not matching_keys:
                 last_segment = csv_path.rstrip("/").split("/")[-1]
-                matching_keys = [k for k in zip_contents if k.startswith(last_segment + "/")]
+                needle = f"/{last_segment}/"
+                matching_keys = [k for k in zip_contents if needle in f"/{k}"]
 
             if matching_keys:
                 for zip_key in matching_keys:

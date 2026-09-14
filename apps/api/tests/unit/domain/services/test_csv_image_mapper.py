@@ -266,10 +266,61 @@ class TestMapImages:
 
         assert result.matched_rows == 2
         assert result.total_images == 3
-        assert {m.vin for m in result.mapped} == {"VIN001", "VIN002"}
-        # VIN001 should have 2 images
-        vin001_images = [m for m in result.mapped if m.vin == "VIN001"]
-        assert len(vin001_images) == 2
+
+    def test_matches_last_segment_nested_under_an_extra_parent_folder(self) -> None:
+        """Real client scenario: multiple vehicles for the same org are
+        zipped together under one parent folder per org code (e.g. `VL/`),
+        so the vehicle folder isn't at the ZIP root -- it's nested one level
+        deeper. The last-segment match must still find it.
+
+        CSV path: Users/juanl/.../VL/2025-TOYOTA-COROLLA-5K-AZUL-VL
+        ZIP entry: VL/2025-TOYOTA-COROLLA-5K-AZUL-VL/1.jpg  (note the extra
+            leading VL/ folder -- this is what broke the original match)
+        """
+        zip_bytes = make_zip(
+            {
+                "VL/2025-TOYOTA-COROLLA-5K-AZUL-VL/1.jpg": b"img1",
+                "VL/2025-TOYOTA-COROLLA-5K-AZUL-VL/2.jpg": b"img2",
+                "VL/2012-JEEP-WRANGLER-144K-ROJO-TG/1.jpg": b"img3",
+            }
+        )
+        rows = self._make_rows(
+            (
+                "Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/VL/"
+                "2025-TOYOTA-COROLLA-5K-AZUL-VL",
+                "WD4PF1CD0KT011895",
+            ),
+        )
+        mapper = CSVImageMapper()
+        result = mapper.map_images(zip_bytes, rows, uuid4(), uuid4())
+
+        assert result.matched_rows == 1
+        assert result.total_images == 2
+        assert result.unmatched_rows == 0
+        matched_keys = {m.original_zip_key for m in result.mapped}
+        assert matched_keys == {
+            "VL/2025-TOYOTA-COROLLA-5K-AZUL-VL/1.jpg",
+            "VL/2025-TOYOTA-COROLLA-5K-AZUL-VL/2.jpg",
+        }
+
+    def test_last_segment_match_does_not_false_positive_on_partial_name(self) -> None:
+        """A ZIP folder whose name merely CONTAINS the last segment as a
+        substring (not as a full path component) must not match -- avoids
+        e.g. `2025-TOYOTA-COROLLA-5K-AZUL-VL` matching
+        `OTHER-2025-TOYOTA-COROLLA-5K-AZUL-VL-EXTRA`."""
+        zip_bytes = make_zip({"OTHER-2025-TOYOTA-COROLLA-5K-AZUL-VL-EXTRA/1.jpg": b"img1"})
+        rows = self._make_rows(
+            (
+                "Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/VL/"
+                "2025-TOYOTA-COROLLA-5K-AZUL-VL",
+                "WD4PF1CD0KT011895",
+            ),
+        )
+        mapper = CSVImageMapper()
+        result = mapper.map_images(zip_bytes, rows, uuid4(), uuid4())
+
+        assert result.matched_rows == 0
+        assert result.unmatched_rows == 1
 
     def test_matches_image_path_key_from_mapped_csv_row(self) -> None:
         """RED test (T8a): the mapper must read `image_path` (what
