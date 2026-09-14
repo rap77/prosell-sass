@@ -248,3 +248,101 @@ class TestBulkUploadVehiclesUseCase:
         assert attrs2["publicado"] is False
         assert second_product.location_city == "Miami"
         assert second_product.location_state == "FL"
+
+    @pytest.mark.asyncio
+    async def test_can_view_all_orgs_resolves_code_from_another_tenant(self, sample_csv: str):
+        """ORG_ADMIN_VIEW_ALL callers can import to an organization outside
+        their own tenant, and the created product's tenant_id must be the
+        DESTINATION organization's (Organization.id == Organization.tenant_id
+        by domain invariant), never the super-admin caller's."""
+        caller_tenant_id = uuid4()
+        other_org_id = uuid4()  # also the other org's tenant_id (invariant)
+        category_id = uuid4()
+
+        product_repository = AsyncMock()
+        product_repository.get_by_vin.return_value = None
+        created_products = []
+
+        async def mock_create(product):
+            created_products.append(product)
+            return product
+
+        product_repository.create.side_effect = mock_create
+
+        category_repository = AsyncMock()
+        mock_category = Mock()
+        mock_category.id = category_id
+        category_repository.get_by_id.return_value = mock_category
+
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(
+                id=other_org_id, tenant_id=other_org_id, name="Other Tenant Dealer", code="DJ"
+            ),
+            Organization(
+                id=other_org_id, tenant_id=other_org_id, name="Other Tenant Dealer", code="RM"
+            ),
+        ]
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=category_repository,
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+        )
+
+        result = await use_case.execute(
+            csv_content=sample_csv,
+            tenant_id=caller_tenant_id,
+            organization_id=None,
+            category_id=category_id,
+            can_view_all_orgs=True,
+        )
+
+        assert result.imported_count == 2
+        assert result.failed_count == 0
+        for product in created_products:
+            assert product.tenant_id == other_org_id
+            assert product.tenant_id != caller_tenant_id
+            assert product.organization_id == other_org_id
+
+        # tenant_id=None means "any tenant" -- the repo does the actual scoping.
+        call_args = organization_repository.get_by_codes.call_args
+        assert set(call_args.args[0]) == {"DJ", "RM"}
+        assert call_args.kwargs == {"tenant_id": None}
+
+    @pytest.mark.asyncio
+    async def test_without_can_view_all_orgs_a_different_tenant_code_stays_unknown(
+        self, sample_csv: str
+    ):
+        """Reconfirms the existing tenant-isolation default: a code that
+        resolves to a DIFFERENT tenant is dropped by the repository's own
+        tenant_id filter, so it is treated as unknown -- same as before
+        can_view_all_orgs existed."""
+        caller_tenant_id = uuid4()
+        category_id = uuid4()
+
+        product_repository = AsyncMock()
+        organization_repository = AsyncMock()
+        # A real (tenant-scoped) repo would filter these out server-side;
+        # simulate that by returning nothing for the caller's own tenant.
+        organization_repository.get_by_codes.return_value = []
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+        )
+
+        with pytest.raises(ValueError, match="Unknown organization codes: DJ, RM"):
+            await use_case.execute(
+                csv_content=sample_csv,
+                tenant_id=caller_tenant_id,
+                organization_id=None,
+                category_id=category_id,
+                can_view_all_orgs=False,
+            )
+
+        call_args = organization_repository.get_by_codes.call_args
+        assert set(call_args.args[0]) == {"DJ", "RM"}
+        assert call_args.kwargs == {"tenant_id": caller_tenant_id}
+        product_repository.create.assert_not_awaited()

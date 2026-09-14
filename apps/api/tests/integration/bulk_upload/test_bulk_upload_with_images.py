@@ -11,9 +11,12 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.product_model import ProductModel
 
 # =============================================================================
 # FIXTURES
@@ -131,3 +134,49 @@ class TestBulkUploadWithImages:
 
         assert response.status_code == 422
         assert "Only CSV files are supported" in response.json()["detail"]
+
+    async def test_super_admin_can_import_to_organization_in_a_different_tenant(
+        self,
+        async_client: AsyncClient,
+        auth_headers: dict[str, str],
+        db_session: AsyncSession,
+        test_category: CategoryModel,
+        client_csv_valid: str,
+    ) -> None:
+        """Reproduces the real bug report: a super_admin (ORG_ADMIN_VIEW_ALL,
+        the fixture's `async_client` role) importing a client CSV to an
+        organization outside their own tenant must succeed, and the created
+        products must belong to the DESTINATION organization's tenant_id
+        (Organization.id == Organization.tenant_id invariant) -- not the
+        caller's."""
+        other_org_id = uuid4()
+        other_org = OrganizationModel(
+            id=other_org_id,
+            tenant_id=other_org_id,
+            name="Other Tenant Dealer",
+            status="active",
+            settings={},
+        )
+        db_session.add(other_org)
+        await db_session.flush()
+
+        response = await async_client.post(
+            "/api/v1/products/bulk-upload/with-images",
+            data={
+                "organization_id": str(other_org_id),
+                "category_id": str(test_category.id),
+            },
+            files={"csv_file": ("client.csv", client_csv_valid, "text/csv")},
+            headers=auth_headers,
+        )
+
+        assert response.status_code in (200, 201), response.text
+        assert response.json()["imported_count"] == 2
+
+        result = await db_session.execute(
+            select(ProductModel).where(ProductModel.organization_id == other_org_id)
+        )
+        products = result.scalars().all()
+        assert len(products) == 2
+        for product in products:
+            assert product.tenant_id == other_org_id

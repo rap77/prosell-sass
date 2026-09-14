@@ -103,6 +103,7 @@ class BulkUploadVehiclesUseCase:
         organization_id: UUID | None,
         category_id: UUID,
         zip_bytes: bytes | None = None,
+        can_view_all_orgs: bool = False,
     ) -> BulkUploadVehiclesResult:
         """
         Execute bulk vehicle upload from CSV.
@@ -113,6 +114,9 @@ class BulkUploadVehiclesUseCase:
             organization_id: Organization ID for the products
             category_id: Category ID for vehicles
             zip_bytes: Optional ZIP file bytes for image association
+            can_view_all_orgs: True when the caller has ORG_ADMIN_VIEW_ALL —
+                org codes may then resolve to any tenant's organization, not
+                just the caller's own (super-admin CSV migration flow)
 
         Returns:
             BulkUploadVehiclesResult with per-row results and summary
@@ -120,10 +124,12 @@ class BulkUploadVehiclesUseCase:
         # 1. Parse CSV rows
         parsed_rows = self._parse_csv(csv_content)
 
-        # 2. Resolve org codes to org_id, scoped to the caller's tenant —
-        # a code that resolves to a different tenant is treated as unknown,
-        # never used to write outside the JWT's tenant_id.
-        org_code_map = await self._resolve_org_codes(parsed_rows, tenant_id)
+        # 2. Resolve org codes to org_id. Scoped to the caller's tenant
+        # unless can_view_all_orgs (ORG_ADMIN_VIEW_ALL) allows resolving
+        # any organization's code — a code that belongs to a different
+        # tenant is otherwise treated as unknown, exactly like a code that
+        # does not exist at all.
+        org_code_map = await self._resolve_org_codes(parsed_rows, tenant_id, can_view_all_orgs)
         unknown_codes = self._unknown_org_codes(parsed_rows, org_code_map)
         # Only fatal when there is no organization_id fallback: the per-row
         # loop below already falls back to `organization_id` for any row
@@ -150,7 +156,11 @@ class BulkUploadVehiclesUseCase:
                 image_mapping = self.csv_image_mapper.map_images(
                     zip_bytes=zip_bytes,
                     parsed_rows=rows_as_dicts,
-                    tenant_id=tenant_id,
+                    # Organization.id == Organization.tenant_id by domain
+                    # invariant (Organization.create() docstring) — images
+                    # must be namespaced under the DESTINATION org's tenant,
+                    # not the caller's, for the cross-tenant admin case.
+                    tenant_id=mapping_org_id,
                     organization_id=mapping_org_id,
                 )
 
@@ -163,8 +173,8 @@ class BulkUploadVehiclesUseCase:
         for mapped_row in parsed_rows:
             try:
                 # ponytail: resolve org from CSV code (within the caller's
-                # tenant), fallback to frontend selection. tenant_id is
-                # always the JWT's — never derived from CSV.
+                # tenant, or any tenant when can_view_all_orgs), fallback to
+                # frontend selection.
                 row_org_id: UUID | None = organization_id
                 if mapped_row.cod_organization:
                     code = mapped_row.cod_organization.strip().upper()
@@ -176,7 +186,12 @@ class BulkUploadVehiclesUseCase:
 
                 result = await self._upsert_vehicle(
                     mapped_row=mapped_row,
-                    tenant_id=tenant_id,
+                    # Organization.id == Organization.tenant_id by domain
+                    # invariant, so the product's tenant_id is always the
+                    # DESTINATION organization's, never the caller's — this
+                    # matters when can_view_all_orgs let a code resolve
+                    # cross-tenant.
+                    tenant_id=row_org_id,
                     organization_id=row_org_id,
                     category_id=category_id,
                     image_mapping=image_mapping,
@@ -246,20 +261,23 @@ class BulkUploadVehiclesUseCase:
         return rows
 
     async def _resolve_org_codes(
-        self, parsed_rows: list[MappedCSVRow], tenant_id: UUID
+        self,
+        parsed_rows: list[MappedCSVRow],
+        tenant_id: UUID,
+        can_view_all_orgs: bool = False,
     ) -> dict[str, UUID]:
         """
-        Resolve org codes from CSV to organization IDs, scoped to tenant_id.
+        Resolve org codes from CSV to organization IDs.
 
-        A code that belongs to a different tenant is dropped from the
-        result — it is not resolvable by this caller, exactly like a code
-        that does not exist at all. tenant_id always comes from the JWT and
-        is never widened by a CSV-supplied code.
+        Scoped to tenant_id unless can_view_all_orgs (ORG_ADMIN_VIEW_ALL) —
+        a code that belongs to a different tenant is otherwise dropped from
+        the result, exactly like a code that does not exist at all.
 
         Args:
             parsed_rows: Parsed CSV rows
             tenant_id: Tenant ID from JWT context — the only tenant a code
-                may resolve within
+                may resolve within, unless can_view_all_orgs
+            can_view_all_orgs: True to resolve codes across every tenant
 
         Returns:
             Dict mapping uppercase org code to organization_id
@@ -274,8 +292,11 @@ class BulkUploadVehiclesUseCase:
         if not unique_codes:
             return {}
 
-        orgs = await self.organization_repository.get_by_codes(unique_codes)
-        return {org.code.upper(): org.id for org in orgs if org.code and org.tenant_id == tenant_id}
+        scope_tenant_id = None if can_view_all_orgs else tenant_id
+        orgs = await self.organization_repository.get_by_codes(
+            unique_codes, tenant_id=scope_tenant_id
+        )
+        return {org.code.upper(): org.id for org in orgs if org.code}
 
     @staticmethod
     def _unknown_org_codes(

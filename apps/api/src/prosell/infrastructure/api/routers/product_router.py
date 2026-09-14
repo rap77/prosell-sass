@@ -2111,9 +2111,15 @@ async def bulk_upload_preview(
             zip_bytes = None
 
     # Execute preview use case
+    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
     try:
-        result = await use_case.execute(csv_content, zip_bytes, tenant_id=current_user.tenant_id)
+        result = await use_case.execute(
+            csv_content,
+            zip_bytes,
+            tenant_id=current_user.tenant_id,
+            can_view_all_orgs=can_view_all_orgs,
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
@@ -2160,11 +2166,18 @@ async def bulk_upload_with_images(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    # IDOR prevention: verify organization belongs to user's tenant (if provided)
-    # ponytail: if organization_id is None, use case resolves from CSV org codes
+    # IDOR prevention: verify organization belongs to user's tenant (if
+    # provided) -- unless the caller has ORG_ADMIN_VIEW_ALL, the same
+    # super-admin CSV migration flow permission checked elsewhere
+    # (_check_org_scope_permission). ponytail: if organization_id is None,
+    # the use case resolves from CSV org codes instead.
+    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     if organization_id is not None:
         org_repo = SqlAlchemyOrganizationRepository(db)
-        org = await org_repo.get_by_id(org_id=organization_id, tenant_id=current_user.tenant_id)
+        # Organization.id == Organization.tenant_id by domain invariant, so
+        # a cross-tenant admin looks the org up by its own id-as-tenant_id.
+        lookup_tenant_id = organization_id if can_view_all_orgs else current_user.tenant_id
+        org = await org_repo.get_by_id(org_id=organization_id, tenant_id=lookup_tenant_id)
         if org is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -2210,6 +2223,7 @@ async def bulk_upload_with_images(
             organization_id=organization_id,
             category_id=category_id,
             zip_bytes=zip_bytes,
+            can_view_all_orgs=can_view_all_orgs,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

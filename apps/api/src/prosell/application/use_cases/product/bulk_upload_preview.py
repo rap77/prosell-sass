@@ -51,7 +51,12 @@ class BulkUploadPreviewUseCase:
         self._required_fields = {"VIN", "price", "title"}
 
     async def execute(
-        self, csv_content: str, zip_bytes: bytes | None = None, *, tenant_id: UUID
+        self,
+        csv_content: str,
+        zip_bytes: bytes | None = None,
+        *,
+        tenant_id: UUID,
+        can_view_all_orgs: bool = False,
     ) -> PreviewUseCaseResult:
         """Analyze CSV content and produce a preview report.
 
@@ -60,7 +65,10 @@ class BulkUploadPreviewUseCase:
             zip_bytes: Optional ZIP file bytes with images
             tenant_id: Tenant ID from JWT context — org-code existence is
                 scoped to this tenant only, so a preview never discloses
-                whether a code exists in a DIFFERENT organization.
+                whether a code exists in a DIFFERENT organization, unless
+                can_view_all_orgs (ORG_ADMIN_VIEW_ALL) is set
+            can_view_all_orgs: True to check org-code existence across
+                every tenant (super-admin CSV migration flow)
 
         Returns:
             PreviewUseCaseResult with per-row analysis
@@ -121,10 +129,11 @@ class BulkUploadPreviewUseCase:
             )
             images_count = mapping_result.total_images
 
+        scope_tenant_id = None if can_view_all_orgs else tenant_id
         existing_org_codes = {
             org.code.strip().upper()
             for org in await self._organization_repository.get_by_codes(
-                sorted(code.upper() for code in detected_org_codes), tenant_id=tenant_id
+                sorted(code.upper() for code in detected_org_codes), tenant_id=scope_tenant_id
             )
             if org.code
         }
