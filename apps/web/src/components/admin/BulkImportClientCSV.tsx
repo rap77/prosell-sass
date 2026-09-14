@@ -347,6 +347,7 @@ interface PreviewStepProps {
 function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
   const { summary, rows, total_rows } = preview;
   const hasMissingOrganizations = summary.missing_org_codes.length > 0;
+  const hasDetectedOrganizations = summary.detected_org_codes.length > 0;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -367,6 +368,17 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
           tone="cyan"
         />
       </div>
+
+      {hasDetectedOrganizations && (
+        <div className="rounded-lg bg-ps-bg-surface border border-ps-border-default p-3.5">
+          <p className="m-0 text-xs font-semibold text-ps-text-primary">
+            Organizaciones detectadas
+          </p>
+          <p className="m-0 mt-1 text-xs text-ps-text-secondary">
+            {summary.detected_org_codes.join(", ")}
+          </p>
+        </div>
+      )}
 
       {hasMissingOrganizations && (
         <div className="rounded-lg border border-ps-error bg-ps-bg-surface p-3.5">

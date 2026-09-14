@@ -276,4 +276,35 @@ describe("BulkImportClientCSV", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Continuar")).toBeDisabled();
   });
+
+  it("shows detected CSV organizations already in the preview step", async () => {
+    // Regression: detected_org_codes was only ever shown in step 3
+    // (Confirm), which is unreachable when detection is what the user is
+    // trying to verify in the first place -- they need to see it in step 2.
+    previewMock.mutateAsync.mockResolvedValue({
+      ...successPreview,
+      summary: {
+        ...successPreview.summary,
+        detected_org_codes: ["DJ", "VL"],
+        missing_org_codes: [],
+      },
+    });
+    const user = userEvent.setup();
+
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
+
+    const csvInput = document.querySelector(
+      'input[accept*="text/csv"]',
+    ) as HTMLInputElement;
+    await user.upload(csvInput, new File(["vin;title\n1A;test"], "test.csv"));
+    await user.click(screen.getByText("Vista previa"));
+
+    await waitFor(() =>
+      expect(screen.getByText("2. Vista previa")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Organizaciones detectadas")).toBeInTheDocument();
+    expect(screen.getByText("DJ, VL")).toBeInTheDocument();
+  });
 });
