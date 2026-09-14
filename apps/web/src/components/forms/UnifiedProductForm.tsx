@@ -64,6 +64,7 @@ import {
 import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
+import { getMileageFieldOverride } from "@/lib/utils/mileageUnit";
 import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
 import type { Broker } from "@/lib/api/schemas/organizations";
 import type { CategoryNode } from "@/types/category";
@@ -106,10 +107,13 @@ export const FIXED_FIELDS_SCHEMA = z.object({
 // (line ~483): that use site needs to tolerate extra category attributes
 // alongside price/description, unlike the strict `.merge(attrSchema)` use at
 // line ~290, which must keep rejecting unknown top-level fields.
-export const FIXED_FIELDS_SCHEMA_LOOSE = z.looseObject({
-  price: z.coerce.number().min(0, { message: "Price must be positive" }),
-  description: z.string().max(5000).optional(),
-});
+export const FIXED_FIELDS_SCHEMA_LOOSE = z
+  .object({
+    // The app currently pins Zod 3.25, whose constraint error key is `message`.
+    price: z.coerce.number().min(0, { message: "Price must be positive" }),
+    description: z.string().max(5000).optional(),
+  })
+  .passthrough();
 
 const CATEGORY_TYPE = {
   VEHICLE: "vehicle",
@@ -450,6 +454,21 @@ export function UnifiedProductForm({
     category.attribute_groups,
   );
 
+  // Mileage label/unit depends on the owning org's country (US = miles) —
+  // no value conversion, only the displayed label/unit. Overridden here
+  // rather than in the static category schema, since the schema is shared
+  // across every organization regardless of country.
+  const effectiveSchema =
+    "mileage" in category.attribute_schema
+      ? {
+          ...category.attribute_schema,
+          mileage: {
+            ...category.attribute_schema.mileage,
+            ...getMileageFieldOverride(selectedOrg?.country),
+          },
+        }
+      : category.attribute_schema;
+
   const isDisabled =
     isSubmitting ||
     isPending ||
@@ -697,7 +716,7 @@ export function UnifiedProductForm({
           key={group.key}
           group={group}
           fieldKeys={fieldsByGroup[group.key] ?? []}
-          schema={category.attribute_schema}
+          schema={effectiveSchema}
           control={control}
           setValue={setValue}
           disabled={isDisabled}
