@@ -96,6 +96,7 @@ async def integrity_error_handler(_request: Request, exc: IntegrityError) -> JSO
     """
     # Extract error details from the exception
     error_message = str(exc.orig) if hasattr(exc, "orig") else str(exc)
+    logger.error("IntegrityError on %s: %s", _request.url.path, error_message)
 
     # Common integrity errors
     if "unique constraint" in error_message.lower() or "duplicate key" in error_message.lower():
