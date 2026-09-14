@@ -168,8 +168,7 @@ class TestPathMatching:
             organization_id=organization_id,
         )
         for mapped in result.mapped:
-            assert mapped.do_spaces_key.startswith("vehicles/")
-            assert str(tenant_id) in mapped.do_spaces_key
+            assert mapped.do_spaces_key.startswith(f"orgs/{tenant_id}/vehicles/")
             assert str(organization_id) in mapped.do_spaces_key
             assert mapped.do_spaces_key.endswith(mapped.original_zip_key.split("/")[-1])
 

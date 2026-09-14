@@ -11,15 +11,21 @@ from prosell.domain.value_objects.product_condition import ProductCondition
 
 _ALLOWED_IMAGE_URL_SCHEMES = frozenset({"http", "https"})
 
-# Canonical storage key shape: `orgs/<tenant-uuid>/<rest of path>`.
-# The tenant segment is a UUID-shaped string (not strictly version-validated
-# here — the router layer enforces real tenant scope via
-# `validate_image_urls_for_tenant`). The rest of the path permits alphanum,
-# dot, underscore, dash, and forward slash (so filenames like
-# `image_v1.0.jpg` are still valid). Anchored to the start, no leading
-# slash. The `_has_no_traversal_segment` helper separately rejects `..`
-# segments to block path-traversal attempts that the dot char allows.
-_STORAGE_KEY_PATTERN = re.compile(r"^orgs/[0-9a-fA-F-]{36}/[A-Za-z0-9._/\-]+$")
+# Canonical storage key shape: `orgs/<tenant-uuid>/<rest of path>`, plus the
+# legacy `vehicles/<tenant-uuid>/<rest of path>` shape that CSVImageMapper
+# generated for client CSV bulk-upload imports before it was switched to the
+# canonical prefix. The router's real tenant-scope check
+# (`validate_image_urls_for_tenant`) already accepts both shapes — this DTO
+# layer must match it, or the edit form's re-submit of an unchanged
+# bulk-uploaded product's existing image keys gets rejected here before ever
+# reaching that check. The tenant segment is a UUID-shaped string (not
+# strictly version-validated here — the router layer enforces real tenant
+# scope). The rest of the path permits alphanum, dot, underscore, dash, and
+# forward slash (so filenames like `image_v1.0.jpg` are still valid).
+# Anchored to the start, no leading slash. The `_has_no_traversal_segment`
+# helper separately rejects `..` segments to block path-traversal attempts
+# that the dot char allows.
+_STORAGE_KEY_PATTERN = re.compile(r"^(?:orgs|vehicles)/[0-9a-fA-F-]{36}/[A-Za-z0-9._/\-]+$")
 
 
 def _has_no_traversal_segment(value: str) -> bool:
@@ -90,6 +96,11 @@ class CreateProductRequest(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=500)
     price_cents: int = Field(..., ge=0)
+    # Never trusted as-is: the router's `create_product` handler always
+    # overwrites this with a server-derived value (the caller's own tenant,
+    # or a verified target org for ORG_ADMIN_VIEW_ALL admins) via
+    # `request.model_copy(update={"tenant_id": target_org_id, ...})` before
+    # the use case ever sees it. The client-supplied value here is inert.
     tenant_id: UUID | None = None
     organization_id: UUID | None = None
     category_id: UUID

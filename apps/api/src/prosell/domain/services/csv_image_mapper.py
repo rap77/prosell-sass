@@ -14,6 +14,7 @@ DO Spaces key format:
 """
 
 import zipfile
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import PurePosixPath
@@ -107,7 +108,7 @@ class CSVImageMapper:
     def map_images(
         self,
         zip_bytes: bytes,
-        parsed_rows: list[dict],
+        parsed_rows: Sequence[Mapping[str, object]],
         tenant_id: UUID,
         organization_id: UUID,
     ) -> ImageMappingResult:
@@ -134,7 +135,8 @@ class CSVImageMapper:
             # `path` for backwards compatibility with callers that hand
             # the mapper a raw CSV row dict instead of a mapped one.
             csv_path = row.get("image_path") or row.get("path", "")
-            vin = row.get("vin", "")
+            vin_value = row.get("vin", "")
+            vin = vin_value if isinstance(vin_value, str) else ""
 
             # Skip rows without a usable path
             if not csv_path or not isinstance(csv_path, str):
@@ -259,7 +261,13 @@ class CSVImageMapper:
         """
         Build a normalized DO Spaces object key.
 
-        Format: {prefix}/{tenant_id}/{organization_id}/{vin}/{filename}
+        Format: orgs/{tenant_id}/{prefix}/{organization_id}/{vin}/{filename}
+
+        The `orgs/<tenant-uuid>/` prefix is the canonical storage key shape
+        required by the image_urls DTO validator (create.py) and the
+        tenant-scope check (validate_image_urls_for_tenant) — without it,
+        the edit form's round-trip of an unchanged bulk-uploaded product's
+        existing image keys gets rejected on save.
 
         Args:
             tenant_id: Tenant ID
@@ -270,4 +278,4 @@ class CSVImageMapper:
         Returns:
             DO Spaces key string
         """
-        return f"{self.do_spaces_prefix}/{tenant_id}/{organization_id}/{vin}/{filename}"
+        return f"orgs/{tenant_id}/{self.do_spaces_prefix}/{organization_id}/{vin}/{filename}"

@@ -102,18 +102,23 @@ class TestBuildDoSpacesKey:
     """Tests for _build_do_spaces_key."""
 
     def test_format(self) -> None:
+        """Canonical shape: orgs/<tenant-uuid>/<prefix>/... -- the DTO-level
+        image_urls validator (create.py) and the tenant-scope check
+        (validate_image_urls_for_tenant) both require the orgs/<uuid>/
+        prefix; a bare vehicles/<uuid>/... key (the old shape) fails the
+        edit form's round-trip on any bulk-uploaded product."""
         mapper = CSVImageMapper(do_spaces_prefix="vehicles")
         tid = uuid4()
         oid = uuid4()
         key = mapper._build_do_spaces_key(tid, oid, "VIN123", "img1.jpg")
-        assert key == f"vehicles/{tid}/{oid}/VIN123/img1.jpg"
+        assert key == f"orgs/{tid}/vehicles/{oid}/VIN123/img1.jpg"
 
     def test_custom_prefix(self) -> None:
         mapper = CSVImageMapper(do_spaces_prefix="custom")
         tid = uuid4()
         oid = uuid4()
         key = mapper._build_do_spaces_key(tid, oid, "VIN123", "img1.jpg")
-        assert key.startswith("custom/")
+        assert key.startswith(f"orgs/{tid}/custom/")
 
 
 class TestMapImages:
@@ -150,7 +155,7 @@ class TestMapImages:
         for m in mapped:
             assert (
                 m.do_spaces_key
-                == f"vehicles/{tid}/{oid}/VIN001/{m.original_zip_key.split('/')[-1]}"
+                == f"orgs/{tid}/vehicles/{oid}/VIN001/{m.original_zip_key.split('/')[-1]}"
             )
 
     def test_unmatched_path(self) -> None:

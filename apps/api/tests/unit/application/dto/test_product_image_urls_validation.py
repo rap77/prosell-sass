@@ -98,11 +98,30 @@ class TestCreateProductRequestImageUrlsValidation:
         request = self._valid_create([key])
         assert request.image_urls == [key]
 
+    # ─── Legacy bulk-upload key shape (CSVImageMapper's pre-fix prefix) ────
+    #
+    # The router's real tenant-scope check (validate_image_urls_for_tenant)
+    # already accepts `vehicles/{tenant_id}/...` alongside `orgs/{tenant_id}/...`
+    # -- it's the documented legacy shape for CSV bulk-upload imports. The DTO
+    # must accept the same shape, or every bulk-uploaded product becomes
+    # impossible to edit (the edit form re-submits its existing image keys
+    # verbatim on every save, even when only e.g. the description changed).
+
+    def test_legacy_vehicles_prefix_storage_key_is_accepted(self) -> None:
+        """A bare key with the legacy vehicles/<uuid>/ prefix passes."""
+        key = (
+            "vehicles/11111111-1111-1111-1111-111111111111/"
+            "22222222-2222-2222-2222-222222222222/1FMSK7DH7LGA77418/1.jpg"
+        )
+        request = self._valid_create([key])
+        assert request.image_urls == [key]
+
     @pytest.mark.parametrize(
         "bad_key",
         [
-            "vehicles/abc.jpg",  # missing orgs/<uuid>/ prefix
+            "vehicles/abc.jpg",  # missing the <uuid>/ tenant segment entirely
             "orgs/not-a-uuid/vehicles/abc.jpg",  # tenant segment not a UUID
+            "vehicles/not-a-uuid/vehicles/abc.jpg",  # same, legacy prefix
             "orgs/11111111-1111-1111-1111-111111111111/../etc/passwd",  # traversal
             "/orgs/11111111-1111-1111-1111-111111111111/vehicles/abc.jpg",  # leading slash
         ],
@@ -167,11 +186,24 @@ class TestUpdateProductRequestImageUrlsValidation:
         request = self._valid_update([key])
         assert request.image_urls == [key]
 
+    def test_legacy_vehicles_prefix_storage_key_is_accepted(self) -> None:
+        """Regression: this exact shape is what the edit form re-submits for
+        any product imported via the client CSV bulk-upload -- rejecting it
+        made every bulk-uploaded product's image_urls impossible to save,
+        even when only an unrelated field (e.g. description) changed."""
+        key = (
+            "vehicles/11111111-1111-1111-1111-111111111111/"
+            "22222222-2222-2222-2222-222222222222/1FMSK7DH7LGA77418/1.jpg"
+        )
+        request = self._valid_update([key])
+        assert request.image_urls == [key]
+
     @pytest.mark.parametrize(
         "bad_key",
         [
             "vehicles/abc.jpg",
             "orgs/not-a-uuid/vehicles/abc.jpg",
+            "vehicles/not-a-uuid/vehicles/abc.jpg",
             "orgs/11111111-1111-1111-1111-111111111111/../etc/passwd",
             "/orgs/11111111-1111-1111-1111-111111111111/vehicles/abc.jpg",
         ],
