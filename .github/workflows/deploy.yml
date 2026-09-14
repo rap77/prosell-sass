@@ -131,7 +131,11 @@ jobs:
 
           # 4. Ahora levantar API y Web (que dependen de DB con password correcto)
           docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d
-          docker system prune -f
+          # ponytail: --filter until=24h preserva el build cache/imágenes de
+          # los últimos deploys (evita reinstalar pnpm/uv desde cero en cada
+          # corrida, que era el cuello de botella real de los ~35min de build)
+          # y sigue limpiando basura acumulada de más de un día.
+          docker system prune -f --filter "until=24h"
 
       - name: Seed staging admin
         working-directory: ${{ secrets.STAGING_REPO_PATH }}
