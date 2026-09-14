@@ -330,8 +330,10 @@ class CSVFieldMapper:
             row_number=row_number,
             vin=vin,
             cod_organization=_truncate(
-                # ponytail: try cod_org first, fallback to title for backward compatibility
-                (row.get("cod_org") or row.get("title", "")).strip(),
+                # cod_dealer is the real column name the client's CSV uses today
+                # (data39.csv). cod_org is an agnostic alias for non-vehicle
+                # clients. title is the original legacy name, kept for old files.
+                (row.get("cod_dealer") or row.get("cod_org") or row.get("title", "")).strip(),
                 MAX_SHORT_TEXT_LENGTH,
                 "cod_organization",
                 row_number,

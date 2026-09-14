@@ -248,6 +248,46 @@ class TestCSVFieldMapperMapRow:
         assert result.facebook_groups is None
         assert result.image_path is None
 
+    def test_maps_cod_dealer_column_as_organization_code(self):
+        """Real client CSV (data39.csv) names the column 'cod_dealer', not 'title'."""
+        row = {
+            "cod_dealer": "DJ",
+            "price": "17800",
+            "location": "Orlando",
+            "VIN": "1FMSK7DH7LGA77418",
+        }
+
+        result = CSVFieldMapper.map_row(row, row_number=2)
+
+        assert result.cod_organization == "DJ"
+
+    def test_maps_cod_org_column_as_organization_code(self):
+        """Agnostic alias, in case a client uses this name instead of cod_dealer."""
+        row = {
+            "cod_org": "DJ",
+            "price": "17800",
+            "location": "Orlando",
+            "VIN": "1FMSK7DH7LGA77418",
+        }
+
+        result = CSVFieldMapper.map_row(row, row_number=2)
+
+        assert result.cod_organization == "DJ"
+
+    def test_cod_dealer_takes_precedence_over_legacy_title(self):
+        """When both are present, the real client column name wins over the old alias."""
+        row = {
+            "cod_dealer": "DJ",
+            "title": "WRONG",
+            "price": "17800",
+            "location": "Orlando",
+            "VIN": "1FMSK7DH7LGA77418",
+        }
+
+        result = CSVFieldMapper.map_row(row, row_number=2)
+
+        assert result.cod_organization == "DJ"
+
     def test_maps_publicado_empty_as_false(self):
         """publicado field empty maps to False."""
         row = {
