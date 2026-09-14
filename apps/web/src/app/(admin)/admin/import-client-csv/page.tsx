@@ -18,8 +18,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { orgApi } from "@/lib/api/orgApi";
-import { useCategoryOptions } from "@/lib/api/categories";
+import { useCategories } from "@/lib/api/categories";
 import { BulkImportClientCSV } from "@/components/admin/BulkImportClientCSV";
+
+// The vehicles vertical's id is generated at seed time (seed_vehicles_vertical()),
+// never a fixed value — only its slug is stable. See project memory
+// "u1-cross-org-export-api" interpretation entry.
+const VEHICLES_VERTICAL_SLUG = "vehiculos-y-transporte";
 
 export default function ImportClientCSVPage() {
   const isAdmin = useRequireAdmin();
@@ -32,8 +37,7 @@ export default function ImportClientCSVPage() {
     enabled: !!isAdmin,
   });
 
-  const { data: categoryOptions, isLoading: catsLoading } =
-    useCategoryOptions();
+  const { data: allCategories, isLoading: catsLoading } = useCategories();
 
   // Redirect non-super-admins away from this page.
   useEffect(() => {
@@ -51,21 +55,17 @@ export default function ImportClientCSVPage() {
     name: o.name,
   }));
   // ponytail: this importer is hardcoded to the vehicles vertical for now.
-  // The user sees the parent vertical's name ("Vehículos y Transporte") in
-  // the dropdown — not the technical leaf-category label — because the
-  // vertical is the human-readable unit. The UUID is the stable identifier
-  // we send to the backend; the display name is the user-facing string.
-  // When the multi-vertical importer is built, this lookup will move to
-  // the `/api/v1/organizations/{id}/verticals` endpoint and the dropdown
-  // will offer the full vertical → category tree.
-  const CARS_AND_TRUCKS_CATEGORY_ID = "b26f93ac-2d21-4849-9a1f-2a7df6b32de2";
-  const VEHICLES_VERTICAL_DISPLAY_NAME = "Vehículos y Transporte";
-  const categories = [
-    {
-      id: CARS_AND_TRUCKS_CATEGORY_ID,
-      name: VEHICLES_VERTICAL_DISPLAY_NAME,
-    },
-  ];
+  // The user sees the parent vertical's name in the dropdown — not the
+  // technical leaf-category label — because the vertical is the
+  // human-readable unit. When the multi-vertical importer is built, this
+  // lookup will move to the `/api/v1/organizations/{id}/verticals` endpoint
+  // and the dropdown will offer the full vertical → category tree.
+  const vehiclesVertical = allCategories?.find(
+    (c) => c.slug === VEHICLES_VERTICAL_SLUG,
+  );
+  const categories = vehiclesVertical
+    ? [{ id: vehiclesVertical.id, name: vehiclesVertical.name }]
+    : [];
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -82,6 +82,11 @@ export default function ImportClientCSVPage() {
 
       {orgsLoading || catsLoading ? (
         <p className="text-xs text-ps-text-secondary">Cargando…</p>
+      ) : !vehiclesVertical ? (
+        <p className="text-xs text-ps-error">
+          No se encontró la categoría &quot;{VEHICLES_VERTICAL_SLUG}&quot; — no
+          se puede importar hasta que exista.
+        </p>
       ) : (
         <BulkImportClientCSV
           organizations={orgs}
