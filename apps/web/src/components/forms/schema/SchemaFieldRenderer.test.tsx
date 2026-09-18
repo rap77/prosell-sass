@@ -203,3 +203,71 @@ describe("SchemaFieldRenderer select fields", () => {
     ).toBe("Diésel");
   });
 });
+
+// AC1.1.1/AC1.1.2 (u2-vehicle-catalog-ui): the select block reads the RHF
+// virtual "_unmatchedFields" channel (written by mapDecodedToForm, see
+// VinDecodeField.test.tsx for the write side) via useWatch to decide
+// whether to show the mismatch help icon for its own fieldKey.
+describe("SchemaFieldRenderer mismatch indicator", () => {
+  function MismatchHarness({
+    fieldKey,
+    unmatchedFields,
+  }: {
+    fieldKey: string;
+    unmatchedFields: string[];
+  }) {
+    const { control, setValue } = useForm<Record<string, unknown>>({
+      defaultValues: { [fieldKey]: "", _unmatchedFields: unmatchedFields },
+    });
+    return (
+      <SchemaFieldRenderer
+        fieldKey={fieldKey}
+        entry={{
+          type: "string",
+          filter_type: "select",
+          label: "Combustible",
+          options: ["Gasolina", "Diésel", "Eléctrico"],
+        }}
+        control={control as unknown as Control<Record<string, unknown>>}
+        setValue={
+          setValue as unknown as UseFormSetValue<Record<string, unknown>>
+        }
+        schema={{}}
+        disabled={false}
+      />
+    );
+  }
+
+  it("does not show the mismatch help icon for a reconciled field (AC1.1.1)", () => {
+    render(<MismatchHarness fieldKey="fuel_type" unmatchedFields={[]} />);
+
+    expect(
+      screen.queryByText("No se pudo autocompletar — completar a mano"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the mismatch help icon and text for an unmatched field (AC1.1.2)", () => {
+    render(
+      <MismatchHarness fieldKey="fuel_type" unmatchedFields={["fuel_type"]} />,
+    );
+
+    expect(
+      screen.getByText("No se pudo autocompletar — completar a mano"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Combustible: no se pudo autocompletar — completar a mano",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show the mismatch help icon when a DIFFERENT field is unmatched", () => {
+    render(
+      <MismatchHarness fieldKey="fuel_type" unmatchedFields={["body_type"]} />,
+    );
+
+    expect(
+      screen.queryByText("No se pudo autocompletar — completar a mano"),
+    ).not.toBeInTheDocument();
+  });
+});

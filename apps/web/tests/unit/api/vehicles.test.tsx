@@ -151,7 +151,12 @@ describe("useDecodeVin", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.data).toEqual(mockResponse.vehicle);
+    // u2-vehicle-catalog-ui: the hook now also exposes `unmatchedFields`
+    // (defaults to [] when the backend response omits `unmatched_fields`).
+    expect(result.current.data).toEqual({
+      ...mockResponse.vehicle,
+      unmatchedFields: [],
+    });
   });
 
   it("should show toast error on failure", async () => {

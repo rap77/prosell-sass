@@ -14,7 +14,13 @@ import type { AttributeSchemaEntry } from "@/types/category";
 interface VinDecodeFieldProps {
   value: string;
   onChange: (value: string) => void;
-  onDecode: (decoded: DecodedVehicle) => void;
+  /**
+   * `unmatchedFields` (u2-vehicle-catalog-ui, AC1.1.1/AC1.1.2): field keys
+   * the backend's canonical reconciliation could not match to any
+   * configured `option` — passed through so sibling `select` fields in the
+   * same form can show a mismatch indicator.
+   */
+  onDecode: (decoded: DecodedVehicle, unmatchedFields: string[]) => void;
   disabled?: boolean;
   /** Used to auto-fill stock_number from last 6 chars of VIN */
   setValue?: UseFormSetValue<Record<string, unknown>>;
@@ -57,8 +63,8 @@ export function VinDecodeField({
     if (value.length !== 17) return;
 
     decodeVin(value, {
-      onSuccess: (decoded) => {
-        onDecode(decoded);
+      onSuccess: ({ unmatchedFields, ...decoded }) => {
+        onDecode(decoded, unmatchedFields);
         // Auto-fill stock_number from last 6 chars
         if (setValue) {
           setValue("stock_number", value.slice(-6));
@@ -118,12 +124,22 @@ export function VinDecodeField({
  * @param decoded - The decoded vehicle from NHTSA
  * @param schema - The category's attribute_schema
  * @param setValue - React Hook Form's setValue
+ * @param unmatchedFields - u2-vehicle-catalog-ui (AC1.1.1/AC1.1.2): field
+ *   keys the backend's canonical reconciliation could not match to any
+ *   configured `option`. Written to the RHF virtual field
+ *   `_unmatchedFields` (prefix `_`, outside every category's Zod schema —
+ *   `combinedSchema` is a plain `z.object()` without `.strict()`, so RHF's
+ *   `handleSubmit` output silently strips this key, no manual exclusion
+ *   needed). `SchemaFieldRenderer`'s `select` blocks read it back via
+ *   `useWatch` to show the mismatch help icon for their own `fieldKey`.
  */
 export function mapDecodedToForm(
   decoded: DecodedVehicle,
   schema: Record<string, AttributeSchemaEntry>,
   setValue: UseFormSetValue<Record<string, unknown>>,
+  unmatchedFields: string[],
 ): void {
+  setValue("_unmatchedFields", unmatchedFields);
   for (const [key, entry] of Object.entries(schema)) {
     const decodeKey = entry.vin_decode_key;
     if (!decodeKey) continue;

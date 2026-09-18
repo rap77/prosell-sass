@@ -8,9 +8,9 @@ import { z } from "zod";
  */
 export const DecodedVehicleSchema = z.object({
   // basic
-  year: z.number().optional(),
-  make: z.string().optional(),
-  model: z.string().optional(),
+  year: z.number().nullable().optional(),
+  make: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
   trim: z.string().nullable().optional(),
 
   // engine
@@ -56,10 +56,16 @@ export const DecodedVehicleSchema = z.object({
 /**
  * Wire shape of the full response from `POST /api/v1/vehicles/decode-vin`.
  * `vin` lives at the top level of the response, not inside `vehicle`.
+ *
+ * `unmatched_fields` (u2-vehicle-catalog-ui, AC1.1.1/AC1.1.2): field keys the
+ * backend's canonical reconciliation (U1) could not match against the
+ * schema's `options` for that field. `.default([])` keeps this schema
+ * tolerant of an older backend that doesn't send the field yet.
  */
 export const DecodeVinResponseSchema = z.object({
   vin: z.string(),
   vehicle: DecodedVehicleSchema,
+  unmatched_fields: z.array(z.string()).default([]),
 });
 
 // vin is at the top level of the response and merged in by the hook

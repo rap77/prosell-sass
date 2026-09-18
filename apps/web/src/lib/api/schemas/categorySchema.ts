@@ -101,8 +101,22 @@ export const MigrationWarningResponseSchema = z.object({
   requires_force: z.boolean().optional(),
 });
 
+/**
+ * Wire shape of `GET /api/v1/categories/facebook-values/{field_key}`
+ * (u1-vehicle-catalog-api, BR1.4) — the canonical Facebook Marketplace
+ * options for a vehicle attribute_schema field key. 404 (unrecognized
+ * field_key) is handled by the caller, not represented here.
+ */
+export const FacebookValueOptionsResponseSchema = z.object({
+  field_key: z.string(),
+  options: z.array(z.string()),
+});
+
 export type CategorySchemaResponse = z.infer<
   typeof CategorySchemaResponseSchema
+>;
+export type FacebookValueOptionsResponse = z.infer<
+  typeof FacebookValueOptionsResponseSchema
 >;
 export type AttributeField = z.infer<typeof AttributeFieldSchema>;
 export type AttributeGroup = z.infer<typeof AttributeGroupSchema>;

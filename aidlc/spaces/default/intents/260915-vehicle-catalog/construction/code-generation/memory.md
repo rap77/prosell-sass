@@ -1,0 +1,30 @@
+<!-- INVARIANT: examples are single-line HTML comments so a fresh template parses to total=0 (MEMORY_EMPTY). Do NOT un-comment or split across lines. t100 guards this. -->
+
+> This file is kept up to date automatically while the stage runs. Add observations at the review step, not by editing here directly.
+
+## Interpretations
+
+<!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
+
+- 2026-09-18T00:00:00Z — u2-vehicle-catalog-ui: real test files confirmed with `fd`/`rg` before extending — `apps/web/src/components/forms/schema/VinDecodeField.test.tsx`, `apps/web/src/components/forms/schema/SchemaFieldRenderer.test.tsx`, `apps/web/src/components/admin/category-schema-editor.test.tsx` (co-located), plus `apps/web/tests/unit/lib/api/vin-decode.test.ts` and `apps/web/tests/unit/api/vehicles.test.tsx` (non-co-located, both exercise `useDecodeVin()` directly). No new duplicate test files created for these areas.
+- 2026-09-18T00:00:00Z — u2-vehicle-catalog-ui: a repo-wide `pnpm vitest run` (not just the targeted files) surfaced a SECOND full-render test suite for `CategorySchemaEditor` — `apps/web/tests/unit/components/admin/CategorySchemaEditor.test.tsx` — not found by the initial `fd`/`rg` pass because it's a differently-cased, non-co-located path (`tests/unit/components/admin/`) that the plan's example command didn't glob. Extended it too (added a mock for the new `useCanonicalFieldOptions` hook) rather than leave it broken.
+
+## Deviations
+
+<!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+
+- 2026-09-18T00:00:00Z — u2-vehicle-catalog-ui, US1.2 (`category-schema-editor.tsx`): implemented the canonical-catalog population as a manual "Load from vehicle catalog" button (same click-to-apply UX as the pre-existing "Load from Facebook catalog" button it replaces for the 9 vehicle field keys), not an auto-overwrite of `row.options` on render. Neither `functional-spec.md` nor `frontend-components.md` specify manual vs. automatic; auto-overwriting an admin's in-progress edit of an editable `options` field on every render would be a surprising, silently-destructive UX. `useCanonicalFieldOptions(row.key)` still fetches eagerly in the background (TanStack Query, `enabled` gated to the 9 vehicle keys) so the button is ready the instant the row is expanded.
+- 2026-09-18T00:00:00Z — u2-vehicle-catalog-ui, US1.1 (`SchemaFieldRenderer.tsx`): `interaction-spec.md` calls for `aria-describedby` linking the select's trigger to the mismatch help text, but `frontend-components.md` § 1 explicitly forbids modifying `SelectControlled` ("sin modificar ese componente"), and `SelectControlled`'s props are a closed destructure with no `aria-describedby`/passthrough. Implemented the AC1.1.2 indicator as an adjacent focusable `<button>` (Info icon, `title` + `aria-label`) plus a visible `<p>` help text rendered in normal DOM order next to the select — satisfies the literal requirement ("el texto de ayuda... es texto real leído junto al campo", `accessibility-checklist.md`) without touching the shared component.
+- 2026-09-18T12:00:00Z — u2-vehicle-catalog-ui, corrección post-revisión adversarial (Critical, iteración 1): `traceability.json` marcaba `status: "OK"` para AC2.1.1/AC2.1.2/AC2.1.4/AC2.1.5 pese a que `ProductLocationFields.tsx` no tiene ningún importador real fuera de su propio archivo de test (`rg "ProductLocationFields" apps/web/src apps/web/tests` confirmado por el reviewer) — el flujo end-to-end de esas 4 ACs no es alcanzable hoy en la aplicación real. Corregido a `status: "Deferred"` en las 4 entradas, con `target` explicando que el componente está construido y probado per el alcance exacto del plan aprobado, pero que la integración a una vista real de producto no tiene Step en `code-generation-plan.md` y necesita un Unit/dispatch de seguimiento. `code-summary.md` § Issues/Concerns actualizado en consonancia para no dejar la contradicción entre el campo estructurado y la prosa adjunta.
+
+## Tradeoffs
+
+<!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
+
+- 2026-09-18T00:00:00Z — u2-vehicle-catalog-ui: `mapDecodedToForm`'s new 4th parameter (`unmatchedFields: string[]`) is required, not optional — makes every call site explicit about the channel instead of silently defaulting to `[]`. Only one production call site exists (`SchemaFieldRenderer.tsx`'s `vin_decode` block), updated in this dispatch; the 3 pre-existing unit tests of `mapDecodedToForm` (which called it with 3 args) were updated to pass `[]` explicitly rather than relying on a default.
+
+## Open questions
+
+<!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
+
+- 2026-09-18T00:00:00Z — u2-vehicle-catalog-ui, US2.1: `ProductLocationFields` (AC2.1.1/AC2.1.2/AC2.1.4/AC2.1.5) was built as a fully working, tested, standalone controlled component exactly per the approved plan's Step 6 scope and `interaction-spec.md`'s prop contract (`city`, `state`, `isInherited`, `onChange`, `onSave`) — but `code-generation-plan.md` has no step wiring it into a real product page, and none exists yet (`UnifiedProductForm.tsx` has no `location_city`/`location_state` fields today). AC2.1.1 ("Given el detalle de un producto existente...") describes an actual save flow a human can trigger; without page wiring the behavioral contract is proven at the component/test level only. Flagged rather than silently expanding this Unit's approved scope to redesign `UnifiedProductForm.tsx`'s save flow (which persists all fields via one `handleSubmit`, not a field-level `onSave` like this component expects) or to resolve where the organization's default location comes from for the `isInherited` calculation. Needs a follow-up Unit/dispatch to decide the integration point and wire it.

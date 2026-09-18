@@ -1,0 +1,44 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-vehicle-catalog-api",
+  "upstream_ids": [
+    "NFR-OBS-1",
+    "NFR-OBS-2",
+    "NFR-SCALE-1",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR-OBS-1",
+      "status": "OK",
+      "target": "monitoring-design.md § Metrics & KPIs (warning de field_key sin catálogo)"
+    },
+    {
+      "id": "NFR-OBS-2",
+      "status": "OK",
+      "target": "monitoring-design.md § Logs & Tracing (log de resumen de migración)"
+    },
+    {
+      "id": "NFR-SCALE-1",
+      "status": "N/A",
+      "target": "Sin infraestructura de escalado nueva — infrastructure-specification.md confirma sin recurso nuevo"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "N/A",
+      "target": "Integridad de dato garantizada en tiempo de test/carga de módulo (reliability-design.md), sin infraestructura de runtime nueva que agregar"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md § Mecanismo de ejecución de la migración legacy (archivo Alembic, guarda anti-drift)"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "N/A",
+      "target": "Sin infraestructura de disponibilidad nueva — mismo deployable y pipeline ya vigente"
+    }
+  ]
+}

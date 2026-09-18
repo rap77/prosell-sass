@@ -1,0 +1,39 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-vehicle-catalog-ui",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "Responsabilidad exclusiva de u1-vehicle-catalog-api (backend) — U2 no implementa lógica de reconciliación de catálogo ni tests de integridad de dato"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "Piso de test de 6 tests es responsabilidad de u1-vehicle-catalog-api — ver team-practices.md § Testing Posture"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "No es un NFR real de requirements.md — el sensor de trazabilidad extrae el patrón NFR\\d+ de todo el archivo incluyendo la prosa histórica de la sección ## Review (que documenta un draft anterior, ya corregido, donde NFR2 fue removido y la numeración saltó a NFR3 antes de renumerarse). requirements.md § Non-Functional Requirements solo declara NFR1 y NFR2 — no hay NFR3 real que cubrir."
+    }
+  ],
+  "reverse": [
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "performance-requirements.md (renombrado de NFR-PERF-1 — formato NFRx.y exigido por el sensor real)"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "security-requirements.md (renombrado de NFR-SEC-1)"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "security-requirements.md (renombrado de NFR-SEC-2)"
+    }
+  ]
+}

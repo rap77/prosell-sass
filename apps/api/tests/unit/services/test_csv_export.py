@@ -421,3 +421,58 @@ def test_resolve_client_category_type_known_vertical() -> None:
 def test_resolve_client_category_type_unknown_vertical_returns_none() -> None:
     # BR1.7 — no translation entry -> None, caller excludes the product
     assert resolve_client_category_type("bienes-raices") is None
+
+
+# ── u1-vehicle-catalog-api: formula-injection sanitization (BR5.1) ──────────
+
+
+def test_build_client_format_row_sanitizes_leading_equals() -> None:
+    row = build_client_format_row(
+        row_id=527,
+        org_code="MF",
+        price_cents=1780000,
+        description="=SUM(A1:A10)",
+        attributes={},
+    )
+    assert row[CLIENT_FORMAT_COLUMNS.index("description")] == "'=SUM(A1:A10)"
+
+
+def test_build_client_format_row_sanitizes_leading_plus_minus_at() -> None:
+    for dangerous, expected in (
+        ("+1234567890", "'+1234567890"),
+        ("-cmd|calc", "'-cmd|calc"),
+        ("@SUM(1+1)", "'@SUM(1+1)"),
+    ):
+        row = build_client_format_row(
+            row_id=527,
+            org_code="MF",
+            price_cents=1780000,
+            description=dangerous,
+            attributes={},
+        )
+        assert row[CLIENT_FORMAT_COLUMNS.index("description")] == expected
+
+
+def test_build_client_format_row_normal_value_is_unchanged() -> None:
+    row = build_client_format_row(
+        row_id=527,
+        org_code="MF",
+        price_cents=1780000,
+        description="A perfectly normal description",
+        attributes={},
+    )
+    assert row[CLIENT_FORMAT_COLUMNS.index("description")] == "A perfectly normal description"
+
+
+def test_build_client_format_row_sanitizes_attribute_sourced_columns_too() -> None:
+    # BR5.1 applies to every column, not just the explicit params — a value
+    # coming from `attributes` (e.g. an unreconciled VIN-decode fallback
+    # value, see team-practices.md) must be sanitized the same way.
+    row = build_client_format_row(
+        row_id=527,
+        org_code="MF",
+        price_cents=1780000,
+        description=None,
+        attributes={"exterior_color": "=cmd|' /C calc'!A1"},
+    )
+    assert row[CLIENT_FORMAT_COLUMNS.index("exterior_color")] == "'=cmd|' /C calc'!A1"

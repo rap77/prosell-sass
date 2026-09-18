@@ -64,6 +64,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { usePatchCategorySchema } from "@/lib/api/products";
+import { useCanonicalFieldOptions } from "@/lib/api/categories";
 import {
   MigrationWarningResponseSchema,
   RenderAsSchema,
@@ -225,6 +226,16 @@ function SortableRow({
     useSortable({
       id: row._id,
     });
+
+  // u2-vehicle-catalog-ui (US1.2/AC1.2.1): for a vehicle-vocabulary field
+  // key, fetch the canonical catalog in the background so the "Load from
+  // vehicle catalog" button below can apply it on click — replaces the
+  // static FACEBOOK_FIELD_KEY_MAP/FACEBOOK_VALUES lookup for these 9 keys
+  // only. `enabled: false` (via undefined fieldKey) for every other row.
+  const isVehicleField = VEHICLE_FIELD_KEYS.has(row.key);
+  const canonicalOptions = useCanonicalFieldOptions(
+    isVehicleField ? row.key : undefined,
+  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -474,34 +485,62 @@ function SortableRow({
                         }
                         className="h-8"
                       />
-                      {/* ponytail: if the field key matches a known Facebook
-                          catalog field (fuel_type, body_style, transmission,
-                          type, state, category), offer a one-click loader that
-                          populates options with the official Spanish strings —
-                          the publisher translates to the org's locale at
-                          publish time, not here. */}
-                      {row.key && row.key in FACEBOOK_FIELD_KEY_MAP && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => {
-                            const fbField =
-                              FACEBOOK_FIELD_KEY_MAP[
-                                row.key as keyof typeof FACEBOOK_FIELD_KEY_MAP
-                              ];
-                            onUpdate(row._id, {
-                              options: FACEBOOK_VALUES[fbField].map(
-                                (v) => v.es,
-                              ),
-                            });
-                          }}
-                          aria-label={`Load official Facebook values for ${row.key}`}
-                        >
-                          Load from Facebook catalog
-                        </Button>
-                      )}
+                      {/* u2-vehicle-catalog-ui (US1.2/AC1.2.1): for the 9
+                          vehicle-vocabulary field keys, load the options
+                          exactly as returned by the canonical catalog
+                          endpoint (GET /categories/facebook-values/{key}) —
+                          replaces the static FACEBOOK_FIELD_KEY_MAP lookup
+                          below for these keys only. 404 (unrecognized
+                          field_key — a config bug, shouldn't happen for the
+                          9 seeded keys) falls back to the manual input
+                          above with no loader button, same as any other
+                          field without a mapped catalog today. */}
+                      {isVehicleField
+                        ? canonicalOptions.data &&
+                          canonicalOptions.data.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                if (!canonicalOptions.data) return;
+                                onUpdate(row._id, {
+                                  options: canonicalOptions.data,
+                                });
+                              }}
+                              aria-label={`Load canonical vehicle catalog values for ${row.key}`}
+                            >
+                              Load from vehicle catalog
+                            </Button>
+                          )
+                        : /* ponytail: if the field key matches a known Facebook
+                            catalog field (fuel_type, body_style, transmission,
+                            type, state, category), offer a one-click loader that
+                            populates options with the official Spanish strings —
+                            the publisher translates to the org's locale at
+                            publish time, not here. */
+                          row.key &&
+                          row.key in FACEBOOK_FIELD_KEY_MAP && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                const fbField = FACEBOOK_FIELD_KEY_MAP[row.key];
+                                if (!fbField) return;
+                                onUpdate(row._id, {
+                                  options: FACEBOOK_VALUES[fbField].map(
+                                    (v) => v.es,
+                                  ),
+                                });
+                              }}
+                              aria-label={`Load official Facebook values for ${row.key}`}
+                            >
+                              Load from Facebook catalog
+                            </Button>
+                          )}
                     </>
                   )}
                 </div>
@@ -549,15 +588,44 @@ const newId = () =>
  * Extend this when the project adopts more Facebook fields. Keys not present
  * here fall through to the manual "Options" input.
  */
-const FACEBOOK_FIELD_KEY_MAP: Record<string, FacebookFieldKey> = {
+/**
+ * u2-vehicle-catalog-ui (US1.2/AC1.2.1, functional-spec.md Workflow 2 Q1):
+ * `row.key` for these 9 fields already matches `FacebookVehicleValueCatalog`
+ * (backend, `GET /categories/facebook-values/{field_key}`)
+ * character-for-character — no entry needed in `FACEBOOK_FIELD_KEY_MAP`
+ * below. Sourced from `seed_categories.py`'s vehicle vertical, verified
+ * against `rules.md` BR1.4 of u1-vehicle-catalog-api.
+ */
+const VEHICLE_FIELD_KEYS: ReadonlySet<string> = new Set([
+  "make",
+  "fuel_type",
+  "transmission",
+  "body_type",
+  "drivetrain",
+  "wheelbase_type",
+  "bed_type",
+  "cab_type",
+  "electrification_level",
+]);
+
+const FACEBOOK_FIELD_KEY_MAP: Record<string, FacebookFieldKey | undefined> = {
   category: "category",
-  type: "type",
+  type: "vehicle_type",
+  vehicle_type: "vehicle_type",
   body_style: "body_style",
   body_type: "body_style",
-  condition: "state",
-  state: "state",
+  condition: "vehicle_condition",
+  state: "vehicle_condition",
+  item_state: "item_state",
   fuel_type: "fuel_type",
   transmission: "transmission",
+  brand: "brand",
+  year: "year",
+  exterior_color: "exterior_color",
+  interior_color: "interior_color",
+  color: "exterior_color",
+  platform: "platform",
+  device: "device",
 };
 
 const FIELD_TYPES = {

@@ -2,6 +2,7 @@
 
 import csv as csv_module
 import io
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -42,6 +43,7 @@ from prosell.domain.services.csv_product_parser import (
     ALL_KNOWN_COLUMNS,
     UNIVERSAL_COLUMNS_ORDERED,
 )
+from prosell.domain.services.facebook_vehicle_value_catalog import get_options
 from prosell.infrastructure.api.dependencies import (
     get_async_session,
     get_current_auth_user_from_cookie,
@@ -56,6 +58,8 @@ from prosell.infrastructure.repositories.category_repository_impl import (
 from prosell.infrastructure.repositories.category_schema_repository_impl import (
     SqlAlchemyCategorySchemaRepository,
 )
+
+logger = logging.getLogger(__name__)
 
 # attribute_schema maps field_name → field definition (type, required, options…) — free-form JSONB
 AttributeSchemaDict = dict[str, dict[str, object]]
@@ -86,6 +90,11 @@ class _PatchSchemaRequest(_BaseModel):
 
 class _CategoryFieldsResponse(_BaseModel):
     fields: list[dict[str, object]]
+
+
+class _FacebookValueOptionsResponse(_BaseModel):
+    field_key: str
+    options: list[str]
 
 
 router = APIRouter()
@@ -195,7 +204,11 @@ async def create_category(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+        logger.exception("create_category failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create category",
+        ) from e
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)
@@ -484,6 +497,35 @@ async def get_category_schema_history(
         )
         for row in rows
     ]
+
+
+@router.get("/facebook-values/{field_key}", response_model=_FacebookValueOptionsResponse)
+async def get_facebook_value_options(
+    field_key: str,
+    current_user: CurrentUser,  # noqa: ARG001 — auth-gating only (BR1.4: CurrentUser required)
+) -> _FacebookValueOptionsResponse:
+    """BR1.4 (u1-vehicle-catalog-api) — canonical Facebook Marketplace
+    values for a vehicle attribute `field_key` (attribute_schema/VIN-decode
+    vocabulary — e.g. `body_type`, `fuel_type`, not the frontend's
+    `FacebookFieldKey` enum).
+
+    Requires only authentication (no `_require_platform_admin()`) — same
+    pattern as `GET /{category_id}/schema`: a static, tenant-agnostic
+    catalog read, not a category mutation.
+    """
+    options = get_options(field_key)
+    if options is None:
+        logger.warning(
+            "GET /categories/facebook-values/%s: unrecognized field_key (no canonical "
+            "catalog for it)",
+            field_key,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unrecognized field_key: {field_key}",
+        )
+
+    return _FacebookValueOptionsResponse(field_key=field_key, options=options)
 
 
 @router.get("/{category_id}/fields", response_model=_CategoryFieldsResponse)

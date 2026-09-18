@@ -124,11 +124,58 @@ describe("useDecodeVin", () => {
     const decodedVehicle =
       await result.current.mutateAsync("2GNALCEK1H1615946");
 
-    expect(decodedVehicle).toEqual(mockDecodedVehicle);
+    // u2-vehicle-catalog-ui: the hook now also exposes `unmatchedFields`
+    // (defaults to [] when the backend response omits `unmatched_fields`).
+    expect(decodedVehicle).toEqual({
+      ...mockDecodedVehicle,
+      unmatchedFields: [],
+    });
     expect(decodedVehicle.vin).toBe("2GNALCEK1H1615946");
     expect(decodedVehicle.year).toBe(2017);
     expect(decodedVehicle.make).toBe("Chevrolet");
     expect(decodedVehicle.model).toBe("Equinox");
+  });
+
+  // AC1.1.1/AC1.1.2 (u2-vehicle-catalog-ui): the backend's canonical
+  // reconciliation (U1) reports, per decode, which fields it could not
+  // match against the schema's options — the hook must surface that list
+  // unchanged so SchemaFieldRenderer can derive its mismatch indicator.
+  it("returns an empty unmatchedFields array when every field reconciled (AC1.1.1)", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        vin: "2GNALCEK1H1615946",
+        vehicle: { year: 2017, make: "Chevrolet", body_type: "suv" },
+        unmatched_fields: [],
+      }),
+    });
+
+    const { result } = renderHook(() => useDecodeVin(), {
+      wrapper: createWrapper(),
+    });
+
+    const decoded = await result.current.mutateAsync("2GNALCEK1H1615946");
+
+    expect(decoded.unmatchedFields).toEqual([]);
+  });
+
+  it("returns the field keys the backend flags as unmatched (AC1.1.2)", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        vin: "2GNALCEK1H1615946",
+        vehicle: { year: 2017, body_type: "unknown-trim-level" },
+        unmatched_fields: ["body_type"],
+      }),
+    });
+
+    const { result } = renderHook(() => useDecodeVin(), {
+      wrapper: createWrapper(),
+    });
+
+    const decoded = await result.current.mutateAsync("2GNALCEK1H1615946");
+
+    expect(decoded.unmatchedFields).toEqual(["body_type"]);
   });
 
   it("should handle partial data (missing optional fields)", async () => {

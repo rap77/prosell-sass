@@ -1,0 +1,22 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-vehicle-catalog-ui",
+  "upstream_ids": ["NFR4.1", "NFR4.2", "NFR4.3"],
+  "coverage": [
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "performance-design.md § Diseño: sin caché/optimización nueva"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "security-design.md § Manejo de errores"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "security-design.md § Manejo de errores"
+    }
+  ]
+}

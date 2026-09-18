@@ -11,6 +11,7 @@ from uuid import uuid4
 import pytest
 
 from prosell.domain.entities.category import Category
+from prosell.domain.services.facebook_vehicle_value_catalog import reconcile
 
 
 def make_category(attribute_schema: dict) -> Category:
@@ -211,3 +212,51 @@ def test_validate_attributes_error_message_includes_field_name():
     with pytest.raises(ValueError) as exc_info:
         cat.validate_attributes({})
     assert "color" in str(exc_info.value)
+
+
+# ─── u1-vehicle-catalog-api: reconciled VIN-decode value (piso #2) ──────────────
+
+
+def test_validate_attributes_accepts_reconciled_vin_decode_value():
+    """team-practices.md piso #2 — a value normalized by nhtsa_normalizer.py
+    AND reconciled by FacebookVehicleValueCatalog (BR1.1) passes
+    validate_attributes() against a schema whose `options` were configured
+    with the canonical catalog's values — a fixed input/output pair, not a
+    smoke test. Input: NHTSA's normalized output for a "suv" body class.
+    Expected: reconcile() returns the exact canonical value "suv", and that
+    value passes validation against the category's configured options.
+    """
+    normalized_from_vin_decode = reconcile("body_type", "suv")
+    assert normalized_from_vin_decode == "suv"
+
+    cat = make_category(
+        {
+            "body_type": {
+                "type": "string",
+                "required": True,
+                "options": ["suv", "sedan", "pickup", "coupe"],
+            }
+        }
+    )
+    cat.validate_attributes({"body_type": normalized_from_vin_decode})  # No exception
+
+
+def test_validate_attributes_rejects_value_reconcile_could_not_match():
+    """The complementary case (BR1.2 CASE 2): a value reconcile() could NOT
+    match reconciles to None, and Category.validate_attributes() rejects
+    None against a required field exactly like today (no special-casing —
+    FR1.3/BR1.3 says this rule doesn't change)."""
+    unreconciled_value = reconcile("body_type", "not_a_real_body_type")
+    assert unreconciled_value is None
+
+    cat = make_category(
+        {
+            "body_type": {
+                "type": "string",
+                "required": True,
+                "options": ["suv", "sedan", "pickup", "coupe"],
+            }
+        }
+    )
+    with pytest.raises(ValueError, match="body_type"):
+        cat.validate_attributes({"body_type": unreconciled_value})

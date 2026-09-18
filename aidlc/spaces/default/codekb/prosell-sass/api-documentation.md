@@ -347,3 +347,29 @@ Si una respuesta real del backend llegara a `handleResponse()`, `TeamSchema.pars
 ### Por qué el "contract test" existente no detecta esto
 
 `apps/api/tests/contract/schema_matching/test_team_dto_schemas.py` instancia `CreateTeamRequest`/`TeamResponse` de Pydantic en aislamiento — nunca lee `teamApi.ts` ni ningún archivo TypeScript, por lo que estructuralmente no puede atrapar un drift de nombre de campo entre ambos lados. `.skills/contract-testing/SKILL.md` del proyecto ya describe el patrón que resolvería esta clase de bug ("Layer 3: Schema Matching — DTO ↔ TypeScript Drift Detection"), pero no existe una instancia de ese test para el dominio `team`. Ver `code-quality-assessment.md` para el detalle completo del hallazgo.
+
+## Catálogo editorial de valores Facebook vs. normalización de VIN decode — sin contrato compartido (scan enfocado `260915-vehicle-catalog`)
+
+No hay un endpoint HTTP involucrado en este hallazgo — es un contrato **interno**, entre dos módulos de dominio/frontend, sin API formal que lo enforce.
+
+### Los dos "contratos" de valores, lado a lado
+
+| Aspecto           | Catálogo A — `nhtsa_normalizer.py`                                         | Catálogo B — `facebook-values/index.ts`                                    |
+| ----------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Consumidor        | `POST /vehicles/decode-vin` (`vehicle_router.py`) → `VinDecodeField.tsx`   | Botón "Load from Facebook catalog" en `category-schema-editor.tsx`         |
+| Formato de valor  | Inglés, minúscula (`"suv"`, `"gasoline"`, `"FWD"`)                         | Español, con mayúsculas oficiales (`"SUV"`, `"Gasolina"`)                  |
+| Origen            | Traducción manual del schema de NHTSA VPIC, código existente               | Catálogo nuevo agregado esta semana (commits `b0015223`/`c1c86138`)        |
+| Test de regresión | `test_nhtsa_normalizer.py` (17 tests, fija los valores traducidos)         | `facebook-values/index.test.ts` (3643 líneas, fija el catálogo completo)   |
+| Punto de contacto | `Category.attribute_schema.options` (mismo campo que consume el otro lado) | `Category.attribute_schema.options` (mismo campo que consume el otro lado) |
+
+Ambos catálogos escriben/leen el mismo campo (`attribute_schema.options`) pero ninguno de los dos tests de regresión conoce al otro — ninguna suite falla si los formatos divergen.
+
+### Dónde debería vivir la validación cruzada y no vive
+
+`Category.validate_attributes()` (`domain/entities/category.py`) valida que un valor de atributo esté entre las `options` configuradas — pero corre **solo en el backend, al guardar** un producto. El momento donde la desalineación se manifiesta (`mapDecodedToForm()` de `VinDecodeField.tsx`, inmediatamente después del decode-VIN, antes de cualquier guardado) no pasa por esta validación — es puramente client-side y asume, sin verificar, que el valor calza.
+
+### `FACEBOOK_FIELD_KEY_MAP` — mapeo estático sin validación cruzada
+
+`category-schema-editor.tsx` mantiene `FACEBOOK_FIELD_KEY_MAP`, un diccionario manual de claves de `attribute_schema` → `FacebookFieldKey` del catálogo nuevo. Agregar un campo nuevo al schema de vehículos requiere editar coordinadamente este mapa Y el catálogo `facebook-values/index.ts` — sin ningún test que falle si uno de los dos archivos queda desactualizado respecto al otro.
+
+Ver `code-quality-assessment.md` (hallazgo central de este pase) y `architecture.md` § Interaction Diagrams diagrama 16 para el detalle completo.

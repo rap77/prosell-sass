@@ -1,0 +1,49 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US1.2", "US2.1"],
+  "coverage": [
+    {
+      "id": "US1.1",
+      "status": "OK",
+      "target": "VehicleVinDecodeService, FacebookVehicleValueCatalog"
+    },
+    {
+      "id": "US1.2",
+      "status": "OK",
+      "target": "CategorySchemaService, FacebookVehicleValueCatalog"
+    },
+    { "id": "US2.1", "status": "OK", "target": "Product" }
+  ],
+  "reverse": [
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "Category (validate_attributes, sin cambios)"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "Category (validate_attributes, sin cambios)"
+    },
+    {
+      "id": "FR3",
+      "status": "N/A",
+      "target": "Migración legacy ad-hoc sobre Product/Category ya existentes — sin componente propio, cubierto directamente en Functional Design/Code Generation."
+    },
+    {
+      "id": "FR4",
+      "status": "N/A",
+      "target": "Documentación del contrato de IPublisherService existente — sin cambio de componente, cubierto directamente en Functional Design/Code Generation."
+    },
+    {
+      "id": "FR5",
+      "status": "N/A",
+      "target": "Sanitización del CSV de export dentro del componente de export ya existente — sin componente nuevo, cubierto directamente en Functional Design/Code Generation."
+    },
+    {
+      "id": "team-practices-test-floor-4",
+      "status": "N/A",
+      "target": "CATEGORY_TRANSLATION_TABLE (category_translation.py) es un componente ya existente y sin cambios en este intent — el piso de test #4 se cubre en Build and Test, no requiere decisión de Domain Design."
+    }
+  ]
+}

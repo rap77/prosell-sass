@@ -448,6 +448,130 @@ class TestVINDecodeEdgeCases:
         assert response.vehicle.trim is None  # Not in NHTSA response
         assert response.vehicle.body_type is None  # Not in NHTSA response
 
+    # -------------------------------------------------------------------------
+    # TEST: unmatched_fields (BR1.1/BR1.2, u1-vehicle-catalog-api)
+    # -------------------------------------------------------------------------
+    @pytest.mark.asyncio
+    async def test_vin_decode_reconciled_field_is_not_in_unmatched_fields(
+        self,
+        mock_nhtsa_success_response: dict[str, Any],
+    ) -> None:
+        """BR1.2 CASE 1 — a field that reconciles against the canonical
+        catalog is NOT listed in unmatched_fields (the Toyota Camry fixture
+        above reconciles every select-backed field it has data for)."""
+        vin = "4T1BF1FK5CU123456"
+        request = VINDecodeRequest(vin=vin)
+
+        from prosell.infrastructure.api.routers.vehicle_router import (
+            clear_vin_cache_for_testing,
+        )
+
+        clear_vin_cache_for_testing()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_nhtsa_success_response
+        mock_response.raise_for_status = MagicMock()
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        mock_client.get.return_value = mock_response
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            response = await decode_vin(request)
+
+        assert response.unmatched_fields == []
+        assert response.vehicle.body_type == "sedan"
+
+    @pytest.mark.asyncio
+    async def test_vin_decode_unreconciled_field_is_nulled_and_listed(self) -> None:
+        """BR1.2 CASE 2 — NHTSA returns a raw value for a select-backed
+        field, but nothing in the canonical catalog matches it (post
+        normalization): the field comes back null and its name is added
+        to unmatched_fields, instead of leaking the raw/normalized guess.
+        """
+        unmatched_response = {
+            "Count": 5,
+            "Message": "Results returned successfully",
+            "Results": [
+                {"Variable": "Make", "Value": "Toyota"},
+                {"Variable": "Model", "Value": "Camry"},
+                {"Variable": "Model Year", "Value": "2020"},
+                # NHTSA's fallback path for an unrecognized body class
+                # normalizes to "other" (nhtsa_normalizer.py's body_type
+                # fallback) — "other" is not in the canonical catalog.
+                {"Variable": "Body Class", "Value": "Some Unrecognized Shape"},
+            ],
+        }
+
+        vin = "4T1BF1FK5CU123457"
+        request = VINDecodeRequest(vin=vin)
+
+        from prosell.infrastructure.api.routers.vehicle_router import (
+            clear_vin_cache_for_testing,
+        )
+
+        clear_vin_cache_for_testing()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = unmatched_response
+        mock_response.raise_for_status = MagicMock()
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        mock_client.get.return_value = mock_response
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            response = await decode_vin(request)
+
+        assert response.vehicle.body_type is None
+        assert "body_type" in response.unmatched_fields
+
+    @pytest.mark.asyncio
+    async def test_vin_decode_cached_response_carries_unmatched_fields(self) -> None:
+        """A cache hit returns the same unmatched_fields the original
+        decode computed — not an empty list by omission."""
+        unmatched_response = {
+            "Count": 3,
+            "Message": "Results returned successfully",
+            "Results": [
+                {"Variable": "Make", "Value": "Toyota"},
+                {"Variable": "Model", "Value": "Camry"},
+                {"Variable": "Body Class", "Value": "Some Unrecognized Shape"},
+            ],
+        }
+
+        vin = "4T1BF1FK5CU123458"
+        request = VINDecodeRequest(vin=vin)
+
+        from prosell.infrastructure.api.routers.vehicle_router import (
+            clear_vin_cache_for_testing,
+        )
+
+        clear_vin_cache_for_testing()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = unmatched_response
+        mock_response.raise_for_status = MagicMock()
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        mock_client.get.return_value = mock_response
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            first = await decode_vin(request)
+            second = await decode_vin(request)
+
+        assert first.cached is False
+        assert second.cached is True
+        assert second.unmatched_fields == first.unmatched_fields
+        assert "body_type" in second.unmatched_fields
+
     @pytest.mark.asyncio
     async def test_vin_decode_case_insensitive(self) -> None:
         """

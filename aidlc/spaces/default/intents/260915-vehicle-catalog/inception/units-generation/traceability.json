@@ -1,0 +1,26 @@
+{
+  "stage": "units-generation",
+  "upstream_ids": ["US1.1", "US1.2", "US2.1"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "U1, U2" },
+    { "id": "US1.2", "status": "OK", "target": "U1, U2" },
+    { "id": "US2.1", "status": "OK", "target": "U2" }
+  ],
+  "reverse": [
+    {
+      "id": "FR3",
+      "status": "OK",
+      "target": "U1 (u1-vehicle-catalog-api) — migración legacy, sin historia de usuario propia"
+    },
+    {
+      "id": "FR4",
+      "status": "OK",
+      "target": "U1 (u1-vehicle-catalog-api) — documentación de IPublisherService, sin historia de usuario propia"
+    },
+    {
+      "id": "FR5",
+      "status": "OK",
+      "target": "U1 (u1-vehicle-catalog-api) — sanitización de CSV, sin historia de usuario propia"
+    }
+  ]
+}

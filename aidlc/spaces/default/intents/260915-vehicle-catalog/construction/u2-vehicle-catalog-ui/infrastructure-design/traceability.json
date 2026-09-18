@@ -1,0 +1,22 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-vehicle-catalog-ui",
+  "upstream_ids": ["NFR4.1", "NFR4.2", "NFR4.3"],
+  "coverage": [
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "Sin infraestructura de performance nueva — infrastructure-specification.md confirma sin recurso nuevo"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "monitoring-design.md § Logs & Tracing (manejo de errores vía extractErrorMessage())"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "monitoring-design.md § Logs & Tracing (manejo de fallos de red)"
+    }
+  ]
+}

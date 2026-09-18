@@ -33,11 +33,21 @@ import {
 export type { DecodedVehicle };
 
 /**
+ * Result of a successful VIN decode: the canonical `DecodedVehicle` fields
+ * plus `unmatchedFields` (u2-vehicle-catalog-ui, AC1.1.1/AC1.1.2) — the
+ * field keys the backend's canonical reconciliation could not match to any
+ * configured `option` for that field. Kept as a sibling property (not part
+ * of `DecodedVehicle` itself) so every existing consumer of `DecodedVehicle`
+ * keeps compiling unchanged.
+ */
+export type DecodeVinResult = DecodedVehicle & { unmatchedFields: string[] };
+
+/**
  * Decode VIN to get vehicle details
  */
 export function useDecodeVin() {
   return useMutation({
-    mutationFn: async (vin: string) => {
+    mutationFn: async (vin: string): Promise<DecodeVinResult> => {
       const res = await fetch(`/api/v1/vehicles/decode-vin`, {
         method: "POST",
         headers: {
@@ -55,7 +65,11 @@ export function useDecodeVin() {
       }
 
       const data = DecodeVinResponseSchema.parse(await res.json());
-      return { vin: data.vin, ...data.vehicle };
+      return {
+        vin: data.vin,
+        ...data.vehicle,
+        unmatchedFields: data.unmatched_fields,
+      };
     },
 
     onSuccess: (decodedVehicle) => {

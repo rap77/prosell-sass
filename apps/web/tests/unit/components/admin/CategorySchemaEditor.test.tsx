@@ -9,6 +9,17 @@ vi.mock("sonner", () => ({
 vi.mock("@/lib/api/products", () => ({
   usePatchCategorySchema: vi.fn(),
 }));
+// u2-vehicle-catalog-ui (AC1.2.1): SortableRow now calls this hook
+// unconditionally (rules-of-hooks) — needs a mock so this file's renders
+// don't require a real QueryClientProvider. The endpoint-driven "Load from
+// vehicle catalog" behavior itself is covered in
+// src/components/admin/category-schema-editor.test.tsx.
+vi.mock("@/lib/api/categories", () => ({
+  useCanonicalFieldOptions: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+  })),
+}));
 vi.mock("@dnd-kit/core", async () => {
   const actual = await vi.importActual("@dnd-kit/core");
   return {

@@ -1,14 +1,68 @@
 # Reverse Engineering Timestamp — prosell-sass
 
-**Fecha**: 2026-09-11 (última actualización: scan enfocado del intent `260911-cross-org-export-ux`)
-**Commit analizado**: `cff92e8d0572e29ed715522b01f27c02773609dd` (rama `main`).
-**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260911-export-org-selector` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
+**Fecha**: 2026-09-15 (última actualización: scan enfocado del intent `260915-vehicle-catalog`)
+**Commit analizado**: `78d2f04c0ab4e0560a0d1b242f9963461818abc4` (rama `feat/facebook-values-from-json`).
+**Tipo de pase (último, el que gobierna el bloque `Scope of Analysis` final)**: **Scan enfocado**, aditivo sobre el scan enfocado del intent `260911-cross-org-export-ux` (a su vez aditivo sobre todos los pases previos ya documentados abajo). Todas las secciones anteriores quedan preservadas íntegras debajo, marcadas `[PRESERVADO ÍNTEGRO]`.
 
 ## Motivo del pase
 
-El intent `260911-export-org-selector` cerró el wiring de UI para exportar el catálogo de UNA organización ajena puntual. El intent `260911-cross-org-export-ux` retoma exactamente donde ese quedó y ataca ocho necesidades restantes, ninguna resuelta por el scan anterior: (1) que el export soporte "todas las organizaciones", no solo una a la vez; (2) renombrar el label del picker `"Todos los concesionarios"` → `"Todas las organizaciones"`; (3) que el picker realmente filtre la grilla de `/catalog` (hoy solo alimenta el export); (4) que el picker liste solo organizaciones con productos; (5) corregir las columnas vacías/incorrectas del CSV cliente (`VIN`, `body_style`, `clean_title`, `groups`, `category`, `type`, `location`) contra el formato real de `docs/data39.csv`; (6) agregar un popup de carpeta base para imágenes; (7) agregar un popup de grupos de Facebook; (8) buena UX/UI en todo lo anterior. El store existente (`kind: partial`, foco wiring de UI del selector, intent `260911-export-org-selector`) nunca había profundizado en el mapeo de valores del CSV cliente más allá de la clave leída, ni en la capacidad de cross-tenant ya presente en la capa de repositorio, ni en el filtrado real de la grilla de catálogo. Scan enfocado sobre esta área específica.
+El store existente (`kind: partial`, foco export cross-org "todas las organizaciones" + filtrado real del catálogo + formato CSV cliente, intent `260911-cross-org-export-ux`) quedó `STALE` para el área de este intent: sus rutas analizadas cambiaron y nunca había profundizado en el catálogo de vehículos propiamente dicho — categorización, VIN decode, publisher, ni en el catálogo editorial de valores de Facebook recién agregado esta semana (commits `b0015223`/`c1c86138`/`78d2f04c`). El intent `260915-vehicle-catalog` ataca 7 áreas de deuda técnica del dominio de catálogo de vehículos, con foco central en un riesgo de negocio real no antes catalogado: **existen DOS catálogos paralelos de "qué valores acepta Facebook Marketplace" con formatos incompatibles** — uno histórico (`nhtsa_normalizer.py`, tokens en inglés/minúscula, usado por el autocompletado de VIN decode) y uno nuevo (`facebook-values/index.ts`, strings en español, usado por el botón "Load from Facebook catalog" del editor de schema) — sin ningún chequeo runtime que los reconcilie. Scan enfocado sobre esta área específica.
 
 ## Verificación de overwrite (codekb-scope-diff)
+
+Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco export cross-org "todas las organizaciones" + filtrado real del catálogo + formato CSV cliente, intent `260911-cross-org-export-ux`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área distinta (categorización de vehículos / catálogo de valores Facebook / VIN decode / publisher, no el export cross-org ni el wiring del picker de organización del pase anterior). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
+
+```
+NARROWER: replacing the store discards deep knowledge of:
+  - apps/web/src/components/admin/OrganizationPicker.tsx
+  - apps/web/src/stores/organizationStore.ts
+  - apps/web/src/lib/api/organizations.ts
+  - apps/web/src/lib/api/schemas/organizations.ts
+  - apps/web/src/app/(seller)/catalog/page.tsx
+  - apps/web/src/lib/api/products.ts
+  - apps/api/src/prosell/domain/services/csv_export.py
+  - apps/api/src/prosell/infrastructure/api/routers/product_router.py
+  - apps/api/src/prosell/infrastructure/api/routers/admin_organizations_router.py
+  - apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py
+  - docs/data39.csv
+  - apps/api/src/prosell/infrastructure/models/product_model.py
+  - apps/api/src/prosell/infrastructure/models/category_model.py
+  components: cross-org-export-all-orgs-and-csv-mapping
+(store intent: 260911-cross-org-export-ux; incoming intent: 260915-vehicle-catalog)
+```
+
+## Developer Code Scan Results — foco catálogo editorial de valores Facebook vs. normalización de VIN decode, categorización de vehículos (intent `260915-vehicle-catalog`)
+
+### Scan Coverage
+
+- **Analizado en profundidad**: `apps/api/src/prosell/infrastructure/repositories/category_repository_impl.py`, `apps/api/src/prosell/infrastructure/database/seed_categories.py`, `apps/api/src/prosell/domain/entities/category.py`, `apps/api/src/prosell/domain/services/category_translation.py`, `apps/web/src/components/admin/category-schema-editor.tsx`, `apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py`, `apps/api/src/prosell/domain/services/csv_field_mapper.py`, `apps/api/src/prosell/domain/entities/product.py`, `apps/api/src/prosell/infrastructure/api/routers/vehicle_router.py`, `apps/api/src/prosell/infrastructure/services/nhtsa_normalizer.py`, `apps/api/src/prosell/domain/ports/i_publisher_service.py`, `apps/api/src/prosell/infrastructure/services/publisher_strategy.py`, `apps/web/src/components/forms/schema/VinDecodeField.tsx`, `apps/api/alembic/versions/20260812_0002_migrate_legacy_sedan_products.py`, `apps/api/alembic/versions/20260625_0002_vehicle_vin_required.py`, diff completo del commit `78d2f04c` (`export_catalog_client_format.py`, fallback de ubicación a organización), diffs `--stat` de `b0015223` y `c1c86138` (catálogo facebook-values + regeneración).
+- **Skimmed only**: `apps/web/src/lib/i18n/facebook-values/index.ts` (primeras 120 de 1563 líneas), `apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py` (solo vía diff), `apps/api/src/prosell/domain/entities/organization.py`/`create_product.py`/`update_product.py` (grep puntual), `apps/api/scripts/MIGRATE_VEHICLES_README.md` (head/tail), `apps/web/src/app/(admin)/admin/import-client-csv/page.tsx` (grep puntual), `apps/api/src/prosell/infrastructure/services/{playwright_publisher,graph_api_publisher,null_graph_api_publisher}.py` (solo `wc -l`), directorios de tests relacionados (solo conteo), `apps/web/src/lib/api/schemas/decodeVin.ts`, `apps/web/src/types/category.ts` (solo grafo).
+- **Preservado del codekb existente (`kind: partial`, no re-analizado)**: todo lo demás — export cross-org "todas las organizaciones", `OrganizationPicker`/`organizationStore`, filtrado real de la grilla de catálogo por organización, modelo de permisos cross-org, auth/OAuth, review-queue, resto de la arquitectura backend/frontend.
+
+### Root cause / hallazgos principales
+
+1. **[CENTRAL] Dos catálogos paralelos de "valores que acepta Facebook" con formatos incompatibles**: `nhtsa_normalizer.py` (`NHTSA_TO_FACEBOOK`) normaliza el VIN decodificado a tokens en inglés/minúscula (`"suv"`, `"gasoline"`, `"FWD"`); el catálogo nuevo `facebook-values/index.ts` (commits `b0015223`/`c1c86138`, de esta semana) usa strings oficiales en ESPAÑOL de Facebook (`"SUV"`, `"Gasolina"`). El botón "Load from Facebook catalog" en `category-schema-editor.tsx` puebla `options` con los valores en español del catálogo nuevo. Pero `mapDecodedToForm()` en `VinDecodeField.tsx` (líneas 141-148) asume — comentario explícito en el código — que para campos "select-backed" el valor decodificado YA calza exactamente con las `options` del schema. Si un admin usa el botón nuevo para poblar `options` en español y luego un vendedor decodifica un VIN, el autocompletado seguirá llegando en el formato del catálogo viejo (inglés/minúscula) — desalineación silenciosa, sin validación runtime que la detecte (`Category.validate_attributes()` valida `options` solo en el backend, al guardar, no en el momento del autocompletado por VIN).
+2. **Fallback de ubicación producto→organización solo en export, no en create/update**: `export_catalog_client_format.py` ya resuelve el fallback (commit `78d2f04c`), pero `create_product.py`/`update_product.py` NO leen `Organization.city`/`Organization.state` como default — consistente con lo que el intent pide cerrar, no un bug nuevo.
+3. **`CATEGORY_TRANSLATION_TABLE` en `category_translation.py` tiene una sola entrada hardcodeada** (`"vehiculos-y-transporte"` → `("Vehiculos", "Auto/camioneta")`), sin test unitario dedicado — punto de extensión sin red de tests si este intent expande categorías canónicas.
+4. **Doc `MIGRATE_VEHICLES_README.md` potencialmente obsoleta** (referencia un modelo de una tabla ya eliminada) — no verificado con certeza.
+5. **`FACEBOOK_FIELD_KEY_MAP`** en `category-schema-editor.tsx` es un mapeo manual estático (claves de `attribute_schema` → `FacebookFieldKey`) — cualquier campo nuevo requiere edición coordinada manual en dos archivos, sin validación cruzada.
+6. **Migraciones de legacy son ad-hoc por caso** (ej. `20260812_0002_migrate_legacy_sedan_products.py`, con guardas de seguridad triples), no una herramienta general reutilizable.
+7. **`IPublisherService`/`PublisherStrategySelector` (Ports & Adapters) ya existe y está en producción** (`playwright_publisher.py`, `graph_api_publisher.py`, `null_graph_api_publisher.py`, seleccionado por `settings.publisher_engine`) — el contrato de adapter de publisher que pide el intent YA EXISTE; la pregunta real es si necesita extenderse dado el hallazgo #1, no diseñarlo desde cero.
+
+### Deuda técnica señalada, no resuelta por este scan (fuera de alcance de reverse engineering, para Requirements Analysis / Functional Design)
+
+- Decisión de diseño: cómo reconciliar los dos catálogos de valores Facebook — normalizar ambos a un formato común, agregar una capa de traducción entre ellos, o validar en runtime al momento del autocompletado por VIN.
+- Decisión de diseño: si `IPublisherService`/`PublisherStrategySelector` es el punto de extensión correcto para absorber la reconciliación, o si corresponde a otra capa (ej. el propio `Category.validate_attributes()`, extendido a correr también client-side).
+- Confirmar con certeza si `MIGRATE_VEHICLES_README.md` está obsoleta en su totalidad o solo en la referencia puntual a `vehicle_model.py`.
+- Decisión de diseño: si expandir `CATEGORY_TRANSLATION_TABLE` amerita agregar `test_category_translation.py` como parte del mismo cambio.
+
+Ver `architecture.md` § Interaction Diagrams (diagrama 16), `code-structure.md`, `component-inventory.md`, `api-documentation.md`, `dependencies.md`, `business-overview.md` y `code-quality-assessment.md` (hallazgos #87-93) para el detalle completo de este pase, mergeado con el conocimiento preservado de los pases anteriores.
+
+## [PRESERVADO ÍNTEGRO] Motivo del pase anterior (scan enfocado `260911-cross-org-export-ux`)
+
+El intent `260911-export-org-selector` cerró el wiring de UI para exportar el catálogo de UNA organización ajena puntual. El intent `260911-cross-org-export-ux` retoma exactamente donde ese quedó y ataca ocho necesidades restantes, ninguna resuelta por el scan anterior: (1) que el export soporte "todas las organizaciones", no solo una a la vez; (2) renombrar el label del picker `"Todos los concesionarios"` → `"Todas las organizaciones"`; (3) que el picker realmente filtre la grilla de `/catalog` (hoy solo alimenta el export); (4) que el picker liste solo organizaciones con productos; (5) corregir las columnas vacías/incorrectas del CSV cliente (`VIN`, `body_style`, `clean_title`, `groups`, `category`, `type`, `location`) contra el formato real de `docs/data39.csv`; (6) agregar un popup de carpeta base para imágenes; (7) agregar un popup de grupos de Facebook; (8) buena UX/UI en todo lo anterior. El store existente (`kind: partial`, foco wiring de UI del selector, intent `260911-export-org-selector`) nunca había profundizado en el mapeo de valores del CSV cliente más allá de la clave leída, ni en la capacidad de cross-tenant ya presente en la capa de repositorio, ni en el filtrado real de la grilla de catálogo. Scan enfocado sobre esta área específica.
+
+## [PRESERVADO ÍNTEGRO] Verificación de overwrite (codekb-scope-diff) — pase `260911-cross-org-export-ux`
 
 Antes de escribir este documento se ejecutó `codekb-scope-diff --compare` contra un borrador de este scope, comparado contra el store existente (`kind: partial`, foco wiring de UI del selector de organización, intent `260911-export-org-selector`). Veredicto: **NARROWER** — resultado mecánico esperado de un scan enfocado en un área parcialmente distinta (capacidad de repositorio para "todas las organizaciones" y mapeo de valores del CSV, no el wiring de permisos/`useAuth`/review-queue del pase anterior). El conocimiento sustantivo del store anterior no se pierde: se preserva íntegro en este mismo documento y en los otros 8 artefactos, mergeado con los hallazgos nuevos.
 
@@ -24,7 +78,7 @@ NARROWER: replacing the store discards deep knowledge of:
 (store intent: 260911-export-org-selector; incoming intent: 260911-cross-org-export-ux)
 ```
 
-## Developer Code Scan Results — foco export "todas las organizaciones", filtrado real del catálogo, formato CSV cliente correcto (intent `260911-cross-org-export-ux`)
+## [PRESERVADO ÍNTEGRO] Developer Code Scan Results — foco export "todas las organizaciones", filtrado real del catálogo, formato CSV cliente correcto (intent `260911-cross-org-export-ux`)
 
 ### Scan Coverage
 
@@ -498,10 +552,41 @@ Esto fue honesto y esperado dado el alcance real de ese pase: el developer scan 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260911-cross-org-export-ux
-fingerprint: 9308e7789124518343f94bc6eb831182417da60c
+intent: 260915-vehicle-catalog
+fingerprint: 4b825dc642cb6eb9a060e54bf8d69288fbee4904
 analyzed:
   paths:
+    - apps/api/src/prosell/infrastructure/repositories/category_repository_impl.py
+    - apps/api/src/prosell/infrastructure/database/seed_categories.py
+    - apps/api/src/prosell/domain/entities/category.py
+    - apps/api/src/prosell/domain/services/category_translation.py
+    - apps/web/src/components/admin/category-schema-editor.tsx
+    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
+    - apps/api/src/prosell/domain/services/csv_field_mapper.py
+    - apps/api/src/prosell/domain/entities/product.py
+    - apps/api/src/prosell/infrastructure/api/routers/vehicle_router.py
+    - apps/api/src/prosell/infrastructure/services/nhtsa_normalizer.py
+    - apps/api/src/prosell/domain/ports/i_publisher_service.py
+    - apps/api/src/prosell/infrastructure/services/publisher_strategy.py
+    - apps/web/src/components/forms/schema/VinDecodeField.tsx
+    - apps/api/alembic/versions/20260812_0002_migrate_legacy_sedan_products.py
+    - apps/api/alembic/versions/20260625_0002_vehicle_vin_required.py
+    - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
+  components:
+    - facebook-values-catalog-vin-decode-alignment
+shallow:
+  paths:
+    - apps/web/src/lib/i18n/facebook-values/index.ts
+    - apps/api/src/prosell/domain/entities/organization.py
+    - apps/api/src/prosell/application/use_cases/product/create_product.py
+    - apps/api/src/prosell/application/use_cases/product/update_product.py
+    - apps/api/scripts/MIGRATE_VEHICLES_README.md
+    - apps/web/src/app/(admin)/admin/import-client-csv/page.tsx
+    - apps/api/src/prosell/infrastructure/services/playwright_publisher.py
+    - apps/api/src/prosell/infrastructure/services/graph_api_publisher.py
+    - apps/api/src/prosell/infrastructure/services/null_graph_api_publisher.py
+    - apps/web/src/lib/api/schemas/decodeVin.ts
+    - apps/web/src/types/category.ts
     - apps/web/src/components/admin/OrganizationPicker.tsx
     - apps/web/src/stores/organizationStore.ts
     - apps/web/src/lib/api/organizations.ts
@@ -509,22 +594,12 @@ analyzed:
     - apps/web/src/app/(seller)/catalog/page.tsx
     - apps/web/src/lib/api/products.ts
     - apps/api/src/prosell/domain/services/csv_export.py
-    - apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py
     - apps/api/src/prosell/infrastructure/api/routers/product_router.py
     - apps/api/src/prosell/infrastructure/api/routers/admin_organizations_router.py
-    - apps/api/src/prosell/domain/entities/product.py
     - apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py
-    - apps/api/src/prosell/infrastructure/repositories/category_repository_impl.py
-    - apps/api/src/prosell/domain/services/csv_field_mapper.py
-    - apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py
-    - apps/api/src/prosell/infrastructure/database/seed_categories.py
     - docs/data39.csv
     - apps/api/src/prosell/infrastructure/models/product_model.py
     - apps/api/src/prosell/infrastructure/models/category_model.py
-  components:
-    - cross-org-export-all-orgs-and-csv-mapping
-shallow:
-  paths:
     - apps/web/src/components/admin/OrganizationPicker.test.tsx
     - apps/web/src/hooks/useAuth.ts
     - apps/web/src/lib/auth/permissions.ts

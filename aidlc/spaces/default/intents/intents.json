@@ -117,5 +117,12 @@
     "dirName": "260911-cross-org-export-ux",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0a4a6-c7e8-7784-b6ba-d37b9b3b7a18",
+    "slug": "vehicle-catalog",
+    "dirName": "260915-vehicle-catalog",
+    "scope": "feature",
+    "status": "in-flight"
   }
 ]

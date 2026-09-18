@@ -1,5 +1,8 @@
 """Vehicle router."""
 
+# `Any` is used only for genuinely dynamic payloads this router cannot type
+# precisely: raw NHTSA API JSON (arbitrary/undocumented keys) and the
+# serialized-then-mutated vehicle list item dict (see list_vehicles()).
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
+from prosell.domain.services.facebook_vehicle_value_catalog import get_options, reconcile
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
@@ -21,7 +25,9 @@ from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 router = APIRouter()
 
 # Simple in-memory cache for VIN decode results (process-scoped, dev/test only)
-_vin_cache: dict[str, tuple["DecodedVehicle", dict[str, Any]]] = {}  # vin → (vehicle, raw_data)
+# unmatched_fields is cached alongside the vehicle/raw_data so a cache hit
+# returns the same BR1.2 signal a fresh decode would (u1-vehicle-catalog-api).
+_vin_cache: dict[str, tuple["DecodedVehicle", dict[str, Any], list[str]]] = {}
 
 
 # Request/Response Models
@@ -87,11 +93,23 @@ class VINDecodeResponse(BaseModel):
     vehicle: DecodedVehicle = Field(..., description="Decoded vehicle information")
     cached: bool = Field(False, description="True if result was served from in-memory cache")
     raw_data: dict[str, Any] = Field(default_factory=dict, description="Raw NHTSA response data")
+    unmatched_fields: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Field names (e.g. 'fuel_type') for which NHTSA returned a raw value but it did "
+            "not reconcile against the canonical Facebook Marketplace catalog (BR1.2 CASE 2). "
+            "That field comes back null in `vehicle`; empty list when every select-backed "
+            "field reconciled or had no raw NHTSA value at all."
+        ),
+    )
 
 
 class VehicleListItem(BaseModel):
     """Single vehicle in list response."""
 
+    # dict, not a typed DTO: each item starts as a Product.model_dump() and is
+    # then mutated in-place (photo_url/image_urls re-signed to the caller's
+    # tenant) before response_model=VehicleListItem coerces/validates it below.
     items: list[dict[str, Any]] = Field(..., description="List of vehicle products")
     total: int = Field(..., description="Total number of vehicles")
     limit: int = Field(..., description="Page size limit")
@@ -191,9 +209,13 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
     # Check in-memory cache first
     vin_upper = request.vin.upper()
     if vin_upper in _vin_cache:
-        cached_vehicle, cached_raw = _vin_cache[vin_upper]
+        cached_vehicle, cached_raw, cached_unmatched = _vin_cache[vin_upper]
         return VINDecodeResponse(
-            vin=vin_upper, vehicle=cached_vehicle, cached=True, raw_data=cached_raw
+            vin=vin_upper,
+            vehicle=cached_vehicle,
+            cached=True,
+            raw_data=cached_raw,
+            unmatched_fields=cached_unmatched,
         )
 
     # Validate VIN character set before calling NHTSA (I, O, Q not allowed)
@@ -209,38 +231,65 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
         # Decode VIN via NHTSA
         raw_data = await vin_service.decode_vin(request.vin)
 
+        # BR1.1/BR1.2 — collects field names whose normalized NHTSA value had
+        # an applicable canonical catalog but no match (CASE 2).
+        unmatched_fields: list[str] = []
+
         # Extract and normalize fields (28 fields across 10 groups)
         vehicle = DecodedVehicle(
             # basic
             year=_parse_int(raw_data.get("Model Year")),
-            make=normalize_nhtsa_value(raw_data.get("Make"), "make"),
+            make=_normalize_and_reconcile(raw_data.get("Make"), "make", "make", unmatched_fields),
             model=_normalize_model(raw_data.get("Model")),
             trim=raw_data.get("Trim"),
             # engine
             engine=raw_data.get("Engine"),
-            fuel_type=normalize_nhtsa_value(raw_data.get("Fuel Type - Primary"), "fuel_type"),
+            fuel_type=_normalize_and_reconcile(
+                raw_data.get("Fuel Type - Primary"), "fuel_type", "fuel_type", unmatched_fields
+            ),
             cylinders=_parse_int(raw_data.get("Engine Number of Cylinders")),
             displacement_l=_parse_float(raw_data.get("Displacement (L)")),
             horsepower=_parse_int(raw_data.get("Engine Brake (hp) From")),
             engine_kw=_parse_float(raw_data.get("Engine Power (kW)")),
             turbo=_parse_bool(raw_data.get("Turbo")),
-            transmission=normalize_nhtsa_value(raw_data.get("Transmission Style"), "transmission"),
+            transmission=_normalize_and_reconcile(
+                raw_data.get("Transmission Style"),
+                "transmission",
+                "transmission",
+                unmatched_fields,
+            ),
             # dimensions
-            body_type=normalize_nhtsa_value(raw_data.get("Body Class"), "body_type"),
-            drivetrain=normalize_nhtsa_value(raw_data.get("Drive Type"), "drivetrain"),
+            body_type=_normalize_and_reconcile(
+                raw_data.get("Body Class"), "body_type", "body_type", unmatched_fields
+            ),
+            drivetrain=_normalize_and_reconcile(
+                raw_data.get("Drive Type"), "drivetrain", "drivetrain", unmatched_fields
+            ),
             doors=_parse_int(raw_data.get("Doors")),
             windows=_parse_int(raw_data.get("Windows")),
-            wheelbase_type=normalize_nhtsa_value(raw_data.get("Wheel Base Type"), "wheelbase_type"),
-            bed_type=normalize_nhtsa_value(raw_data.get("Bed Type"), "bed_type"),
-            cab_type=normalize_nhtsa_value(raw_data.get("Cab Type"), "cab_type"),
+            wheelbase_type=_normalize_and_reconcile(
+                raw_data.get("Wheel Base Type"),
+                "wheelbase_type",
+                "wheelbase_type",
+                unmatched_fields,
+            ),
+            bed_type=_normalize_and_reconcile(
+                raw_data.get("Bed Type"), "bed_type", "bed_type", unmatched_fields
+            ),
+            cab_type=_normalize_and_reconcile(
+                raw_data.get("Cab Type"), "cab_type", "cab_type", unmatched_fields
+            ),
             # capacity
             seats=_parse_int(raw_data.get("Number of Seats")),
             seat_rows=_parse_int(raw_data.get("Number of Seat Rows")),
             seatbelts=_parse_int(raw_data.get("Seat Belt Type")),
             gvwr=_parse_int(raw_data.get("Gross Vehicle Weight Rating From")),
             # electric
-            electrification_level=normalize_nhtsa_value(
-                raw_data.get("Electrification Level"), "electrification"
+            electrification_level=_normalize_and_reconcile(
+                raw_data.get("Electrification Level"),
+                "electrification",
+                "electrification_level",
+                unmatched_fields,
             ),
             battery_kwh=_parse_float(raw_data.get("Battery Energy (kWh) From")),
             battery_type=raw_data.get("Battery Type"),
@@ -254,10 +303,16 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
             plant_country=raw_data.get("Plant Country"),
         )
 
-        # Store in cache (vehicle + raw_data)
-        _vin_cache[vin_upper] = (vehicle, raw_data)
+        # Store in cache (vehicle + raw_data + unmatched_fields)
+        _vin_cache[vin_upper] = (vehicle, raw_data, unmatched_fields)
 
-        return VINDecodeResponse(vin=vin_upper, vehicle=vehicle, cached=False, raw_data=raw_data)
+        return VINDecodeResponse(
+            vin=vin_upper,
+            vehicle=vehicle,
+            cached=False,
+            raw_data=raw_data,
+            unmatched_fields=unmatched_fields,
+        )
 
     except HTTPException:
         raise
@@ -272,7 +327,10 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.error(f"VIN decode failed for {request.vin}: {e}")
+        # Log only the VIN's last 4 chars (matches other partial-identifier
+        # logging in this codebase) — never the full VIN or raw exception
+        # text via an f-string, to avoid leaking identifiers into logs.
+        logger.exception("VIN decode failed for VIN ending in %s", request.vin[-4:])
 
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -306,6 +364,38 @@ def _parse_bool(value: str | None) -> bool | None:
         return None
     normalized = normalize_nhtsa_value(value, "boolean")
     return normalized == "true" if normalized else None
+
+
+def _normalize_and_reconcile(
+    raw_value: str | None,
+    field_type: str,
+    field_key: str,
+    unmatched_fields: list[str],
+) -> str | None:
+    """Normalize a raw NHTSA value, then reconcile it against the canonical
+    Facebook Marketplace catalog (BR1.1/BR1.2, u1-vehicle-catalog-api).
+
+    - No raw NHTSA value at all -> None (unrelated to unmatched_fields).
+    - Field has no applicable catalog (get_options() is None) -> the
+      normalized value is returned as-is, untouched (BR1.2 CASE 3).
+    - Field has an applicable catalog and the value matches -> the exact
+      canonical_value (BR1.2 CASE 1).
+    - Field has an applicable catalog but no match -> None, and `field_key`
+      is appended to `unmatched_fields` (BR1.2 CASE 2).
+    """
+    normalized_value = normalize_nhtsa_value(raw_value, field_type)
+    if normalized_value is None:
+        return None
+
+    catalog_options = get_options(field_key)
+    if catalog_options is None:
+        return normalized_value
+
+    canonical_value = reconcile(field_key, normalized_value)
+    if canonical_value is None:
+        unmatched_fields.append(field_key)
+        return None
+    return canonical_value
 
 
 def _normalize_model(model: str | None) -> str | None:
@@ -361,7 +451,9 @@ def get_vin_cache_size_for_testing() -> int:
     return len(_vin_cache)
 
 
-def get_vin_cache_entry_for_testing(vin: str) -> tuple[DecodedVehicle, dict[str, Any]] | None:
+def get_vin_cache_entry_for_testing(
+    vin: str,
+) -> tuple[DecodedVehicle, dict[str, Any], list[str]] | None:
     """Get a specific entry from the VIN cache (TESTING ONLY).
 
     This function exposes internal cache state for integration testing.
@@ -371,7 +463,7 @@ def get_vin_cache_entry_for_testing(vin: str) -> tuple[DecodedVehicle, dict[str,
         vin: The VIN to look up (case-insensitive, will be uppercased)
 
     Returns:
-        Tuple of (DecodedVehicle, raw_data) if found, None otherwise
+        Tuple of (DecodedVehicle, raw_data, unmatched_fields) if found, None otherwise
     """
     return _vin_cache.get(vin.upper())
 

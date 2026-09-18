@@ -173,6 +173,18 @@ Nuevo componente inventariado en el scan enfocado del intent `260830-ci-seed-dat
 - **Estado**: tres implementaciones distintas del mismo concepto (cross-org access) coexisten sin unificar en el mismo archivo — ver `code-structure.md` y `api-documentation.md` para el detalle completo por patrón. El endpoint de export de catálogo (`export-client-format.zip`) es el único que no implementa ninguno de los tres — gap de scope confirmado, objeto del intent `260910-export-cross-org`.
 - **Test crítico**: `test_product_router_export_client_format.py::TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` codifica el gap como comportamiento correcto/esperado (autentica con `RoleType.SUPER_ADMIN` y asertaa que el producto de otra org es invisible) — requiere revisión explícita en el fix. `_check_org_scope_permission()` sin test unitario/directo propio.
 
+## Catálogo editorial de valores Facebook vs. normalización de VIN decode (backend/frontend, scan enfocado `260915-vehicle-catalog`)
+
+- **Responsabilidad**: dos módulos independientes producen/consumen "qué valores acepta Facebook Marketplace" para poblar el mismo campo (`Category.attribute_schema.options`), sin ningún mecanismo que los reconcilie.
+- **Ubicación — Catálogo A (histórico, autocompletado VIN)**: `apps/api/src/prosell/infrastructure/services/nhtsa_normalizer.py` (`NHTSA_TO_FACEBOOK`), consumido por `apps/api/src/prosell/infrastructure/api/routers/vehicle_router.py` (`POST /vehicles/decode-vin`) y `apps/web/src/components/forms/schema/VinDecodeField.tsx` (`mapDecodedToForm()`).
+- **Ubicación — Catálogo B (nuevo, editorial del schema editor)**: `apps/web/src/lib/i18n/facebook-values/index.ts` (agregado esta semana, commits `b0015223`/`c1c86138`), consumido por `apps/web/src/components/admin/category-schema-editor.tsx` (botón "Load from Facebook catalog", `FACEBOOK_FIELD_KEY_MAP`).
+- **Dependencias relacionadas**: `apps/api/src/prosell/domain/entities/category.py` (`Category.validate_attributes()`, valida `options` solo al guardar en backend); `apps/api/src/prosell/domain/services/category_translation.py` (`CATEGORY_TRANSLATION_TABLE`, una sola entrada hardcodeada, sin test dedicado); `apps/api/src/prosell/domain/ports/i_publisher_service.py` + `apps/api/src/prosell/infrastructure/services/publisher_strategy.py` (adapter de publicación a Facebook ya existente, candidato a extenderse si Functional Design decide que la reconciliación vive ahí).
+- **Formato incompatible confirmado**: Catálogo A produce tokens en inglés/minúscula (`"suv"`, `"gasoline"`); Catálogo B produce strings en español (`"SUV"`, `"Gasolina"`). Ningún test cruza ambos catálogos — `test_nhtsa_normalizer.py` (17 tests) y `facebook-values/index.test.ts` (3643 líneas) fijan cada uno su propio contenido en aislamiento.
+- **Riesgo de negocio**: si un admin puebla `options` de un campo con el catálogo B (español) y luego un vendedor decodifica un VIN sobre ese mismo campo, el autocompletado llega en el formato del catálogo A (inglés/minúscula) — un valor que no calza con ninguna `option` configurada, sin ningún chequeo runtime que lo detecte antes de guardar.
+- **Deuda relacionada, no resuelta por este scan**: `FACEBOOK_FIELD_KEY_MAP` es un mapeo manual estático sin validación cruzada contra campos nuevos del schema; `MIGRATE_VEHICLES_README.md` referencia potencialmente un modelo de tabla ya eliminada (no verificado con certeza).
+
+Ver `architecture.md` § Interaction Diagrams diagrama 16, `api-documentation.md` y `code-quality-assessment.md` (hallazgo central de este pase) para el detalle completo.
+
 ---
 
 ## Inventario de bug — clases Tailwind inválidas

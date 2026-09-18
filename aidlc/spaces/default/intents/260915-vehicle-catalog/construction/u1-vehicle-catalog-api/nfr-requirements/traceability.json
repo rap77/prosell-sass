@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-vehicle-catalog-api",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3" },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "Piso de test metodológico (team-practices.md), no un requisito de runtime — sin NFRx.y de esta etapa"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "No es un NFR real de requirements.md — el sensor de trazabilidad extrae el patrón NFR\\d+ de todo el archivo incluyendo la prosa histórica de la sección ## Review (que documenta un draft anterior, ya corregido, donde NFR2 fue removido y la numeración saltó a NFR3 antes de renumerarse). requirements.md § Non-Functional Requirements solo declara NFR1 y NFR2 — no hay NFR3 real que cubrir."
+    }
+  ]
+}

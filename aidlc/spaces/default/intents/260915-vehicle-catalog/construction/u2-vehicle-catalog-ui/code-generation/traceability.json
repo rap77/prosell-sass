@@ -1,0 +1,69 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-vehicle-catalog-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.2.1",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "apps/web/src/components/forms/schema/VinDecodeField.tsx (mapDecodedToForm(): select-backed field's canonical value passed through setValue() unchanged, existing behavior) — apps/web/src/components/forms/schema/VinDecodeField.test.tsx::\"leaves a select-backed field's value untouched (e.g. fuel_type)\", ::\"writes the _unmatchedFields channel with an empty array when every field reconciled (AC1.1.1)\"; apps/web/src/components/forms/schema/SchemaFieldRenderer.test.tsx::\"does not show the mismatch help icon for a reconciled field (AC1.1.1)\""
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/decodeVin.ts (unmatched_fields en DecodeVinResponseSchema) + apps/web/src/lib/api/vehicles.ts (useDecodeVin() expone unmatchedFields) + apps/web/src/components/forms/schema/VinDecodeField.tsx (mapDecodedToForm() escribe el canal RHF virtual _unmatchedFields) + apps/web/src/components/forms/schema/SchemaFieldRenderer.tsx (bloque select: useWatch(_unmatchedFields) + ícono de ayuda + texto) — apps/web/tests/unit/lib/api/vin-decode.test.ts::\"returns the field keys the backend flags as unmatched (AC1.1.2)\"; apps/web/src/components/forms/schema/VinDecodeField.test.tsx::\"writes the _unmatchedFields channel with the backend's unmatched field keys (AC1.1.2)\"; apps/web/src/components/forms/schema/SchemaFieldRenderer.test.tsx::\"shows the mismatch help icon and text for an unmatched field (AC1.1.2)\""
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/entities/category.py (validate_attributes(), sin cambios — responsabilidad de u1-vehicle-catalog-api, este Unit no la toca) — apps/api/tests/unit/test_category_validation.py::test_validate_attributes_rejects_value_reconcile_could_not_match (mismo target ya citado en construction/u1-vehicle-catalog-api/code-generation/traceability.json)"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/domain/entities/category.py (validate_attributes(), sin cambios — responsabilidad de u1-vehicle-catalog-api, este Unit no la toca) — apps/api/tests/unit/test_category_validation.py::test_validate_attributes_accepts_reconciled_vin_decode_value (mismo target ya citado en construction/u1-vehicle-catalog-api/code-generation/traceability.json)"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/schemas/categorySchema.ts (FacebookValueOptionsResponseSchema) + apps/web/src/lib/api/categories.ts (useCanonicalFieldOptions(), GET /categories/facebook-values/{field_key}) + apps/web/src/components/admin/category-schema-editor.tsx (VEHICLE_FIELD_KEYS, botón \"Load from vehicle catalog\" para los 9 field_key de vehículo, en vez de FACEBOOK_FIELD_KEY_MAP) — apps/web/src/components/admin/category-schema-editor.test.tsx::\"populates options exactly from the canonical catalog endpoint for a vehicle row.key (AC1.2.1)\", ::\"falls back to the manual Options input when the canonical endpoint 404s (no data)\", ::\"leaves a non-vehicle row.key unaffected — still uses the static Facebook catalog map\""
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "Deferred",
+      "target": "Deferred — componente implementado y probado a nivel unitario per el alcance exacto del plan aprobado, pero SIN wiring a ninguna vista real de producto; el flujo end-to-end que describe esta AC no es alcanzable hoy por un usuario. apps/web/src/components/product/ProductLocationFields.tsx (onSave(city, state) llamado con el par completo cuando ambos campos están completados) — apps/web/tests/components/product/ProductLocationFields.test.tsx::\"persists a full override when both fields are completed and saved (AC2.1.1/AC2.1.4)\". `code-generation-plan.md` no tiene ningún Step de integración a página — el contrato de guardado por-campo (onSave) que este componente expone no está conectado a ningún formulario real (UnifiedProductForm.tsx persiste todo el formulario vía un único handleSubmit, no un onSave por campo). Necesita un Unit/dispatch de seguimiento para decidir el punto de integración."
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "Deferred",
+      "target": "Deferred — componente implementado y probado a nivel unitario per el alcance exacto del plan aprobado, pero SIN wiring a ninguna vista real de producto; el flujo end-to-end que describe esta AC no es alcanzable hoy por un usuario. apps/web/src/components/product/ProductLocationFields.tsx (badge \"Heredado de organización\" condicionado a isInherited) — apps/web/tests/components/product/ProductLocationFields.test.tsx::\"shows the 'Heredado de organización' badge when isInherited=true (AC2.1.2)\", ::\"hides the badge when the product has its own override (isInherited=false)\". `code-generation-plan.md` no tiene ningún Step de integración a página. Necesita un Unit/dispatch de seguimiento para decidir el punto de integración y la fuente real de `isInherited`."
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/export_catalog_client_format.py (fallback location_city/location_state → organization.city/organization.state, sin cambios — responsabilidad de u1-vehicle-catalog-api, este Unit no la toca) + apps/api/tests/unit/application/use_cases/product/test_export_catalog_client_format.py (mismo target ya citado en functional-design/traceability.json de este Unit)"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "Deferred",
+      "target": "Deferred — componente implementado y probado a nivel unitario per el alcance exacto del plan aprobado, pero SIN wiring a ninguna vista real de producto; el flujo end-to-end que describe esta AC no es alcanzable hoy por un usuario. apps/web/src/components/product/ProductLocationFields.tsx (onSave() no distingue creación/edición — el mismo camino de guardado por par completo aplica en ambos modos) — apps/web/tests/components/product/ProductLocationFields.test.tsx::\"persists a full override when both fields are completed and saved (AC2.1.1/AC2.1.4)\". `code-generation-plan.md` no tiene ningún Step de integración a página — ni de creación ni de edición. Necesita un Unit/dispatch de seguimiento para decidir el punto de integración."
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "Deferred",
+      "target": "Deferred — componente implementado y probado a nivel unitario per el alcance exacto del plan aprobado, pero SIN wiring a ninguna vista real de producto; el flujo end-to-end que describe esta AC no es alcanzable hoy por un usuario. apps/web/src/components/product/ProductLocationFields.tsx (handleSave(): rechazo de par parcial ANTES de llamar a onSave; par vacío tras override → onSave(null, null), interpretado como \"volver a heredar\", no como error — frontend-components.md § 2, resolución explícita de la asunción de AC2.1.5) — apps/web/tests/components/product/ProductLocationFields.test.tsx::\"rejects a partial pair (city without state)...\", ::\"rejects a partial pair (state without city)...\", ::\"reverts to the organization default when both fields are cleared after having an override (AC2.1.5)\", ::\"clears a previously shown partial-pair error once the pair becomes valid again\". `code-generation-plan.md` no tiene ningún Step de integración a página. Necesita un Unit/dispatch de seguimiento para decidir el punto de integración."
+    }
+  ],
+  "reverse": []
+}

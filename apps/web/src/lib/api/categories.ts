@@ -5,7 +5,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { Category, CategoryOption } from "@/types/category";
+import type { Category } from "@/types/category";
 import {
   mapBackendCategoryToDomain,
   type BackendCategory,
@@ -14,6 +14,7 @@ import {
   BackendCategorySchema,
   BackendListResponseSchema,
 } from "@/lib/api/schemas/category";
+import { FacebookValueOptionsResponseSchema } from "@/lib/api/schemas/categorySchema";
 import { extractErrorMessage } from "./extractErrorMessage";
 
 /**
@@ -249,6 +250,44 @@ export function useDeleteCategory() {
     onSuccess: () => {
       toast.success("Category deleted");
     },
+  });
+}
+
+/**
+ * Fetch the canonical Facebook Marketplace options for a vehicle
+ * `attribute_schema` field key (u2-vehicle-catalog-ui, US1.2/AC1.2.1).
+ *
+ * `fieldKey` is `row.key` directly — NOT the frontend's `FacebookFieldKey`
+ * enum (functional-spec.md Workflow 2 Q1: the vehicle vocabulary already
+ * matches character-for-character, no mapping table needed). Returns
+ * `undefined` on 404 (field_key without a canonical catalog) so the caller
+ * (`category-schema-editor.tsx`) can fall back to its existing manual
+ * "Options" input instead of surfacing an error.
+ */
+export function useCanonicalFieldOptions(
+  fieldKey: string | undefined,
+): UseQueryResult<string[] | undefined, Error> {
+  return useQuery({
+    queryKey: ["canonical-field-options", fieldKey],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/v1/categories/facebook-values/${encodeURIComponent(fieldKey ?? "")}`,
+        { credentials: "include" },
+      );
+
+      if (res.status === 404) return undefined;
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch canonical field options"),
+        );
+      }
+
+      return FacebookValueOptionsResponseSchema.parse(await res.json()).options;
+    },
+    enabled: Boolean(fieldKey),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

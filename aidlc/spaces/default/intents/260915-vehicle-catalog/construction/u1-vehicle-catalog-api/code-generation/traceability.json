@@ -1,0 +1,152 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-vehicle-catalog-api",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.2.1",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR3.1",
+    "BR5.1",
+    "FR4",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR-PERF-1",
+    "NFR-PERF-2",
+    "NFR-SEC-1",
+    "NFR-SEC-2",
+    "NFR-SEC-3",
+    "NFR-SEC-4",
+    "NFR-SCALE-1",
+    "NFR-OBS-1",
+    "NFR-OBS-2"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "src/prosell/domain/services/facebook_vehicle_value_catalog.py (reconcile(), BR1.1) — tests/unit/domain/services/test_facebook_vehicle_value_catalog.py::test_reconcile_known_value_returns_exact_canonical_value, test_cross_reconciliation_every_nhtsa_to_facebook_value_is_in_the_catalog"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "src/prosell/infrastructure/api/routers/vehicle_router.py (_normalize_and_reconcile(), CASE 2 -> null + unmatched_fields) — tests/integration/services/test_vin_decode_integration.py::test_vin_decode_unreconciled_field_is_nulled_and_listed"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "src/prosell/domain/entities/category.py (validate_attributes(), sin cambios, FR1.3) — tests/unit/test_category_validation.py::test_validate_attributes_accepts_reconciled_vin_decode_value"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "src/prosell/domain/entities/category.py (validate_attributes(), rechazo con error, sin cambios) — tests/unit/test_category_validation.py::test_validate_attributes_rejects_value_reconcile_could_not_match"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "src/prosell/infrastructure/api/routers/category_router.py (get_facebook_value_options(), GET /categories/facebook-values/{field_key}) — tests/unit/api/routers/test_category_router.py"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "facebook_vehicle_value_catalog.py (reconcile()) — test_facebook_vehicle_value_catalog.py (11 tests, incluye cobertura cruzada 100% contra NHTSA_TO_FACEBOOK)"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "vehicle_router.py (_normalize_and_reconcile(), 3 ramas CASE 1/2/3) — test_vin_decode_integration.py::test_vin_decode_reconciled_field_is_not_in_unmatched_fields (CASE 1), test_vin_decode_unreconciled_field_is_nulled_and_listed (CASE 2); CASE 3 no ejercitable con el catálogo actual (los 9 field_keys select-backed SIEMPRE tienen catálogo aplicable, ver Desviaciones en code-summary.md) pero la rama está implementada y es alcanzable si un futuro field_key select-backed queda sin catálogo"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "src/prosell/domain/entities/category.py (validate_attributes(), sin cambios) — tests/unit/test_category_validation.py::test_validate_attributes_accepts_reconciled_vin_decode_value, test_validate_attributes_rejects_value_reconcile_could_not_match (mismos tests que AC1.1.3/AC1.1.4, cobertura ya real, solo faltaba la fila propia de la regla)"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "category_router.py (get_facebook_value_options(), 200 + 404 + warning) — test_category_router.py::test_get_facebook_value_options_known_field_key_returns_full_list, test_get_facebook_value_options_unknown_field_key_raises_404, test_get_facebook_value_options_unknown_field_key_logs_warning"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "alembic/versions/20260917_0001_migrate_legacy_vehicle_catalog.py (_do_upgrade/_do_downgrade, 3 guardas en orden) — tests/integration/alembic/test_migrate_legacy_vehicle_catalog.py (6 tests: guarda 2 real sin catálogo, guarda 2 exitosa vía patch, idempotencia, guarda 1, guarda 3 anti-drift, downgrade simétrico)"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "src/prosell/domain/services/csv_export.py (_sanitize_formula_injection(), aplicada a las 24 columnas de build_client_format_row()) — tests/unit/services/test_csv_export.py::test_build_client_format_row_sanitizes_leading_equals, test_build_client_format_row_sanitizes_leading_plus_minus_at, test_build_client_format_row_normal_value_is_unchanged, test_build_client_format_row_sanitizes_attribute_sourced_columns_too"
+    },
+    {
+      "id": "FR4",
+      "status": "OK",
+      "target": "docs/canonical/publisher-adapter-contract.md (documentación del contrato IPublisherService + 3 adapters + distinción de credenciales) — sin cambio de código; suite existente de los 3 adapters verificada en verde (tests/unit/infrastructure/test_graph_api_publisher.py, tests/unit/infrastructure/test_publisher_strategy.py, piso #6)"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "facebook_vehicle_value_catalog.py (unicidad de canonical_value y de alias dentro de cada field_key) — test_facebook_vehicle_value_catalog.py::test_no_duplicate_alias_within_the_same_field_key, test_no_duplicate_canonical_value_within_the_same_field_key"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "20260917_0001_migrate_legacy_vehicle_catalog.py (una vez migrado el valor deja de ser candidato) — test_migrate_legacy_vehicle_catalog.py::test_upgrade_is_idempotent"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "N/A",
+      "target": "Sin infraestructura de disponibilidad nueva — mismo deployable y pipeline ya vigente (infrastructure-specification.md)"
+    },
+    {
+      "id": "NFR-PERF-1",
+      "status": "OK",
+      "target": "facebook_vehicle_value_catalog.py — catálogo estático en memoria, lookup O(n) sobre listas de decenas de valores por field_key, sin I/O; footprint despreciable per performance-design.md, sin medición de latencia dedicada (no aplica — no hay red/DB en la ruta de reconcile()/get_options())"
+    },
+    {
+      "id": "NFR-PERF-2",
+      "status": "N/A",
+      "target": "Target de performance de la migración legacy (ejecución única, fuera del request path) — sin medición de latencia en tests unitarios/integración, per performance-design.md"
+    },
+    {
+      "id": "NFR-SEC-1",
+      "status": "OK",
+      "target": "category_router.py (get_facebook_value_options() requiere CurrentUser, sin _require_platform_admin()) — patrón ya usado por get_category_schema; wiring de FastAPI Depends verificado por lectura de código (llamar la coroutine directo en el test bypassea la DI de auth, igual que el patrón ya establecido para decode_vin en test_vin_decode_integration.py)"
+    },
+    {
+      "id": "NFR-SEC-2",
+      "status": "OK",
+      "target": "csv_export.py (_sanitize_formula_injection()) — test_csv_export.py (4 tests dedicados)"
+    },
+    {
+      "id": "NFR-SEC-3",
+      "status": "OK",
+      "target": "docs/canonical/publisher-adapter-contract.md § Distinción crítica de credenciales — documentación, sin código nuevo que valide en runtime"
+    },
+    {
+      "id": "NFR-SEC-4",
+      "status": "OK",
+      "target": "20260917_0001_migrate_legacy_vehicle_catalog.py (logger.info registra solo product_id + field_key + reason, NUNCA el valor de atributo en texto plano) — verificado por lectura de código; los tests de test_migrate_legacy_vehicle_catalog.py corren con logging real capturado en la salida y no exponen valores"
+    },
+    {
+      "id": "NFR-SCALE-1",
+      "status": "N/A",
+      "target": "Sin infraestructura de escalado nueva (infrastructure-specification.md confirma sin recurso nuevo)"
+    },
+    {
+      "id": "NFR-OBS-1",
+      "status": "OK",
+      "target": "category_router.py (logger.warning en field_key no reconocido) — test_category_router.py::test_get_facebook_value_options_unknown_field_key_logs_warning"
+    },
+    {
+      "id": "NFR-OBS-2",
+      "status": "OK",
+      "target": "20260917_0001_migrate_legacy_vehicle_catalog.py (logger.info de resumen migrated=/excluded= + por-registro) — test_migrate_legacy_vehicle_catalog.py (todos los tests capturan logs vía caplog implícito de pytest, veredicto verificado por lectura de la salida de test)"
+    }
+  ]
+}

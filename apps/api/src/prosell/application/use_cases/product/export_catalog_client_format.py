@@ -73,6 +73,11 @@ def _attr_str_list(attributes: Mapping[str, object], key: str) -> list[str] | No
     return None
 
 
+def _has_non_whitespace_content(value: str | None) -> bool:
+    """Return whether an optional location field contains meaningful text."""
+    return value is not None and bool(value.strip())
+
+
 @dataclass(frozen=True)
 class ExportCatalogClientFormatResult:
     """The assembled export (`ExportCatalogResult`, entities.md).
@@ -193,6 +198,7 @@ class ExportCatalogClientFormatUseCase:
         # (the set has exactly one element) — no separate code path.
         distinct_org_ids = list({p.organization_id for p in products})
         organizations = await self._organization_repository.get_by_ids(distinct_org_ids)
+        organization_by_id = {organization.id: organization for organization in organizations}
         org_code_by_id: dict[UUID, str | None] = {o.id: o.code for o in organizations}
 
         # Lazy cache: leaf category_id -> resolved root vertical slug
@@ -225,6 +231,15 @@ class ExportCatalogClientFormatUseCase:
 
             attrs = product.attributes or {}
             org_code = org_code_by_id.get(product.organization_id)
+            organization = organization_by_id.get(product.organization_id)
+            location_city = product.location_city
+            location_state = product.location_state
+            if not (
+                _has_non_whitespace_content(location_city)
+                or _has_non_whitespace_content(location_state)
+            ):
+                location_city = organization.city if organization is not None else None
+                location_state = organization.state if organization is not None else None
             product_folder_name = build_image_folder_name(
                 year=attrs.get("year"),
                 make=attrs.get("make"),
@@ -254,8 +269,8 @@ class ExportCatalogClientFormatUseCase:
                     state=_attr_str(attrs, "title_state"),
                     category=category,
                     vehicle_type=vehicle_type,
-                    location_city=product.location_city,
-                    location_state=product.location_state,
+                    location_city=location_city,
+                    location_state=location_state,
                     path=build_client_format_path(base_folder, org_code, product_folder_name),
                 )
             )

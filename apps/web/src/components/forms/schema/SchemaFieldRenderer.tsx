@@ -1,7 +1,9 @@
 "use client";
 
+import { Info } from "lucide-react";
 import {
   Controller,
+  useWatch,
   type Control,
   type UseFormSetValue,
 } from "react-hook-form";
@@ -55,6 +57,12 @@ export function SchemaFieldRenderer({
     (translatedLabel !== fieldKey ? translatedLabel : humanize(fieldKey));
   const inputId = `field-${fieldKey}`;
 
+  // u2-vehicle-catalog-ui (AC1.1.2): read the RHF virtual channel the
+  // `vin_decode` block writes via `mapDecodedToForm`'s `setValue`. Called
+  // unconditionally (rules-of-hooks) even though only the `select` branch
+  // below consumes it — every other branch just ignores the value.
+  const watchedUnmatched = useWatch({ control, name: "_unmatchedFields" });
+
   // VIN decode field
   if (entry.render_as === "vin_decode") {
     return (
@@ -65,8 +73,8 @@ export function SchemaFieldRenderer({
           <VinDecodeField
             value={String(field.value ?? "")}
             onChange={field.onChange}
-            onDecode={(decoded: DecodedVehicle) =>
-              mapDecodedToForm(decoded, schema, setValue)
+            onDecode={(decoded: DecodedVehicle, unmatchedFields: string[]) =>
+              mapDecodedToForm(decoded, schema, setValue, unmatchedFields)
             }
             disabled={disabled}
             setValue={setValue}
@@ -107,6 +115,13 @@ export function SchemaFieldRenderer({
   if (options && options.length > 0) {
     // ponytail: for number fields, convert string value back to number on change
     const isNumeric = entry.type === "number";
+    // u2-vehicle-catalog-ui (AC1.1.2): this field's key is in the
+    // "_unmatchedFields" channel written by the sibling vin_decode block
+    // (frontend-components.md § 1) — the VIN decode found no canonical
+    // option match for this field, so it was left for manual entry.
+    const unmatched =
+      Array.isArray(watchedUnmatched) && watchedUnmatched.includes(fieldKey);
+    const helpTextId = `${inputId}-mismatch-help`;
     return (
       <Controller
         name={fieldKey}
@@ -129,15 +144,37 @@ export function SchemaFieldRenderer({
                 {label}
                 {entry.required && <span className="text-destructive"> *</span>}
               </Label>
-              <SelectControlled
-                id={inputId}
-                value={currentValue}
-                onChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
-                options={displayOptions}
-                placeholder={`Select ${label}`}
-                disabled={disabled}
-                aria-label={label}
-              />
+              <div className="flex items-center gap-2">
+                <SelectControlled
+                  id={inputId}
+                  value={currentValue}
+                  onChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
+                  options={displayOptions}
+                  placeholder={`Select ${label}`}
+                  disabled={disabled}
+                  aria-label={label}
+                />
+                {/* AC1.1.2: help icon shown only when the VIN decode could
+                    not match a canonical option for this field. Focusable
+                    (Tab) per interaction-spec.md — native <button> with
+                    title gives a hover/focus tooltip; the visible text
+                    below is what a screen reader actually announces. */}
+                {unmatched && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    title="No se pudo autocompletar — completar a mano"
+                    aria-label={`${label}: no se pudo autocompletar — completar a mano`}
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {unmatched && (
+                <p id={helpTextId} className="text-sm text-muted-foreground">
+                  No se pudo autocompletar — completar a mano
+                </p>
+              )}
               {fieldState.error && (
                 <p className="text-sm text-destructive">
                   {fieldState.error.message}

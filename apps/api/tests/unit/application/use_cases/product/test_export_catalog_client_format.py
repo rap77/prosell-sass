@@ -1,5 +1,6 @@
 """Test ExportCatalogClientFormatUseCase (u1-catalog-export-api, u1-cross-org-export-api)."""
 
+import csv
 import zipfile
 from io import BytesIO
 from unittest.mock import AsyncMock
@@ -32,6 +33,8 @@ def _make_product(
     image_urls: list[str] | None = None,
     exterior_color: str = "Gris",
     category_id: UUID | None = None,
+    location_city: str | None = None,
+    location_state: str | None = None,
 ) -> Product:
     return Product(
         id=uuid4(),
@@ -50,6 +53,8 @@ def _make_product(
             "exterior_color": exterior_color,
         },
         image_urls=image_urls or [],
+        location_city=location_city,
+        location_state=location_state,
     )
 
 
@@ -95,9 +100,11 @@ def _make_use_case(
     product_repository.get_all.return_value = products
 
     organization_repository = AsyncMock()
-    organization_repository.get_by_ids.return_value = organizations or [
-        Organization(id=tenant_id, name="Test Org", tenant_id=tenant_id, code=org_code)
-    ]
+    organization_repository.get_by_ids.return_value = (
+        organizations
+        if organizations is not None
+        else [Organization(id=tenant_id, name="Test Org", tenant_id=tenant_id, code=org_code)]
+    )
 
     do_spaces_service = AsyncMock()
     if get_object is not None:
@@ -110,6 +117,12 @@ def _make_use_case(
         category_repository=category_repository or _make_category_repository(),
     )
     return use_case, product_repository, organization_repository, do_spaces_service
+
+
+def _read_csv_rows(zip_bytes: bytes) -> list[dict[str, str]]:
+    with zipfile.ZipFile(BytesIO(zip_bytes)) as archive:
+        csv_content = archive.read("catalogo.csv").decode("utf-8")
+    return list(csv.DictReader(csv_content.splitlines(), delimiter=";"))
 
 
 class TestExportCatalogClientFormatUseCase:
@@ -245,6 +258,164 @@ class TestExportCatalogClientFormatUseCase:
         with zipfile.ZipFile(BytesIO(result.zip_bytes)) as archive:
             names = archive.namelist()
         assert names == ["catalogo.csv"]
+
+    @pytest.mark.asyncio
+    async def test_blank_product_location_falls_back_to_organization_location(self) -> None:
+        tenant_id = uuid4()
+        product = _make_product(
+            tenant_id,
+            location_city=" \t",
+            location_state=None,
+        )
+        organization = Organization(
+            id=tenant_id,
+            name="Test Org",
+            tenant_id=tenant_id,
+            code="MF",
+            city="Miami",
+            state="FL",
+        )
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id,
+            product_count=1,
+            products=[product],
+            organizations=[organization],
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="",
+            facebook_groups_fallback="",
+        )
+
+        assert _read_csv_rows(result.zip_bytes)[0]["location"] == "Miami FL"
+
+    @pytest.mark.asyncio
+    async def test_partial_product_location_is_not_mixed_with_organization_location(self) -> None:
+        tenant_id = uuid4()
+        product = _make_product(
+            tenant_id,
+            location_city="Orlando",
+            location_state=" ",
+        )
+        organization = Organization(
+            id=tenant_id,
+            name="Test Org",
+            tenant_id=tenant_id,
+            code="MF",
+            city="Miami",
+            state="FL",
+        )
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id,
+            product_count=1,
+            products=[product],
+            organizations=[organization],
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="",
+            facebook_groups_fallback="",
+        )
+
+        assert _read_csv_rows(result.zip_bytes)[0]["location"] == "Orlando"
+
+    @pytest.mark.asyncio
+    async def test_product_state_without_city_is_not_mixed_with_organization_location(self) -> None:
+        tenant_id = uuid4()
+        product = _make_product(
+            tenant_id,
+            location_city=" \t",
+            location_state="TX",
+        )
+        organization = Organization(
+            id=tenant_id,
+            name="Test Org",
+            tenant_id=tenant_id,
+            code="MF",
+            city="Miami",
+            state="FL",
+        )
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id,
+            product_count=1,
+            products=[product],
+            organizations=[organization],
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="",
+            facebook_groups_fallback="",
+        )
+
+        assert _read_csv_rows(result.zip_bytes)[0]["location"] == "TX"
+
+    @pytest.mark.asyncio
+    async def test_cross_org_export_uses_each_product_organization_location(self) -> None:
+        org_a_id = uuid4()
+        org_b_id = uuid4()
+        product_a = _make_product(org_a_id)
+        product_b = _make_product(org_b_id)
+        organizations = [
+            Organization(
+                id=org_a_id,
+                name="Org A",
+                tenant_id=org_a_id,
+                code="AA",
+                city="Austin",
+                state="TX",
+            ),
+            Organization(
+                id=org_b_id,
+                name="Org B",
+                tenant_id=org_b_id,
+                code="BB",
+                city="Boston",
+                state="MA",
+            ),
+        ]
+        use_case, *_ = _make_use_case(
+            tenant_id=org_a_id,
+            product_count=2,
+            products=[product_a, product_b],
+            organizations=organizations,
+        )
+
+        result = await use_case.execute(
+            organization_id=None,
+            all_organizations=True,
+            base_folder="",
+            facebook_groups_fallback="",
+        )
+
+        rows = _read_csv_rows(result.zip_bytes)
+        locations_by_code = {row["cod_dealer"]: row["location"] for row in rows}
+        assert locations_by_code == {"AA": "Austin TX", "BB": "Boston MA"}
+
+    @pytest.mark.asyncio
+    async def test_missing_organization_leaves_blank_product_location(self) -> None:
+        tenant_id = uuid4()
+        product = _make_product(tenant_id)
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id,
+            product_count=1,
+            products=[product],
+            organizations=[],
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="",
+            facebook_groups_fallback="",
+        )
+
+        assert _read_csv_rows(result.zip_bytes)[0]["location"] == ""
 
 
 class TestExportCatalogClientFormatUseCaseCrossOrg:

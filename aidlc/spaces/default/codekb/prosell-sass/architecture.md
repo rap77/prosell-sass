@@ -677,6 +677,41 @@ flowchart TB
 - El mapeo de columnas CSV tiene 5 de 8 columnas que requieren transformación de VALOR (no solo rename de clave): `clean_title` necesita mapeo inverso `"clean"→"1"`/`"rebuilt"→"0"`, `groups` necesita `",".join()` sobre una lista, `category`/`type` requieren decidir qué nivel del árbol de 3-4 niveles mapea a cada columna plana, y `location` es lossy sin agregar una tabla de código→nombre completo de estado.
 - Los popups nuevos de `path`/`groups` (ítems 6 y 7 del intent) tienen un patrón de UX ya establecido en el mismo archivo (`window.prompt` con valor por defecto sugerido, `null` = cancelar, usado hoy por `handleConfirmExportSummary`) — no hay que inventar un patrón de interacción nuevo.
 
+### 16. Desalineación entre catálogo editorial de valores Facebook y normalización de VIN decode (nuevo, scan enfocado `260915-vehicle-catalog`)
+
+Este intent retoma el flujo de categorización dinámica/atributos de vehículos (ver `business-overview.md` § Categorización dinámica) y ataca un riesgo de negocio no antes catalogado: dos catálogos paralelos de "qué valores acepta Facebook Marketplace", con formatos incompatibles, sin ningún chequeo runtime que los reconcilie.
+
+```mermaid
+flowchart TB
+    subgraph "Catálogo A — histórico (VIN decode)"
+        NHTSA["NHTSA VIN decode<br/>(vehicle_router.py)"]
+        Normalizer["nhtsa_normalizer.py<br/>NHTSA_TO_FACEBOOK<br/>→ tokens inglés/minúscula<br/>('suv', 'gasoline', 'FWD')"]
+        VinField["VinDecodeField.tsx<br/>mapDecodedToForm()<br/>⚠️ ASUME valor decodificado<br/>== alguna option del schema"]
+        NHTSA --> Normalizer --> VinField
+    end
+
+    subgraph "Catálogo B — nuevo, editorial (schema editor)"
+        FBValues["facebook-values/index.ts<br/>(commits b0015223/c1c86138, esta semana)<br/>strings oficiales EN ESPAÑOL<br/>('SUV', 'Gasolina')"]
+        SchemaEditor["category-schema-editor.tsx<br/>botón 'Load from Facebook catalog'<br/>puebla attribute_schema.options"]
+        KeyMap["FACEBOOK_FIELD_KEY_MAP<br/>mapeo manual estático<br/>attribute_schema key → FacebookFieldKey"]
+        FBValues --> SchemaEditor
+        KeyMap --> SchemaEditor
+    end
+
+    VinField -.->|"⚠️ SIN validación runtime:<br/>valor inglés/minúscula puede no calzar<br/>con options en español recién cargadas"| SchemaEditor
+    SchemaEditor -.->|"Category.validate_attributes()<br/>valida options solo en el backend,<br/>solo AL GUARDAR — no en el momento<br/>del autocompletado por VIN"| Backend["Backend: Category domain entity"]
+
+    style VinField fill:#ffebee
+    style Backend fill:#fff3cd
+```
+
+**Hallazgos clave** (detalle completo en `code-quality-assessment.md`):
+
+- Ningún test ni chequeo runtime detecta la desalineación — es silenciosa hasta que un vendedor decodifica un VIN sobre un campo cuyas `options` fueron pobladas con el catálogo nuevo.
+- `CATEGORY_TRANSLATION_TABLE` (`category_translation.py`) tiene una sola entrada hardcodeada (`"vehiculos-y-transporte"`), sin test unitario dedicado — punto de extensión frágil si este intent expande categorías canónicas.
+- `IPublisherService`/`PublisherStrategySelector` (Ports & Adapters, diagrama del § Key Design Decisions "Publicación a Facebook con estrategia intercambiable") ya existe y está en producción — la pregunta real para Requirements/Functional Design es si necesita extenderse para absorber la reconciliación de catálogos, no diseñar el contrato de adapter desde cero.
+- `FACEBOOK_FIELD_KEY_MAP` es un mapeo manual estático sin validación cruzada — cualquier campo nuevo del schema requiere edición coordinada manual en dos archivos.
+
 ## Key Design Decisions
 
 - **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
@@ -696,6 +731,7 @@ flowchart TB
 - **Tres patrones de acceso cross-org coexistiendo sin unificar en `product_router.py`** (`_check_org_scope_permission()` + `organization_id`; `is_org_admin` inline single-resource; `has_role("super_admin")` literal en batch actions) — decisión implícita de crecimiento orgánico del router, no un diseño deliberado desde el inicio. El endpoint de export de catálogo (intent `260903-catalog-client-export`) quedó fuera de los tres, resolviendo `tenant_id` exclusivamente del JWT sin ningún camino cross-org — gap de scope confirmado, a resolver en el intent `260910-export-cross-org` eligiendo explícitamente uno de los tres patrones existentes en vez de inventar un cuarto. Ver § Interaction Diagrams diagrama 13.
 - **Omitir `organization_id` en el endpoint de export significa "mi propia organización", no "todas"** (nuevo, scan `260911-cross-org-export-ux`) — convención documentada explícitamente (docstring L763) y asimétrica respecto a `list_products`, donde omitirlo significa navegación GLOBAL para un admin. Decisión de scope deliberada del diseño original, no un descuido — cualquier sentinel nuevo "exportar todas las organizaciones" debe decidir su relación con esta asimetría ya existente en vez de copiar ciegamente la convención del endpoint hermano. Ver § Interaction Diagrams diagrama 15.
 - **La capa de repositorio ya soporta cross-tenant (`tenant_id=None`), pero el use case de export no** — decisión de diseño pendiente sobre cómo propagar esa capacidad ya existente (`ProductRepository.get_all()`/`count()`) a `ExportCatalogClientFormatUseCase`, que hoy resuelve `org_code` una sola vez por ejecución en vez de por producto. Ver § Interaction Diagrams diagrama 15.
+- **Dos catálogos de valores Facebook con propósitos distintos, nunca unificados** (nuevo, scan `260915-vehicle-catalog`) — `nhtsa_normalizer.py` (autocompletado por VIN, tokens inglés/minúscula) y `facebook-values/index.ts` (catálogo editorial para poblar `options` del schema, strings en español) fueron construidos en momentos distintos para necesidades distintas, sin que ninguna decisión explícita de arquitectura los reconciliara. La validación de `Category.validate_attributes()` corre solo al guardar en el backend, nunca en el momento del autocompletado — decisión implícita de diseño incremental, no deliberada. Ver § Interaction Diagrams diagrama 16.
 
 ## Improvement Opportunities
 
@@ -707,6 +743,9 @@ flowchart TB
 - Decidir el destino de las 3 subcarpetas vacías de `use_cases/` (`dealer/`, `user_dealer/`, `vehicle/`) — scaffolding sin contenido, candidato a eliminación o a implementación real.
 - Actualizar `CLAUDE.md` para reflejar lo efectivamente implementado (publicación a Facebook, no scraping genérico; sin ML) en vez de la visión aspiracional original — ver `business-overview.md` § Corrección.
 - Corregir el drift de versión Tailwind en `CLAUDE.md` ("TailwindCSS 4" en la tabla de stack y en "Key Conventions" línea ~194) — el proyecto real usa `tailwindcss: 3.4.17`.
+- Reconciliar (o al menos validar en runtime) los dos catálogos de valores Facebook (`nhtsa_normalizer.py` vs. `facebook-values/index.ts`) antes de que un admin puebla `options` en español y un vendedor decodifique un VIN sobre ese mismo campo — hoy no hay ningún chequeo que detecte la desalineación antes de guardar (nuevo, scan `260915-vehicle-catalog`, ver § Interaction Diagrams diagrama 16).
+- Agregar un test unitario dedicado para `CATEGORY_TRANSLATION_TABLE`/`category_translation.py` — hoy solo se ejercita indirectamente vía `test_export_catalog_client_format.py`.
+- Revisar si `MIGRATE_VEHICLES_README.md` está obsoleta (referencia un `vehicle_model.py` correspondiente a una tabla `vehicles` ya eliminada en una migración de 2026-05) — no verificado con certeza en este pase.
 - Actualizar los 4 tests de `apps/api/tests/integration/database/test_seed_categories.py` y `test_seed_car_attributes.py` que buscan el slug `"suvs"` (nivel 3, eliminado el 6-ago por `2166f142`) para apuntar a `carros-y-camionetas` como la hoja real (nivel 2) — root-cause de mayor confianza de la falla actual de CI en `main` (ver `code-quality-assessment.md`).
 - Evaluar si reparar la cadena real de migraciones Alembic (el drift documentado en `20260601_recreate_facebook_tables.py`) entra en el alcance de este intent o queda como deuda separada — hoy CI nunca ejercita esa cadena contra una DB fresca porque `create_test_schema.py` la bypassa.
 - Revisar el patrón de fixture `shared_session`/dependency-override compartido en `test_fb_sync_router.py` y `bulk_upload/conftest.py` — es incompatible con cualquier handler que llame `db.commit()` explícitamente dentro del mismo test cuando se necesita más de una llamada al endpoint sobre la misma sesión.

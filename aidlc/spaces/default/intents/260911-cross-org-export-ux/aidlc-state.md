@@ -16,7 +16,7 @@
 Alcance: full-stack (backend Python/FastAPI + frontend Next.js), reemplaza/extiende comportamiento ya en producción-candidato del selector y del export cliente.
 
 - **Project Type**: Brownfield
-- **Scope**: classic
+- **Scope**: feature
 - **Start Date**: 2026-09-11T22:50:27Z
 - **State Version**: 8
 - **Active Agent**: aidlc-operations-agent
@@ -26,8 +26,8 @@ Alcance: full-stack (backend Python/FastAPI + frontend Next.js), reemplaza/extie
 
 ## Scope Configuration
 
-- **Stages to Execute**: 0.1, 0.2, 0.3, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
-- **Stages to Skip**: 1.1 (intent-capture), 1.2 (market-research), 1.3 (feasibility), 1.4 (scope-definition), 1.5 (team-formation), 1.6 (rough-mockups), 1.7 (approval-handoff)
+- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
+- **Stages to Skip**: none
 - **Depth**: Standard
 - **Test Strategy**: Standard
 - **Review Override**:
@@ -41,7 +41,7 @@ Alcance: full-stack (backend Python/FastAPI + frontend Next.js), reemplaza/extie
 
 ## Execution Plan Summary
 
-- **Total Stages**: 26
+- **Total Stages**: 33
 - **Completed**: 18
 - **In Progress**: none
 
@@ -56,7 +56,7 @@ Alcance: full-stack (backend Python/FastAPI + frontend Next.js), reemplaza/extie
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
 - **Initialization**: Verified
-- **Ideation**: Skipped
+- **Ideation**: Pending
 - **Inception**: Verified
 - **Construction**: Verified
 - **Operation**: Verified
@@ -121,7 +121,7 @@ Per unit: [TBD]
 - **Current Stage**: feedback-optimization
 - **Next Stage**: none
 - **Status**: Completed
-- **Last Updated**: 2026-09-13T21:02:25Z
+- **Last Updated**: 2026-09-15T10:36:54Z
 
 ## Session Resume Point
 

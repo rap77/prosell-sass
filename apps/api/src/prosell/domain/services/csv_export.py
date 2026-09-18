@@ -156,6 +156,19 @@ def build_organization_code_segment(org_code: object | None) -> str:
     return _slug_part(org_code) or "sin-codigo"
 
 
+def _sanitize_formula_injection(value: str) -> str:
+    """u1-vehicle-catalog-api, BR5.1 — prefix a leading `=`, `+`, `-` or `@`
+    with a single quote so Excel/Sheets never interprets the cell as a
+    formula. The value visible to the client is unchanged (spreadsheet
+    apps hide the leading quote); only the interpretation changes.
+    `csv.writer` already escapes the delimiter/quotes but does nothing
+    against CSV/formula injection on its own.
+    """
+    if value.startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
 def build_client_format_row(
     *,
     row_id: int,
@@ -246,7 +259,7 @@ def build_client_format_row(
         values[column] = attributes.get(column)
 
     return [
-        "" if values.get(column) is None else str(values[column])
+        _sanitize_formula_injection("" if values.get(column) is None else str(values[column]))
         for column in CLIENT_FORMAT_COLUMNS
     ]
 

@@ -1,0 +1,80 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-vehicle-catalog-api",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR-PERF-1",
+    "NFR-PERF-2",
+    "NFR-SEC-1",
+    "NFR-SEC-2",
+    "NFR-SEC-3",
+    "NFR-SEC-4",
+    "NFR-SCALE-1",
+    "NFR-OBS-1",
+    "NFR-OBS-2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "reliability-design.md § Integridad de dato del catálogo"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "reliability-design.md § Migración legacy idempotente (NFR1.2)"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "reliability-design.md § Disponibilidad"
+    },
+    {
+      "id": "NFR-PERF-1",
+      "status": "OK",
+      "target": "performance-design.md § Presupuesto de latencia"
+    },
+    {
+      "id": "NFR-PERF-2",
+      "status": "OK",
+      "target": "performance-design.md § Presupuesto de latencia"
+    },
+    {
+      "id": "NFR-SEC-1",
+      "status": "OK",
+      "target": "security-design.md § Autenticación/autorización del endpoint nuevo"
+    },
+    {
+      "id": "NFR-SEC-2",
+      "status": "OK",
+      "target": "security-design.md § Sanitización de fórmulas en CSV"
+    },
+    {
+      "id": "NFR-SEC-3",
+      "status": "OK",
+      "target": "security-design.md § Manejo de credenciales del publisher"
+    },
+    {
+      "id": "NFR-SEC-4",
+      "status": "OK",
+      "target": "security-design.md § Migración legacy sin exposición de datos"
+    },
+    {
+      "id": "NFR-SCALE-1",
+      "status": "OK",
+      "target": "scalability-design.md § Diseño: stateless, sin partición de datos"
+    },
+    {
+      "id": "NFR-OBS-1",
+      "status": "OK",
+      "target": "observability-design.md § Warning de field_key sin catálogo"
+    },
+    {
+      "id": "NFR-OBS-2",
+      "status": "OK",
+      "target": "observability-design.md § Log de resumen de migración"
+    }
+  ]
+}
