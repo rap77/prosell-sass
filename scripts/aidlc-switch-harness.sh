@@ -254,9 +254,37 @@ else
     # inside square brackets: [-] in-progress, [?] gate, [R] revising.
     # We accept them in both bullet (- [-]) and table-cell (`| [-]`) form
     # because the renderer varies across stages.
-    in_progress=$(grep -cE '\[-\]' "$STATE_FILE" 2>/dev/null || true)
-    in_gate=$(grep -cE '\[\?\]' "$STATE_FILE" 2>/dev/null || true)
-    in_revision=$(grep -cE '\[R\]' "$STATE_FILE" 2>/dev/null || true)
+    #
+    # Filter out two false-positive sources before counting:
+    #   1. The HTML legend comment `<!-- Checkbox states: ... -->`
+    #      literally contains all six marker symbols; without filtering,
+    #      every audit reports 1+ stuck stages permanently.
+    #   2. Markdown table separator rows (`| --- | --- | ...`).
+    #
+    # The awk pattern is the same one used by scripts/aidlc-closeout.sh.
+    read -r in_progress in_gate in_revision < <(
+        awk '
+            BEGIN { ip = 0; ig = 0; ir = 0 }
+            # Skip single-line HTML comments.
+            /<!-- / && /-->/ { next }
+            # Skip multi-line comment start.
+            /<!-- / { in_comment = 1; next }
+            # Multi-line comment body / end.
+            in_comment {
+                if (/-->/) in_comment = 0
+                next
+            }
+            # Skip markdown table separator rows.
+            /^[[:space:]]*\|[[:space:]]*-+/ { next }
+            # Count markers in remaining lines.
+            {
+                if (/\[-\]/)  ip++
+                if (/\[\?\]/) ig++
+                if (/\[R\]/)  ir++
+            }
+            END { printf "%d %d %d\n", ip, ig, ir }
+        ' "$STATE_FILE"
+    )
     in_progress=${in_progress:-0}
     in_gate=${in_gate:-0}
     in_revision=${in_revision:-0}
