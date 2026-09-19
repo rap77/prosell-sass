@@ -16,7 +16,11 @@
 #   --force    Bypass the in-progress stage guard. Use only when the workflow
 #              state is stale or the engine failed to transition markers after
 #              a READY verdict (the script will log a loud warning). Inside
-#              the new harness, run `/aidlc --resume` to reconcile state.
+#              the new harness, run `/aidlc --resume` to reconcile.
+#   --audit    Print a non-destructive diagnostic: which harness is configured
+#              now, which one was last used, whether the active intent's state
+#              is clean enough to switch, and the exact command to switch to
+#              the most common alternative. Exits 0.
 #
 # What it does:
 #   1. Validates the workflow state (refuses to switch mid-stage).
@@ -43,22 +47,35 @@ set -euo pipefail
 # ---- args & preconditions -------------------------------------------------
 
 FORCE=0
-if [[ "${1:-}" == "--force" ]]; then
-    FORCE=1
-    shift
-fi
+AUDIT_ONLY=0
+while [[ "${1:-}" == "--"* ]]; do
+    case "${1}" in
+        --force) FORCE=1; shift ;;
+        --audit) AUDIT_ONLY=1; shift ;;
+        *) echo "error: unknown flag '${1}'" >&2
+           echo "       valid: --force, --audit" >&2
+           exit 2 ;;
+    esac
+done
 
-readonly TARGET="${1:?usage: $0 [--force] <claude|opencode|codex|cursor|kiro|kiro-ide|copilot>}"
+# --audit without a TARGET is a pure diagnostic, not a switch.
+if [[ $AUDIT_ONLY -eq 1 && -z "${1:-}" ]]; then
+    readonly TARGET=""
+else
+    readonly TARGET="${1:?usage: $0 [--force|--audit] <claude|opencode|codex|cursor|kiro|kiro-ide|copilot>}"
+fi
 
 readonly VALID_HARNESSES=(claude opencode codex cursor kiro kiro-ide copilot)
 is_valid=0
-for h in "${VALID_HARNESSES[@]}"; do
-    [[ "$h" == "$TARGET" ]] && is_valid=1 && break
-done
-if [[ $is_valid -eq 0 ]]; then
-    echo "error: invalid harness '$TARGET'" >&2
-    echo "       valid: ${VALID_HARNESSES[*]}" >&2
-    exit 2
+if [[ -n "$TARGET" ]]; then
+    for h in "${VALID_HARNESSES[@]}"; do
+        [[ "$h" == "$TARGET" ]] && is_valid=1 && break
+    done
+    if [[ $is_valid -eq 0 ]]; then
+        echo "error: invalid harness '$TARGET'" >&2
+        echo "       valid: ${VALID_HARNESSES[*]}" >&2
+        exit 2
+    fi
 fi
 
 # Resolve runtime root for the installed AIDLC version.
@@ -119,6 +136,98 @@ cd "$PROJECT_ROOT"
 # No active-intent file ⇒ no active workflow ⇒ safe to switch silently.
 # ----------------------------------------------------------------------------
 
+# emit_audit_diagnostic — non-destructive snapshot for the --audit flag.
+# Reads the dot-dir presence, the active intent's audit log, and the state
+# file counters (already populated by the caller), then prints a one-screen
+# report and the exact command(s) to switch to the most common alternative.
+emit_audit_diagnostic() {
+    local configured="" last_used="" alt_harness="" alt_cmd_clean="" alt_cmd_force=""
+
+    # 1. Configured harness — dot-dir presence at project root.
+    for h in "${VALID_HARNESSES[@]}"; do
+        if [[ -d ".$h" || ( "$h" == "opencode" && -f "opencode.json" ) ]]; then
+            configured="$h"
+            break
+        fi
+    done
+
+    # 2. Last used — most recent SESSION_STARTED in the active intent's audit.
+    #    The events carry `Path: .<harness>/rules/`, so we grep that field.
+    if [[ -n "$ACTIVE_INTENT" ]]; then
+        last_used=$(grep -hE '^\*\*Path\*\*: \.' \
+            "aidlc/spaces/default/intents/$ACTIVE_INTENT/audit/"*.md 2>/dev/null \
+            | sed -E 's|.*Path\*\*: \.([a-z-]+)/.*|\1|' \
+            | grep -E "^(claude|opencode|codex|cursor|kiro|copilot)$" \
+            | tail -1)
+    fi
+
+    # 3. State assessment.
+    local state_label="CLEAN"
+    if [[ $in_progress -gt 0 ]]; then
+        state_label="STALE (markers stuck in [-])"
+    elif [[ $in_revision -gt 0 ]]; then
+        state_label="REVISING (reviewer fingerprint at risk)"
+    elif [[ -z "$STATE_FILE" ]]; then
+        state_label="NO ACTIVE INTENT"
+    fi
+
+    # 4. Pick the most common alternative to recommend. If configured is
+    #    claude, suggest opencode; if opencode, suggest claude; otherwise
+    #    the first installed alternative that isn't the configured one.
+    if [[ "$configured" == "claude" ]]; then
+        alt_harness="opencode"
+    elif [[ "$configured" == "opencode" ]]; then
+        alt_harness="claude"
+    else
+        for h in "${VALID_HARNESSES[@]}"; do
+            [[ "$h" != "$configured" ]] && alt_harness="$h" && break
+        done
+    fi
+    if [[ -n "$alt_harness" ]]; then
+        alt_cmd_clean="$0 $alt_harness"
+        alt_cmd_force="$0 --force $alt_harness"
+    fi
+
+    echo "================================================================="
+    echo "  Harness diagnostic (--audit)"
+    echo "================================================================="
+    echo ""
+    echo "  Configured now:    ${configured:-<none>}"
+    if [[ -n "$configured" ]]; then
+        echo "                    (detected from .$configured/ presence)"
+    fi
+    echo "  Last session:      ${last_used:-<no audit events yet>}"
+    if [[ -n "$last_used" ]]; then
+        echo "                    (latest SESSION_STARTED in audit)"
+    fi
+    echo "  Active intent:     ${ACTIVE_INTENT:-<none>}"
+    echo "  State assessment:  $state_label"
+    if [[ -n "$STATE_FILE" ]]; then
+        echo "    Stages [-]:      $in_progress"
+        echo "    Stages [?]:      $in_gate"
+        echo "    Stages [R]:      $in_revision"
+    fi
+    echo ""
+    if [[ $in_progress -gt 0 ]]; then
+        echo "  Switch assessment: BLOCKED by in-progress stages."
+        echo "                    Use --force to bypass (reconcile with"
+        echo "                    /aidlc --resume inside the new harness)."
+    else
+        echo "  Switch assessment: SAFE — no in-progress stages."
+    fi
+    echo ""
+    if [[ -n "$alt_cmd_clean" ]]; then
+        echo "  To switch to $alt_harness:"
+        if [[ $in_progress -gt 0 ]]; then
+            echo "    $alt_cmd_force"
+        else
+            echo "    $alt_cmd_clean"
+            echo "    $alt_cmd_force   # if you don't want to wait"
+        fi
+    fi
+    echo ""
+}
+
 ACTIVE_INTENT_FILE="aidlc/spaces/default/intents/active-intent"
 STATE_FILE=""
 
@@ -133,7 +242,13 @@ if [[ -f "$ACTIVE_INTENT_FILE" ]]; then
 fi
 
 if [[ -z "$STATE_FILE" ]]; then
-    echo "→ no active intent; switching is safe."
+    if [[ $AUDIT_ONLY -eq 1 ]]; then
+        in_progress=0
+        in_gate=0
+        in_revision=0
+    else
+        echo "→ no active intent; switching is safe."
+    fi
 else
     # Count stages by symbol. The state file uses single-char markers
     # inside square brackets: [-] in-progress, [?] gate, [R] revising.
@@ -145,6 +260,12 @@ else
     in_progress=${in_progress:-0}
     in_gate=${in_gate:-0}
     in_revision=${in_revision:-0}
+
+    # --audit short-circuit: print the diagnostic and exit 0 before the guard.
+    if [[ $AUDIT_ONLY -eq 1 ]]; then
+        emit_audit_diagnostic
+        exit 0
+    fi
 
     if [[ $in_progress -gt 0 ]]; then
         if [[ $FORCE -eq 1 ]]; then
@@ -196,6 +317,13 @@ else
         echo "→ active intent has $in_gate stage(s) awaiting your approval ([?])."
         echo "  This is the IDEAL moment to switch — no work is mid-flight."
     fi
+fi
+
+# If --audit was passed but there was no active intent, still emit the
+# diagnostic (now with the empty-state counts we initialized above).
+if [[ $AUDIT_ONLY -eq 1 ]]; then
+    emit_audit_diagnostic
+    exit 0
 fi
 
 # ---- refresh the harness projection ---------------------------------------
