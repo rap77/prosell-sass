@@ -85,10 +85,10 @@
 
 ### CONSTRUCTION PHASE
 
-- [-] functional-design — EXECUTE (both units — artifacts + READY verdict on file)
-- [-] nfr-requirements — EXECUTE (both units — artifacts + READY verdict on file)
-- [-] nfr-design — EXECUTE (both units — artifacts + Looks Correct summary on file)
-- [-] infrastructure-design — EXECUTE (both units — artifacts on file)
+- [x] functional-design — EXECUTE (both units — artifacts + READY verdict on file)
+- [x] nfr-requirements — EXECUTE (both units — artifacts + READY verdict on file)
+- [x] nfr-design — EXECUTE (both units — artifacts + Looks Correct summary on file)
+- [x] infrastructure-design — EXECUTE (both units — artifacts on file)
 - [x] code-generation — EXECUTE (u1 completed + READY review; u2 plan approved, generation + summary pending — the only remaining work unit)
 - [x] build-and-test — EXECUTE
 - [S] ci-pipeline — EXECUTE
@@ -109,7 +109,7 @@
 
 | unit                   | owner | functional-design | nfr-requirements | nfr-design | infrastructure-design | code-generation | gate |
 | ---------------------- | ----- | ----------------- | ---------------- | ---------- | --------------------- | --------------- | ---- |
-| u1-vehicle-catalog-api | -     | [-]               | [?]              | [?]        | [?]                   | [?]             | [?]  |
+| u1-vehicle-catalog-api | -     | [x]               | [?]              | [?]        | [?]                   | [?]             | [?]  |
 | u2-vehicle-catalog-ui  | -     | [ ]               | [?]              | [?]        | [?]                   | [ ]             | [?]  |
 
 ## Current Status
