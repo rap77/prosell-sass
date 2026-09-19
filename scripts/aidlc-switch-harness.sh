@@ -7,10 +7,16 @@
 # you need to continue with the other (e.g. opencode) on the SAME checkout.
 #
 # Usage:
-#   ./scripts/aidlc-switch-harness.sh <harness>
+#   ./scripts/aidlc-switch-harness.sh [--force] <harness>
 #
 # Where <harness> is one of: claude | opencode | codex | cursor | kiro |
 # kiro-ide | copilot
+#
+# Flags:
+#   --force    Bypass the in-progress stage guard. Use only when the workflow
+#              state is stale or the engine failed to transition markers after
+#              a READY verdict (the script will log a loud warning). Inside
+#              the new harness, run `/aidlc --resume` to reconcile state.
 #
 # What it does:
 #   1. Validates the workflow state (refuses to switch mid-stage).
@@ -36,7 +42,13 @@ set -euo pipefail
 
 # ---- args & preconditions -------------------------------------------------
 
-readonly TARGET="${1:?usage: $0 <claude|opencode|codex|cursor|kiro|kiro-ide|copilot>}"
+FORCE=0
+if [[ "${1:-}" == "--force" ]]; then
+    FORCE=1
+    shift
+fi
+
+readonly TARGET="${1:?usage: $0 [--force] <claude|opencode|codex|cursor|kiro|kiro-ide|copilot>}"
 
 readonly VALID_HARNESSES=(claude opencode codex cursor kiro kiro-ide copilot)
 is_valid=0
@@ -135,24 +147,43 @@ else
     in_revision=${in_revision:-0}
 
     if [[ $in_progress -gt 0 ]]; then
-        echo "================================================================="
-        echo "  REFUSING TO SWITCH: an intent is mid-stage."
-        echo "================================================================="
-        echo ""
-        echo "  Intent:      $ACTIVE_INTENT"
-        echo "  State file:  $STATE_FILE"
-        echo "  Stages [-]:  $in_progress in-progress"
-        echo ""
-        echo "  Mid-stage switches corrupt sub-agent execution, invalidate"
-        echo "  reviewer fingerprints, and can lose uncommitted artifacts."
-        echo ""
-        echo "  Wait for the active stage to reach a gate ([?]) and either"
-        echo "  approve it or end your session there. Then re-run this script."
-        echo ""
-        echo "  Quick check: which stage is currently running?"
-        echo "    grep -nE '\\[-\\]' \"$STATE_FILE\""
-        echo ""
-        exit 1
+        if [[ $FORCE -eq 1 ]]; then
+            echo "================================================================="
+            echo "  --force: bypassing in-progress guard."
+            echo "================================================================="
+            echo ""
+            echo "  Intent:      $ACTIVE_INTENT"
+            echo "  State file:  $STATE_FILE"
+            echo "  Stages [-]:  $in_progress in-progress"
+            echo ""
+            echo "  The switch will proceed, but the workflow state may be"
+            echo "  inconsistent on the other side. Run /aidlc --resume inside"
+            echo "  the new harness to reconcile markers after the refresh."
+            echo ""
+        else
+            echo "================================================================="
+            echo "  REFUSING TO SWITCH: an intent is mid-stage."
+            echo "================================================================="
+            echo ""
+            echo "  Intent:      $ACTIVE_INTENT"
+            echo "  State file:  $STATE_FILE"
+            echo "  Stages [-]:  $in_progress in-progress"
+            echo ""
+            echo "  Mid-stage switches corrupt sub-agent execution, invalidate"
+            echo "  reviewer fingerprints, and can lose uncommitted artifacts."
+            echo ""
+            echo "  Wait for the active stage to reach a gate ([?]) and either"
+            echo "  approve it or end your session there. Then re-run this script."
+            echo ""
+            echo "  If the markers are stale (READY verdict on file but [-] still"
+            echo "  set, as happens after an engine bug), pass --force to bypass"
+            echo "  this guard and reconcile state inside the new harness."
+            echo ""
+            echo "  Quick check: which stage is currently running?"
+            echo "    grep -nE '\\[-\\]' \"$STATE_FILE\""
+            echo ""
+            exit 1
+        fi
     fi
 
     if [[ $in_revision -gt 0 ]]; then
