@@ -26,6 +26,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    # db logs son bajo volumen salvo error grave — cap chico alcanza
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # =============================================================================
   # REDIS 7.4 - Staging Cache/Session Store
@@ -44,6 +50,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    # redis logs son bajo volumen salvo error grave — cap chico alcanza
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # =============================================================================
   # FASTAPI BACKEND - Staging API
@@ -92,6 +104,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # api concentra el log de negocio (errores, warnings NFR-OBS-1/2) — cap
+    # más grande que db/redis para no perder contexto de debugging
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   # =============================================================================
   # NEXT.JS FRONTEND - Staging Web App
@@ -127,6 +146,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # =============================================================================
   # MINIO - Staging object storage (S3-compatible)
@@ -153,6 +177,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    # minio logs son bajo volumen salvo error grave — cap chico alcanza
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # =============================================================================
   # MINIO INIT - create bucket + public-read policy on startup
@@ -171,6 +201,12 @@ services:
       echo 'MinIO bucket prosell-assets ready with anonymous read access'
       "
     restart: "no"
+    # script de init de un solo shot — output despreciable
+    logging:
+      driver: json-file
+      options:
+        max-size: "2m"
+        max-file: "1"
 
 volumes:
   postgres_staging_data:

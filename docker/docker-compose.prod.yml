@@ -21,6 +21,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    # db logs son bajo volumen salvo error grave — cap chico alcanza
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
     # Sin expose de puerto al host — solo acceso interno
 
   # ---------------------------------------------------------------------------
@@ -45,6 +51,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    # redis logs son bajo volumen salvo error grave — cap chico alcanza
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # ---------------------------------------------------------------------------
   # FASTAPI BACKEND
@@ -77,6 +89,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # api concentra el log de negocio (errores, warnings NFR-OBS-1/2) — cap
+    # más grande que db/redis para no perder contexto de debugging
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   # ---------------------------------------------------------------------------
   # TASKIQ WORKER (Receiver + Scheduler)
@@ -105,6 +124,11 @@ services:
         condition: service_healthy
     restart: unless-stopped
     command: ["python", "-m", "prosell.infrastructure.tasks.worker"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ---------------------------------------------------------------------------
   # NEXT.JS FRONTEND
@@ -138,6 +162,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ---------------------------------------------------------------------------
   # CADDY — reverse proxy + SSL automático
@@ -157,6 +186,12 @@ services:
       - web
       - api
     restart: unless-stopped
+    # access logs de caddy crecen con cualquier tráfico real — mismo cap que api
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
 volumes:
   postgres_prod_data:
