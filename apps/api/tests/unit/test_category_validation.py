@@ -223,18 +223,19 @@ def test_validate_attributes_accepts_reconciled_vin_decode_value():
     validate_attributes() against a schema whose `options` were configured
     with the canonical catalog's values — a fixed input/output pair, not a
     smoke test. Input: NHTSA's normalized output for a "suv" body class.
-    Expected: reconcile() returns the exact canonical value "suv", and that
-    value passes validation against the category's configured options.
+    Expected: reconcile() returns the exact Spanish canonical value "SUV",
+    and that value passes validation against the category's configured
+    options.
     """
     normalized_from_vin_decode = reconcile("body_type", "suv")
-    assert normalized_from_vin_decode == "suv"
+    assert normalized_from_vin_decode == "SUV"
 
     cat = make_category(
         {
             "body_type": {
                 "type": "string",
                 "required": True,
-                "options": ["suv", "sedan", "pickup", "coupe"],
+                "options": ["SUV", "Sedán", "Camioneta", "Coupé"],
             }
         }
     )

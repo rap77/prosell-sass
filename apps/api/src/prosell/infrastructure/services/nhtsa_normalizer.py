@@ -7,127 +7,125 @@ entre scraping, publicación y frontend.
 """
 
 # Mapping NHTSA → Facebook Marketplace
+# Values are Spanish display labels (canonical_value in FACEBOOK_VEHICLE_VALUE_CATALOG).
+# The legacy snake_case English aliases live in FACEBOOK_VEHICLE_VALUE_CATALOG.accepted_raw_aliases
+# so reconcile() can still migrate older product rows. New products write directly in Spanish.
 NHTSA_TO_FACEBOOK: dict[str, str] = {
     # ===== MAKE (Marca) =====
-    # Convertir UPPERCASE → lowercase con guiones bajos
-    "ACURA": "acura",
-    "ALFA ROMEO": "alfa_romeo",
-    "ASTON MARTIN": "aston_martin",
-    "AUDI": "audi",
-    "BMW": "bmw",
-    "BENTLEY": "bentley",
-    "BUICK": "buick",
-    "CADILLAC": "cadillac",
-    "CHEVROLET": "chevrolet",
-    "CHRYSLER": "chrysler",
-    "DODGE": "dodge",
-    "FERRARI": "ferrari",
-    "FIAT": "fiat",
-    "FORD": "ford",
-    "GMC": "gmc",
-    "GENESIS": "genesis",
-    "HONDA": "honda",
-    "HUMMER": "hummer",
-    "HYUNDAI": "hyundai",
-    "INFINITI": "infiniti",
-    "JAGUAR": "jaguar",
-    "JEEP": "jeep",
-    "KIA": "kia",
-    "LAND ROVER": "land_rover",
-    "LEXUS": "lexus",
-    "LINCOLN": "lincoln",
-    "LUCID": "lucid",
-    "MINI": "mini",
-    "MASERATI": "maserati",
-    "MAZDA": "mazda",
-    "MERCEDES-BENZ": "mercedes",
-    "MITSUBISHI": "mitsubishi",
-    "NISSAN": "nissan",
-    "POLESTAR": "polestar",
-    "PONTIAC": "pontiac",
-    "PORSCHE": "porsche",
-    "RAM": "ram",
-    "RIVIAN": "rivian",
-    "ROLLS-ROYCE": "rolls_royce",
-    "SUBARU": "subaru",
-    "TESLA": "tesla",
-    "TOYOTA": "toyota",
-    "VOLKSWAGEN": "volkswagen",
-    "VOLVO": "volvo",
+    "ACURA": "Acura",
+    "ALFA ROMEO": "Alfa Romeo",
+    "ASTON MARTIN": "Aston Martin",
+    "AUDI": "Audi",
+    "BMW": "BMW",
+    "BENTLEY": "Bentley",
+    "BUICK": "Buick",
+    "CADILLAC": "Cadillac",
+    "CHEVROLET": "Chevrolet",
+    "CHRYSLER": "Chrysler",
+    "DODGE": "Dodge",
+    "FERRARI": "Ferrari",
+    "FIAT": "Fiat",
+    "FORD": "Ford",
+    "GMC": "GMC",
+    "GENESIS": "Genesis",
+    "HONDA": "Honda",
+    "HUMMER": "Hummer",
+    "HYUNDAI": "Hyundai",
+    "INFINITI": "Infiniti",
+    "JAGUAR": "Jaguar",
+    "JEEP": "Jeep",
+    "KIA": "Kia",
+    "LAND ROVER": "Land Rover",
+    "LEXUS": "Lexus",
+    "LINCOLN": "Lincoln",
+    "LUCID": "Lucid",
+    "MINI": "MINI",
+    "MASERATI": "Maserati",
+    "MAZDA": "Mazda",
+    "MERCEDES-BENZ": "Mercedes-Benz",
+    "MITSUBISHI": "Mitsubishi",
+    "NISSAN": "Nissan",
+    "POLESTAR": "Polestar",
+    "PONTIAC": "Pontiac",
+    "PORSCHE": "Porsche",
+    "RAM": "Ram",
+    "RIVIAN": "Rivian",
+    "ROLLS-ROYCE": "Rolls-Royce",
+    "SUBARU": "Subaru",
+    "TESLA": "Tesla",
+    "TOYOTA": "Toyota",
+    "VOLKSWAGEN": "Volkswagen",
+    "VOLVO": "Volvo",
     # ===== BODY TYPE (Tipo de Vehículo) =====
-    # Descriptivo largo → lowercase simple
-    "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)": "suv",
-    "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV) (MPV)": "suv",
-    "Sedan/Saloon": "sedan",
-    "Pickup": "pickup",
-    "Coupe": "coupe",
-    "Hatchback/Liftback/Notchback": "hatchback",
-    "Convertible/Cabriolet/Roadster": "convertible",
-    "Wagon/Estate": "wagon",
-    "Minivan": "minivan",
-    "Multipurpose Passenger Vehicle (MPV)": "minivan",
-    "Truck": "pickup",
+    "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)": "SUV",
+    "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV) (MPV)": "SUV",
+    "Sedan/Saloon": "Sedán",
+    "Pickup": "Camioneta",
+    "Coupe": "Coupé",
+    "Hatchback/Liftback/Notchback": "Hatchback",
+    "Convertible/Cabriolet/Roadster": "Convertible",
+    "Wagon/Estate": "Familiar",
+    "Minivan": "Miniván",
+    "Multipurpose Passenger Vehicle (MPV)": "Miniván",
+    "Truck": "Camioneta",
     # ===== DRIVETRAIN (Tracción) =====
-    # Descriptivo → UPPERCASE acronym
     "Front-Wheel Drive": "FWD",
     "Rear-Wheel Drive": "RWD",
     "All-Wheel Drive": "AWD",
     "Four-Wheel Drive": "4WD",
     "4-Wheel Drive": "4WD",
     # ===== TRANSMISSION (Transmisión) =====
-    # Title case → lowercase
-    "Automatic": "automatic",
-    "Manual": "manual",
-    "Continuously Variable Transmission (CVT)": "automatic",
-    "CVT": "automatic",
-    "Dual Clutch": "automatic",
-    "Automated Manual": "automatic",
-    "Automatic Transmission": "automatic",
-    "Manual Transmission": "manual",
+    "Automatic": "Transmisión automática",
+    "Manual": "Transmisión manual",
+    "Continuously Variable Transmission (CVT)": "Transmisión automática",
+    "CVT": "Transmisión automática",
+    "Dual Clutch": "Transmisión automática",
+    "Automated Manual": "Transmisión automática",
+    "Automatic Transmission": "Transmisión automática",
+    "Manual Transmission": "Transmisión manual",
     # ===== FUEL TYPE (Tipo de Combustible) =====
-    # Title case → lowercase
-    "Gasoline": "gasoline",
-    "Diesel": "diesel",
-    "Electric": "electric",
-    "Hybrid": "hybrid",
-    "Plug-in Hybrid": "plug_in",
-    "Flex Fuel": "flex",
-    "Natural Gas": "other",
-    "Propane": "other",
+    "Gasoline": "Gasolina",
+    "Diesel": "Diésel",
+    "Electric": "Eléctrico",
+    "Hybrid": "Híbrido",
+    "Plug-in Hybrid": "Híbrido eléctrico enchufable",
+    "Flex Fuel": "Flexible",
+    "Natural Gas": "Otro",
+    "Propane": "Otro",
     # ===== ELECTRIFICATION LEVEL =====
-    "BEV (Battery Electric Vehicle)": "bev",
-    "Battery Electric Vehicle (BEV)": "bev",
-    "PHEV (Plug-in Hybrid Electric Vehicle)": "phev",
-    "Plug-in Hybrid Electric Vehicle (PHEV)": "phev",
-    "HEV (Hybrid Electric Vehicle)": "hybrid",
-    "Hybrid Electric Vehicle (HEV)": "hybrid",
-    "Mild Hybrid": "mild_hybrid",
-    "Strong HEV": "hybrid",
-    "ICE": "none",
+    "BEV (Battery Electric Vehicle)": "BEV",
+    "Battery Electric Vehicle (BEV)": "BEV",
+    "PHEV (Plug-in Hybrid Electric Vehicle)": "PHEV",
+    "Plug-in Hybrid Electric Vehicle (PHEV)": "PHEV",
+    "HEV (Hybrid Electric Vehicle)": "Híbrido",
+    "Hybrid Electric Vehicle (HEV)": "Híbrido",
+    "Mild Hybrid": "Híbrido ligero",
+    "Strong HEV": "Híbrido",
+    "ICE": "Ninguno",
     # ===== WHEELBASE TYPE =====
-    "Short Wheel Base": "short",
-    "SWB": "short",
-    "Standard Wheel Base": "standard",
-    "Long Wheel Base": "long",
-    "LWB": "long",
-    "Extended Wheel Base": "long",
+    "Short Wheel Base": "Corta",
+    "SWB": "Corta",
+    "Standard Wheel Base": "Estándar",
+    "Long Wheel Base": "Larga",
+    "LWB": "Larga",
+    "Extended Wheel Base": "Larga",
     # ===== BED TYPE (pickups) =====
-    "Short Bed": "short",
-    "Standard Bed": "standard",
-    "Regular Bed": "standard",
-    "Long Bed": "long",
+    "Short Bed": "Corta",
+    "Standard Bed": "Estándar",
+    "Regular Bed": "Estándar",
+    "Long Bed": "Larga",
     # ===== CAB TYPE (pickups) =====
-    "Regular Cab": "regular",
-    "Standard Cab": "regular",
-    "Extended Cab": "extended",
-    "SuperCab": "extended",
-    "King Cab": "extended",
-    "Access Cab": "extended",
-    "Crew Cab": "crew",
-    "Double Cab": "crew",
-    "Quad Cab": "crew",
-    "SuperCrew": "crew",
-    "Mega Cab": "crew",
+    "Regular Cab": "Regular",
+    "Standard Cab": "Regular",
+    "Extended Cab": "Extendida",
+    "SuperCab": "Extendida",
+    "King Cab": "Extendida",
+    "Access Cab": "Extendida",
+    "Crew Cab": "Doble cabina",
+    "Double Cab": "Doble cabina",
+    "Quad Cab": "Doble cabina",
+    "SuperCrew": "Doble cabina",
+    "Mega Cab": "Doble cabina",
 }
 
 
@@ -144,15 +142,16 @@ def normalize_nhtsa_value(
                      "transmission", "fuel_type")
 
     Returns:
-        Valor normalizado para Facebook Marketplace, o None si no hay valor
+        Valor normalizado (Spanish canonical label) para Facebook Marketplace,
+        o None si no hay valor
 
     Examples:
         >>> normalize_nhtsa_value("CHEVROLET", "make")
-        "chevrolet"
+        "Chevrolet"
         >>> normalize_nhtsa_value(  # noqa: E501
         ...     "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)", "body_type"
         ... )
-        "suv"
+        "SUV"
         >>> normalize_nhtsa_value("Front-Wheel Drive", "drivetrain")
         "FWD"
     """
@@ -171,32 +170,30 @@ def normalize_nhtsa_value(
 
     # Fallback según tipo de campo
     if field_type == "make":
-        # Marca no encontrada → intentar lowercase con guiones
-        return cleaned.lower().replace(" ", "_").replace("-", "_")
+        # Marca no encontrada → retornar el valor limpio
+        return cleaned
 
     elif field_type == "body_type":
-        # Tipo no encontrado → buscar palabras clave
         cleaned_lower = cleaned.lower()
         if "suv" in cleaned_lower or "sport utility" in cleaned_lower:
-            return "suv"
+            return "SUV"
         elif "sedan" in cleaned_lower:
-            return "sedan"
+            return "Sedán"
         elif "pickup" in cleaned_lower or "truck" in cleaned_lower:
-            return "pickup"
+            return "Camioneta"
         elif "coupe" in cleaned_lower:
-            return "coupe"
+            return "Coupé"
         elif "hatchback" in cleaned_lower:
-            return "hatchback"
+            return "Hatchback"
         elif "convertible" in cleaned_lower or "cabriolet" in cleaned_lower:
-            return "convertible"
+            return "Convertible"
         elif "wagon" in cleaned_lower or "estate" in cleaned_lower:
-            return "wagon"
+            return "Familiar"
         elif "minivan" in cleaned_lower or "mpv" in cleaned_lower:
-            return "minivan"
-        return "other"
+            return "Miniván"
+        return "Otro"
 
     elif field_type == "drivetrain":
-        # Tracción no encontrada → intentar extraer acronym
         cleaned_lower = cleaned.lower()
         if "front" in cleaned_lower or "fwd" in cleaned_lower:
             return "FWD"
@@ -206,46 +203,41 @@ def normalize_nhtsa_value(
             return "AWD"
         elif "four" in cleaned_lower or "4wd" in cleaned_lower or "4x4" in cleaned_lower:
             return "4WD"
-        # Default: retornar en uppercase
         return cleaned.upper()
 
     elif field_type == "transmission":
-        # Transmisión no encontrada → detectar automática vs manual
         cleaned_lower = cleaned.lower()
         if "manual" in cleaned_lower:
-            return "manual"
-        # Default: asumir automática
-        return "automatic"
+            return "Transmisión manual"
+        return "Transmisión automática"
 
     elif field_type == "fuel_type":
-        # Combustible no encontrado → detectar tipo
         cleaned_lower = cleaned.lower()
         if "gasoline" in cleaned_lower or "gas" in cleaned_lower:
-            return "gasoline"
+            return "Gasolina"
         elif "diesel" in cleaned_lower:
-            return "diesel"
+            return "Diésel"
         elif "electric" in cleaned_lower:
-            return "electric"
+            return "Eléctrico"
         elif "hybrid" in cleaned_lower:
-            return "hybrid"
+            return "Híbrido"
         elif "plug" in cleaned_lower:
-            return "plug_in"
+            return "Híbrido eléctrico enchufable"
         elif "flex" in cleaned_lower:
-            return "flex"
-        # Default: asumir gasoline
-        return "gasoline"
+            return "Flexible"
+        return "Gasolina"
 
     elif field_type == "electrification":
         cleaned_lower = cleaned.lower()
         if "bev" in cleaned_lower or "battery electric" in cleaned_lower:
-            return "bev"
+            return "BEV"
         elif "phev" in cleaned_lower or "plug-in hybrid" in cleaned_lower:
-            return "phev"
+            return "PHEV"
         elif "mild hybrid" in cleaned_lower:
-            return "mild_hybrid"
+            return "Híbrido ligero"
         elif "hybrid" in cleaned_lower or "hev" in cleaned_lower:
-            return "hybrid"
-        return "none"
+            return "Híbrido"
+        return "Ninguno"
 
     elif field_type == "boolean":
         cleaned_lower = cleaned.lower()
@@ -256,28 +248,28 @@ def normalize_nhtsa_value(
     elif field_type == "wheelbase_type":
         cleaned_lower = cleaned.lower()
         if "short" in cleaned_lower or "swb" in cleaned_lower:
-            return "short"
+            return "Corta"
         elif "long" in cleaned_lower or "lwb" in cleaned_lower or "extended" in cleaned_lower:
-            return "long"
-        return "standard"
+            return "Larga"
+        return "Estándar"
 
     elif field_type == "bed_type":
         cleaned_lower = cleaned.lower()
         if "short" in cleaned_lower:
-            return "short"
+            return "Corta"
         elif "long" in cleaned_lower:
-            return "long"
-        return "standard"
+            return "Larga"
+        return "Estándar"
 
     elif field_type == "cab_type":
         cleaned_lower = cleaned.lower()
         crew_kw = ("crew", "double", "quad", "mega")
         extended_kw = ("extended", "super", "king", "access")
         if any(kw in cleaned_lower for kw in crew_kw):
-            return "crew"
+            return "Doble cabina"
         if any(kw in cleaned_lower for kw in extended_kw):
-            return "extended"
-        return "regular"
+            return "Extendida"
+        return "Regular"
 
-    # Default: retornar valor limpio en lowercase
-    return cleaned.lower()
+    # Default: retornar valor limpio
+    return cleaned

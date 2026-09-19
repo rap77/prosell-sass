@@ -25,7 +25,7 @@ async def test_get_facebook_value_options_known_field_key_returns_full_list() ->
     response = await get_facebook_value_options(field_key="transmission", current_user=_make_user())
 
     assert response.field_key == "transmission"
-    assert response.options == ["automatic", "manual"]
+    assert response.options == ["Transmisión automática", "Transmisión manual"]
 
 
 @pytest.mark.asyncio
@@ -56,12 +56,14 @@ async def test_get_facebook_value_options_body_type_matches_reconcile_vocabulary
     response = await get_facebook_value_options(field_key="body_type", current_user=_make_user())
 
     assert response.options == [
-        "suv",
-        "sedan",
-        "pickup",
-        "coupe",
-        "hatchback",
-        "convertible",
-        "wagon",
-        "minivan",
+        "SUV",
+        "Sedán",
+        "Camioneta",
+        "Coupé",
+        "Hatchback",
+        "Convertible",
+        "Familiar",
+        "Miniván",
+        "Auto pequeño",
+        "Otro",
     ]

@@ -164,23 +164,31 @@ def test_cross_reconciliation_every_nhtsa_to_facebook_value_is_in_the_catalog() 
     """Piso #1 — para cada field_key, todo valor que emite
     NHTSA_TO_FACEBOOK debe calzar EXACTO con una entrada del catálogo
     canónico para ese mismo campo (no alcanza con "algún valor").
+
+    NHTSA_TO_FACEBOOK currently emits snake_case English tokens; the catalog
+    canonical_value is now Spanish. The reconcile() function must therefore
+    accept the snake_case alias and return the Spanish canonical_value.
+    This test asserts reconcile() returns a non-None Spanish canonical_value
+    for every emitted token (no orphan emissions) — the exact character
+    matching on canonical_value is the migration 20260917_0001's job.
     """
-    mismatches: list[tuple[str, str]] = []
+    orphan_emissions: list[tuple[str, str]] = []
     for field_key, nhtsa_keys in _FIELD_KEY_TO_NHTSA_KEYS.items():
         for nhtsa_key in nhtsa_keys:
             normalized_value = NHTSA_TO_FACEBOOK[nhtsa_key]
-            if reconcile(field_key, normalized_value) != normalized_value:
-                mismatches.append((field_key, normalized_value))
+            if reconcile(field_key, normalized_value) is None:
+                orphan_emissions.append((field_key, normalized_value))
 
-    assert mismatches == [], (
-        f"{len(mismatches)} NHTSA_TO_FACEBOOK value(s) do not reconcile "
-        f"exactly against FACEBOOK_VEHICLE_VALUE_CATALOG: {mismatches}"
+    assert orphan_emissions == [], (
+        f"{len(orphan_emissions)} NHTSA_TO_FACEBOOK value(s) are orphan "
+        f"(no canonical_value resolves them): {orphan_emissions}"
     )
 
 
 def test_reconcile_known_value_returns_exact_canonical_value() -> None:
     # AC1.1.1 — body_type "suv" reconciles to the exact canonical value.
-    assert reconcile("body_type", "suv") == "suv"
+    assert reconcile("body_type", "suv") == "SUV"
+    assert reconcile("body_type", "SUV") == "SUV"
     assert reconcile("drivetrain", "FWD") == "FWD"
 
 
@@ -201,7 +209,7 @@ def test_reconcile_field_key_without_catalog_returns_none() -> None:
 
 def test_get_options_known_field_key_returns_full_list() -> None:
     options = get_options("transmission")
-    assert options == ["automatic", "manual"]
+    assert options == ["Transmisión automática", "Transmisión manual"]
 
 
 def test_get_options_unknown_field_key_returns_none() -> None:

@@ -22,18 +22,20 @@ vocabulary with different names for overlapping concepts, e.g.
 two vocabularies is Functional Design of U2's responsibility, not this
 service's.
 
-Every `accepted_raw_aliases` entry below is copied character-for-character
-from a value `NHTSA_TO_FACEBOOK` (`nhtsa_normalizer.py`) actually emits for
-that field — verified 2026-09-17 against the dict's 9 field-type sections.
-The catalog only needs a single alias per canonical value because
-`NHTSA_TO_FACEBOOK` already collapses every raw NHTSA input variant to one
-normalized token before this service ever sees it (e.g. both `"Truck"` and
-`"Pickup"` normalize to `"pickup"` upstream). Reconciliation exists to
-catch the case `nhtsa_normalizer.py`'s FALLBACK branch (an unrecognized raw
-NHTSA value with no dict entry) produces a token that is NOT in this
-canonical set — that is exactly the "no match" case BR1.2 surfaces via
-`unmatched_fields`, rather than silently trusting an unvetted fallback
-guess.
+Values are stored in Spanish (display labels), matching the Excel data39
+sheet the client uses to publish. When multi-language support lands, the
+canonical values will need a paired English mirror — until then Spanish is
+authoritative.
+
+Every `accepted_raw_aliases` entry below lists tokens the upstream
+`nhtsa_normalizer` may produce — including its legacy snake_case English
+output, kept so the migration of pre-existing products still resolves
+without orphaning them. New writes use the Spanish canonical_value
+directly. Reconciliation exists to catch the case `nhtsa_normalizer.py`'s
+FALLBACK branch (an unrecognized raw NHTSA value with no dict entry)
+produces a token that is NOT in this canonical set — that is exactly the
+"no match" case BR1.2 surfaces via `unmatched_fields`, rather than
+silently trusting an unvetted fallback guess.
 """
 
 from dataclasses import dataclass, field
@@ -45,7 +47,9 @@ class CanonicalFieldOption:
 
     `accepted_raw_aliases` lists already-normalized tokens — the OUTPUT of
     `nhtsa_normalizer.normalize_nhtsa_value()` — that reconcile to this
-    `canonical_value`, never raw NHTSA API strings.
+    `canonical_value`. Includes both the current Spanish canonical_value
+    and any legacy snake_case English aliases produced by an older version
+    of `nhtsa_normalizer.NHTSA_TO_FACEBOOK`.
     """
 
     field_key: str
@@ -63,78 +67,149 @@ def _identity_options(field_key: str, canonical_values: list[str]) -> list[Canon
     ]
 
 
-# Vocabulary and values verified character-by-character against
-# nhtsa_normalizer.NHTSA_TO_FACEBOOK (2026-09-17) — see module docstring.
+# Vocabulary and values verified character-by-character against the
+# Excel data39 sheet the client uses to publish (Spanish display labels).
 # The 9 field_key names match Domain Design's confirmed list exactly (no
 # more, no less) — reconfirmed against vehicle_router.py's DecodedVehicle
 # fields and nhtsa_normalizer.py's field_type branches.
 FACEBOOK_VEHICLE_VALUE_CATALOG: dict[str, list[CanonicalFieldOption]] = {
-    "make": _identity_options(
-        "make",
-        [
-            "acura",
-            "alfa_romeo",
-            "aston_martin",
-            "audi",
-            "bmw",
-            "bentley",
-            "buick",
-            "cadillac",
-            "chevrolet",
-            "chrysler",
-            "dodge",
-            "ferrari",
-            "fiat",
-            "ford",
-            "gmc",
-            "genesis",
-            "honda",
-            "hummer",
-            "hyundai",
-            "infiniti",
-            "jaguar",
-            "jeep",
-            "kia",
-            "land_rover",
-            "lexus",
-            "lincoln",
-            "lucid",
-            "mini",
-            "maserati",
-            "mazda",
-            "mercedes",
-            "mitsubishi",
-            "nissan",
-            "polestar",
-            "pontiac",
-            "porsche",
-            "ram",
-            "rivian",
-            "rolls_royce",
-            "subaru",
-            "tesla",
-            "toyota",
-            "volkswagen",
-            "volvo",
-        ],
-    ),
-    "fuel_type": _identity_options(
-        "fuel_type",
-        ["gasoline", "diesel", "electric", "hybrid", "plug_in", "flex", "other"],
-    ),
-    "transmission": _identity_options("transmission", ["automatic", "manual"]),
-    "body_type": _identity_options(
-        "body_type",
-        ["suv", "sedan", "pickup", "coupe", "hatchback", "convertible", "wagon", "minivan"],
-    ),
-    "drivetrain": _identity_options("drivetrain", ["FWD", "RWD", "AWD", "4WD"]),
-    "wheelbase_type": _identity_options("wheelbase_type", ["short", "standard", "long"]),
-    "bed_type": _identity_options("bed_type", ["short", "standard", "long"]),
-    "cab_type": _identity_options("cab_type", ["regular", "extended", "crew"]),
-    "electrification_level": _identity_options(
-        "electrification_level",
-        ["bev", "phev", "hybrid", "mild_hybrid", "none"],
-    ),
+    "make": [
+        CanonicalFieldOption("make", "Acura", ["Acura", "acura"]),
+        CanonicalFieldOption("make", "Alfa Romeo", ["Alfa Romeo", "alfa_romeo"]),
+        CanonicalFieldOption("make", "Aston Martin", ["Aston Martin", "aston_martin"]),
+        CanonicalFieldOption("make", "Audi", ["Audi", "audi"]),
+        CanonicalFieldOption("make", "BMW", ["BMW", "bmw"]),
+        CanonicalFieldOption("make", "Bentley", ["Bentley", "bentley"]),
+        CanonicalFieldOption("make", "Buick", ["Buick", "buick"]),
+        CanonicalFieldOption("make", "CODA", ["CODA", "coda"]),
+        CanonicalFieldOption("make", "Cadillac", ["Cadillac", "cadillac"]),
+        CanonicalFieldOption("make", "Chevrolet", ["Chevrolet", "chevrolet"]),
+        CanonicalFieldOption("make", "Chrysler", ["Chrysler", "chrysler"]),
+        CanonicalFieldOption("make", "Daewoo", ["Daewoo", "daewoo"]),
+        CanonicalFieldOption("make", "Daihatsu", ["Daihatsu", "daihatsu"]),
+        CanonicalFieldOption("make", "Dodge", ["Dodge", "dodge"]),
+        CanonicalFieldOption("make", "Eagle", ["Eagle", "eagle"]),
+        CanonicalFieldOption("make", "Ferrari", ["Ferrari", "ferrari"]),
+        CanonicalFieldOption("make", "Fiat", ["Fiat", "fiat"]),
+        CanonicalFieldOption("make", "Fisker", ["Fisker", "fisker"]),
+        CanonicalFieldOption("make", "Ford", ["Ford", "ford"]),
+        CanonicalFieldOption("make", "Freightliner", ["Freightliner", "freightliner"]),
+        CanonicalFieldOption("make", "GMC", ["GMC", "gmc"]),
+        CanonicalFieldOption("make", "Genesis", ["Genesis", "genesis"]),
+        CanonicalFieldOption("make", "Geo", ["Geo", "geo"]),
+        CanonicalFieldOption("make", "Honda", ["Honda", "honda"]),
+        CanonicalFieldOption("make", "Hummer", ["Hummer", "hummer"]),
+        CanonicalFieldOption("make", "Hyundai", ["Hyundai", "hyundai"]),
+        CanonicalFieldOption("make", "Infiniti", ["Infiniti", "infiniti"]),
+        CanonicalFieldOption("make", "Isuzu", ["Isuzu", "isuzu"]),
+        CanonicalFieldOption("make", "Jaguar", ["Jaguar", "jaguar"]),
+        CanonicalFieldOption("make", "Jeep", ["Jeep", "jeep"]),
+        CanonicalFieldOption("make", "Kia", ["Kia", "kia"]),
+        CanonicalFieldOption("make", "Lamborghini", ["Lamborghini", "lamborghini"]),
+        CanonicalFieldOption("make", "Land Rover", ["Land Rover", "land_rover"]),
+        CanonicalFieldOption("make", "Lexus", ["Lexus", "lexus"]),
+        CanonicalFieldOption("make", "Lincoln", ["Lincoln", "lincoln"]),
+        CanonicalFieldOption("make", "Lotus", ["Lotus", "lotus"]),
+        CanonicalFieldOption("make", "Lucid", ["Lucid", "lucid"]),
+        CanonicalFieldOption("make", "MINI", ["MINI", "mini"]),
+        CanonicalFieldOption("make", "Maserati", ["Maserati", "maserati"]),
+        CanonicalFieldOption("make", "Maybach", ["Maybach", "maybach"]),
+        CanonicalFieldOption("make", "Mazda", ["Mazda", "mazda"]),
+        CanonicalFieldOption("make", "Mclaren", ["Mclaren", "mclaren"]),
+        CanonicalFieldOption("make", "Mercedes-Benz", ["Mercedes-Benz", "mercedes"]),
+        CanonicalFieldOption("make", "Mercury", ["Mercury", "mercury"]),
+        CanonicalFieldOption("make", "Mitsubishi", ["Mitsubishi", "mitsubishi"]),
+        CanonicalFieldOption("make", "Nissan", ["Nissan", "nissan"]),
+        CanonicalFieldOption("make", "Oldsmobile", ["Oldsmobile", "oldsmobile"]),
+        CanonicalFieldOption("make", "Panoz", ["Panoz", "panoz"]),
+        CanonicalFieldOption("make", "Plymouth", ["Plymouth", "plymouth"]),
+        CanonicalFieldOption("make", "Polestar", ["Polestar", "polestar"]),
+        CanonicalFieldOption("make", "Pontiac", ["Pontiac", "pontiac"]),
+        CanonicalFieldOption("make", "Porsche", ["Porsche", "porsche"]),
+        CanonicalFieldOption("make", "Ram", ["Ram", "ram"]),
+        CanonicalFieldOption("make", "Rivian", ["Rivian", "rivian"]),
+        CanonicalFieldOption("make", "Rolls-Royce", ["Rolls-Royce", "rolls_royce"]),
+        CanonicalFieldOption("make", "SRT", ["SRT", "srt"]),
+        CanonicalFieldOption("make", "Saab", ["Saab", "saab"]),
+        CanonicalFieldOption("make", "Saturn", ["Saturn", "saturn"]),
+        CanonicalFieldOption("make", "Scion", ["Scion", "scion"]),
+        CanonicalFieldOption("make", "Smart", ["Smart", "smart"]),
+        CanonicalFieldOption("make", "Subaru", ["Subaru", "subaru"]),
+        CanonicalFieldOption("make", "Suzuki", ["Suzuki", "suzuki"]),
+        CanonicalFieldOption("make", "Tesla", ["Tesla", "tesla"]),
+        CanonicalFieldOption("make", "Toyota", ["Toyota", "toyota"]),
+        CanonicalFieldOption("make", "Volkswagen", ["Volkswagen", "volkswagen"]),
+        CanonicalFieldOption("make", "Volvo", ["Volvo", "volvo"]),
+    ],
+    "fuel_type": [
+        CanonicalFieldOption("fuel_type", "Gasolina", ["Gasolina", "gasoline"]),
+        CanonicalFieldOption("fuel_type", "Diésel", ["Diésel", "diesel"]),
+        CanonicalFieldOption("fuel_type", "Eléctrico", ["Eléctrico", "electric"]),
+        CanonicalFieldOption("fuel_type", "Híbrido", ["Híbrido", "hybrid"]),
+        CanonicalFieldOption(
+            "fuel_type",
+            "Híbrido eléctrico enchufable",
+            ["Híbrido eléctrico enchufable", "plug_in", "Híbrido eléctrico"],
+        ),
+        CanonicalFieldOption("fuel_type", "Flexible", ["Flexible", "flex"]),
+        CanonicalFieldOption("fuel_type", "Otro", ["Otro", "other"]),
+    ],
+    "transmission": [
+        CanonicalFieldOption(
+            "transmission",
+            "Transmisión automática",
+            ["Transmisión automática", "automatic"],
+        ),
+        CanonicalFieldOption(
+            "transmission",
+            "Transmisión manual",
+            ["Transmisión manual", "manual"],
+        ),
+    ],
+    "body_type": [
+        CanonicalFieldOption("body_type", "SUV", ["SUV", "suv"]),
+        CanonicalFieldOption("body_type", "Sedán", ["Sedán", "sedan"]),
+        CanonicalFieldOption("body_type", "Camioneta", ["Camioneta", "pickup"]),
+        CanonicalFieldOption("body_type", "Coupé", ["Coupé", "coupe"]),
+        CanonicalFieldOption("body_type", "Hatchback", ["Hatchback", "hatchback"]),
+        CanonicalFieldOption("body_type", "Convertible", ["Convertible", "convertible"]),
+        CanonicalFieldOption("body_type", "Familiar", ["Familiar", "wagon"]),
+        CanonicalFieldOption("body_type", "Miniván", ["Miniván", "minivan"]),
+        CanonicalFieldOption("body_type", "Auto pequeño", ["Auto pequeño"]),
+        CanonicalFieldOption("body_type", "Otro", ["Otro"]),
+    ],
+    "drivetrain": [
+        CanonicalFieldOption("drivetrain", "FWD", ["FWD"]),
+        CanonicalFieldOption("drivetrain", "RWD", ["RWD"]),
+        CanonicalFieldOption("drivetrain", "AWD", ["AWD"]),
+        CanonicalFieldOption("drivetrain", "4WD", ["4WD"]),
+    ],
+    "wheelbase_type": [
+        CanonicalFieldOption("wheelbase_type", "Corta", ["short", "Corta"]),
+        CanonicalFieldOption("wheelbase_type", "Estándar", ["standard", "Estándar"]),
+        CanonicalFieldOption("wheelbase_type", "Larga", ["long", "Larga"]),
+    ],
+    "bed_type": [
+        CanonicalFieldOption("bed_type", "Corta", ["short", "Corta"]),
+        CanonicalFieldOption("bed_type", "Estándar", ["standard", "Estándar"]),
+        CanonicalFieldOption("bed_type", "Larga", ["long", "Larga"]),
+    ],
+    "cab_type": [
+        CanonicalFieldOption("cab_type", "Regular", ["regular", "Regular"]),
+        CanonicalFieldOption("cab_type", "Extendida", ["extended", "Extendida"]),
+        CanonicalFieldOption("cab_type", "Doble cabina", ["crew", "Doble cabina"]),
+    ],
+    "electrification_level": [
+        CanonicalFieldOption("electrification_level", "BEV", ["bev", "BEV"]),
+        CanonicalFieldOption("electrification_level", "PHEV", ["phev", "PHEV"]),
+        CanonicalFieldOption("electrification_level", "Híbrido", ["hybrid", "Híbrido"]),
+        CanonicalFieldOption(
+            "electrification_level",
+            "Híbrido ligero",
+            ["mild_hybrid", "Mild Hybrid", "Híbrido ligero"],
+        ),
+        CanonicalFieldOption("electrification_level", "Ninguno", ["none", "Ninguno"]),
+    ],
 }
 
 
