@@ -154,6 +154,16 @@ automático, `NEVER` walking skeleton) sigue vigente sin cambios. (affirmed 2026
   como convención de equipo hacia adelante. (affirmed 2026-09-04)
 
 - ALWAYS corregir TODO lo que GGA señale al revisar un archivo tocado, aunque el hallazgo sea preexistente y no esté relacionado con el cambio que motivó tocar ese archivo — directiva explícita del humano reafirmada en el intent 260903-catalog-client-export (Deployment Execution), reconfirmando la política ya vigente. Nunca usar --no-verify ni saltear el hook para evitar el fix. (learned 2026-09-09) <!-- cid:260903-catalog-client-export:deployment-execution:dee9ab0ae8f6ca91403bf13ccb8fba7431204d32cee7c4fdbdd043c6cdc04424 -->
+- ALWAYS ejecutar `bash scripts/aidlc-closeout.sh` antes de cerrar una sesión
+  de AIDLC (opencode / claude / codex / cualquier harness) o antes de correr
+  `scripts/aidlc-switch-harness.sh` con cualquier flag (`--audit` incluido).
+  Cubre el caso del engine donde stages quedan en `[-]` pese a tener verdicts
+  READY en el audit log — confirmado en el intent 260915-vehicle-catalog,
+  donde 4 stages de Construction estaban colgados de esa forma y bloqueaban
+  el script de switch-harness. El closeout script es idempotente, exit code 3
+  si quedan markers sin reconciliar (los reporta en el output). Si ese exit
+  code aparece, el closeout NO se considera completo y el switch queda
+  bloqueado por el guard del engine hasta resolver manualmente. (learned 2026-09-19)
 
 Ninguna promoción a `team.md`/`project.md` en este intent. (affirmed 2026-09-11)
 El piso mínimo de test afirmado en la entrevista (Q1: "A. Sí, afirmar los (affirmed 2026-09-11)
