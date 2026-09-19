@@ -2,7 +2,8 @@
 # ----------------------------------------------------------------------------
 # aidlc-closeout.sh
 #
-# Reconcile stale `[-]` markers in the active intent's aidlc-state.md.
+# Reconcile stale `[-]` markers in the active intent's aidlc-state.md, then
+# run conservative post-intent verification.
 #
 # The AIDLC engine sometimes advances past a stage without transitioning its
 # checkbox from in-progress `[-]` to completed `[x]`, even when the audit log
@@ -25,8 +26,8 @@
 #   ./scripts/aidlc-closeout.sh --no-commit     # apply flips, skip git commit
 #
 # Exit codes:
-#   0  clean (no stuck markers, or all flipped and committed successfully)
-#   1  internal error (missing files, audit log unreadable)
+#   0  no unreconciled markers and no verification failures
+#   1  internal error or post-intent verification failure
 #   2  invalid flag
 #   3  pending human attention — some stages remain `[-]` without READY
 #      evidence (the closeout reconciled what it could; the rest is on you)
@@ -42,6 +43,7 @@
 #   - It will NOT touch the [ ] / [?] / [R] markers in the unit table for
 #     stages that were not flipped in the stage list
 #   - It will NOT switch harnesses — pair it with aidlc-switch-harness.sh
+#   - It will NOT modify artifacts during post-intent verification
 # ----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -95,6 +97,202 @@ if [[ ! -d "$AUDIT_DIR" ]]; then
     echo "error: audit dir missing: $AUDIT_DIR" >&2
     exit 1
 fi
+
+# ---- post-intent audit -----------------------------------------------------
+#
+# These checks are deliberately local and read-only. They do not decide whether
+# a state marker can be reconciled; they only report whether the completed
+# intent leaves the expected evidence and workspace hygiene behind.
+# ----------------------------------------------------------------------------
+AUDIT_PASS=0
+AUDIT_WARNING=0
+AUDIT_FAIL=0
+
+audit_pass() {
+    AUDIT_PASS=$((AUDIT_PASS + 1))
+    printf "  PASS: %s\n" "$1"
+}
+
+audit_warning() {
+    AUDIT_WARNING=$((AUDIT_WARNING + 1))
+    printf "  WARNING: %s\n" "$1"
+}
+
+audit_fail() {
+    AUDIT_FAIL=$((AUDIT_FAIL + 1))
+    printf "  FAIL: %s\n" "$1"
+}
+
+validate_traceability() {
+    python3 - "$1" "$2" <<'PYEOF'
+import json
+import pathlib
+import sys
+
+traceability_path = pathlib.Path(sys.argv[1])
+unit_name = sys.argv[2]
+
+try:
+    document = json.loads(traceability_path.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError) as error:
+    print(f"traceability/{unit_name}: invalid JSON ({error})")
+    raise SystemExit(1)
+
+coverage = document.get("coverage")
+meaningful_entries = (
+    isinstance(coverage, list)
+    and any(
+        isinstance(entry, dict)
+        and isinstance(entry.get("id"), str)
+        and entry["id"].strip()
+        and isinstance(entry.get("status"), str)
+        and entry["status"].strip()
+        and isinstance(entry.get("target"), str)
+        and entry["target"].strip()
+        for entry in coverage
+    )
+)
+if not meaningful_entries:
+    print(f"traceability/{unit_name}: coverage has no meaningful entries")
+    raise SystemExit(1)
+PYEOF
+}
+
+run_post_intent_audit() {
+    local construction_dir codegen_dir unit_name required_artifact
+    local traceability_file traceability_result start_date commit_hash commit_subject
+    local dirty_aidlc_paths dirty_script_paths dirty_record dirty_path doctor_log
+    local -a dirty_audit_paths=()
+    local -a dirty_non_audit_paths=()
+    local -a required_artifacts=(
+        "code-generation-plan.md"
+        "code-generation-questions.md"
+        "code-summary.md"
+        "traceability.json"
+        "unit-test-instructions.md"
+    )
+
+    echo ""
+    echo "  Post-intent audit (read-only)"
+    echo "  ----------------------------------------------------------------"
+
+    construction_dir="aidlc/spaces/default/intents/$ACTIVE_INTENT/construction"
+    if [[ ! -d "$construction_dir" ]]; then
+        audit_warning "code-generation artifacts: construction directory is absent"
+    else
+        local unit_count=0
+        for codegen_dir in "$construction_dir"/*/code-generation; do
+            [[ -d "$codegen_dir" ]] || continue
+            unit_count=$((unit_count + 1))
+            unit_name="$(basename "$(dirname "$codegen_dir")")"
+            for required_artifact in "${required_artifacts[@]}"; do
+                if [[ ! -f "$codegen_dir/$required_artifact" ]]; then
+                    audit_fail "code-generation/$unit_name: missing $required_artifact"
+                fi
+            done
+            if [[ ! -f "$codegen_dir/source-manifest.json" ]]; then
+                audit_warning "code-generation/$unit_name: source-manifest.json is absent (informational; not consistently required)"
+            fi
+
+            traceability_file="$codegen_dir/traceability.json"
+            if [[ ! -f "$traceability_file" ]]; then
+                audit_warning "traceability/$unit_name: traceability.json is absent; JSON coverage could not be checked"
+            elif traceability_result="$(validate_traceability "$traceability_file" "$unit_name")"; then
+                audit_pass "traceability/$unit_name: valid JSON with meaningful coverage"
+            else
+                audit_warning "$traceability_result"
+            fi
+        done
+        if [[ $unit_count -eq 0 ]]; then
+            audit_warning "code-generation artifacts: no unit code-generation directories found"
+        else
+            audit_pass "code-generation artifacts: checked $unit_count unit(s)"
+        fi
+    fi
+
+    start_date="$(awk -F': ' '/^- \*\*Start Date\*\*: / { print $2; exit }' "$STATE_FILE")"
+    if [[ -z "$start_date" ]]; then
+        audit_warning "commit format: intent start date is unavailable"
+    else
+        local checked_commits=0
+        local invalid_commits=0
+        while IFS=$'\t' read -r commit_hash commit_subject; do
+            [[ -z "$commit_hash" ]] && continue
+            if [[ "$commit_subject" == "chore(aidlc): append engine audit events" ]]; then
+                printf "  INFO: commit format: skipped %s (generated audit event)\n" "$commit_hash"
+                continue
+            fi
+            checked_commits=$((checked_commits + 1))
+            if [[ ! "$commit_subject" =~ ^(feat|fix|docs|style|refactor|test|chore)\([a-z0-9][a-z0-9._/-]*\):\ .+ ]]; then
+                audit_fail "commit format: $commit_hash has non-conventional subject: $commit_subject"
+                invalid_commits=$((invalid_commits + 1))
+            fi
+        done < <(git log --format='%h%x09%s' --since="$start_date" -20)
+        if [[ $invalid_commits -eq 0 ]]; then
+            audit_pass "commit format: $checked_commits non-generated commit(s) checked since $start_date"
+        fi
+    fi
+
+    dirty_script_paths="$(git status --porcelain -- scripts/aidlc-closeout.sh scripts/aidlc-switch-harness.sh)"
+    if [[ -n "$dirty_script_paths" ]]; then
+        audit_fail "working tree: closeout/switch scripts are dirty: $(printf '%s' "$dirty_script_paths" | tr '\n' ';' | sed 's/;$//')"
+    fi
+
+    dirty_aidlc_paths="$(git status --porcelain -- aidlc/)"
+    while IFS= read -r dirty_record; do
+        [[ -z "$dirty_record" ]] && continue
+        dirty_path="${dirty_record:3}"
+        if [[ "$dirty_path" == aidlc/spaces/*/audit/*.md ]]; then
+            dirty_audit_paths+=("$dirty_path")
+        else
+            dirty_non_audit_paths+=("$dirty_path")
+        fi
+    done <<< "$dirty_aidlc_paths"
+
+    if [[ ${#dirty_non_audit_paths[@]} -gt 0 ]]; then
+        audit_fail "working tree: non-audit AIDLC paths are dirty: $(IFS=';'; printf '%s' "${dirty_non_audit_paths[*]}")"
+    fi
+    if [[ ${#dirty_audit_paths[@]} -gt 0 ]]; then
+        audit_warning "working tree: ${#dirty_audit_paths[@]} generated AIDLC audit shard(s) await commit"
+    fi
+    if [[ -z "$dirty_script_paths" && ${#dirty_non_audit_paths[@]} -eq 0 && ${#dirty_audit_paths[@]} -eq 0 ]]; then
+        audit_pass "working tree: aidlc/ and closeout/switch scripts are clean"
+    fi
+
+    doctor_log="$(mktemp -t aidlc-closeout.doctor.XXXXXX)"
+    if ! command -v aidlc >/dev/null 2>&1; then
+        audit_fail "aidlc doctor: aidlc is not on PATH"
+    elif aidlc doctor >"$doctor_log" 2>&1; then
+        if grep -qE '^[[:space:]]*warn[[:space:]]' "$doctor_log"; then
+            audit_warning "aidlc doctor: warnings reported"
+        else
+            audit_pass "aidlc doctor: ok"
+        fi
+    else
+        audit_fail "aidlc doctor: reported issues"
+    fi
+    rm -f "$doctor_log"
+
+    echo ""
+    printf "  Audit summary: PASS=%d WARNING=%d FAIL=%d\n" \
+        "$AUDIT_PASS" "$AUDIT_WARNING" "$AUDIT_FAIL"
+}
+
+finish_closeout() {
+    local needs_human_action="$1"
+
+    run_post_intent_audit
+    if [[ "$needs_human_action" -gt 0 ]]; then
+        echo ""
+        echo "  Some stages remain in [-] (no positive evidence). Resolve manually,"
+        echo "  then re-run this script to confirm."
+        exit 3
+    fi
+    if [[ $AUDIT_FAIL -gt 0 ]]; then
+        exit 1
+    fi
+    exit 0
+}
 
 # ---- evidence table -------------------------------------------------------
 #
@@ -223,21 +421,13 @@ fi
 # ---- dry-run short-circuit -----------------------------------------------
 if [[ $DRY_RUN -eq 1 ]]; then
     echo "  --dry-run: no edits made."
-    # In dry-run, surface the same exit code we'd return after a real run.
-    # 0 when state is already clean; 3 when some stages need human attention.
-    if [[ ${#KEEP[@]} -gt 0 ]]; then
-        exit 3
-    fi
-    exit 0
+    finish_closeout "${#KEEP[@]}"
 fi
 
 # ---- confirm unless --yes ------------------------------------------------
 if [[ ${#FLIP[@]} -eq 0 ]]; then
     echo "  No flips to apply."
-    if [[ ${#KEEP[@]} -gt 0 ]]; then
-        exit 3
-    fi
-    exit 0
+    finish_closeout "${#KEEP[@]}"
 fi
 
 if [[ $YES -eq 0 ]]; then
@@ -393,27 +583,11 @@ Verify with: bash scripts/aidlc-switch-harness.sh --audit"; then
     fi
 fi
 
-# ---- doctor ---------------------------------------------------------------
-echo ""
-echo "  Running aidlc doctor..."
-if ! command -v aidlc >/dev/null 2>&1; then
-    echo "  (aidlc not on PATH; skipping doctor)"
-else
-    if aidlc doctor >/tmp/aidlc-closeout.doctor.log 2>&1; then
-        echo "  aidlc doctor: ok"
-    else
-        echo "  aidlc doctor: warnings remain (see /tmp/aidlc-closeout.doctor.log)"
-    fi
-fi
-
 # ---- exit code ------------------------------------------------------------
 if [[ $NEW_STUCK -gt 0 ]]; then
-    echo ""
-    echo "  Some stages remain in [-] (no positive evidence). Resolve manually,"
-    echo "  then re-run this script to confirm."
-    exit 3
+    finish_closeout "${#KEEP[@]}"
 fi
 echo ""
 echo "  Closeout complete. safe to switch harness with"
 echo "    scripts/aidlc-switch-harness.sh opencode"
-exit 0
+finish_closeout 0
