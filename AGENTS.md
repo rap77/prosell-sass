@@ -483,6 +483,24 @@ This project uses **AI-DLC v2** (AI-Driven Development Life Cycle) as its sole d
 - `Product-Definition/` — Discovery output (vision, tech environment, open questions)
 - `.aidlc-rule-details/` — Detailed workflow rules (loaded conditionally)
 
+### Closeout and Harness Switching
+
+Before declaring an AIDLC intent closed or switching harnesses, run:
+
+```bash
+bash scripts/aidlc-closeout.sh --dry-run
+```
+
+- If it exits `0` with no `FAIL`, continue.
+- If it exits `3` or reports `FAIL`, surface the gaps and do not switch or close the intent.
+- If it identifies reconcilable stale markers, obtain explicit user approval before applying changes, then run:
+
+  ```bash
+  bash scripts/aidlc-closeout.sh --yes --no-commit
+  ```
+
+- Review the resulting diff. Create a commit only with explicit user approval; never use `--no-verify`.
+
 ### Cross-Project Context
 
 This project is part of the **ProSell Ecosystem**:
