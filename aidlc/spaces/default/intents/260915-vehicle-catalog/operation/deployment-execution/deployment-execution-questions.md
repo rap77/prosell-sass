@@ -32,7 +32,7 @@ doy por confirmado por las suites verdes de CI?
 - C. Solo corré `uv run ruff check src` + `pnpm --filter @prosell/web lint` + `pnpm --filter @prosell/web typecheck` (chequeo mecánico rápido)
 - X. Other (please specify)
 
-[Answer]:
+[Answer]: A
 
 ## Pregunta 2 — Cómo resolver el gap de US2.1 antes del deploy
 
@@ -48,7 +48,7 @@ queda como gap transparente conocido. ¿Cómo procedemos?
   para que quede registrado fuera del workflow
 - X. Other (please specify)
 
-[Answer]:
+[Answer]: A
 
 ## Pregunta 3 — Target de despliegue
 
@@ -63,7 +63,7 @@ algo del diff antes?
 - C. Merge + push pero no dispares nada hasta que yo confirme
 - X. Other (please specify)
 
-[Answer]:
+[Answer]: A
 
 ## Pregunta 4 — Ventana de despliegue y rollback
 
@@ -81,15 +81,6 @@ producción queda pendiente de tu acción manual vía la UI de GitHub Actions?
 - X. Other (please specify)
 
 [Answer]: A
-
-## Respuestas registradas
-
-| Pregunta                              | Respuesta                                                                                                                                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1 — Chequeos pre-despliegue locales  | **A** — correr el gate completo de pre-commit localmente (Ruff, Pyright, ESLint, Prettier, Tailwind validate, secret scan, GGA) antes de cualquier push                |
-| P2 — Gap de US2.1                     | **A** — mergear y desplegar igual. US2.1 es código listo pero no expuesto al usuario final; los demás FR sí son funcionales de punta a punta y no se bloquean entre sí |
-| P3 — Target de despliegue             | **A** — squash-merge a `main`, push a `origin/main`, dejar correr `Deploy Staging` workflow cuando CI termine verde                                                    |
-| P4 — Ventana de despliegue y rollback | **A** — staging auto cuando CI pase verde; producción queda pendiente de acción manual del usuario vía `Promote to Production` con confirmación "deploy"               |
 
 ## Consolidated Summary Confirmation
 
