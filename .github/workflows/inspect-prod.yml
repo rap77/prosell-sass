@@ -25,6 +25,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           # Queries read-only — 10m es margen amplio para 4 SELECTs.
           command_timeout: 10m
+          # Sin esto, el stdout del SSH (donde va la salida de psql) queda en un
+          # archivo temporal del action pero NO aparece en el log de GitHub
+          # Actions — solo veríamos el "successfully executed".
+          capture_stdout: true
+          cat_output: true
           script: |
             set -e
             # Mismo fallback que promote-prod.yml — backward-compatible si el
