@@ -36,13 +36,19 @@ because forcing the seed back through `FORCE_SEED=1` is the project's
 documented escape hatch for that.
 """
 
-import json
 import logging
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
 from alembic import op
 
+from prosell.alembic.versions._spanish_migration_helpers import (
+    build_update_statement,
+    pre_migration_marker_key,
+    serialize_jsonb,
+    spanish_field_keys,
+    spanish_options,
+)
 from prosell.domain.services.facebook_vehicle_value_catalog import (
     FACEBOOK_VEHICLE_VALUE_CATALOG,
     reconcile,
@@ -87,10 +93,7 @@ def _spanish_options(field_key: str) -> list[str] | None:
     """Return the Spanish canonical list for `field_key`, or None when the
     field_key has no canonical catalog (e.g. `year`, `mileage`).
     """
-    options = FACEBOOK_VEHICLE_VALUE_CATALOG.get(field_key)
-    if not options:
-        return None
-    return [option.canonical_value for option in options]
+    return spanish_options(field_key)
 
 
 def _update_category_attribute_schema(connection: sa.engine.Connection) -> int:
@@ -126,13 +129,13 @@ def _update_category_attribute_schema(connection: sa.engine.Connection) -> int:
                 continue
             if entry.get("filter_type") != "select":
                 continue
-            spanish = _spanish_options(field_key)
-            if spanish is None:
+            canonical = spanish_options(field_key)
+            if canonical is None:
                 continue
             current = entry.get("options")
-            if current == spanish:
+            if current == canonical:
                 continue
-            schema[field_key] = {**entry, "options": spanish}
+            schema[field_key] = {**entry, "options": canonical}
             changed = True
         if not changed:
             continue
@@ -146,7 +149,7 @@ def _update_category_attribute_schema(connection: sa.engine.Connection) -> int:
                 """
             ),
             {
-                "schema": json.dumps(schema),
+                "schema": serialize_jsonb(schema),
                 "updated_at": datetime.now(UTC),
                 "id": row.id,
             },
@@ -206,31 +209,13 @@ def _apply_migration(
     old_value: str,
     new_value: str,
 ) -> None:
-    marker_key = f"{_PRE_MARKER_PREFIX}{field_key}"
-    connection.execute(
-        sa.text(
-            """
-            UPDATE products
-            SET attributes = jsonb_set(
-                jsonb_set(
-                    attributes,
-                    CAST(ARRAY[:marker_key] AS text[]),
-                    to_jsonb(CAST(:old_value AS text))
-                ),
-                CAST(ARRAY[:field_key] AS text[]),
-                to_jsonb(CAST(:new_value AS text))
-            )
-            WHERE id = :id
-            """
-        ),
-        {
-            "marker_key": marker_key,
-            "old_value": old_value,
-            "field_key": field_key,
-            "new_value": new_value,
-            "id": product_id,
-        },
+    sql, params = build_update_statement(
+        product_id=str(product_id),
+        field_key=field_key,
+        old_value=old_value,
+        new_value=new_value,
     )
+    connection.execute(sa.text(sql), params)
 
 
 def _do_upgrade(connection: sa.engine.Connection) -> None:
@@ -242,7 +227,8 @@ def _do_upgrade(connection: sa.engine.Connection) -> None:
 
     migrated = 0
     excluded = 0
-    for field_key, options in FACEBOOK_VEHICLE_VALUE_CATALOG.items():
+    for field_key in spanish_field_keys():
+        options = FACEBOOK_VEHICLE_VALUE_CATALOG[field_key]
         canonical_values = [option.canonical_value for option in options]
         candidates = _find_candidates(connection, field_key, canonical_values)
 
@@ -294,7 +280,7 @@ def _do_upgrade(connection: sa.engine.Connection) -> None:
 def _do_downgrade(connection: sa.engine.Connection) -> None:
     restored = 0
     for field_key in FACEBOOK_VEHICLE_VALUE_CATALOG:
-        marker_key = f"{_PRE_MARKER_PREFIX}{field_key}"
+        marker_key = pre_migration_marker_key(field_key)
         rows = connection.execute(
             sa.text(
                 """
