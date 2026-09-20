@@ -14,8 +14,7 @@ jobs:
   inspect-prod:
     runs-on: ubuntu-latest
     steps:
-      - id: ssh
-        name: Read-only diagnostic queries against prod DB
+      - name: Read-only diagnostic queries against prod DB
         # Pineado al mismo SHA que promote-prod.yml (v1.2.5) — mismo action,
         # mismas credenciales SSH de prod. Si comprometen la action, te roban
         # la llave de prod.
@@ -24,69 +23,29 @@ jobs:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Queries read-only — 10m es margen amplio para 4 SELECTs.
           command_timeout: 10m
-          # Capturamos el stdout al output del step (`steps.ssh.outputs.stdout`)
-          # para poder emitirlo en el step siguiente. Sin esto, appleboy/ssh-
-          # action@v1.2.5 no expone stdout al log de Actions — solo el "successfully
-          # executed" genérico. Bug confirmado en este SHA.
-          capture_stdout: true
-          script: |
-            set -e
-            # Mismo fallback que promote-prod.yml — backward-compatible si el
-            # secret PROD_REPO_PATH no está seteado.
-            cd ${{ secrets.PROD_REPO_PATH || '/prosell' }}
-
-            # Cargar .env.prod en silencio. set -a + source + set +a es el
-            # patrón estándar POSIX; sin `set -x`, los valores de POSTGRES_*
-            # nunca se imprimen al log de Actions.
-            set -a
-            # shellcheck disable=SC1091
-            source .env.prod
-            set +a
-
-            # Verificación mínima: si los vars no se cargaron, abortar antes
-            # de intentar psql — evita mensajes de error crípticos.
-            if [ -z "${POSTGRES_USER:-}" ] || [ -z "${POSTGRES_DB:-}" ] || [ -z "${POSTGRES_PASSWORD:-}" ]; then
-              echo "ERROR: .env.prod no contiene POSTGRES_USER/POSTGRES_DB/POSTGRES_PASSWORD" >&2
-              exit 1
-            fi
-
-            # Queries read-only. PGPASSWORD va por env (no en línea de comandos),
-            # y NO se hace echo de su valor en ningún punto.
-            # `--no-psqlrc` evita cargar config de usuario que puede no existir
-            # en el container.
+          # Usamos `command:` (single command) y NO `script:`. appleboy/ssh-
+          # action@v1.2.5 con `script:` no streamea el stdout del script al log
+          # de Actions — solo emite el banner "Successfully executed" —
+          # confirmado empíricamente en este SHA (ver commits previos a este).
+          # Con `command:` drone-ssh invoca ssh inline y el stdout/stderr del
+          # comando remoto aparece en el log tal cual.
+          #
+          # Cada query es un -c separado para que el output sea legible:
+          # psql imprime una cabecera con -c cada vez (con --no-psqlrc).
+          command: |
+            cd ${{ secrets.PROD_REPO_PATH || '/prosell' }} && \
+            set -a && \
+            source .env.prod && \
+            set +a && \
+            [ -n "$POSTGRES_USER" ] && [ -n "$POSTGRES_DB" ] && [ -n "$POSTGRES_PASSWORD" ] && \
             docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" prosell-prod-db \
-              psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-psqlrc <<'SQL'
-            \echo '--- alembic_version ---'
-            SELECT version_num FROM alembic_version;
-
-            \echo '--- categories.carros-y-camionetas make.options ---'
-            SELECT slug,
-                   jsonb_pretty(attribute_schema->'make'->'options') AS make_options
-            FROM categories
-            WHERE slug = 'carros-y-camionetas';
-
-            \echo '--- published product count ---'
-            SELECT COUNT(*) AS published_count
-            FROM products
-            WHERE status = 'published';
-
-            \echo '--- first published product make attributes ---'
-            SELECT jsonb_pretty(attributes->'make') AS make_attrs
-            FROM products
-            WHERE status = 'published'
-            LIMIT 1;
-            SQL
-
-      # Emitir el output capturado del step anterior. `if: always()` para que
-      # aún en error se vea el output (ej. error de psql).
-      - name: Print captured diagnostic output
-        if: always()
-        env:
-          # Pasamos por env para evitar que el output del step se interpole
-          # en el comando bash que lo contiene (que se ejecutaría en el runner
-          # y podría romper quoting con caracteres especiales del JSON).
-          DIAG_OUT: ${{ steps.ssh.outputs.stdout }}
-        run: |
-          printf '%s\n' "$DIAG_OUT"
+              psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-psqlrc \
+                -c "\echo '--- alembic_version ---'" \
+                -c "SELECT version_num FROM alembic_version;" \
+                -c "\echo '--- categories.carros-y-camionetas make.options ---'" \
+                -c "SELECT slug, jsonb_pretty(attribute_schema->'make'->'options') AS make_options FROM categories WHERE slug='carros-y-camionetas';" \
+                -c "\echo '--- published product count ---'" \
+                -c "SELECT COUNT(*) AS published_count FROM products WHERE status='published';" \
+                -c "\echo '--- first published product make attributes ---'" \
+                -c "SELECT jsonb_pretty(attributes->'make') AS make_attrs FROM products WHERE status='published' LIMIT 1;"
