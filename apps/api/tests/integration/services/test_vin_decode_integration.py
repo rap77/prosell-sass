@@ -316,13 +316,15 @@ class TestVINDecodeIntegration:
         # Assert - All fields populated
         assert response.vehicle is not None
         assert response.vehicle.year == 2020
-        assert response.vehicle.make == "toyota"  # Normalized to lowercase
+        assert response.vehicle.make == "Toyota"  # Canonical Spanish catalog label
         assert response.vehicle.model == "camry"  # Normalized to lowercase
         assert response.vehicle.trim == "LE"
-        assert response.vehicle.body_type == "sedan"  # Normalized from "Sedan/Saloon"
+        assert response.vehicle.body_type == "Sedán"  # Canonical Spanish catalog label
         assert response.vehicle.drivetrain == "FWD"  # Normalized to UPPERCASE
-        assert response.vehicle.transmission == "automatic"  # Normalized to lowercase
-        assert response.vehicle.fuel_type == "gasoline"  # Normalized to lowercase
+        assert (
+            response.vehicle.transmission == "Transmisión automática"
+        )  # Canonical Spanish catalog label
+        assert response.vehicle.fuel_type == "Gasolina"  # Canonical Spanish catalog label
         assert response.vehicle.engine == "2.5L L4 DOHC 16V"
 
     # -------------------------------------------------------------------------
@@ -442,7 +444,7 @@ class TestVINDecodeEdgeCases:
             response = await decode_vin(request)
 
         # Assert - Required fields populated, optional fields are None
-        assert response.vehicle.make == "ford"
+        assert response.vehicle.make == "Ford"
         assert response.vehicle.model == "f-150"
         assert response.vehicle.year == 2021
         assert response.vehicle.trim is None  # Not in NHTSA response
@@ -482,15 +484,11 @@ class TestVINDecodeEdgeCases:
             response = await decode_vin(request)
 
         assert response.unmatched_fields == []
-        assert response.vehicle.body_type == "sedan"
+        assert response.vehicle.body_type == "Sedán"
 
     @pytest.mark.asyncio
-    async def test_vin_decode_unreconciled_field_is_nulled_and_listed(self) -> None:
-        """BR1.2 CASE 2 — NHTSA returns a raw value for a select-backed
-        field, but nothing in the canonical catalog matches it (post
-        normalization): the field comes back null and its name is added
-        to unmatched_fields, instead of leaking the raw/normalized guess.
-        """
+    async def test_vin_decode_fallback_field_reconciles_to_canonical_other(self) -> None:
+        """A body-type fallback reconciles to the canonical ``Otro`` option."""
         unmatched_response = {
             "Count": 5,
             "Message": "Results returned successfully",
@@ -499,8 +497,7 @@ class TestVINDecodeEdgeCases:
                 {"Variable": "Model", "Value": "Camry"},
                 {"Variable": "Model Year", "Value": "2020"},
                 # NHTSA's fallback path for an unrecognized body class
-                # normalizes to "other" (nhtsa_normalizer.py's body_type
-                # fallback) — "other" is not in the canonical catalog.
+                # normalizes to the canonical ``Otro`` catalog option.
                 {"Variable": "Body Class", "Value": "Some Unrecognized Shape"},
             ],
         }
@@ -527,8 +524,8 @@ class TestVINDecodeEdgeCases:
         with patch("httpx.AsyncClient", return_value=mock_client):
             response = await decode_vin(request)
 
-        assert response.vehicle.body_type is None
-        assert "body_type" in response.unmatched_fields
+        assert response.vehicle.body_type == "Otro"
+        assert response.unmatched_fields == []
 
     @pytest.mark.asyncio
     async def test_vin_decode_cached_response_carries_unmatched_fields(self) -> None:
@@ -538,9 +535,8 @@ class TestVINDecodeEdgeCases:
             "Count": 3,
             "Message": "Results returned successfully",
             "Results": [
-                {"Variable": "Make", "Value": "Toyota"},
+                {"Variable": "Make", "Value": "Unknown Brand"},
                 {"Variable": "Model", "Value": "Camry"},
-                {"Variable": "Body Class", "Value": "Some Unrecognized Shape"},
             ],
         }
 
@@ -570,7 +566,7 @@ class TestVINDecodeEdgeCases:
         assert first.cached is False
         assert second.cached is True
         assert second.unmatched_fields == first.unmatched_fields
-        assert "body_type" in second.unmatched_fields
+        assert "make" in second.unmatched_fields
 
     @pytest.mark.asyncio
     async def test_vin_decode_case_insensitive(self) -> None:
