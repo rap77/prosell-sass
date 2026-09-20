@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5440:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -28,7 +28,7 @@ services:
     image: redis:7.4-alpine
     container_name: prosell-dev-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -45,14 +45,14 @@ services:
     image: minio/minio:latest
     container_name: prosell-dev-minio
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web console
+      - "9010:9000" # S3 API
+      - "9011:9001" # Web console
     volumes:
       - minio_data:/data
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":9011"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
@@ -88,7 +88,7 @@ services:
       POSTGRES_USER: prosell
       POSTGRES_PASSWORD: prosell_test_password
     ports:
-      - "5433:5432" # Different port to avoid conflicts
+      - "5441:5432" # Different port to avoid conflicts
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
@@ -111,7 +111,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "8010:8000"
     environment:
       # REDIS (in-container network name; explicit override for safety)
       - REDIS_URL=redis://redis:6379/0
@@ -122,8 +122,8 @@ services:
       - ENVIRONMENT=development
       - DEBUG=true
       - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+      - API_PORT=8010
+      - ALLOWED_ORIGINS=http://localhost:3010,http://localhost:8010
       # SECURITY
       - BCRYPT_ROUNDS=12
       - MAX_LOGIN_ATTEMPTS=5
@@ -139,7 +139,7 @@ services:
       # OAUTH - Google
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:8000/api/auth/oauth/google/callback}
+      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:8010/api/auth/oauth/google/callback}
       # OAUTH - Facebook (opcional)
       - FACEBOOK_OAUTH_APP_ID=${FACEBOOK_OAUTH_APP_ID:-}
       - FACEBOOK_OAUTH_APP_SECRET=${FACEBOOK_OAUTH_APP_SECRET:-}
@@ -154,7 +154,7 @@ services:
       # URLs. Distinct from the internal docker network endpoint above because
       # the browser can't resolve `minio` as a hostname. Leave unset in prod
       # where DO Spaces' public endpoint matches the internal one.
-      - S3_PUBLIC_ENDPOINT_URL=http://localhost:9000
+      - S3_PUBLIC_ENDPOINT_URL=http://localhost:9010
       - S3_FORCE_PATH_STYLE=true
       - DO_BUCKET_NAME=${DO_BUCKET_NAME:-prosell-assets}
       - DO_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
@@ -203,13 +203,13 @@ services:
       context: ..
       dockerfile: docker/web-dev.Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_API_URL=http://localhost:8010
     container_name: prosell-dev-web
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       - API_URL=http://api:8000
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8010
       - WATCHPACK_POLLING=true # Useful for WSL2/Docker volume sync
     depends_on:
       api:
