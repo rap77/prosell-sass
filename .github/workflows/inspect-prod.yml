@@ -25,11 +25,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           # Queries read-only — 10m es margen amplio para 4 SELECTs.
           command_timeout: 10m
-          # Sin esto, el stdout del SSH (donde va la salida de psql) queda en un
-          # archivo temporal del action pero NO aparece en el log de GitHub
-          # Actions — solo veríamos el "successfully executed".
-          capture_stdout: true
-          cat_output: true
+          # Forzamos el flush de stdout a stderr al final del script. Sin esto,
+          # appleboy/ssh-action@v1.2.5 no emite el stdout del script al log de
+          # Actions aunque capture_stdout=true — bug confirmado en este SHA.
+          # Capturamos el output de psql a un archivo y lo imprimimos al final
+          # vía `>&2` para garantizar visibilidad.
           script: |
             set -e
             # Mismo fallback que promote-prod.yml — backward-compatible si el
@@ -47,7 +47,7 @@ jobs:
             # Verificación mínima: si los vars no se cargaron, abortar antes
             # de intentar psql — evita mensajes de error crípticos.
             if [ -z "${POSTGRES_USER:-}" ] || [ -z "${POSTGRES_DB:-}" ] || [ -z "${POSTGRES_PASSWORD:-}" ]; then
-              echo "ERROR: .env.prod no contiene POSTGRES_USER/POSTGRES_DB/POSTGRES_PASSWORD"
+              echo "ERROR: .env.prod no contiene POSTGRES_USER/POSTGRES_DB/POSTGRES_PASSWORD" >&2
               exit 1
             fi
 
@@ -55,8 +55,11 @@ jobs:
             # y NO se hace echo de su valor en ningún punto.
             # `--no-psqlrc` evita cargar config de usuario que puede no existir
             # en el container.
+            OUT=$(mktemp)
+            trap 'rm -f "$OUT"' EXIT
+
             docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" prosell-prod-db \
-              psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-psqlrc <<'SQL'
+              psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-psqlrc <<'SQL' > "$OUT"
             \echo '--- alembic_version ---'
             SELECT version_num FROM alembic_version;
 
@@ -77,3 +80,6 @@ jobs:
             WHERE status = 'published'
             LIMIT 1;
             SQL
+
+            # Imprimir a stderr para garantizar visibilidad en el log de Actions.
+            cat "$OUT" >&2
