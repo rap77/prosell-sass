@@ -210,7 +210,11 @@ def build_client_format_row(
     - `title_status` — the caller reads `attributes["title_status"]`; this
       function derives `clean_title` from it with the INVERSE mapping of
       `CSVFieldMapper.parse_title_status()` (BR1.1): `"clean"` -> `"1"`,
-      `"rebuilt"` -> `"0"`, anything else (including `None`) -> `""`.
+      `"rebuilt"` -> `"0"`, missing/unknown -> `"0"` (default to "not
+      clean" — the CSV must always carry an explicit `"0"` or `"1"`,
+      never an empty cell, because the client's reference CSV template
+      encodes the field as a literal boolean and an empty cell is
+      parsed by Excel/Sheets as a third undefined state).
     - `facebook_groups`/`facebook_groups_fallback` — `groups` is
       `",".join(facebook_groups)` when non-empty, else
       `facebook_groups_fallback` (BR1.2/BR2.7).
@@ -227,12 +231,11 @@ def build_client_format_row(
     is only ever called for `published` products (BR1.1), which is exactly
     what the sample client CSV encodes with a literal "1" in that column.
     """
-    if title_status == "clean":
-        clean_title = "1"
-    elif title_status == "rebuilt":
-        clean_title = "0"
-    else:
-        clean_title = ""
+    # Missing/unknown -> "0" (default to "not clean"). The client's CSV
+    # template encodes clean_title as an explicit boolean and Excel/Sheets
+    # parses an empty cell as a third undefined state, so the export must
+    # always carry an explicit "0" or "1".
+    clean_title = "1" if title_status == "clean" else "0"
 
     groups = ",".join(facebook_groups) if facebook_groups else facebook_groups_fallback
 

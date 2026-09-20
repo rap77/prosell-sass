@@ -288,8 +288,12 @@ def test_build_client_format_row_rebuilt_title_status() -> None:
     assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "0"
 
 
-def test_build_client_format_row_unknown_title_status_renders_empty() -> None:
-    # BR1.1 — anything else (including None) -> "" (never a raw passthrough)
+def test_build_client_format_row_missing_title_status_defaults_to_zero() -> None:
+    # BR1.1 — ``title_status`` absent on ``attributes`` renders "0"
+    # (default to "not clean"). The client's CSV template encodes
+    # ``clean_title`` as an explicit boolean and Excel/Sheets parses
+    # an empty cell as a third undefined state, so the export must
+    # always carry an explicit "0" or "1".
     row = build_client_format_row(
         row_id=527,
         org_code="MF",
@@ -298,7 +302,22 @@ def test_build_client_format_row_unknown_title_status_renders_empty() -> None:
         attributes={},
         title_status=None,
     )
-    assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == ""
+    assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "0"
+
+
+def test_build_client_format_row_unknown_title_status_defaults_to_zero() -> None:
+    # BR1.1 — ``title_status`` carrying any value other than "clean"
+    # (rebuilt, "unknown-value", garbage) also renders "0".
+    for raw in ("rebuilt", "unknown", "Salvage", ""):
+        row = build_client_format_row(
+            row_id=527,
+            org_code="MF",
+            price_cents=1780000,
+            description=None,
+            attributes={},
+            title_status=raw,
+        )
+        assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "0", raw
 
 
 def test_build_client_format_row_facebook_groups_joined_with_comma() -> None:
