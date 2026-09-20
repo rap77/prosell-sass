@@ -1,0 +1,40 @@
+name: Inspect Production (read-only diagnostic)
+
+# TEMPORARY, READ-ONLY diagnostic workflow for inspecting production state.
+# Manually triggered via workflow_dispatch ONLY — no other triggers.
+#
+# Mirrors the SSH pattern of promote-prod.yml (same pinned appleboy/ssh-action
+# SHA, same secrets, same host). Runs exactly three psql SELECTs against
+# prosell-prod-db and prints their output verbatim to the GitHub Actions log.
+#
+# HARD constraints (do not relax without re-reading the brief):
+#   - Never connects to staging.
+#   - Never runs alembic upgrade/downgrade or any other DB mutation.
+#   - Never echoes secrets to the log.
+#   - Never modifies production state.
+#   - Commands executed on the host are ONLY `set -e` plus the three psql
+#     SELECTs listed below — nothing else.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: inspect-production
+  cancel-in-progress: false
+
+jobs:
+  inspect-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Read-only psql diagnostics against prosell-prod-db
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
+          script: |
+            set -e
+            docker exec prosell-prod-db psql -U postgres -d prosell_prod -tAc "SELECT version_num FROM alembic_version;"
+            docker exec prosell-prod-db psql -U postgres -d prosell_prod -tAc "SELECT slug, jsonb_pretty(attribute_schema->'make') FROM categories WHERE slug='carros-y-camionetas' LIMIT 1;"
+            docker exec prosell-prod-db psql -U postgres -d prosell_prod -tAc "SELECT category_id, jsonb_pretty(attributes->'make') FROM products WHERE status='published' LIMIT 1;"
