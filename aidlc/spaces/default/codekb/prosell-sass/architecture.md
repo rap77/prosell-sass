@@ -1,767 +1,94 @@
-# Architecture — ProSell SaaS
+# Architecture Analysis
 
 ## System Overview
 
-ProSell SaaS es un monorepo pnpm + Turborepo con tres miembros de workspace reales — un backend FastAPI (`apps/api`), un frontend Next.js 16 (`apps/web`) y una suite E2E standalone (`tests/e2e`, paquete `@prosell/e2e`) — comunicados el frontend y el backend exclusivamente por HTTP a través de un conjunto de rutas proxy BFF (Backend-For-Frontend) del lado de Next.js. No existe código compartido en tiempo de compilación entre `apps/web` y `apps/api`: `pnpm-workspace.yaml` declara el glob `packages/*`, pero **el directorio `packages/` no existe en disco** — es un glob de workspace muerto/sin cumplir, coherente con la nota aspiracional de `CLAUDE.md` ("Shared code (future)").
+The system is a modular monolith: a Next.js App Router web application communicates through authenticated BFF routes with a FastAPI API. The API follows Clean Architecture boundaries: domain entities and interfaces, application use cases/DTOs, and infrastructure adapters for HTTP, PostgreSQL, Redis/Taskiq, and S3-compatible storage.
 
 ## Architectural Style
 
-**Monolito modular en ambos lados**, con Clean Architecture estricta en el backend:
-
-- **Backend (`apps/api`)**: un único servicio FastAPI, internamente dividido en las tres capas de Clean Architecture (`domain → application → infrastructure`), con **30 módulos de router** bajo `infrastructure/api/routers/` (verificado por listado directo de archivo, sin contar `__init__.py`), de los cuales **los 30 están wireados** vía `app.include_router(...)` en `main.py` (confirmado por conteo de invocaciones — corrige un conteo previo de 31 módulos/30 wireados de un pase anterior). Uno de esos 30, `test_router.py`, está condicionado a `settings.environment in ["development", "testing"]` — no se registra en producción. No hay evidencia de descomposición en microservicios.
-- **Frontend (`apps/web`)**: Next.js 16 App Router con Server Components por defecto, **31 rutas API internas** (`app/api/**/route.ts`, conteo verificado por listado directo) que actúan como capa BFF/proxy hacia el backend FastAPI — nunca el navegador llama directo a `apps/api`. Un middleware propio (`apps/web/src/proxy.ts`) resuelve matching de rutas y redirecciones de auth (`PROTECTED_ROUTES`/`PUBLIC_ROUTES`/`AUTH_REDIRECT_ROUTES`).
-- **Publicación a Facebook / tareas asíncronas**: orquestado desde el backend (Playwright + Taskiq/Redis para colas asíncronas), no es un servicio separado — vive dentro de `apps/api/src/prosell/infrastructure/{tasks,services}`. No hay scraping genérico multi-marketplace ni módulo de ML — ver `business-overview.md` § Corrección respecto a `CLAUDE.md`.
-
-Evidencia: servicios de aplicación (`api`, `web`) en `docker-compose.yml`, ausencia física de `packages/*`, y la estructura de `apps/api/src/prosell/` que replica el patrón Clean Architecture canónico (`domain/{entities,value_objects,repositories,ports,services,exceptions,events}`, `application/use_cases/` con 18 subdominios, `infrastructure/{api,models,repositories,services,tasks}`).
+- **Frontend:** Next.js 16 App Router, React 19, TanStack Query, and Zustand.
+- **Backend:** asynchronous FastAPI and SQLAlchemy 2.0 with PostgreSQL.
+- **Object storage:** `IDOSpacesService` abstraction backed by MinIO locally and DigitalOcean Spaces in deployment.
+- **Security boundary:** API authorization plus tenant-key validation before signed private image URLs are returned.
 
 ## Component Relationships
 
 ```mermaid
-graph TB
-    subgraph Cliente
-        Browser["Navegador"]
-    end
-
-    subgraph "apps/web (Next.js 16 / React 19)"
-        Proxy["Middleware<br/>proxy.ts (auth-redirect)"]
-        AppRouter["App Router<br/>(Server Components)"]
-        BFF["Rutas BFF<br/>app/api/{auth,v1}/**/route.ts<br/>(31 archivos)"]
-        Client["Cliente API<br/>lib/api/ (+ Zod-mirror schemas)"]
-    end
-
-    subgraph "apps/api (FastAPI / Python 3.13)"
-        MW["Middleware<br/>auth / rbac / rate-limit"]
-        Routers["30 módulos de router<br/>(30 wireados en main.py,<br/>1 env-gated: test_router)"]
-        App["Application Layer<br/>18 subdominios de Use Cases"]
-        Domain["Domain Layer<br/>zero deps"]
-        Infra["Infrastructure Layer<br/>SQLAlchemy 2.0, Playwright, Taskiq"]
-    end
-
-    subgraph Datos
-        PG[("PostgreSQL 17")]
-        Redis[("Redis 7.4+")]
-    end
-
-    subgraph Externos
-        FBGraph["Facebook Graph API<br/>(publicación oficial)"]
-        FBPlaywright["Facebook Marketplace<br/>(Playwright, estrategia alternativa)"]
-        NHTSA["NHTSA VIN decoder"]
-        S3["DigitalOcean Spaces (boto3)"]
-        Email["Resend (email)"]
-    end
-
-    Browser -->|"Server Components / fetch"| AppRouter
-    Browser -->|"client fetch"| BFF
-    AppRouter --> Proxy
-    Proxy --> BFF
-    BFF -->|"forward HTTP + cookies"| MW
-    Client --> BFF
-    AppRouter --> Client
-    MW --> Routers
-    Routers --> App
-    App --> Domain
-    App --> Infra
-    Infra --> PG
-    Infra --> Redis
-    Infra -->|"PublisherStrategy"| FBGraph
-    Infra -->|"PublisherStrategy (fallback)"| FBPlaywright
-    Infra --> NHTSA
-    Infra --> S3
-    Infra --> Email
-
-    style Domain fill:#e8f5e9
-    style BFF fill:#fff3e0
+flowchart LR
+  Browser[Seller browser] --> BFF[Next.js BFF]
+  BFF --> API[FastAPI product and image routers]
+  API --> App[Application use cases]
+  App --> Domain[Domain entities and ports]
+  API --> DB[(PostgreSQL)]
+  API --> Storage[S3-compatible storage]
+  API --> Queue[Redis / Taskiq]
+  Storage --> CDN[Optional CDN endpoint]
 ```
-
-**Regla de dependencia (backend)**: `Infrastructure → Application → Domain`, con Domain sin dependencias externas (Python puro), tal como declara `CLAUDE.md` raíz y confirma la estructura de directorios escaneada.
-
-**Corrección de límites del proxy BFF (deuda activa, alcance corregido — scan `260903-catalog-client-export`)**: los proxies dinámicos `apps/web/src/app/api/v1/*/[...path]/route.ts` fuerzan `response.json()` sobre toda respuesta del backend sin verificar `content-type` — un defecto arquitectónico ya documentado en memoria del proyecto que rompe cualquier endpoint no-JSON (ver `api-documentation.md` y `code-quality-assessment.md`). **El proxy de `products` ya NO tiene este defecto** — confirmado por lectura directa este pase: `apps/web/src/app/api/v1/products/[...path]/route.ts` pasa a `response.blob()` y preserva `Content-Disposition`, necesario para que el export de catálogo (CSV, y en el futuro ZIP) funcione. El defecto sigue vigente en `categories`, `organizations` y `vehicles`.
-
-## Data Flow
-
-1. El navegador interactúa con un Server Component (SSR) o dispara un fetch de cliente contra una ruta BFF de Next.js; el middleware `proxy.ts` decide primero si la ruta requiere auth y redirige si corresponde.
-2. La ruta BFF reenvía la petición al backend FastAPI, incluyendo cookies de sesión httpOnly.
-3. El middleware de FastAPI (`auth_middleware.py`, `rbac_middleware.py`, `rate_limit_middleware.py`) valida sesión/rol/límite de tasa antes de llegar al router.
-4. El router correspondiente valida el DTO de entrada (Pydantic), delega a un Use Case de la capa Application.
-5. El Use Case orquesta entidades/servicios de dominio y llama a un puerto (interfaz) que la capa Infrastructure implementa (repositorio SQLAlchemy, servicio externo, publisher, etc.).
-6. La respuesta (DTO de salida) sube de vuelta por las mismas capas hasta el router, que la serializa a JSON.
-7. La ruta BFF de Next.js recibe la respuesta y hoy la fuerza a `response.json()` en los proxies dinámicos — el punto de fragilidad documentado.
-8. El cliente API del frontend (`lib/api/`) parsea la respuesta contra su esquema Zod-mirror correspondiente antes de entregarla a TanStack Query / componentes / stores Zustand.
 
 ## Interaction Diagrams
 
-### 1. Transición de estado de producto (BFF → middleware → FastAPI → SQLAlchemy)
-
-Flujo representativo de una transacción de negocio típica: un revisor aprueba una publicación desde la cola de revisión.
+### Current catalog cover-image flow
 
 ```mermaid
 sequenceDiagram
-    participant U as Usuario (revisor)
-    participant W as apps/web (Server/Client Component)
-    participant BFF as BFF proxy<br/>app/api/v1/products/[...path]/route.ts
-    participant MW as Middleware FastAPI<br/>(auth/rbac/rate-limit)
-    participant R as FastAPI Router<br/>(product_router.py)
-    participant UC as Use Case<br/>(ApproveProduct)
-    participant D as Domain<br/>(Product entity, ProductStatus)
-    participant Repo as SqlAlchemyProductRepository
-    participant DB as PostgreSQL
+  participant C as CatalogPage
+  participant Q as useQueries / productImageUrlsBatch
+  participant B as Next.js BFF
+  participant A as Product router
+  participant S as IDOSpacesService
+  participant O as Object storage
 
-    U->>W: click "Aprobar"
-    W->>BFF: PATCH /api/v1/products/{id}/approve<br/>(cookie sesión, body JSON)
-    BFF->>MW: forward PATCH (Content-Type, Cookie)
-    MW->>MW: valida sesión + rol (rbac_middleware)
-    MW->>R: request autorizada
-    R->>UC: ApproveProductUseCase.execute(dto)
-    UC->>D: product.can_approve() / transición de estado
-    D-->>UC: nuevo estado válido (o excepción de dominio)
-    UC->>Repo: repository.update(product)
-    Repo->>DB: UPDATE products SET status=...<br/>+ INSERT product_audit_log
-    DB-->>Repo: OK
-    Repo-->>UC: Product actualizado
-    UC-->>R: ApproveProductResponseDTO
-    R-->>MW: 200 JSON
-    MW-->>BFF: 200 JSON
-    BFF-->>W: response.json() (asume JSON siempre)
-    W-->>U: UI actualizada, badge de estado
+  C->>Q: visible product IDs
+  loop once per visible product
+    Q->>B: GET product/{id}/image-urls
+    B->>A: authenticated request
+    A->>A: authorize product and validate tenant keys
+    loop every gallery key
+      A->>S: create signed URL
+      S-->>A: URL
+    end
+    A-->>B: full gallery URLs
+    B-->>Q: full gallery URLs
+  end
+  Q-->>C: first URL per card
+  C->>O: browser downloads signed original
 ```
 
-### 2. Publicación a Facebook Marketplace (estrategia dual, tarea asíncrona)
-
-Flujo representativo del pilar de negocio "publicación automatizada" — corrige la aspiración de `CLAUDE.md` ("Automated Scraping") por lo efectivamente implementado: publicación del propio inventario, no extracción de datos de terceros.
+### Upload and derivative flow
 
 ```mermaid
 sequenceDiagram
-    participant U as Vendedor/dealer
-    participant W as apps/web
-    participant BFF as BFF proxy<br/>(publisher)
-    participant R as publisher_router.py
-    participant UC as PublishProductUseCase
-    participant Strat as PublisherStrategy
-    participant Graph as GraphApiPublisher<br/>(Facebook Graph API oficial)
-    participant PW as PlaywrightPublisher<br/>(automatización de navegador, fallback)
-    participant Task as Taskiq worker<br/>(publish_product_task.py)
-    participant FB as Facebook Marketplace
+  participant U as Seller browser
+  participant B as Next.js BFF
+  participant I as Image router
+  participant P as Pillow optimizer
+  participant S as IDOSpacesService
+  participant O as Object storage
 
-    U->>W: click "Publicar"
-    W->>BFF: POST /api/v1/publisher/...
-    BFF->>R: forward
-    R->>UC: PublishProductUseCase.execute(dto)
-    UC->>Task: encola tarea asíncrona (Redis/Taskiq)
-    Task->>Strat: resuelve estrategia según credenciales de la org
-    alt credenciales Graph API válidas
-        Strat->>Graph: publish(product)
-        Graph->>FB: Facebook Graph API (oficial)
-    else sin credenciales Graph API
-        Strat->>PW: publish(product)
-        PW->>FB: automatización Playwright (navegador headless)
-    end
-    FB-->>Task: resultado (id de publicación / error)
-    Task->>UC: actualiza Publication (estado, external_id)
-    UC-->>U: notificación de resultado (notification_router.py)
+  U->>B: POST image upload
+  B->>I: authenticated upload
+  I->>P: validate and create WebP + OG JPEG
+  I->>S: upload private WebP
+  S->>O: private object
+  I->>S: upload public OG JPEG
+  S->>O: public-read OG object
+  I-->>B: image metadata
+  B-->>U: upload response
 ```
 
-### 3. Pipeline de calidad de código (pre-commit + pre-push, bloqueante vs. advisory)
+## Data Flow
 
-```mermaid
-flowchart LR
-    subgraph "Pre-commit (local, bloqueante)"
-        GGA["GGA AI review<br/>(codex, STRICT_MODE=true)"]
-        Secrets["secret scan (gitleaks-style)"]
-        SpecStatus["spec-status-required<br/>(docs/superpowers/specs/*.md)"]
-        TWCheck["validate-tailwind.sh<br/>(solo var(--ps-*), NO valida<br/>escala de spacing)"]
-        LintStaged["lint-staged<br/>(eslint --fix + prettier, solo staged)"]
-        Ruff["ruff + ruff-format"]
-        Pyright["pyright"]
-        RD["react-doctor --staged<br/>--blocking warning"]
-    end
-
-    subgraph "Pre-push (local, bloqueante)"
-        PP1["prettier format:check (repo completo)"]
-        PP2["ruff-push / pyright-push (re-run)"]
-        SyncDB["sync-test-db.sh"]
-        Pytest["pytest -q (suite completa)"]
-    end
-
-    subgraph "CI (.github/workflows/ci.yml, 7 jobs)"
-        LP["lint-python"]
-        TP["test-python"]
-        LN["lint-node"]
-        TN["test-node"]
-        VS["validate-specs"]
-        VCS["validate-code-standards"]
-        Build["build"]
-    end
-
-    subgraph "Advisory-only (no bloquea merge)"
-        RDW["react-doctor.yml"]
-        Graphify["graphify.yml"]
-    end
-
-    GGA --> Secrets --> SpecStatus --> TWCheck --> LintStaged --> Ruff --> Pyright --> RD
-    RD --> Commit["commit local"]
-    Commit --> Push["push"]
-    Push --> PP1 --> PP2 --> SyncDB --> Pytest
-    Push --> LP & TP & LN & TN & VS & VCS & Build
-    Push -.-> RDW
-    Push -.-> Graphify
-
-    style TWCheck fill:#ffebee
-    style RDW fill:#e3f2fd
-    style Graphify fill:#e3f2fd
-```
-
-Este diagrama explica por qué clases Tailwind inválidas (familias `.5`/`.25`) llegan a `main` sin ser atrapadas: `validate-tailwind.sh` solo revisa el patrón `var(--ps-*)` dentro de `className`, no la validez de la clase de utilidad de spacing contra la escala configurada — ningún linter del pipeline actual lo hace. El hook `next-lint` en pre-commit está comentado ("TODO: currently disabled due to next lint issues"), dejando `lint-staged` como único chequeo ESLint por commit (solo archivos staged) — ESLint completo (`--max-warnings=0`) solo corre en CI (`lint-node`).
-
-### 4. Bootstrap de schema de test en CI — `create_test_schema.py` vs. la cadena real de Alembic (nuevo, scan enfocado `260830-ci-seed-data`)
-
-El job `test-python` de CI **no** ejecuta la cadena real de migraciones Alembic para levantar la base de datos de test. En su lugar, `apps/api/scripts/create_test_schema.py` bootstrapea el schema directo desde los modelos ORM vía `Base.metadata.create_all()`. Esto es **documentado y deliberado**, no drift accidental: el propio docstring del script lo explica — _"this project's migration chain has drift (see alembic/versions/20260601_recreate_facebook_tables.py) and fails on a fresh database, so the test DB is bootstrapped straight from the ORM models instead."_
-
-```mermaid
-flowchart TB
-    subgraph "CI test-python job (real)"
-        Checkout["checkout"]
-        CreateSchema["create_test_schema.py<br/>Base.metadata.create_all()"]
-        ManualEnums["MANUAL_ENUMS registry<br/>(create_type=False enums,<br/>p.ej. fb_group_category)"]
-        Pytest["pytest -q<br/>(suite completa)"]
-        Fixtures["conftest.py (root)<br/>+ tests/integration/conftest.py<br/>(engine/session fixtures)"]
-        SeedHelpers["seed helpers<br/>(seed_categories.py, etc.)<br/>invocados por fixtures/tests"]
-    end
-
-    subgraph "Cadena real de Alembic (NO usada en CI test)"
-        AlembicVersions["alembic/versions/<br/>71 migraciones"]
-        Drift["20260601_recreate_facebook_tables.py<br/>— punto de drift conocido,<br/>falla contra DB fresca"]
-    end
-
-    Checkout --> CreateSchema
-    CreateSchema --> ManualEnums
-    CreateSchema --> Pytest
-    Pytest --> Fixtures
-    Fixtures --> SeedHelpers
-    SeedHelpers -.->|"referencian slugs<br/>que pueden desincronizarse"| Pytest
-
-    AlembicVersions -.->|"drift documentado,<br/>fallaría en fresh DB"| Drift
-    CreateSchema -.->|"bypassa esta cadena<br/>por decisión deliberada"| AlembicVersions
-
-    style CreateSchema fill:#fff3e0
-    style Drift fill:#ffebee
-    style AlembicVersions fill:#f5f5f5
-```
-
-**Consecuencia arquitectónica clave**: como el schema de test siempre refleja fielmente los modelos ORM actuales (FKs, `nullable`, índices — todo, sin excepción), **no hay drift silencioso de schema** entre lo que corre en CI y lo que definen los modelos. Lo que sí puede desincronizarse — y de hecho lo hizo — es la **data de seed** que los tests asumen (ver hallazgo raíz en `code-quality-assessment.md`): un cambio en `seed_categories.py` (aplanar la jerarquía de vehículos, commit `2166f142`) no rompe el schema, pero sí invalida silenciosamente cualquier test que hardcodee un slug de categoría que dejó de existir.
-
-**Patrón de fixture `shared_session` incompatible con `db.commit()` explícito en el handler bajo test**: en `apps/api/tests/integration/api/routers/test_fb_sync_router.py` (fixture local `shared_session`/`_setup_override`) y replicado en `apps/api/tests/integration/bulk_upload/conftest.py`, el patrón abre `async with session_factory() as session, session.begin(): yield session` y mapea ese MISMO objeto session como el `get_async_session` que ve la app vía `app.dependency_overrides`. En producción, `get_async_session` (`infrastructure/database/session.py`) crea una sesión nueva por request — el handler puede llamar `db.commit()` con seguridad. En el fixture de test, ese `commit()` explícito cierra la transacción externa que `session.begin()` había abierto, y cualquier query posterior en el MISMO test sobre esa sesión revienta con `sqlalchemy.exc.InvalidRequestError: Can't operate on closed transaction inside context manager`. Confirmado en vivo contra `unpublish_callback` (`fb_sync_router.py`): la 1ª llamada (que hace `db.commit()`) responde 200; la 2ª llamada del mismo test (para verificar idempotencia) revienta con esa excepción.
-
-### 5. Login con OAuth (Google/Microsoft) — redirect completo del navegador, sin BFF
-
-```mermaid
-sequenceDiagram
-    participant U as Usuario
-    participant L as LoginPageContent.tsx /<br/>RegisterPageContent.tsx
-    participant Browser as Navegador (full redirect)
-    participant Auth as Backend FastAPI<br/>/api/auth/oauth/{provider}/authorize
-    participant Provider as Google / Microsoft
-    participant CB as Backend callback<br/>(sienta cookies httpOnly)
-    participant Proxy as apps/web/src/proxy.ts<br/>(middleware)
-    participant Store as authStore.ts<br/>(Zustand + persist)
-    participant Role as deriveRole.ts<br/>(SSOT de rol)
-
-    U->>L: click "Continuar con Google/Microsoft"
-    L->>Browser: window.location.href = buildOAuthUrl(provider)<br/>(función nombrada extraída, ESLint ya limpio)
-    Browser->>Auth: navegación completa (no fetch/XHR)
-    Auth->>Provider: redirect OAuth2 externo
-    Provider-->>CB: callback con código de autorización
-    CB-->>Browser: Set-Cookie (access_token, refresh_token httpOnly) + redirect
-    Browser->>Proxy: siguiente navegación (p.ej. a ruta protegida)
-    Proxy->>Proxy: lee cookie de sesión, resuelve rol vía deriveRole.ts
-    Proxy-->>Browser: permite o redirige según PROTECTED_ROUTES/PUBLIC_ROUTES/AUTH_REDIRECT_ROUTES
-    Browser->>Store: hidrata sesión (login / mapApiUserToStoreUser)
-    Store->>Role: deriveRole(user) — misma función que usa proxy.ts
-    Store-->>U: UI autenticada, rol aplicado consistente con el middleware
-```
-
-**Nota histórica**: el intent `260829-auth-navigation-refactor` eliminó los 5 supresores `eslint-disable @next/next/no-location-assign-relative-destination` que existían en este flujo (1 en `fetchWithAuth.ts`, 4 duplicados en `LoginPageContent.tsx`/`RegisterPageContent.tsx`), extrayendo la construcción de la URL a una función nombrada — la regla ESLint solo analiza estáticamente literales/template-literals/identificadores constantes del lado derecho de la asignación, no `CallExpression`s, por lo que extraer a función basta para pasar el linter sin cambiar comportamiento (aprendizaje persistido en `project.md`).
-
-### 6. Bulk upload CSV — resolución de organización con fallback (bug de diseño confirmado, scan enfocado `260830-ci-fixes-round2`)
-
-```mermaid
-sequenceDiagram
-    participant U as Vendedor/dealer
-    participant W as apps/web (BulkUploadCSV)
-    participant BFF as BFF proxy<br/>bulk-upload/with-images
-    participant R as product_router.py
-    participant UC as BulkUploadVehiclesUseCase
-    participant Map as csv_field_mapper.py<br/>(map_row → MappedCSVRow)
-    participant OrgRepo as OrganizationRepository
-
-    U->>W: sube CSV + ZIP de imágenes<br/>(organization_id? opcional, category_id)
-    W->>BFF: POST multipart/form-data
-    BFF->>R: forward
-    R->>UC: execute(csv, images, organization_id?, category_id)
-    UC->>Map: map_row() por cada fila
-    Map-->>UC: MappedCSVRow (cod_organization con<br/>fallback silencioso a title si falta cod_org)
-    UC->>UC: pre-chequeo "unknown organization codes"<br/>(recorre TODAS las filas ANTES del loop principal)
-    alt algún código de organización no resuelve
-        UC-->>R: raise ValueError("Unknown organization codes: ...")<br/>⚠️ dispara AUNQUE el caller ya pasó<br/>organization_id válido como fallback
-        Note over UC: BUG DE DISEÑO: el chequeo de<br/>"unknown codes" corre antes del loop<br/>por fila que sí respetaría organization_id
-        R-->>BFF: 500 (sin try/except ValueError,<br/>a diferencia de /brokers y /ownership)
-    else todos los códigos resuelven (o hay fallback válido)
-        UC->>OrgRepo: resuelve organización por código o por organization_id
-        UC->>UC: upsert de Product por VIN
-        UC-->>R: BulkUploadResult
-        R-->>BFF: 200 JSON
-    end
-    BFF-->>W: respuesta
-```
-
-**Contraste con el modo preview**: `BulkUploadPreviewUseCase.execute()` (dry-run, `/bulk-upload/preview`) **no** lanza `ValueError` por códigos de organización desconocidos — solo los reporta en `summary.missing_org_codes`. Esto sugiere que `test_bulk_upload_preview.py` y `test_bulk_upload_with_images.py` probablemente NO comparten el mismo root cause de falla, pese a ejercitar el mismo CSV — discrepancia documentada como pendiente de verificar en `code-quality-assessment.md`.
-
-### 7. FB Sync — `unpublish_callback` (bot → backend), asignación de estado implícita vía `server_default` (scan enfocado `260830-ci-fixes-round2`)
-
-```mermaid
-sequenceDiagram
-    participant Bot as Bot de Facebook<br/>(proceso externo)
-    participant R as fb_sync_router.py<br/>unpublish_callback
-    participant Active as _get_active_fb_account
-    participant Model as FbUnpublishRequestModel
-    participant DB as PostgreSQL
-
-    Bot->>R: POST /api/v1/fb-sync/unpublish-callback<br/>(X-Bot-Token, status: "completed"|"failed")
-    R->>Active: valida cuenta Facebook activa
-    alt callback.status == "failed"
-        R->>Model: incrementa attempt_count<br/>cappeado a MAX_UNPUBLISH_ATTEMPTS=3
-        Note over R,Model: ⚠️ NUNCA asigna explícitamente<br/>unpublish_request.status — si persiste<br/>como "queued" es por server_default<br/>de la columna, no por lógica del handler
-        R->>DB: db.commit()
-    else callback.status == "completed"
-        R->>Model: marca status explícitamente + limpia contadores
-        R->>DB: db.commit()
-    end
-    R-->>Bot: 200
-```
-
-**Nota de fragilidad, no confirmada con corrida real**: la rama `"failed"` depende de que la columna `status` tenga `server_default="queued"` para que el request quede correctamente re-encolado tras un fallo cappeado — un cambio futuro al default de la columna, o una migración que lo pierda, dejaría el status en un valor incorrecto sin que ningún test lo detecte a nivel de lógica del handler. El developer no corrió pytest para confirmar si esto es la causa raíz de la falla real del test asociado — queda como hallazgo a verificar en Requirements Analysis / Code Generation.
-
-### 8. Onboarding de organización — `useEffect` de mount + llamadas imperativas por botón (nuevo, scan enfocado `260828-useeffect-to-react-query`)
-
-```mermaid
-sequenceDiagram
-    participant U as Usuario (dealer nuevo)
-    participant P as OnboardingPage()<br/>(apps/web/src/app/onboarding/page.tsx)
-    participant Eff as useEffect (mount)<br/>checkSetup()
-    participant OrgApi as orgApi.ts<br/>(raw fetch, sin fetchWithAuth)
-    participant BFF as BFF proxy<br/>api/v1/org/**
-    participant R as org_router.py
-
-    U->>P: navega a /onboarding
-    P->>Eff: monta componente
-    Eff->>OrgApi: getMyOrganization()
-    OrgApi->>BFF: GET /api/v1/org/me (credentials: "include")
-    BFF->>R: forward
-    R-->>BFF: 200 OrganizationDTO | 404 sin org
-    BFF-->>OrgApi: response.json()
-    OrgApi-->>Eff: Organization | ApiError
-    Eff->>P: setState(step, organization)<br/>⚠️ violación AGENTS.md:333<br/>(useEffect para data-fetching)
-    P-->>U: renderiza paso del wizard
-
-    U->>P: completa paso 1, click "Siguiente"
-    P->>OrgApi: update(orgId, dto)<br/>(llamada imperativa, NO en useEffect)
-    OrgApi->>BFF: PATCH /api/v1/org/{id}
-    BFF->>R: forward
-    R-->>BFF: 200 OrganizationDTO
-    BFF-->>OrgApi: response.json()
-    OrgApi-->>P: Organization | ApiError
-    P-->>U: avanza a paso 2
-
-    U->>P: completa wizard, click "Finalizar"
-    P->>OrgApi: completeSetup(orgId)
-    OrgApi->>BFF: POST /api/v1/org/{id}/complete-setup
-    BFF->>R: forward
-    R-->>BFF: 200 OrganizationDTO
-    BFF-->>OrgApi: response.json()
-    OrgApi-->>P: Organization | ApiError
-    P-->>U: redirect a dashboard
-```
-
-**Alcance del defecto real vs. candidatos a refactor separados**: la violación literal de `AGENTS.md:333` es únicamente el `useEffect` de mount que dispara `checkSetup()`/`getMyOrganization()` — un candidato directo a `useQuery`. Las llamadas de `handleStep1`/`completeSetup` (disparadas por click, no por efecto) son candidatas naturales a `useMutation` por consistencia y manejo de estado, pero técnicamente NO son la violación de la regla en sí — el scan las señala como pregunta abierta de alcance para Requirements Analysis, sin resolverla de oficio (ver `code-quality-assessment.md`).
-
-### 9. Aceptación de invitación por token — mutación disparada en el mount (nuevo, scan enfocado `260828-useeffect-to-react-query`)
-
-```mermaid
-sequenceDiagram
-    participant U as Usuario invitado (nuevo miembro)
-    participant P as InvitePage()<br/>(apps/web/src/app/invite/[token]/page.tsx)
-    participant Eff as useEffect (mount)
-    participant TeamApi as teamApi.ts<br/>(raw fetch, sin fetchWithAuth)
-    participant BFF as BFF proxy<br/>api/v1/teams/**
-    participant R as team_router.py
-
-    U->>P: navega a /invite/{token} (link de invitación)
-    P->>Eff: monta componente
-    Eff->>TeamApi: acceptInvitation({token})<br/>⚠️ MUTACIÓN disparada en mount,<br/>no solo una query
-    TeamApi->>BFF: POST /api/v1/teams/accept-invitation
-    BFF->>R: forward
-    R-->>BFF: 200 TeamMemberDTO | 400/409/410 error tipado
-    alt éxito
-        BFF-->>TeamApi: response.json()
-        TeamApi-->>Eff: TeamMember
-        Eff->>P: setState("success")
-        P-->>U: UI de bienvenida, redirect a login/dashboard
-    else error (expirado / ya usado / inválido)
-        BFF-->>TeamApi: response.json() (detail de error)
-        TeamApi-->>Eff: throw ApiError (status + message)
-        Eff->>P: setState("error")<br/>branching por string-match:<br/>error.message.toLowerCase().includes("expired"|"already"|"member")<br/>y error.status === 401
-        P-->>U: mensaje de error específico<br/>(5 estados de UI en total)
-    end
-```
-
-**Riesgo de migración identificado**: el branching de error de esta página depende de inspeccionar `error.message` (string-matching) y `error.status` — cualquier envoltura de `useMutation` DEBE preservar `ApiError` (o un shape tipado equivalente) para que esta lógica siga funcionando. El precedente más cercano en el repo (`notificationsApi.ts`, ver más abajo) descarta el detalle del backend en un `Error` genérico — copiarlo tal cual rompería esta página. Ver `code-quality-assessment.md` para el detalle de triangulación de manejo de errores.
-
-### 10. Contrato `productSchema` vs. mocks de test desactualizados — transición de estado de producto (nuevo, scan enfocado `260901-frontend-test-debt`)
-
-```mermaid
-sequenceDiagram
-    participant Backend as Product entity /<br/>ProductModel (SQLAlchemy)
-    participant Schema as productSchema (Zod)<br/>apps/web/src/lib/api/products.ts
-    participant Parse as parseProductResponse()
-    participant Hook as useReverseProduct /<br/>useResubmitProduct /<br/>useRestoreProduct /<br/>useRevertSaleProduct
-    participant Test as products.test.tsx /<br/>reverseTransitions.test.tsx (mocks)
-
-    Note over Backend: published_to_marketplace<br/>nullable=False, default=False<br/>(SIEMPRE presente en la respuesta real)
-    Backend->>Schema: contrato real (espejado 1:1, Zod-mirror)
-    Note over Schema: commit 7315fdf2 (2026-08-22)<br/>endureció el campo:<br/>optional() → requerido
-    Schema->>Parse: productSchema.parse(json)
-
-    rect rgb(255, 235, 238)
-    Note over Test: Mocks NUNCA actualizados<br/>tras 7315fdf2 (a diferencia del<br/>archivo hermano products.test.ts,<br/>arreglado en el mismo commit)
-    Test->>Parse: mock SIN published_to_marketplace
-    Parse-->>Test: ZodError (7 de 12 tests en<br/>products.test.tsx; 4 de 9 en<br/>reverseTransitions.test.tsx)
-    end
-
-    Hook->>Parse: consume parseProductResponse()<br/>en runtime real — SIEMPRE recibe<br/>el campo del backend, nunca falla
-    Parse-->>Hook: Product (runtime OK,<br/>solo los mocks de test están desactualizados)
-```
-
-**Alcance del fix — mecánico, sin ambigüedad de diseño**: agregar `published_to_marketplace: false` (o el valor booleano relevante al caso) a cada mock de `Product` en los 8 puntos identificados (7 en `products.test.tsx`, 1 helper compartido `mockProductResponse()` en `reverseTransitions.test.tsx` que resuelve las 4 fallas de un solo fix). No hay cambio de comportamiento de producción — el schema ya refleja correctamente el contrato del backend; solo los fixtures de test quedaron atrás. Ver `code-quality-assessment.md` para el detalle línea por línea y `component-inventory.md` para el inventario de mocks afectados. Un tercer archivo con el mismo síntoma probable (`setProductCover.test.ts`) queda señalado pero fuera de alcance de este pase — ver `reverse-engineering-timestamp.md` § Developer Code Scan Results.
-
-### 11. `teamApi.create` — mismatch de parámetro shadow-implementado por un mock BFF (nuevo, scan enfocado `260902-teamapi-create-param`)
-
-Flujo representativo de por qué un mismatch de contrato de wire entre frontend y backend puede vivir semanas sin manifestarse: la ruta BFF real que enrutaría al backend está apagada por un archivo de ruta mock que Next.js prioriza siempre.
-
-```mermaid
-sequenceDiagram
-    participant U as Usuario (dealer)
-    participant Form as TeamForm.tsx
-    participant Store as teamStore.ts<br/>(createTeam)
-    participant Api as teamApi.ts<br/>create()
-    participant BFFMock as app/api/v1/teams/route.ts<br/>("Mock API Route", in-memory)
-    participant NextCfg as next.config.ts<br/>(rewrite fallback)
-    participant Real as team_router.py<br/>POST ""
-    participant DTO as CreateTeamRequest<br/>(org_id: UUID)
-
-    U->>Form: completa nombre de equipo, submit
-    Form->>Store: createTeam({ name, organization_id })
-    Store->>Api: teamApi.create({ name, organization_id })
-    Api->>BFFMock: POST /api/v1/teams<br/>JSON.stringify({ name, organization_id })
-
-    Note over BFFMock: archivo de ruta real de Next.js —<br/>siempre gana sobre el rewrite "fallback"<br/>de next.config.ts, aunque exista
-
-    BFFMock->>BFFMock: global.__mockTeams.push({ ...body })<br/>lee/escribe "organization_id"<br/>consistentemente (auto-coherente)
-    BFFMock-->>Api: 201 { id, name, organization_id, ... }
-    Api-->>Store: Team (parseado con TeamSchema.organization_id)
-    Store-->>Form: éxito, UI actualizada
-
-    rect rgb(255, 235, 238)
-    Note over NextCfg,DTO: CAMINO NUNCA EJERCITADO HOY:<br/>si el mock no existiera, el rewrite<br/>fallback reenviaría al backend real
-    NextCfg--)Real: (hipotético) forward POST<br/>{ name, organization_id }
-    Real--)DTO: CreateTeamRequest.parse(body)
-    DTO--)Real: 422 Unprocessable Entity<br/>("org_id": campo requerido faltante)
-    end
-```
-
-**Por qué el bug es invisible hoy**: `apps/web/next.config.ts:82-102` declara el rewrite `/api/:path*` → backend como tipo `fallback` — un tipo de rewrite de Next.js que solo se aplica cuando ningún archivo de ruta del propio proyecto coincide. `apps/web/src/app/api/v1/teams/route.ts` SÍ es un archivo de ruta real (una "Mock API Route", según su propio comentario de cabecera) que implementa `POST`/`GET` enteramente en memoria contra `global.__mockTeams`. Como el mock usa `organization_id` tanto para escribir como para leer, es auto-consistente y nunca contradice al frontend — el `422` que el backend real lanzaría (`org_id` faltante) nunca ocurre porque el backend real nunca recibe la petición. Lo mismo aplica al lado de la respuesta: `TeamResponse.org_id` (backend) vs. `TeamSchema.organization_id` (frontend, Zod) nunca chocan porque el mock nunca devuelve una respuesta con forma de `TeamResponse` real.
-
-**Alcance del bug — dos superficies, no una**: el texto original del intent nombra solo el lado de creación (`teamApi.create` → `CreateTeamRequest`), pero el mismo mismatch de nombre existe simétricamente en la respuesta (`TeamResponse.org_id` vs. `TeamSchema.organization_id`, ambos requeridos sin alias/`.optional()`). Arreglar solo el lado de request sin arreglar el de response dejaría el segundo mismatch latente y sin cobertura de test, con el mismo mecanismo de shadowing ocultándolo. `teamApi.update()` es un defecto relacionado pero distinto (el mock de `[id]/route.ts` solo exporta `GET`, no `PATCH` — probable 405 si algún día se ejercitara contra el mock) — no nombrado en el intent, señalado como hallazgo adicional para Requirements Analysis.
-
-**Por qué `test_team_dto_schemas.py` no lo atrapa**: es un test de "contract" solo de nombre — instancia `CreateTeamRequest`/`TeamResponse` de Pydantic en aislamiento, sin leer nunca `teamApi.ts` ni ningún archivo TypeScript. `.skills/contract-testing/SKILL.md` del proyecto ya describe el patrón que resolvería esta clase de bug estructuralmente ("Layer 3: Schema Matching — DTO ↔ TypeScript Drift Detection"), pero no existe una instancia de ese test para el dominio `team` — ver `code-quality-assessment.md` para el detalle completo.
-
-### Precedente de patrón — hooks React Query colocados en el módulo de API (`notificationsApi.ts`, `leads.ts`)
-
-`apps/web/src/lib/api/notificationsApi.ts` es el único precedente confirmado en el repo de `useQuery`/`useMutation` definidos directamente en el archivo del cliente API (no en un hook separado): `useNotifications()` (`staleTime` 20s, `refetchInterval` 30s), `useMarkNotificationRead()`, `useMarkAllNotificationsRead()` (invalidan `NOTIFICATIONS_QUERY_KEY` en `onSuccess`). Usa `fetchWithAuth` (a diferencia de `orgApi`/`teamApi`), pero lanza `new Error(...)` genérico en `!response.ok`, perdiendo el detalle del backend — patrón a NO copiar tal cual para `orgApi`/`teamApi` por el riesgo de branching descrito arriba. `leads.ts` es un segundo precedente más grande (`useLeads`, `useLead`, `useUpdateLeadStatus`, `useReassignLead`, `useLeadDuplicates`, `useLeadAuditTrail`, `useTeamMetrics`), confirmando que colocar los hooks en el propio módulo de API (en vez de un archivo de hooks separado) es la convención establecida del proyecto.
-
-### Patrón de colocación de esquemas Zod — mayoría en `schemas/`, 3 outliers (nuevo, scan enfocado `260828-zod-3-to-4-migration`)
-
-`apps/web/src/lib/api/schemas/` (17 archivos) es la ubicación mayoritaria de los esquemas Zod-mirror del frontend: cada archivo abre con un comentario de cabecera explicando por qué usa `.passthrough()` ("tolera campos del backend que la UI todavía no renderiza"), define `Backend*Schema` objects con `z.object({...}).passthrough()`, y exporta tipos inferidos vía `z.infer<typeof ...>`. Tres archivos rompen esa convención de ubicación — sus esquemas viven directamente bajo `apps/web/src/lib/api/*.ts` en vez de `schemas/`: `verticals.ts`, `products.ts`, `extractErrorMessage.ts`. No es un defecto funcional (el Zod-mirror sigue siendo 1:1 correcto en los tres), pero sí una inconsistencia de organización de código no documentada — ver `code-structure.md` para el detalle completo.
-
-Un caso especial de acoplamiento entre dos esquemas: `UnifiedProductForm.tsx:483` invoca `.passthrough()` en el USE SITE sobre `FIXED_FIELDS_SCHEMA` (un `z.object({...})` estricto definido en la línea 99 del mismo archivo), pero ese mismo `FIXED_FIELDS_SCHEMA` se usa también en la línea 290 vía `.merge(attrSchema)`, donde SÍ se necesita el comportamiento estricto. Migrar la definición de `FIXED_FIELDS_SCHEMA` a `z.looseObject()` cambiaría el comportamiento en ambos call sites, no solo en el de la línea 483 — requiere una decisión explícita de diseño en Code Generation, no un find/replace ciego. Los enums de dominio (`LeadStatus` en `leads.ts`, `AppointmentStatus` en `appointments.ts`) están declarados como TS `enum` colocados en el mismo archivo que el esquema que los valida, específicamente para evitar un import circular (documentado in-line) — este patrón sobrevive intacto a la migración `z.nativeEnum → z.enum(EnumObject)`, porque Zod 4 acepta un objeto TS enum directamente en `z.enum()`.
-
-### 12. Export de catálogo en formato cliente + ZIP de imágenes por vehículo (nuevo, scan enfocado `260903-catalog-client-export`)
-
-Flujo representativo de por qué "ya existe un export" no significa "el export pedido ya existe": el endpoint actual usa un formato de columnas distinto al que el intent necesita, y el ensamblado de ZIP de imágenes es una capacidad completamente nueva sobre datos que ya están en el catálogo.
-
-```mermaid
-sequenceDiagram
-    participant U as Vendedor/dealer
-    participant W as apps/web (seller)/catalog/page.tsx<br/>handleExportCsv
-    participant BFF as BFF proxy<br/>app/api/v1/products/[...path]/route.ts<br/>(ya soporta blob + Content-Disposition)
-    participant R as product_router.py<br/>export.csv (GENÉRICO, existente)
-    participant Export as csv_export.py<br/>build_image_folder_name()
-    participant Prod as Product entity<br/>(image_urls, attributes)
-    participant S3Port as IDOSpacesService (puerto)<br/>⚠️ sin método get/download hoy
-
-    U->>W: click "Exportar catálogo (formato cliente + fotos)"
-    W->>BFF: GET /api/v1/products/export.csv?...<br/>(formato GENÉRICO, no el de 24 columnas del cliente)
-    BFF->>R: forward
-    R->>Export: arma filas con UNIVERSAL_COLUMNS_ORDERED<br/>+ attribute_schema dinámico
-    Note over R,Export: ⚠️ NO es el formato de 24 columnas<br/>que docs/data39.csv usa para importar —<br/>requiere pipeline nuevo/extendido,<br/>decisión de diseño pendiente
-
-    rect rgb(255, 235, 238)
-    Note over Export,Prod: Capacidad NUEVA a construir: ZIP de imágenes<br/>Export->>Prod: lee attributes de cada Product
-    Export->>Export: build_image_folder_name()<br/>{AÑO}-{MARCA}-{MODELO}-{MILLAS}K-{COLOR}-{CÓDIGO_ORG}
-    Note over Export: BUG CONFIRMADO: lee attrs.get("color")<br/>pero el color real vive en<br/>attributes["exterior_color"] —<br/>segmento COLOR se pierde silenciosamente
-    Export--)S3Port: (necesario) descargar bytes de cada imagen<br/>por image_urls del Product
-    Note over S3Port: IDOSpacesService solo tiene<br/>upload/presign/delete/exists hoy —<br/>falta un método get_object()/download,<br/>o usar httpx contra las image_urls<br/>públicas ya guardadas (sin dependencia nueva)
-    end
-
-    R-->>BFF: 200 CSV (formato genérico actual)
-    BFF-->>W: response.blob() + Content-Disposition preservado
-    W-->>U: descarga CSV (sin ZIP de imágenes todavía)
-```
-
-**Gap de UX ya conocido, no resuelto**: la UX de "pedir carpeta destino" ya existe (`window.prompt`, FR8.3 del intent `260826-prod-bugfixes-batch`) pero sin valor sugerido por defecto — gap real que este intent debe cubrir, no una funcionalidad a construir de cero.
-
-**Corrección de un supuesto de `project.md`**: la nota de aprendizaje persistida sobre el bug de proxy `response.json()` forzado en respuestas no-JSON (learned 2026-08-26) está **desactualizada para este archivo específico** — `apps/web/src/app/api/v1/products/[...path]/route.ts` ya pasa a `response.blob()` y preserva `Content-Disposition`, confirmado por lectura directa este pase. El defecto sigue vigente en los otros 3 proxies catch-all (`categories`, `organizations`, `vehicles`), pero no en `products`.
-
-### 13. Modelo de permisos cross-org de `product_router.py` — tres patrones coexistentes, uno de ellos omitido en el endpoint de export (nuevo, scan enfocado `260910-export-cross-org`)
-
-`product_router.py` resuelve acceso cross-org (un `super_admin`/`ORG_ADMIN_VIEW_ALL` operando sobre la organización de OTRO tenant) con **tres patrones distintos, sin unificar**:
-
-```mermaid
-flowchart TB
-    subgraph "Patrón 1 — list-style (list_products, get_category_filter_values, get_featured_products)"
-        P1a["_check_org_scope_permission(current_user, organization_id)"]
-        P1b["owner_tenant_id, can_view_all_orgs"]
-        P1c["tenant_id = organization_id if (organization_id and can_view_all_orgs) else owner_tenant_id"]
-        P1a --> P1b --> P1c
-    end
-
-    subgraph "Patrón 2 — single-resource inline (get_product, get_product_image_urls, create_product)"
-        P2a["is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)"]
-        P2b["repo.get_by_id(id, None if is_org_admin else current_user.tenant_id)"]
-        P2c["create_product: valida existencia del org-override vía org_repo.get_by_tenant_id()"]
-        P2a --> P2b
-        P2a --> P2c
-    end
-
-    subgraph "Patrón 3 — batch actions (approve/reject masivo)"
-        P3a["tenant_id = None if current_user.has_role('super_admin') else current_user.tenant_id"]
-        Note1["⚠️ chequea ROL literal,<br/>bypassea el permiso ORG_ADMIN_VIEW_ALL"]
-        P3a -.-> Note1
-    end
-
-    subgraph "Endpoint de export — GAP confirmado (scope a ampliar, intent 260910-export-cross-org)"
-        P4a["tenant_id = current_user.tenant_id<br/>(SIEMPRE, sin excepción)"]
-        Note2["⚠️ no usa NINGUNO de los 3 patrones —<br/>super_admin/ORG_ADMIN_VIEW_ALL no tiene<br/>ningún camino para exportar otra organización"]
-        P4a -.-> Note2
-    end
-
-    style Note1 fill:#fff3e0
-    style Note2 fill:#ffebee
-    style P4a fill:#ffebee
-```
-
-**Hallazgo clave**: `GET /api/v1/products/export-client-format.zip` (`product_router.py:735-779`, agregado por el intent `260903-catalog-client-export`) no replica NINGUNO de los tres patrones — resuelve `tenant_id` únicamente de `current_user.tenant_id` (L752-764), sin aceptar `organization_id` como parámetro. Su docstring (L747-750) afirma esta restricción como diseño intencional (cita `BR1.2`/`NFR1` del intent `260903`), y `personas.md` de ese mismo intent confirma que la exclusión de `super_admin` del flujo de export fue alcance de diseño explícito, no un descuido — es una decisión de scope a **revisar y ampliar**, no una regresión a revertir mecánicamente.
-
-**Hallazgo crítico de test — el bug está codificado como comportamiento esperado**: `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (`test_product_router_export_client_format.py`) autentica con `RoleType.SUPER_ADMIN` hardcodeado y asertaa que el producto de la organización B es invisible para el `super_admin` de la organización A. Cualquier fix de este intent necesita revisar explícitamente este test, no solo el código del endpoint.
-
-**Decisión de diseño pendiente para Functional Design**: cuál de los tres patrones replicar. El patrón 1 (`_check_org_scope_permission` + `organization_id`) es el más cercano en semántica — el export es, como `list_products`, una operación de lectura filtrable por organización — pero `_check_org_scope_permission()` hoy no valida que un `organization_id` caller-supplied corresponda a una organización existente (a diferencia de `create_product`, que sí lo hace vía `org_repo.get_by_tenant_id()`), gap ya señalado en `dependencies.md`.
-
-### 14. Selector de organización — mecanismo cross-org existente en el frontend, hoy dormido para el flujo de export (nuevo, scan enfocado `260911-export-org-selector`)
-
-El intent `260910-export-cross-org` cerró el gap del **backend**: `GET /api/v1/products/export-client-format.zip` ya acepta `organization_id` y respeta `ORG_ADMIN_VIEW_ALL`/`super_admin` (ver diagrama 13). Este scan confirma que la **UI** no tiene todavía ningún camino para que un actor Super admin/plataforma indique qué organización exportar — y que la app ya cuenta con un mecanismo cross-org de UI completo, testeado y en producción, pero desconectado de este flujo.
-
-```mermaid
-flowchart TB
-    subgraph "Mecanismo cross-org de UI YA EXISTENTE — global, en Header"
-        Header["Header.tsx<br/>(renderizado en toda la app)"]
-        Picker["OrganizationPicker()<br/>apps/web/src/components/admin/OrganizationPicker.tsx"]
-        UseAuth["useAuth().isAdmin<br/>(guard UI: !isAdmin → null)"]
-        UseOrgs["useOrganizations()<br/>GET /api/v1/admin/organizations<br/>(gateado server-side por ORG_ADMIN_VIEW_ALL)"]
-        Store["organizationStore.viewingOrgId<br/>+ setViewingOrgId()<br/>(no-op si el rol no tiene<br/>ORG_ADMIN_VIEW_ALL — defensa en profundidad)"]
-        Header --> Picker
-        Picker --> UseAuth
-        Picker --> UseOrgs
-        Picker --> Store
-    end
-
-    subgraph "Consumidores de viewingOrgId — CENSO COMPLETO en apps/web/src"
-        Nadie["⚠️ NINGUNO — ni catálogo, ni review-queue,<br/>ni ningún hook de datos lee viewingOrgId hoy.<br/>Solo el propio Picker lo lee/escribe."]
-        Store -.->|"censado, sin consumidores"| Nadie
-    end
-
-    subgraph "Flujo de export — catalog/page.tsx, SIN wiring hoy"
-        Dropdown["DropdownMenu 'Exportar'<br/>→ 'Exportar catálogo (formato cliente)'"]
-        Banner["ExportSummaryBanner<br/>(inline, no modal)"]
-        Prompt["window.prompt(nombre de archivo)"]
-        ExportFn["exportCatalogClientFormat()<br/>apps/web/src/lib/api/products.ts:1541<br/>CERO parámetros"]
-        Fetch["fetch('/api/v1/products/export-client-format.zip',<br/>{credentials:'include'})<br/>⚠️ nunca manda organization_id"]
-        Dropdown --> Banner --> Prompt --> ExportFn --> Fetch
-    end
-
-    Backend["Backend (ya listo desde 260910):<br/>organization_id?: UUID | None<br/>+ _check_org_scope_permission()"]
-    Fetch -.->|"llega SIEMPRE sin organization_id,<br/>aunque el backend ya lo acepte"| Backend
-
-    style Nadie fill:#ffebee
-    style Fetch fill:#ffebee
-```
-
-**Hallazgo central**: `catalog/page.tsx` no importa `useAuth` ni `organizationStore` — cero lógica de permisos/selección de organización en ese archivo hoy. `review-queue/page.tsx` y `ReviewQueueTable.tsx` tampoco tienen selector de organización propio (grep sin matches) — corrige la premisa de que "el resto de la app ya permite elegir otra organización" a nivel de UI: el único selector cross-org real hoy es el `OrganizationPicker` global del `Header`, y está desconectado de todo excepto de sí mismo. El diseño original de Subsystem D (`docs/superpowers/changes/subsystem-d-dealer-ownership/design.md:27-42`) preveía conectar `viewingOrgId` a queries admin, pero eso nunca se completó más allá del propio picker.
-
-**Bifurcación de diseño pendiente (Requirements/Functional Design, NO resuelta en este scan)**:
-
-- **(a)** Cablear el export al `viewingOrgId`/`OrganizationPicker` global existente — sería su primer consumidor real en toda la app.
-- **(b)** Selector local independiente, acotado solo al flujo de export (p. ej. dentro de `ExportSummaryBanner`), sin tocar el estado global del header.
-
-Ambas opciones reutilizan el mismo endpoint ya gateado por permiso (`GET /api/v1/admin/organizations`, hook `useOrganizations()`) y el mismo shape mínimo de organización (`{id, name, ...}`, `OrganizationSchema`) — la decisión es de alcance/acoplamiento de estado, no de qué dato traer.
-
-**Nota de vigencia (scan `260911-cross-org-export-ux`)**: la bifurcación (a)/(b) descrita arriba ya se resolvió a favor de (a) — `catalog/page.tsx` cablea el export de un solo `viewingOrgId` a `exportCatalogClientFormat()`. Lo que sigue abierto es más angosto: filtrar además la GRILLA de productos por `viewingOrgId` (hoy solo lo usa el export, no la query de `useInfiniteProducts`), poblar el picker solo con organizaciones con productos, y agregar un modo "todas las organizaciones" que hoy no existe en absoluto. Ver diagrama 15 más abajo.
-
-### 15. Export "todas las organizaciones" + filtrado real del catálogo + formato CSV cliente correcto (nuevo, scan enfocado `260911-cross-org-export-ux`)
-
-Este intent retoma el diagrama 14 con la UI de single-org ya cableada (`260911-export-org-selector`, ver nota arriba) y ataca cuatro gaps restantes: (1) un modo "todas las organizaciones" en el export, (2) que el picker realmente filtre lo que `/catalog` muestra, (3) que el picker solo liste organizaciones con productos, y (4) que el CSV exportado tenga los valores reales en vez de columnas vacías/incorrectas.
-
-```mermaid
-flowchart TB
-    subgraph "Picker — gaps de listado (frontend)"
-        Picker["OrganizationPicker.tsx<br/>label: 'Todos los concesionarios'<br/>→ debe decir 'Todas las organizaciones'"]
-        UseOrgs["useOrganizations()<br/>YA devuelve product_count por org<br/>(OrganizationSchema, sin cambio de backend)"]
-        Filter["⚠️ FALTA: .filter(o => product_count > 0)<br/>hoy lista las ~29 sin filtrar"]
-        Picker --> UseOrgs --> Filter
-    end
-
-    subgraph "Grilla de catálogo — gap de filtrado (frontend)"
-        ViewingOrg["viewingOrgId (organizationStore)"]
-        ApiFilters["apiFilters → useInfiniteProducts()<br/>⚠️ SIN organization_id hoy"]
-        ListProducts["Backend: list_products()<br/>YA acepta organization_id<br/>+ _check_org_scope_permission()"]
-        ViewingOrg -.->|"leído solo para el banner de export,<br/>NUNCA para la query de productos"| ApiFilters
-        ApiFilters -.->|"fix: agregar organization_id<br/>a ProductFilters"| ListProducts
-    end
-
-    subgraph "Export 'todas las organizaciones' — gap de orquestación (backend)"
-        UseCase["ExportCatalogClientFormatUseCase.execute(tenant_id: UUID)<br/>⚠️ no-opcional, resuelve org_code UNA VEZ"]
-        RepoAll["ProductRepository.get_all(tenant_id=None)<br/>✅ YA soporta cross-tenant"]
-        PerProduct["⚠️ FALTA: resolver org_code POR PRODUCTO<br/>(no reusar el de la primera org resuelta)"]
-        Cap["EXPORT_MAX_PRODUCTS = 500<br/>⚠️ hoy es cap por-tenant, reconsiderar como cap global"]
-        UseCase -.->|"tenant_id=None ya posible en el repo"| RepoAll
-        RepoAll --> PerProduct
-        UseCase --> Cap
-    end
-
-    subgraph "Mapeo de columnas CSV — bug de valor, no solo de clave (backend)"
-        Attrs["Product.attributes dict"]
-        RowBuilder["build_client_format_row()<br/>csv_export.py:161-193"]
-        BadCols["8 columnas afectadas:<br/>VIN/body_style = rename puro<br/>clean_title/groups = mapeo de VALOR inverso<br/>state = clave inexistente (usar title_state)<br/>category/type = derivar de category_id (árbol N niveles)<br/>location = reconstrucción lossy (código de estado, no nombre)"]
-        Attrs --> RowBuilder --> BadCols
-    end
-
-    style Filter fill:#ffebee
-    style ApiFilters fill:#ffebee
-    style PerProduct fill:#ffebee
-    style Cap fill:#fff3cd
-    style BadCols fill:#ffebee
-```
-
-**Hallazgos clave** (detalle completo en `code-quality-assessment.md` hallazgos #77-#86, `api-documentation.md` y `dependencies.md`):
-
-- El picker y el filtrado de catálogo son fixes puramente frontend — el backend de `list_products` y el `product_count` del listado de organizaciones ya existen, sin cambio de contrato.
-- "Exportar todas las organizaciones" es alcanzable sin tocar la capa de repositorio (`get_all(tenant_id=None)` ya soportado) — el trabajo real es en `ExportCatalogClientFormatUseCase` (resolver `org_code` por producto, no una vez) y en reconsiderar `EXPORT_MAX_PRODUCTS` como límite global.
-- El endpoint de export ya tiene una convención documentada de que omitir `organization_id` significa "mi propia organización" (asimétrico respecto a `list_products`, donde significa "todas") — el diseño de un sentinel nuevo "todas" debe decidir explícitamente su relación con esa asimetría ya existente, no ignorarla.
-- El mapeo de columnas CSV tiene 5 de 8 columnas que requieren transformación de VALOR (no solo rename de clave): `clean_title` necesita mapeo inverso `"clean"→"1"`/`"rebuilt"→"0"`, `groups` necesita `",".join()` sobre una lista, `category`/`type` requieren decidir qué nivel del árbol de 3-4 niveles mapea a cada columna plana, y `location` es lossy sin agregar una tabla de código→nombre completo de estado.
-- Los popups nuevos de `path`/`groups` (ítems 6 y 7 del intent) tienen un patrón de UX ya establecido en el mismo archivo (`window.prompt` con valor por defecto sugerido, `null` = cancelar, usado hoy por `handleConfirmExportSummary`) — no hay que inventar un patrón de interacción nuevo.
-
-### 16. Desalineación entre catálogo editorial de valores Facebook y normalización de VIN decode (nuevo, scan enfocado `260915-vehicle-catalog`)
-
-Este intent retoma el flujo de categorización dinámica/atributos de vehículos (ver `business-overview.md` § Categorización dinámica) y ataca un riesgo de negocio no antes catalogado: dos catálogos paralelos de "qué valores acepta Facebook Marketplace", con formatos incompatibles, sin ningún chequeo runtime que los reconcilie.
-
-```mermaid
-flowchart TB
-    subgraph "Catálogo A — histórico (VIN decode)"
-        NHTSA["NHTSA VIN decode<br/>(vehicle_router.py)"]
-        Normalizer["nhtsa_normalizer.py<br/>NHTSA_TO_FACEBOOK<br/>→ tokens inglés/minúscula<br/>('suv', 'gasoline', 'FWD')"]
-        VinField["VinDecodeField.tsx<br/>mapDecodedToForm()<br/>⚠️ ASUME valor decodificado<br/>== alguna option del schema"]
-        NHTSA --> Normalizer --> VinField
-    end
-
-    subgraph "Catálogo B — nuevo, editorial (schema editor)"
-        FBValues["facebook-values/index.ts<br/>(commits b0015223/c1c86138, esta semana)<br/>strings oficiales EN ESPAÑOL<br/>('SUV', 'Gasolina')"]
-        SchemaEditor["category-schema-editor.tsx<br/>botón 'Load from Facebook catalog'<br/>puebla attribute_schema.options"]
-        KeyMap["FACEBOOK_FIELD_KEY_MAP<br/>mapeo manual estático<br/>attribute_schema key → FacebookFieldKey"]
-        FBValues --> SchemaEditor
-        KeyMap --> SchemaEditor
-    end
-
-    VinField -.->|"⚠️ SIN validación runtime:<br/>valor inglés/minúscula puede no calzar<br/>con options en español recién cargadas"| SchemaEditor
-    SchemaEditor -.->|"Category.validate_attributes()<br/>valida options solo en el backend,<br/>solo AL GUARDAR — no en el momento<br/>del autocompletado por VIN"| Backend["Backend: Category domain entity"]
-
-    style VinField fill:#ffebee
-    style Backend fill:#fff3cd
-```
-
-**Hallazgos clave** (detalle completo en `code-quality-assessment.md`):
-
-- Ningún test ni chequeo runtime detecta la desalineación — es silenciosa hasta que un vendedor decodifica un VIN sobre un campo cuyas `options` fueron pobladas con el catálogo nuevo.
-- `CATEGORY_TRANSLATION_TABLE` (`category_translation.py`) tiene una sola entrada hardcodeada (`"vehiculos-y-transporte"`), sin test unitario dedicado — punto de extensión frágil si este intent expande categorías canónicas.
-- `IPublisherService`/`PublisherStrategySelector` (Ports & Adapters, diagrama del § Key Design Decisions "Publicación a Facebook con estrategia intercambiable") ya existe y está en producción — la pregunta real para Requirements/Functional Design es si necesita extenderse para absorber la reconciliación de catálogos, no diseñar el contrato de adapter desde cero.
-- `FACEBOOK_FIELD_KEY_MAP` es un mapeo manual estático sin validación cruzada — cualquier campo nuevo del schema requiere edición coordinada manual en dos archivos.
+`Product.image_urls` is the current catalog image source. Product-card rendering needs a single cover URL, while `GET /api/v1/products/{product_id}/image-urls` currently returns URLs for the full gallery. Upload processing generates a full-size WebP and public OG JPEG; no current response selects or exposes a private thumbnail for cards.
 
 ## Key Design Decisions
 
-- **Clean Architecture con Domain zero-deps** en el backend — permite testear reglas de negocio sin infraestructura y aísla el dominio de cambios en SQLAlchemy/FastAPI.
-- **Multi-tenant por `tenant_id` explícito** en cada agregado — decisión de aislamiento a nivel de fila, no de esquema/DB separada.
-- **BFF como capa de indirección obligatoria** — el navegador nunca habla directo con FastAPI; centraliza cookies httpOnly y auth, a costa de duplicar la superficie de rutas (31 archivos proxy) y de introducir el defecto conocido de `response.json()` ciego en los proxies dinámicos.
-- **Middleware en capas en ambos lados** — Next.js resuelve auth-redirect en `proxy.ts` antes de tocar una ruta BFF; FastAPI aplica auth/rbac/rate-limit antes de llegar al router — doble punto de enforcement, no uno solo.
-- **Zod-mirror 1:1** — cada DTO de backend tiene un esquema Zod equivalente en frontend, para no confiar en `as X` sin validar (regla zero-tolerance del proyecto).
-- **`packages/*` no implementado pese a estar documentado** — decisión implícita (o plan diferido) de no compartir tipos en build-time entre `apps/web` y `apps/api`; hoy el contrato se sincroniza a mano vía los esquemas Zod-mirror.
-- **`tests/e2e` como miembro de workspace independiente** (`@prosell/e2e`), no un simple directorio de specs — aislado de `apps/web`/`apps/api` en su propio `package.json`.
-- **`deriveRole.ts` como single source of truth de rol** — documentado inline; tanto `proxy.ts` (redirect a nivel middleware) como `authStore.ts` (estado de sesión en cliente) llaman la misma función, evitando que el rol derivado diverja entre el gate de rutas y la UI.
-- **Publicación a Facebook con estrategia intercambiable** (`PublisherStrategy`) — Graph API oficial como camino primario, Playwright (automatización de navegador) como estrategia alternativa cuando no hay credenciales Graph API. Es un patrón Strategy clásico aplicado a un puerto de dominio, no un motor de scraping multi-sitio.
-- **Tareas asíncronas vía Taskiq + Redis** en vez de llamadas síncronas a Facebook desde el request-response del router — publicar, republicar, borrar y actualizar un listado, y sincronizar leads/tokens, son todas tareas de background.
-- **OAuth como redirect de navegador completo, no fetch** — `window.location.href` hacia el endpoint de autorización del backend, necesario porque el flujo OAuth2 requiere que el navegador salga del origen de la SPA.
-- **Schema de test bootstrapeado desde ORM (`Base.metadata.create_all()`), no desde Alembic** — decisión deliberada y documentada en el propio `create_test_schema.py` para evitar que CI dependa de una cadena de migraciones con drift conocido (`20260601_recreate_facebook_tables.py` falla contra DB fresca). Trade-off: el schema de CI nunca tiene drift respecto a los modelos, pero tampoco valida que la cadena real de Alembic funcione contra una base nueva — ver `code-quality-assessment.md` para la discusión de si reparar esa cadena entra en el alcance de "arreglar seed data".
-- **Rewrite BFF tipo `fallback` (`next.config.ts`) + archivos de ruta mock coexistiendo con proxies reales** — decisión de arquitectura de test/desarrollo que tiene una consecuencia colateral no buscada: cuando un archivo de ruta mock (p. ej. `app/api/v1/teams/route.ts`) existe para un endpoint, siempre gana sobre el rewrite hacia el backend real, sin importar si el mock quedó desalineado del contrato real. Esto puede ocultar mismatches de contrato de wire indefinidamente (confirmado con `teamApi.create` — ver `code-quality-assessment.md` hallazgo #45) hasta que algo fuerza el camino real (staging, un flujo sin mock como `addMember`/`acceptInvitation`, o remover el mock).
-- **`OrganizationPicker`/`organizationStore.viewingOrgId` como único mecanismo cross-org de UI, hoy sin consumidores de datos** (nuevo, scan `260911-export-org-selector`) — decisión de diseño original (Subsystem D) de centralizar la selección de "ver como otra organización" en un estado global del `Header`, con doble guard (`isAdmin` en UI + no-op en el store si falta `ORG_ADMIN_VIEW_ALL`). Nunca se completó el lado de consumo: ningún hook de datos de la app lee `viewingOrgId` hoy. El export de catálogo es la primera funcionalidad candidata a conectarse a él (o a bifurcar hacia un selector local propio) — ver § Interaction Diagrams diagrama 14.
-- **Tres patrones de acceso cross-org coexistiendo sin unificar en `product_router.py`** (`_check_org_scope_permission()` + `organization_id`; `is_org_admin` inline single-resource; `has_role("super_admin")` literal en batch actions) — decisión implícita de crecimiento orgánico del router, no un diseño deliberado desde el inicio. El endpoint de export de catálogo (intent `260903-catalog-client-export`) quedó fuera de los tres, resolviendo `tenant_id` exclusivamente del JWT sin ningún camino cross-org — gap de scope confirmado, a resolver en el intent `260910-export-cross-org` eligiendo explícitamente uno de los tres patrones existentes en vez de inventar un cuarto. Ver § Interaction Diagrams diagrama 13.
-- **Omitir `organization_id` en el endpoint de export significa "mi propia organización", no "todas"** (nuevo, scan `260911-cross-org-export-ux`) — convención documentada explícitamente (docstring L763) y asimétrica respecto a `list_products`, donde omitirlo significa navegación GLOBAL para un admin. Decisión de scope deliberada del diseño original, no un descuido — cualquier sentinel nuevo "exportar todas las organizaciones" debe decidir su relación con esta asimetría ya existente en vez de copiar ciegamente la convención del endpoint hermano. Ver § Interaction Diagrams diagrama 15.
-- **La capa de repositorio ya soporta cross-tenant (`tenant_id=None`), pero el use case de export no** — decisión de diseño pendiente sobre cómo propagar esa capacidad ya existente (`ProductRepository.get_all()`/`count()`) a `ExportCatalogClientFormatUseCase`, que hoy resuelve `org_code` una sola vez por ejecución en vez de por producto. Ver § Interaction Diagrams diagrama 15.
-- **Dos catálogos de valores Facebook con propósitos distintos, nunca unificados** (nuevo, scan `260915-vehicle-catalog`) — `nhtsa_normalizer.py` (autocompletado por VIN, tokens inglés/minúscula) y `facebook-values/index.ts` (catálogo editorial para poblar `options` del schema, strings en español) fueron construidos en momentos distintos para necesidades distintas, sin que ninguna decisión explícita de arquitectura los reconciliara. La validación de `Category.validate_attributes()` corre solo al guardar en el backend, nunca en el momento del autocompletado — decisión implícita de diseño incremental, no deliberada. Ver § Interaction Diagrams diagrama 16.
+- Authentication and tenant-key validation are defense in depth, not redundant checks to remove during batching.
+- Browser-facing signed object URLs use `next/image` with `unoptimized`, because the Next server cannot reach the browser-facing MinIO host.
+- `do_cdn_endpoint` is configuration only today; no application path reads it and upload operations do not set object cache-control metadata.
 
 ## Improvement Opportunities
 
-- Cerrar la brecha `response.json()`-sin-content-type en los proxies dinámicos (`products`, `categories`, `organizations`, `vehicles`) antes de que un endpoint no-JSON (CSV, archivo) los rompa en producción.
-- Decidir formalmente el destino de `packages/*`: implementarlo o quitar el glob de `pnpm-workspace.yaml` — hoy es un glob de workspace sin cumplir.
-- Evaluar mover la validación de clases Tailwind a un linter real (p. ej. plugin ESLint de Tailwind) en vez de un grep de `validate-tailwind.sh` que no puede detectar clases de utilidad inválidas.
-- Remover o justificar formalmente las dependencias backend sin uso detectado en código fuente: `anthropic>=0.40.0` (cero imports) y `stripe>=11.0.0` (cero imports) — o documentar por qué se mantienen instaladas (integración planificada, no implementada).
-- Decidir el destino de `test_cleanup_router.py`: existe como archivo (480 líneas) pero no está importado/wireado en ningún punto del código (`main.py` ni ningún otro módulo) — dead code, no un endpoint expuesto. Ver `code-quality-assessment.md` para el detalle completo del hallazgo de seguridad relacionado (`test_router.py` sí está wireado pero gateado por entorno).
-- Decidir el destino de las 3 subcarpetas vacías de `use_cases/` (`dealer/`, `user_dealer/`, `vehicle/`) — scaffolding sin contenido, candidato a eliminación o a implementación real.
-- Actualizar `CLAUDE.md` para reflejar lo efectivamente implementado (publicación a Facebook, no scraping genérico; sin ML) en vez de la visión aspiracional original — ver `business-overview.md` § Corrección.
-- Corregir el drift de versión Tailwind en `CLAUDE.md` ("TailwindCSS 4" en la tabla de stack y en "Key Conventions" línea ~194) — el proyecto real usa `tailwindcss: 3.4.17`.
-- Reconciliar (o al menos validar en runtime) los dos catálogos de valores Facebook (`nhtsa_normalizer.py` vs. `facebook-values/index.ts`) antes de que un admin puebla `options` en español y un vendedor decodifique un VIN sobre ese mismo campo — hoy no hay ningún chequeo que detecte la desalineación antes de guardar (nuevo, scan `260915-vehicle-catalog`, ver § Interaction Diagrams diagrama 16).
-- Agregar un test unitario dedicado para `CATEGORY_TRANSLATION_TABLE`/`category_translation.py` — hoy solo se ejercita indirectamente vía `test_export_catalog_client_format.py`.
-- Revisar si `MIGRATE_VEHICLES_README.md` está obsoleta (referencia un `vehicle_model.py` correspondiente a una tabla `vehicles` ya eliminada en una migración de 2026-05) — no verificado con certeza en este pase.
-- Actualizar los 4 tests de `apps/api/tests/integration/database/test_seed_categories.py` y `test_seed_car_attributes.py` que buscan el slug `"suvs"` (nivel 3, eliminado el 6-ago por `2166f142`) para apuntar a `carros-y-camionetas` como la hoja real (nivel 2) — root-cause de mayor confianza de la falla actual de CI en `main` (ver `code-quality-assessment.md`).
-- Evaluar si reparar la cadena real de migraciones Alembic (el drift documentado en `20260601_recreate_facebook_tables.py`) entra en el alcance de este intent o queda como deuda separada — hoy CI nunca ejercita esa cadena contra una DB fresca porque `create_test_schema.py` la bypassa.
-- Revisar el patrón de fixture `shared_session`/dependency-override compartido en `test_fb_sync_router.py` y `bulk_upload/conftest.py` — es incompatible con cualquier handler que llame `db.commit()` explícitamente dentro del mismo test cuando se necesita más de una llamada al endpoint sobre la misma sesión.
-- Corregir el bug de diseño en `bulk_upload_vehicles.py` (scan `260830-ci-fixes-round2`): el chequeo de "unknown organization codes" corre antes del loop por fila que sí respeta un `organization_id` de fallback provisto por el caller — hoy lanza `ValueError` innecesariamente. Envolver `bulk_upload_preview`/`bulk_upload_with_images` en `try/except ValueError → HTTPException(400)` en `product_router.py`, igual que ya hacen `/brokers` y `/ownership`.
-- Levantar (o pedir excepción puntual para) la política de permisos local que bloquea Read/Bash sobre rutas con "credential" (`.claude/settings.local.json`) para poder cubrir `fb_credential_migration_router.py` a profundidad en un futuro scan — hoy solo se conoce su estructura vía graphify.
-- Migrar `onboarding/page.tsx` e `invite/[token]/page.tsx` de `useEffect` a React Query (`useQuery`/`useMutation`), preservando el shape tipado de `ApiError` para el branching de error de `invite/[token]/page.tsx` — al mismo tiempo, evaluar si conviene cerrar la brecha de `fetchWithAuth` en `orgApi.ts`/`teamApi.ts` (ninguno de los dos módulos la usa hoy, así que ambos flujos carecen silenciosamente de auto-refresh de sesión en 401) y consolidar la duplicación verbatim de `ApiError`/`handleResponse<T>()` entre ambos módulos. Ver `code-quality-assessment.md` para el detalle de riesgo.
-- Backfillear `published_to_marketplace` en los 8 mocks de `Product` desactualizados de `products.test.tsx` (7) y `reverseTransitions.test.tsx` (1 helper compartido) — fix mecánico sin ambigüedad de diseño, causa raíz confirmada por ejecución real de test (scan `260901-frontend-test-debt`). Evaluar en Requirements Analysis si `setProductCover.test.ts` (mismo síntoma probable, no nombrado en la descripción del intent) entra en el mismo alcance.
-- Alinear el nombre de campo `organization_id` (frontend, `teamApi.ts`/`teamApi.ts` schemas) con `org_id` (backend, `CreateTeamRequest`/`TeamResponse`) en AMBOS lados del contrato de `team` — request y response — no solo el lado nombrado en el intent original (scan `260902-teamapi-create-param`). Evaluar en Requirements Analysis si conviene además: (a) reparar `teamApi.update()` (probable 405 contra el mock, `[id]/route.ts` solo exporta `GET`), y (b) agregar un test de Layer 3 (schema-matching DTO↔TypeScript) para `team`, siguiendo el patrón ya documentado en `.skills/contract-testing/SKILL.md`, para que esta clase de bug no vuelva a pasar desapercibida.
-- Migrar los 36 call sites de `.passthrough()` (14 archivos) y los 4 de `z.nativeEnum()` (2 archivos) a `z.looseObject()`/`z.enum(EnumObject)`, decidiendo explícitamente el caso `UnifiedProductForm.tsx` (definición vs. use-site) antes de tocarlo (scan `260828-zod-3-to-4-migration`). Corregir además el bloque de excepción Zod 3 de `AGENTS.md` (líneas 124-139, que dice "hasta resolver issue #74" pese a que el issue está cerrado desde 2026-07-20 y su alcance nunca cubrió estos dos patrones) — la sección probablemente necesita eliminarse o acotarse explícitamente, no solo corregir la fecha/estado, porque GGA ya bloqueó un intento de migración parcial citando su frase de cierre demasiado genérica ("PASS any code using Zod 3 validator syntax"). Ver `code-quality-assessment.md` y `dependencies.md`.
-- Definir explícitamente en Requirements Analysis si el export de catálogo en formato cliente (24 columnas, `docs/data39.csv`) es un endpoint nuevo o una extensión de `GET /api/v1/products/export.csv` (hoy formato genérico `UNIVERSAL_COLUMNS_ORDERED`) — no son el mismo contrato de columnas, y decidirlo antes de tocar `csv_export.py`/`product_router.py` evita construir sobre el pipeline equivocado (scan `260903-catalog-client-export`).
-- Corregir el bug de `build_image_folder_name()` en `csv_export.py`: lee `attrs.get("color")` en vez de `attributes["exterior_color"]`, perdiendo silenciosamente el segmento COLOR del nombre de carpeta para todo vehículo real — fix mecánico y acotado, sin ambigüedad de diseño (scan `260903-catalog-client-export`).
-- Agregar un método de descarga (`get_object`/equivalente) a `IDOSpacesService` (hoy solo `upload`/`presign`/`delete`/`exists`), o resolver el ensamblado del ZIP de imágenes vía `httpx` contra las `image_urls` públicas ya guardadas en `Product` (sin dependencia nueva) — decisión de diseño explícita pendiente para Requirements Analysis/Functional Design (scan `260903-catalog-client-export`).
-- Extender `GET /api/v1/products/export-client-format.zip` para respetar `ORG_ADMIN_VIEW_ALL`/`super_admin`, replicando el patrón de `_check_org_scope_permission()` + parámetro `organization_id` ya usado por `list_products` (el más cercano en semántica), actualizar el docstring del endpoint que hoy afirma la restricción single-tenant como diseño intencional, y revisar `TestExportClientFormatTenantIsolation::test_other_organizations_products_never_appear` (hoy codifica el gap como comportamiento correcto) — decisión de diseño pendiente para Functional Design (scan `260910-export-cross-org`, ver § Interaction Diagrams diagrama 13). **Ya implementado** — confirmado en el intent `260910-export-cross-org` (backend), ver `code-quality-assessment.md` para el detalle de verificación en vivo.
-- Cablear la UI de `/catalog` al parámetro `organization_id` que el backend ya acepta desde `260910-export-cross-org` — elegir explícitamente entre reutilizar `organizationStore.viewingOrgId`/`OrganizationPicker` (opción a) o un selector local acotado al flujo de export (opción b), y hacer que `exportCatalogClientFormat()` mande el `organization_id` elegido. Decisión de diseño pendiente para Requirements Analysis/Functional Design del intent `260911-export-org-selector` (ver § Interaction Diagrams diagrama 14). **Ya implementado** — el export de un solo `viewingOrgId` ya está cableado; ver `260911-cross-org-export-ux` abajo para los gaps restantes (filtrado de grilla, "todas las organizaciones", listado por `product_count`).
-- Renombrar el label `"Todos los concesionarios"` → `"Todas las organizaciones"` en `OrganizationPicker.tsx` (2 ocurrencias, líneas 35 y 58) — fix mecánico, cero ambigüedad (scan `260911-cross-org-export-ux`).
-- Filtrar el listado del picker a solo organizaciones con `product_count > 0` — puramente client-side, el backend ya expone `product_count` en `GET /api/v1/admin/organizations` (scan `260911-cross-org-export-ux`, ver `dependencies.md`).
-- Agregar `organization_id` a `ProductFilters` y pasar `viewingOrgId` a `useInfiniteProducts()` en `catalog/page.tsx`, para que el picker realmente filtre la grilla mostrada — el backend (`list_products`) ya acepta y enforcea el parámetro; el gap es 100% frontend (scan `260911-cross-org-export-ux`).
-- Extender `ExportCatalogClientFormatUseCase` para soportar `tenant_id: UUID | None`, resolviendo `org_code` por producto (no una vez por ejecución) para habilitar el modo "todas las organizaciones" — la capa de repositorio ya soporta `tenant_id=None`; reconsiderar `EXPORT_MAX_PRODUCTS` como cap global en el mismo cambio (scan `260911-cross-org-export-ux`, ver diagrama 15).
-- Corregir el mapeo de columnas del CSV cliente (`build_client_format_row()`): renombrar claves puras (`VIN`→`vin`, `body_style`→`body_type`), agregar mapeo de VALOR inverso para `clean_title` (`"clean"→"1"`/`"rebuilt"→"0"`) y `groups` (`",".join()` sobre la lista), resolver `category`/`type` desde `category_id` (decidiendo qué nivel del árbol de 3-4 niveles corresponde a cada columna plana — Requirements Analysis), y decidir el tratamiento de `location`/`state` (lossy sin tabla de código→nombre completo) — scan `260911-cross-org-export-ux`, ver `code-quality-assessment.md` hallazgo #80-82.
+1. Add an authenticated batch cover-image contract that authorizes each product and signs only its selected cover derivative.
+2. Create and maintain a private catalog-thumbnail derivative independently of the public OG JPEG.
+3. Specify signed-URL TTL, object cache-control, invalidation, and CDN routing as an executable contract.
+4. Test cross-organization administrator access and legacy `attributes.image_urls` behavior at the new boundary.

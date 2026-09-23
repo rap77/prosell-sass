@@ -1,109 +1,33 @@
-# Dependencies — ProSell SaaS
+# Dependencies
 
-## Dependencias externas — backend (`apps/api`)
+## Internal Dependencies
 
-Ver `technology-stack.md` para el listado completo con versiones. Puntos relevantes de gestión de dependencias:
+```mermaid
+flowchart TD
+  CatalogPage --> ProductImageUrlsBatch
+  CatalogPage --> ProductCard
+  ProductImageUrlsBatch --> ProductImageSigningEndpoint
+  ProductImageSigningEndpoint --> IDOSpacesService
+  ImageUploadEndpoint --> IDOSpacesService
+  ImageUploadEndpoint --> ProductImage
+  IDOSpacesService --> ObjectStorage
+```
 
-- **`stripe>=11.0.0`** — declarada en `pyproject.toml`, **cero imports (`import stripe`/`from stripe`) en `apps/api/src`** verificados este pase. No hay evidencia de integración de cobro activa; el módulo `wallet` (`wallet_router.py`, entidad `wallet.py`) parece operar como libro de saldo interno, no como flujo conectado a un proveedor de pagos externo.
-- **`anthropic>=0.40.0`** — declarada en `pyproject.toml`, **cero imports (`import anthropic`) en `apps/api/src`** verificados este pase. Sin evidencia de pipeline de IA/ML activo — consistente con la ausencia total de código de scraping genérico o predicción de precio (ver `business-overview.md` § Corrección respecto a `CLAUDE.md`).
-- Ambas son candidatas a remover del `pyproject.toml` si no hay plan concreto de uso, o a documentar explícitamente como "reservadas para funcionalidad futura" si el equipo confirma la intención.
-- **`facebook-sdk>=3.1.0`** + **`playwright>=1.42.0`** — SÍ tienen uso real confirmado: `facebook_graph_api_client.py`, `graph_api_publisher.py`, `playwright_publisher.py`.
-- **`boto3>=1.35.0`** — uso confirmado en `do_spaces_service.py` (almacenamiento DigitalOcean Spaces, API compatible con S3).
+- `CatalogPage` supplies visible product IDs to `ProductImageUrlsBatch` and renders `ProductCard`.
+- `ProductImageUrlsBatch` reaches the product image-signing API through the BFF/API client.
+- `ProductImageSigningEndpoint` relies on the authenticated user, product access rules, tenant-key validation, and `IDOSpacesService`.
+- `ImageUploadEndpoint` persists derivatives through the same storage integration.
 
-## Dependencias externas — frontend (`apps/web`)
+## External Dependencies
 
-- **Zod (`^4.4.0`)**: paquete instalado en versión 4 desde el commit `d1af1858`/`6042236b` (2026-07-20), pero el código de `apps/web/src/lib/api/schemas/` (17 archivos) sigue escrito en estilo Zod 3 — **36 call sites de `.passthrough()` en 14 archivos**, **4 de `z.nativeEnum()` en 2 archivos** (`leads.ts`, `appointments.ts`), recuento exacto confirmado por el scan enfocado del intent `260828-zod-3-to-4-migration` (corrige la estimación previa de "~41 call sites / 11 archivos" registrada en `project.md`, que subcontaba).
-  - **Corrección de framing — issue #74 CERRADO, no bloqueante**: `AGENTS.md` (líneas 124-139) documenta la regla "usar Zod 3 hasta resolver issue #74" — este framing es **factualmente incorrecto hoy**. Confirmado vía `gh issue view 74 --json state,closedAt,body,comments`: el issue está **CLOSED** desde 2026-07-20T23:20:24Z (labels `enhancement, tech-debt, frontend`), con comentario de cierre "✅ Zod 3 → 4 migration complete. 19 files updated... Commit: ad74ac33". Además, el alcance propio del issue #74 (según su propia tabla "Files to Update") **nunca incluyó** `.passthrough()` ni `z.nativeEnum()` — solo cubría `.string().email()`, `.min(n, "msg")` y `z.coerce.*` (ya migrados al 100%, 0 ocurrencias remanentes del patrón antiguo, 48 usos del patrón `{ error: ... }`). Es decir: la limpieza de `.passthrough()`/`z.nativeEnum()` de este intent es alcance **genuinamente nuevo**, no la finalización de #74 — el texto de `AGENTS.md` necesita corrección (probablemente eliminar o acotar explícitamente la sección, no solo actualizar la fecha/estado), porque GGA ya bloqueó un intento de migración parcial (`extractErrorMessage.ts`/`appointments.ts`) citando la frase de cierre de esa misma sección ("PASS any code using Zod 3 validator syntax. DO NOT flag as 'Zod 4 Rule' violation") de forma sobre-generalizada más allá del ejemplo estrecho que la regla realmente documenta.
-  - **Hallazgo estructural**: `UnifiedProductForm.tsx:483` invoca `.passthrough()` en el use-site sobre `FIXED_FIELDS_SCHEMA` (definido línea 99), que también se usa en modo estricto vía `.merge(attrSchema)` en la línea 290 del mismo archivo — migrar la definición a `z.looseObject()` cambiaría comportamiento en ambos puntos; requiere decisión explícita en Code Generation, no un find/replace ciego.
-  - **Deuda adyacente señalada, no pedida por este intent**: `apps/web/src/lib/zod-resolver.ts` (shim `zodResolver` custom, creado en la migración de #74, nunca importado — código muerto) y `apps/web/src/app/(seller)/settings/profile/page.tsx:28` (`.string().email({ message: ... })`, mismo drift de familia que #74 pero fuera de su tabla de alcance).
-- **TanStack Query (`^5.0.0`)**: usado en la mayoría de la app para data-fetching; el área de navegación auth es una excepción confirmada — usa Zustand (`authStore.ts` con `persist`) en su lugar, no TanStack Query.
-- **TailwindCSS (`3.4.17` exacto)**: pin de versión mayor 3, no 4 — ver drift de documentación en `technology-stack.md`.
+- **PostgreSQL:** product, tenant, and image metadata persistence.
+- **Redis/Taskiq:** asynchronous task infrastructure used by the application.
+- **MinIO / DigitalOcean Spaces:** object storage and presigned URL capability.
+- **DigitalOcean CDN endpoint:** configuration exists but is not wired into the active code path.
+- **Facebook integrations:** Graph API and Playwright publishing adapters; they are outside the catalog-card image request path.
 
-## Servicios externos consumidos (integraciones runtime)
+## Dependency Risks
 
-| Servicio                       | Propósito                                                         | Módulo(s) backend                                                                                 |
-| ------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Facebook Graph API             | Publicación oficial de listados, OAuth de cuentas Facebook        | `facebook_graph_api_client.py`, `facebook_marketplace_oauth_service.py`, `graph_api_publisher.py` |
-| Facebook Marketplace (browser) | Publicación vía automatización de navegador (estrategia fallback) | `playwright_publisher.py`                                                                         |
-| NHTSA (VIN decoder)            | Decodificación de VIN para la vertical vehículos                  | `nhtsa_vin_service.py`, `nhtsa_normalizer.py`                                                     |
-| fueleconomy.gov                | Datos de eficiencia de combustible                                | `fueleconomy_service.py`                                                                          |
-| DigitalOcean Spaces            | Almacenamiento de imágenes (API compatible S3, vía boto3)         | `do_spaces_service.py`                                                                            |
-| Resend                         | Envío de email transaccional                                      | `services/email/{message,renderer,retry,sender,service}.py`                                       |
-| PostgreSQL 17                  | Persistencia principal                                            | SQLAlchemy 2.0 async, Alembic                                                                     |
-| Redis 7.4+                     | Cache + broker de tareas asíncronas                               | `redis_service.py`, Taskiq                                                                        |
-| Stripe                         | **Declarado, sin integración activa confirmada**                  | —                                                                                                 |
-| Anthropic (Claude API)         | **Declarado, sin integración activa confirmada**                  | —                                                                                                 |
-
-## Dependencia interna — CI `test-python` → `create_test_schema.py` → modelos ORM (NO Alembic)
-
-Nuevo hallazgo del scan enfocado `260830-ci-seed-data`: el job `test-python` de `.github/workflows/ci.yml` (y el pre-push hook local, vía `sync-test-db.sh`) dependen de `apps/api/scripts/create_test_schema.py`, que a su vez depende directamente de `Base.metadata` (`infrastructure/database/base.py`) y de **todos los modelos SQLAlchemy registrados en ese metadata** — no de la cadena de migraciones de `alembic/versions/` (71 migraciones). Esta es una dependencia interna deliberada, no accidental (ver `architecture.md` para el porqué), pero tiene una consecuencia de acoplamiento concreta: **la cadena real de Alembic nunca se ejercita en CI**, así que un drift o rotura en esa cadena (ya documentado en `20260601_recreate_facebook_tables.py`) no se detecta por la suite de tests — solo se descubriría en un deploy real o una reconstrucción manual de DB. Cualquier cambio a un modelo SQLAlemy se refleja automáticamente en el schema de test (sin necesidad de generar una migración nueva para que CI pase), lo cual reduce fricción de desarrollo pero también reduce la señal de que "los tests pasan" implique "la migración real funciona".
-
-## Dependencias internas nuevas — scan enfocado `260830-ci-fixes-round2`
-
-- **`test_batch_review_api.py` → `product_repository_impl.py` → `product_router.py`**: la cadena de test de batch review pasa por el repositorio concreto de producto antes de llegar al router; el fix de FK (agregar `test_category`) debe respetar esta cadena.
-- **`bulk_upload_vehicles.py` → `csv_field_mapper.py`, `csv_image_mapper.py`, `organization_repository.py`**: el use case de bulk upload depende del mapper de CSV (que a su vez decide el fallback `cod_organization ← title`), del mapper de imágenes, y del repositorio de organización para resolver el código a un `Organization` real.
-- **`fb_sync_router.py` → `fb_unpublish_request_model.py`, `fb_account_model.py`, `marketplace_publication_model.py`**: el handler `unpublish_callback` toca tres modelos SQLAlchemy — el propio request de unpublish (cuya columna `status` tiene el `server_default="queued"` del que depende la rama `"failed"`), la cuenta de Facebook activa (`_get_active_fb_account`), y la publicación de marketplace asociada.
-
-## Dependencias internas — cruce entre paquetes del monorepo
-
-- **`apps/web` → `apps/api`**: exclusivamente vía HTTP en runtime, a través de las 31 rutas BFF (`app/api/{auth,v1}/**/route.ts`) y del redirect directo de navegador para OAuth. **Sin dependencia de build-time**.
-- **`apps/api`**: sin dependencia de ningún otro paquete del monorepo — es el único consumidor real de la base de datos y de los servicios externos.
-- **`packages/*`**: declarado en `pnpm-workspace.yaml` (glob `packages/*`) pero **el directorio no existe físicamente** — glob de workspace sin cumplir, cero paquetes compartidos reales. El contrato de tipos entre frontend y backend se sincroniza hoy a mano vía los esquemas Zod-mirror (`apps/web/src/lib/api/schemas/`), no vía un paquete compartido en build-time.
-- **`tests/e2e` (`@prosell/e2e`)**: miembro de workspace independiente con su propio `package.json`, consume ambos `apps/web` y `apps/api` solo como stack levantado en runtime (Playwright contra URLs reales), sin dependencia de código en build-time.
-- **`apps/app`**: micro-app huérfana de un solo archivo (`privacy/page.tsx`), sin `package.json` propio, no participa del grafo de build activo del workspace pnpm.
-
-## Dependencias internas nuevas — scan enfocado `260828-useeffect-to-react-query` (onboarding / invite)
-
-- **`orgApi.ts` ↔ `teamApi.ts`**: duplicación verbatim de la clase `ApiError` y de `handleResponse<T>()` entre ambos módulos — no es una dependencia formal (cada uno tiene su propia copia), pero es el punto natural de consolidación si se crea un archivo de hooks/utilidades compartido para envolver ambos en React Query.
-- **`onboarding/page.tsx` → `orgApi.ts`**, **`invite/[token]/page.tsx` → `teamApi.ts`**: ninguno de los dos flujos pasa por `fetchWithAuth.ts` — a diferencia de `notificationsApi.ts`/`leads.ts`/`useInferCategory.ts`, que sí lo usan. Consecuencia: ambos flujos carecen hoy de auto-refresh de sesión en 401 (silencioso, no reportado como incidente pero sí como riesgo latente); envolver en React Query sin resolver esto preserva el gap tal cual.
-- **`invite/[token]/page.tsx` → `ApiError` (tipo)**: dependencia de comportamiento no obvia — el branching de error de la página (`error.message.toLowerCase().includes(...)`, `error.status === 401`) depende de que el error lanzado conserve `status`/`message` reales del backend. Cualquier envoltura futura en `useMutation` que sustituya `ApiError` por un `Error` genérico (como hace `notificationsApi.ts`) rompería este branching.
-
-## Dependencia interna — mocks de test frontend acoplados al contrato `productSchema` (scan enfocado `260901-frontend-test-debt`)
-
-`products.test.tsx` y `reverseTransitions.test.tsx` construyen objetos `Product` mock a mano (sin factory compartida) que deben mantenerse sincronizados con `productSchema` (`apps/web/src/lib/api/products.ts`), que a su vez espeja `ProductModel` (backend). Cuando el commit `7315fdf2` endureció `published_to_marketplace` de opcional a requerido, arregló el archivo hermano `products.test.ts` pero no estos dos — no hay ningún mecanismo (factory, fixture compartida, contract test) que fuerce a los tests a seguir el schema automáticamente; cada archivo de test mantiene su propia copia del shape de `Product`. Ningún cambio de dependencia nueva — es acoplamiento interno ya existente, sin paquete de por medio.
-
-## Dependencia interna — `teamApi.ts` ↔ `CreateTeamRequest`/`TeamResponse` (contrato de wire, mismatch confirmado, scan enfocado `260902-teamapi-create-param`)
-
-`apps/web/src/lib/api/teamApi.ts` y `apps/web/src/lib/api/schemas/teamApi.ts` dependen implícitamente de mantener el nombre de campo `organization_id`/`org_id` sincronizado con `apps/api/src/prosell/application/dto/team/{create,response}.py` — no hay ningún mecanismo (contract test real, tipo compartido, `packages/*`) que lo fuerce. La dependencia se rompió en ambos sentidos (request y response) sin que ningún test lo detectara, porque `apps/web/src/app/api/v1/teams/route.ts` (mock BFF in-memory) intercepta la petición antes de que llegue al backend real — ver `architecture.md` § Interaction Diagrams (diagrama 11) y `api-documentation.md` para el contrato completo. Es el mismo patrón de fondo que la falta de "Layer 3" (schema-matching DTO↔TypeScript) que `.skills/contract-testing/SKILL.md` ya describe pero no implementa para `team`.
-
-## Dependencia interna — `IDOSpacesService` sin método de lectura de bytes, requerido para el ZIP de imágenes (scan enfocado `260903-catalog-client-export`)
-
-`apps/api/src/prosell/application/ports/ido_spaces.py` declara únicamente `upload`/`presign`/`delete`/`exists` — ningún método para leer/descargar bytes de un objeto ya almacenado (equivalente a S3 `get_object`). Ensamblar el ZIP de imágenes por vehículo que el intent pide requiere una de dos vías: (a) agregar un método de descarga al puerto y su implementación en `do_spaces_service.py` (boto3, ya instalado), o (b) consumir las `image_urls` públicas ya guardadas en `Product` vía `httpx` (ya declarado en `pyproject.toml`, sin dependencia nueva). Ninguna de las dos vías requiere agregar un paquete al proyecto — es una decisión de diseño de puerto/adaptador, no de dependencia externa. Ver `architecture.md` § Interaction Diagrams (diagrama 12) y `code-quality-assessment.md` para el detalle completo.
-
-## Dependencia interna — export de catálogo (genérico) vs. formato cliente de import, mismo dominio de datos pero contratos distintos (scan enfocado `260903-catalog-client-export`)
-
-`csv_export.py` (export genérico existente) y `csv_field_mapper.py`/`csv_product_parser.py` (import cliente) dependen ambos del mismo `Product`/`Organization`, pero producen/consumen esquemas de columnas distintos (`UNIVERSAL_COLUMNS_ORDERED` + `attribute_schema` dinámico vs. las 24 columnas fijas de `docs/data39.csv`). No hay hoy ningún mecanismo que derive un formato del otro — construir el export en formato cliente implica escribir un mapeo nuevo (o extender `csv_export.py`), no reutilizar el pipeline genérico tal cual. `build_image_folder_name()` (`csv_export.py`) depende de `Product.attributes` y de `Organization.code`; su bug confirmado (lee `attrs.get("color")` en vez de `attributes["exterior_color"]`) es una dependencia de campo incorrecta, no un problema de acoplamiento entre módulos.
-
-## Dependencia interna — flujo de export de catálogo (UI) depende del selector cross-org existente, hoy sin conectar (scan enfocado `260911-export-org-selector`)
-
-`apps/web/src/app/(seller)/catalog/page.tsx` (vía `exportCatalogClientFormat()`, `apps/web/src/lib/api/products.ts:1541`) no depende hoy de `organizationStore.ts`/`useAuth.ts`/`OrganizationPicker.tsx` — ninguno de los tres está importado en `catalog/page.tsx`. Establecer esa dependencia (opción a: leer `viewingOrgId` del store global ya poblado por `OrganizationPicker`; opción b: instanciar un selector local propio que consuma directamente `useOrganizations()`) es exactamente el alcance del intent `260911-export-org-selector` — no hay dependencia externa nueva involucrada, ambas opciones reutilizan piezas de frontend ya existentes (`useOrganizations()` → `GET /api/v1/admin/organizations`, ya gateado por `ORG_ADMIN_VIEW_ALL` server-side). La dependencia de backend (`export-client-format.zip` ← `organization_id`) ya está resuelta desde el intent `260910-export-cross-org` (ver sección siguiente) — lo que falta es exclusivamente la dependencia del lado del cliente.
-
-## Dependencia interna — endpoint de export de catálogo depende del modelo de permisos cross-org, hoy sin conectar (scan enfocado `260910-export-cross-org`)
-
-`export-client-format.zip` (`product_router.py`) depende implícitamente de `current_user.tenant_id` únicamente — no depende hoy de `role.py`/`user.py::has_permission()`/`_check_org_scope_permission()`, a diferencia de `list_products`/`get_category_filter_values`/`get_featured_products`, que sí lo hacen. Conectar el endpoint de export al modelo de permisos cross-org existente (no agregar uno nuevo) es exactamente el alcance del intent `260910-export-cross-org` — no hay dependencia externa nueva involucrada, es una dependencia interna a establecer entre módulos que ya existen (`product_router.py` → `_check_org_scope_permission()`, ya usado por endpoints hermanos del mismo archivo). `ExportCatalogClientFormatUseCase` no depende de este chequeo — recibe `tenant_id` ya resuelto, así que la nueva dependencia se establece enteramente en la capa de router, no en application/domain.
-
-## Dependencia interna — filtrado del picker/grilla depende de datos ya traídos, sin dependencia nueva (scan enfocado `260911-cross-org-export-ux`)
-
-Filtrar el `OrganizationPicker` a solo organizaciones con productos depende únicamente de un campo (`product_count`) que `OrganizationSchema` (`apps/web/src/lib/api/schemas/organizations.ts:42,79`) YA tipa y que `GET /api/v1/admin/organizations` YA devuelve — cero dependencia nueva, cero cambio de contrato de red, solo un `.filter()` sobre datos ya en memoria del cliente. De forma simétrica, conectar `viewingOrgId` a la grilla de `/catalog` depende de agregar `organization_id` al tipo `ProductFilters` (`apps/web/src/lib/api/products.ts:1170-1185`) — el backend (`list_products`) ya acepta y enforcea ese parámetro, así que la dependencia nueva es puramente interna al frontend (un campo de tipo + un valor pasado), no una dependencia de red nueva.
-
-## Dependencia interna — export "todas las organizaciones" depende de capacidad de repositorio ya existente, no expuesta por el use case (scan enfocado `260911-cross-org-export-ux`)
-
-`ExportCatalogClientFormatUseCase` depende hoy de un `tenant_id: UUID` singular resuelto por el router; `ProductRepository.get_all()`/`count()` ya soportan `tenant_id: UUID | None` para levantar el aislamiento multi-tenant (patrón ya usado en otro punto del código, `list_products`). Establecer esa dependencia (que el use case pase `tenant_id=None` cuando corresponda) es el cambio central para soportar "todas las organizaciones" — sin agregar ninguna dependencia externa ni cambiar la capa de repositorio. La dependencia adicional real es la resolución de `org_code` **por producto** (cada `Product` ya trae su propio `organization_id`, resoluble sin query nueva), reemplazando la resolución única de hoy.
-
-## Dependencia interna — mapeo de columnas CSV cliente depende del mapeo inverso ya implementado en el import (scan enfocado `260911-cross-org-export-ux`)
-
-El export de `clean_title`/`groups`/`category`/`type`/`location` depende de invertir transformaciones que `csv_field_mapper.py` ya implementa para el import (`title_status` ↔ `"0"`/`"1"`, `facebook_groups` ↔ string separado por comas, `parse_location()` ↔ `location_city`/`location_state`). No es una dependencia de paquete nueva — es una dependencia funcional entre el pipeline de export (`csv_export.py`) y la lógica de conversión ya existente del pipeline de import, hoy no reutilizada del lado del export. `category`/`type` dependen además de `CategoryRepository.get_by_id_cross_tenant()` (`category_repository_impl.py:120-129`, ya existe, sin query nueva) para resolver `category_id` → nodo del árbol de categorías.
-
-## Dependencia interna — catálogo editorial de valores Facebook depende implícitamente del mismo campo (`attribute_schema.options`) que consume la normalización de VIN decode, sin coordinación (scan enfocado `260915-vehicle-catalog`)
-
-`category-schema-editor.tsx` (catálogo B, `facebook-values/index.ts`, español) y `VinDecodeField.tsx` (catálogo A, `nhtsa_normalizer.py`, inglés/minúscula) escriben y leen respectivamente el mismo campo de dominio, `Category.attribute_schema.options`, sin ninguna dependencia declarada entre ambos módulos ni un contrato compartido que fuerce compatibilidad de formato. No es una dependencia de paquete — ambos catálogos son código propio, sin librería externa involucrada — sino una dependencia de DATOS implícita y no enforced: cambiar el formato de uno sin el otro no rompe ningún build ni test, porque ningún test cruza los dos catálogos (`test_nhtsa_normalizer.py` y `facebook-values/index.test.ts` fijan cada uno su propio contenido en aislamiento). `Category.validate_attributes()` es el único punto del código que podría reconciliarlos, pero corre solo al guardar en el backend, después de que la desalineación ya se manifestó en el formulario.
-
-## Dependencia interna — `IPublisherService`/`PublisherStrategySelector` ya existe como punto de extensión candidato (scan enfocado `260915-vehicle-catalog`)
-
-El puerto de publicación a Facebook (`domain/ports/i_publisher_service.py`, implementaciones `playwright_publisher.py`/`graph_api_publisher.py`/`null_graph_api_publisher.py` seleccionadas por `publisher_strategy.py` según `settings.publisher_engine`) ya existe y está en producción, desacoplado del problema de catálogos de valores de este scan. Se documenta acá como dependencia POTENCIAL, no confirmada: si Requirements/Functional Design deciden que la reconciliación de catálogos debe aplicarse en el momento de publicar (no en el momento de decodificar el VIN), este puerto ya existente sería el punto de extensión natural — evita la necesidad de diseñar un contrato de adapter nuevo desde cero.
-
-## Dependencias de infraestructura de calidad (dev-time)
-
-- **GGA (Gentleman Guardian Angel)** — revisor de código con IA, proveedor `codex`, bloqueante en pre-commit, primero en el orden de hooks. Explícitamente NO es un SAST (no detecta injection/XSS/SSRF/deserialización insegura de forma determinística) — ver `code-quality-assessment.md`.
-- **react-doctor** — auditoría de arquitectura/lint frontend, bloqueante en pre-commit (`--staged --blocking warning`), advisory-only en CI (`react-doctor.yml`).
-- **Dependabot** — cobertura exclusiva del ecosistema `github-actions`; sin CVE scanning de dependencias npm (`apps/web`) ni Python/uv (`apps/api`).
+- The browser can access signed MinIO URLs while the Next server cannot, which forces the current `unoptimized` image behavior.
+- A CDN migration must not bypass backend authorization for private originals.
+- Public OG objects have a different exposure model than private catalog objects and cannot be silently reused as thumbnails.

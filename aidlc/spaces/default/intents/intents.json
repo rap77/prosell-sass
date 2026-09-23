@@ -124,5 +124,12 @@
     "dirName": "260915-vehicle-catalog",
     "scope": "feature",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0bfff-2ee6-7a41-be74-0e9502e6d6ef",
+    "slug": "catalog-image-performanc",
+    "dirName": "260920-catalog-image-performanc",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
