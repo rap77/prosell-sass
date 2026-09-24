@@ -119,6 +119,33 @@ class IDOSpacesService(ABC):
         pass
 
     @abstractmethod
+    async def generate_cdn_download_url(self, key: str, expires_in: int | None = None) -> str:
+        """
+        Generate a presigned URL against the CDN endpoint.
+
+        Used for the catalog-grid cover-thumbnail flow (FR3.1, FR5.1):
+        the browser fetches the thumbnail from the configured CDN, the
+        CDN caches the response and proxies the first request to the
+        origin. The signature is host-bound — signing against a host
+        the browser will NOT use yields an invalid signature, so we
+        sign against the CDN host explicitly.
+
+        Args:
+            key: Storage key (e.g., "orgs/{org_id}/products/{uuid}-thumb.webp")
+            expires_in: Seconds until URL expires. Defaults to the
+                implementation's default (15 minutes, per OQ2).
+
+        Returns:
+            Presigned URL valid for downloading the file from the CDN.
+
+        Raises:
+            StorageUploadError: If the CDN endpoint is not configured
+                (NFR5.1 fail-fast — the CDN signer cannot be created
+                without a CDN host).
+        """
+        pass
+
+    @abstractmethod
     async def get_object(self, key: str) -> bytes:
         """
         Read a file's raw bytes from Spaces.

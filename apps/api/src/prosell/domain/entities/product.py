@@ -53,6 +53,13 @@ class Product(DomainModel):
     # `image_urls`; the DTO layer enforces this invariant. Nullable: a
     # product with no images has no cover.
     cover_image_key: str | None = None
+    # Storage key of the private 600x600 thumbnail derivative (image-router
+    # pipeline). Independent from `cover_image_key` (which stays as the
+    # gallery-cover selection): the thumbnail is a separate first-class
+    # field so the catalog grid can fetch a small signed URL without
+    # signing the whole gallery. Nullable: legacy products without a
+    # generated thumbnail fall back to `image_urls[0]` at read time.
+    thumbnail_image_key: str | None = None
 
     # Subsystem D: cross-organization marketplace visibility. Set
     # automatically by approve() (and cleared by reverse_publication()) —
@@ -110,6 +117,7 @@ class Product(DomainModel):
         attributes: dict[str, object] | None = None,
         image_urls: list[str] | None = None,
         cover_image_key: str | None = None,
+        thumbnail_image_key: str | None = None,
         location_city: str | None = None,
         location_state: str | None = None,
         location_zip: str | None = None,
@@ -155,6 +163,7 @@ class Product(DomainModel):
             attributes=attributes if attributes is not None else {},
             image_urls=image_urls if image_urls is not None else [],
             cover_image_key=cover_image_key,
+            thumbnail_image_key=thumbnail_image_key,
             location_city=location_city,
             location_state=location_state,
             location_zip=location_zip,

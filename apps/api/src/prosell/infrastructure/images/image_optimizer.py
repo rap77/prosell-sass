@@ -28,7 +28,7 @@ class ImageOptimizer(IImagePipeline):
         jpeg_quality: int = 85,
         output_format: str = "JPEG",
         webp_quality: int = 82,
-    ):
+    ) -> None:
         """
         Initialize ImageOptimizer with configuration.
 
@@ -117,4 +117,36 @@ class ImageOptimizer(IImagePipeline):
 
         buffer = BytesIO()
         img.save(buffer, format="JPEG", quality=85, optimize=True)
+        return buffer.getvalue()
+
+    async def process_thumbnail(self, image_bytes: bytes) -> bytes:
+        """Generate the private 600x600 thumbnail derivative.
+
+        Center-crop to a square (1:1 aspect ratio) so the catalog card
+        gets a clean square surface regardless of the original aspect,
+        then resize to exactly 600x600 pixels and encode as WebP. The
+        derivative is intended for the catalog-card surface — small
+        enough to fetch fast over a signed URL, large enough to look
+        sharp on retina.
+
+        The full-size `process()` and OG `process_og()` outputs are
+        untouched: this method is additive and produces an independent
+        byte stream uploaded as a private object (no `make_public`).
+        """
+        img = self._prepare_image(image_bytes)
+        width, height = img.size
+
+        # Center-crop to a square. Take the shorter side as the crop
+        # size and align it to the center of the longer side so the
+        # focal point of the photo is preserved.
+        crop_size = min(width, height)
+        left = (width - crop_size) // 2
+        top = (height - crop_size) // 2
+        img = img.crop((left, top, left + crop_size, top + crop_size))
+
+        # Resize to exactly 600x600.
+        img = img.resize((600, 600), self.RESAMPLING)
+
+        buffer = BytesIO()
+        img.save(buffer, format="WEBP", quality=self.webp_quality, method=6)
         return buffer.getvalue()

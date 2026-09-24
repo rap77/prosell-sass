@@ -28,7 +28,16 @@ class ImageUploadResponse(BaseModel):
     `product.image_urls`). The `url` is a presigned URL that expires in
     1 hour and MUST NOT be stored — it is provided only for the browser
     to preview the just-uploaded object during the current session.
+
+    `thumbnail_key` follows the same rule: persist it into
+    `product.thumbnail_image_key` if this image is being associated
+    with a product. The thumbnail derivative is a private 600x600
+    WebP object (no public-read ACL); the catalog grid signs it on
+    demand. `thumbnail_url` is a 1h presigned URL intended only for
+    immediate preview, never for persistence.
     """
 
     url: str  # Presigned URL of the optimized image (1h expiry, do not persist)
     key: str  # Raw storage path; persist this into product.image_urls
+    thumbnail_url: str | None = None  # Presigned URL of the 600x600 thumbnail (do not persist)
+    thumbnail_key: str | None = None  # Storage path; persist into product.thumbnail_image_key

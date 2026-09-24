@@ -46,6 +46,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             attributes=product.attributes,
             image_urls=product.image_urls,
             cover_image_key=product.cover_image_key,
+            thumbnail_image_key=product.thumbnail_image_key,
             location_city=product.location_city,
             location_state=product.location_state,
             location_zip=product.location_zip,
@@ -343,6 +344,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.organization_id = product.organization_id
         model.image_urls = product.image_urls
         model.cover_image_key = product.cover_image_key
+        model.thumbnail_image_key = product.thumbnail_image_key
         model.location_city = product.location_city
         model.location_state = product.location_state
         model.location_zip = product.location_zip

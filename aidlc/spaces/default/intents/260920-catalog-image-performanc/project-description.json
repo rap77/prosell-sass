@@ -1,0 +1,1 @@
+"Optimizar la carga de imágenes del catálogo: eliminar el fan-out N+1 de URLs firmadas para tarjetas, servir miniaturas adecuadas y validar el comportamiento de caché/CDN sin debilitar la privacidad del bucket."

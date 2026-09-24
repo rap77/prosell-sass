@@ -69,6 +69,12 @@ class ProductModel(Base):
         nullable=True,
     )
     cover_image_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Private 600x600 thumbnail derivative key (catalog-card surface).
+    # Independent from `cover_image_key`: the gallery-cover selection and
+    # the catalog-card thumbnail are different concerns. Nullable: legacy
+    # products without a generated thumbnail fall back to the first gallery
+    # entry at read time. See migration adding this column.
+    thumbnail_image_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Location
     location_city: Mapped[str | None] = mapped_column(String(100), nullable=True)

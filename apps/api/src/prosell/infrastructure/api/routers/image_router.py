@@ -39,6 +39,49 @@ _IMAGE_EXTENSIONS = {
     "image/jpg": ".jpg",
 }
 
+MAX_UPLOAD_SIZE_BYTES = 10_000_000  # 10MB — same cap as the presigned upload flow
+
+
+async def _validate_image_upload(file: UploadFile) -> bytes:
+    """Validate content-type against the image allowlist and the 10MB size
+    cap (same limits as the presigned upload flow), then return the bytes.
+
+    Rejects `image/*` types outside `_IMAGE_EXTENSIONS` (e.g. `image/svg+xml`,
+    which Pillow does not rasterize and which carries its own XML-based risks)
+    instead of trusting the browser-supplied MIME type at face value.
+
+    Raises:
+        HTTPException: 400 if the type isn't allowlisted, the file is
+            empty, or it exceeds MAX_UPLOAD_SIZE_BYTES.
+    """
+    if file.content_type not in _IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported image type: {file.content_type}",
+        )
+
+    if file.size is not None and file.size > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File exceeds maximum size of {MAX_UPLOAD_SIZE_BYTES} bytes",
+        )
+
+    file_bytes = await file.read()
+
+    if not file_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is empty",
+        )
+
+    if len(file_bytes) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File exceeds maximum size of {MAX_UPLOAD_SIZE_BYTES} bytes",
+        )
+
+    return file_bytes
+
 
 class ImageStatusResponse(BaseModel):
     """Response for image upload processing state."""
@@ -114,9 +157,15 @@ async def generate_image_upload_url(
             detail="User does not have an associated organization",
         )
 
-    file_id = str(uuid4())
     content_type = request.content_type or "image/jpeg"
-    ext = _IMAGE_EXTENSIONS.get(content_type, ".jpg")
+    if content_type not in _IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported image type: {content_type}",
+        )
+
+    file_id = str(uuid4())
+    ext = _IMAGE_EXTENSIONS[content_type]
 
     file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
 
@@ -155,6 +204,12 @@ async def get_image_status(
     without server-side processing. Returns "complete" if file exists,
     "pending" if not yet uploaded.
     """
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     for ext in _IMAGE_EXTENSIONS.values():
         key = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
         if await spaces.check_file_exists(key):
@@ -190,7 +245,18 @@ async def get_storage_optimizer() -> ImageOptimizer:
     return ImageOptimizer(output_format="WEBP")
 
 
-@router.post("/optimize", status_code=status.HTTP_200_OK, response_class=Response)
+@router.post(
+    "/optimize",
+    status_code=status.HTTP_200_OK,
+    response_class=Response,
+    response_model=None,
+    responses={
+        status.HTTP_200_OK: {
+            "content": {"image/jpeg": {}},
+            "description": "Optimized image bytes (JPEG)",
+        },
+    },
+)
 async def optimize_image(
     file: Annotated[UploadFile, File()],
     optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
@@ -214,21 +280,7 @@ async def optimize_image(
     Raises:
         HTTPException: If file is invalid or optimization fails
     """
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image",
-        )
-
-    # Read file bytes
-    file_bytes = await file.read()
-
-    if not file_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File is empty",
-        )
+    file_bytes = await _validate_image_upload(file)
 
     # Optimize image
     try:
@@ -271,21 +323,7 @@ async def upload_image(
             detail="User does not have an associated organization",
         )
 
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image",
-        )
-
-    # Read file bytes
-    file_bytes = await file.read()
-
-    if not file_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File is empty",
-        )
+    file_bytes = await _validate_image_upload(file)
 
     # Optimize image
     try:
@@ -326,20 +364,41 @@ async def upload_image(
     og_bytes = await optimizer.process_og(file_bytes)
     og_path = file_path.replace(".webp", "-og.jpg")
 
+    # Generate private thumbnail derivative (600x600 WebP) for the
+    # catalog-card surface. Persists the key separately from the
+    # gallery entry so the catalog grid can fetch one small signed
+    # URL per visible product instead of fanning out requests per
+    # card (see intent `260920-catalog-image-performanc`).
+    # ponytail: thumbnail stays private (no `make_public`); the catalog
+    # signs it on demand via the configured CDN endpoint.
+    thumbnail_bytes = await optimizer.process_thumbnail(file_bytes)
+    thumbnail_path = file_path.replace(".webp", "-thumb.webp")
+
     logger.info(
-        "Uploading images: %s (webp: %d bytes) + OG jpg (%d bytes), original: %d bytes",
+        "Uploading images: %s (webp: %d bytes) + thumb webp (%d bytes) "
+        "+ OG jpg (%d bytes), original: %d bytes",
         file_path,
         len(optimized_bytes),
+        len(thumbnail_bytes),
         len(og_bytes),
         len(file_bytes),
     )
 
-    # Upload both to DO Spaces
+    # Upload all three to DO Spaces
     try:
         await spaces.upload_file(
             file_path=file_path,
             file_bytes=optimized_bytes,
             content_type="image/webp",
+        )
+        await spaces.upload_file(
+            file_path=thumbnail_path,
+            file_bytes=thumbnail_bytes,
+            content_type="image/webp",
+            # ponytail: thumbnail is private — the catalog grid signs it
+            # on demand via the configured CDN endpoint. Do NOT set
+            # `make_public=True` here; FR2.2 / NFR2.1 require the bucket
+            # to remain private.
         )
         await spaces.upload_file(
             file_path=og_path,
@@ -354,12 +413,19 @@ async def upload_image(
         ) from e
 
     # Return a presigned URL so the browser can fetch the just-uploaded object
-    # from the private bucket. The signer inside DOSpacesService uses the public
-    # endpoint (e.g. http://localhost:9000) so the signature matches the host
-    # the browser will use.
-    signed_url = await spaces.generate_download_url(file_path)
+    # from the private bucket via the CDN. The signer inside DOSpacesService
+    # uses the CDN endpoint (do_cdn_endpoint) so the signature matches the
+    # host the browser will use (the CDN). The CDN caches and proxies to the
+    # origin on miss. FR3.1, FR5.1, NFR5.1.
+    signed_url = await spaces.generate_cdn_download_url(file_path)
+    thumbnail_signed_url = await spaces.generate_cdn_download_url(thumbnail_path)
 
     # Also return the raw storage key so the frontend can persist it in
     # `product.image_urls` (the storage layer is opaque; the DB stores
     # bare keys, the browser receives signed URLs derived from those keys).
-    return ImageUploadResponse(url=signed_url, key=file_path)
+    return ImageUploadResponse(
+        url=signed_url,
+        key=file_path,
+        thumbnail_url=thumbnail_signed_url,
+        thumbnail_key=thumbnail_path,
+    )

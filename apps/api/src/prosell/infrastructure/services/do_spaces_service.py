@@ -1,7 +1,7 @@
 """DigitalOcean Spaces integration for file storage."""
 
 import asyncio
-from typing import Any
+from typing import Any, Final
 from uuid import uuid4
 
 import boto3
@@ -19,6 +19,13 @@ from prosell.core.config import settings
 class DOSpacesService(IDOSpacesService):
     """DigitalOcean Spaces integration for file storage."""
 
+    # ponytail: OQ2 — signed private URLs default to 15 minutes,
+    # consistent with GET /products/{id}/image-urls. Configurable via
+    # constructor for tests; never exposed via env var (signed URL
+    # lifetimes are an application-layer concern, not an infrastructure
+    # one).
+    DEFAULT_SIGNED_URL_EXPIRES_IN: Final[int] = 15 * 60  # 15 minutes
+
     def __init__(
         self,
         region: str | None = None,
@@ -27,6 +34,7 @@ class DOSpacesService(IDOSpacesService):
         secret_key: str | None = None,
         endpoint_url: str | None = None,
         public_endpoint_url: str | None = None,
+        cdn_endpoint: str | None = None,
         force_path_style: bool | None = None,
     ) -> None:
         self.region = region or settings.do_region
@@ -41,6 +49,9 @@ class DOSpacesService(IDOSpacesService):
             public_endpoint_url
             if public_endpoint_url is not None
             else settings.s3_public_endpoint_url
+        )
+        override_cdn_endpoint = (
+            cdn_endpoint if cdn_endpoint is not None else settings.do_cdn_endpoint
         )
         use_path_style = (
             force_path_style if force_path_style is not None else settings.s3_force_path_style
@@ -91,6 +102,54 @@ class DOSpacesService(IDOSpacesService):
         else:
             self.s3_signer = self.s3_client
             self.public_endpoint = self.endpoint
+
+        # CDN signer: signs presigned URLs against the configured CDN host.
+        # FR3.1, NFR5.1 — the browser fetches signed URLs from the CDN so
+        # the CDN caches and serves from origin on miss. Without this, the
+        # browser would hit the bucket endpoint directly, bypassing the
+        # CDN entirely (defense-in-depth violation against cache-failure
+        # storms and against load spikes).
+        #
+        # ponytail: the signature is host-bound; signing against a host
+        # the browser does NOT use yields an invalid signature. The CDN
+        # proxies to the bucket and validates the signature using the
+        # same access/secret keys.
+        self.cdn_endpoint = override_cdn_endpoint.strip() if override_cdn_endpoint else ""
+        if self.cdn_endpoint and self.cdn_endpoint != self.public_endpoint:
+            self.cdn_signer = boto3.client(
+                "s3",
+                region_name=self.region,
+                endpoint_url=self.cdn_endpoint,
+                aws_access_key_id=access_key_id,
+                aws_secret_access_key=secret_access_key,
+                config=boto_config,
+            )
+        else:
+            # CDN endpoint not configured OR matches the public endpoint:
+            # reuse the existing signer. The signed URL is functionally
+            # identical (same host), no extra client needed.
+            self.cdn_signer = self.s3_signer
+            self.cdn_endpoint = self.public_endpoint
+
+    def _require_cdn_signer(self) -> None:
+        """Fail-fast NFR5.1 if a signed-URL operation needs the CDN signer.
+
+        Called by `generate_cdn_download_url` BEFORE signing so the
+        application fails at first use rather than serving unsigned
+        fallback URLs (which would silently bypass the CDN). In dev
+        with MinIO, callers can leave `do_cdn_endpoint` blank AND mock
+        the storage service — the validator never fires for that
+        code path.
+        """
+        cdn_not_configured = not self.cdn_endpoint or self.cdn_endpoint == self.public_endpoint
+        if cdn_not_configured and not settings.do_cdn_endpoint.strip():
+            raise StorageUploadError(
+                "do_cdn_endpoint must be configured (NFR5.1). "
+                "Set DO_CDN_ENDPOINT to the CDN host that serves signed "
+                "private URLs (e.g., https://prosell.nyc3.cdn."
+                "digitaloceanspaces.com in prod, http://localhost:9000 "
+                "in dev with MinIO)."
+            )
 
     async def generate_presigned_url(
         self,
@@ -254,6 +313,45 @@ class DOSpacesService(IDOSpacesService):
                     "Key": key,
                 },
                 ExpiresIn=expires_in,
+            )
+        )
+        return url
+
+    async def generate_cdn_download_url(self, key: str, expires_in: int | None = None) -> str:
+        """Generate a presigned URL against the CDN endpoint.
+
+        Used for the catalog-grid cover-thumbnail flow (FR3.1, FR5.1):
+        the browser fetches the thumbnail from the configured CDN, the
+        CDN caches the response and proxies the first request to the
+        origin. The signature is host-bound — signing against a host
+        the browser will NOT use yields an invalid signature, so we
+        sign against the CDN host explicitly.
+
+        Args:
+            key: Storage key (e.g., "orgs/{org_id}/products/{uuid}-thumb.webp")
+            expires_in: Seconds until URL expires. Defaults to
+                `DEFAULT_SIGNED_URL_EXPIRES_IN` (15min, per OQ2 —
+                consistent with the existing GET /products/{id}/image-urls
+                endpoint). Shorter values align with the lifetime of a
+                catalog page; longer values reduce signing churn.
+
+        Returns:
+            Presigned URL valid for downloading the file from the CDN.
+
+        Raises:
+            StorageUploadError: If `do_cdn_endpoint` is blank (NFR5.1
+                fail-fast — the CDN signer cannot be created without it).
+        """
+        self._require_cdn_signer()
+        ttl = expires_in if expires_in is not None else self.DEFAULT_SIGNED_URL_EXPIRES_IN
+        url = await asyncio.to_thread(
+            lambda: self.cdn_signer.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": self.bucket,
+                    "Key": key,
+                },
+                ExpiresIn=ttl,
             )
         )
         return url

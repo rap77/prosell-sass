@@ -275,9 +275,15 @@ class Settings(BaseSettings):
         default="",
         description="DigitalOcean Spaces secret access key",
     )
-    do_cdn_endpoint: str | None = Field(
-        default=None,
-        description="Optional CDN endpoint for Spaces assets",
+    do_cdn_endpoint: str = Field(
+        default="",
+        description="CDN endpoint that serves signed private URLs (catalog grid "
+        "fetches cover thumbnails from here). Required: NFR5.1 fails the "
+        "application start when blank. In dev with MinIO, set this to the "
+        "same host as `s3_public_endpoint_url` (e.g., http://localhost:9000). "
+        "Validated lazily by DOSpacesService at first use, not at Settings "
+        "load, so test environments that mock the storage service can "
+        "leave it blank.",
     )
 
     # S3-compatible endpoint override (use MinIO in dev, leave None for DO Spaces in prod)

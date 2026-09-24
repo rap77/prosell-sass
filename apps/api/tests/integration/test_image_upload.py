@@ -45,11 +45,14 @@ def mock_spaces() -> MagicMock:
     spaces.upload_file = AsyncMock(
         return_value="https://region.digitaloceanspaces.com/bucket/orgs/{tenant}/products/uuid.jpg"
     )
-    # The router signs a download URL after upload (await spaces.generate_download_url).
+    # The router signs download URLs via the CDN signer (generate_cdn_download_url).
     # Must be an AsyncMock or `await` on it fails with "MagicMock can't be awaited".
-    spaces.generate_download_url = AsyncMock(
-        return_value="https://region.digitaloceanspaces.com/bucket/orgs/{tenant}/products/uuid.jpg?signed=1"
+    signed_url = (
+        "https://region.digitaloceanspaces.com/bucket/orgs/{tenant}/products/uuid.jpg?signed=1"
     )
+    spaces.generate_cdn_download_url = AsyncMock(return_value=signed_url)
+    # Legacy fallback (some old paths might still call it)
+    spaces.generate_download_url = AsyncMock(return_value=signed_url)
     spaces.endpoint = "https://region.digitaloceanspaces.com"
     spaces.bucket = "test-bucket"
     _mock_spaces = spaces
@@ -142,7 +145,7 @@ class TestImageUpload:
     async def test_upload_stores_webp(
         self, sample_image_bytes: bytes, mock_spaces: MagicMock
     ) -> None:
-        """Storage path stores WebP + OG JPEG (two uploads)."""
+        """Storage path stores gallery WebP + thumb WebP + OG JPEG (three uploads)."""
         from io import BytesIO
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -152,20 +155,74 @@ class TestImageUpload:
             )
 
         assert response.status_code == status.HTTP_200_OK
-        # Now uploads TWO files: WebP (gallery) + OG JPEG (WhatsApp/Facebook)
-        assert mock_spaces.upload_file.call_count == 2
+        # Now uploads THREE files: gallery WebP + thumb WebP + OG JPEG
+        assert mock_spaces.upload_file.call_count == 3
         calls = mock_spaces.upload_file.call_args_list
-        # First call: WebP
+        # First call: gallery WebP
         webp_call = calls[0]
         assert webp_call.kwargs["content_type"] == "image/webp"
         assert webp_call.kwargs["file_path"].endswith(".webp")
+        assert not webp_call.kwargs["file_path"].endswith("-thumb.webp")
         webp_bytes = webp_call.kwargs["file_bytes"]
         assert webp_bytes[:4] == b"RIFF"
         assert webp_bytes[8:12] == b"WEBP"
-        # Second call: OG JPEG
-        og_call = calls[1]
+        # Second call: thumbnail WebP (private, signed on demand)
+        thumb_call = calls[1]
+        assert thumb_call.kwargs["content_type"] == "image/webp"
+        assert thumb_call.kwargs["file_path"].endswith("-thumb.webp")
+        # ponytail: the thumbnail MUST stay private — the catalog grid
+        # signs it on demand via the configured CDN endpoint. Setting
+        # `make_public=True` here would expose the bucket (NFR2.1).
+        assert thumb_call.kwargs.get("make_public", False) is False
+        thumb_bytes = thumb_call.kwargs["file_bytes"]
+        assert thumb_bytes[:4] == b"RIFF"
+        assert thumb_bytes[8:12] == b"WEBP"
+        # Third call: OG JPEG (public for WhatsApp/Facebook)
+        og_call = calls[2]
         assert og_call.kwargs["content_type"] == "image/jpeg"
         assert og_call.kwargs["file_path"].endswith("-og.jpg")
+
+    async def test_upload_returns_thumbnail_url_and_key(self, sample_image_bytes: bytes) -> None:
+        """The response exposes thumbnail_url (1h presigned) and thumbnail_key (persist)."""
+        from io import BytesIO
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/images/upload",
+                files={"file": ("test.jpg", BytesIO(sample_image_bytes), "image/jpeg")},
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "thumbnail_url" in data
+        assert data["thumbnail_url"].startswith("https://")
+        assert "thumbnail_key" in data
+        # thumbnail_key uses the same path convention as the gallery entry
+        # but with the `-thumb.webp` suffix.
+        assert data["thumbnail_key"].endswith("-thumb.webp")
+        assert data["thumbnail_key"].startswith("orgs/")
+        assert "/products/" in data["thumbnail_key"]
+
+    async def test_upload_thumbnail_is_exactly_600x600(
+        self, sample_image_bytes: bytes, mock_spaces: MagicMock
+    ) -> None:
+        """The thumbnail upload receives exactly 600x600 WebP bytes."""
+        from io import BytesIO
+
+        from PIL import Image as PILImage
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            await client.post(
+                "/api/v1/images/upload",
+                files={"file": ("test.jpg", BytesIO(sample_image_bytes), "image/jpeg")},
+            )
+
+        # The thumbnail is the second upload (after gallery, before OG).
+        thumb_call = mock_spaces.upload_file.call_args_list[1]
+        thumb_bytes = thumb_call.kwargs["file_bytes"]
+        # Decode and check dimensions.
+        decoded = PILImage.open(BytesIO(thumb_bytes))
+        assert decoded.size == (600, 600)
 
     async def test_upload_image_rejects_non_image(self) -> None:
         """Returns 400 for non-image files."""
@@ -192,7 +249,7 @@ class TestImageUpload:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_upload_image_handles_png_with_alpha(self) -> None:
-        """Flattens PNG alpha and stores it as WebP + OG JPEG."""
+        """Flattens PNG alpha and stores it as WebP + thumb + OG JPEG."""
         # Create a PNG with alpha channel
         img = Image.new("RGBA", (1000, 1000), color=(255, 0, 0, 128))
         buffer = BytesIO()
@@ -207,8 +264,8 @@ class TestImageUpload:
 
         assert response.status_code == status.HTTP_200_OK
         assert _mock_spaces is not None
-        # Uploads TWO files: WebP + OG JPEG
-        assert _mock_spaces.upload_file.call_count == 2
+        # Uploads THREE files: WebP + thumb + OG JPEG
+        assert _mock_spaces.upload_file.call_count == 3
         webp_call = _mock_spaces.upload_file.call_args_list[0]
         webp_bytes = webp_call.kwargs["file_bytes"]
         assert webp_bytes[:4] == b"RIFF"
@@ -226,8 +283,8 @@ class TestImageUpload:
 
         assert response.status_code == status.HTTP_200_OK
         assert _mock_spaces is not None
-        # Uploads TWO files: WebP + OG JPEG
-        assert _mock_spaces.upload_file.call_count == 2
+        # Uploads THREE files: WebP + thumb + OG JPEG
+        assert _mock_spaces.upload_file.call_count == 3
         webp_call = _mock_spaces.upload_file.call_args_list[0]
         webp_bytes = webp_call.kwargs["file_bytes"]
         # Original 2000x2000 JPEG is ~63KB, optimized WebP should be smaller

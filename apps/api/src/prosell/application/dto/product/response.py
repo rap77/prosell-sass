@@ -53,6 +53,12 @@ class ProductResponse(BaseModel):
     # image as the cover. Nullable: a product with no images has no
     # cover (the renderer falls back to the placeholder).
     cover_image_key: str | None = None
+    # Storage key of the private 600x600 thumbnail derivative
+    # (catalog-card surface). Independent from `cover_image_key`:
+    # allows the catalog grid to fetch one small signed URL without
+    # signing the whole gallery. Nullable: legacy products fall back
+    # to the first gallery entry at read time.
+    thumbnail_image_key: str | None = None
     stock_number: str | None = None
     location_city: str | None = None
     location_state: str | None = None
@@ -108,6 +114,7 @@ class ProductResponse(BaseModel):
             attributes=product.attributes,
             image_urls=product.image_urls,
             cover_image_key=product.cover_image_key,
+            thumbnail_image_key=product.thumbnail_image_key,
             stock_number=cast(str | None, product.attributes.get("stock_number"))
             if product.attributes
             else None,
