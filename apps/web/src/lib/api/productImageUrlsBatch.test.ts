@@ -5,7 +5,11 @@ import React from "react";
 import { useProductImageUrlsBatch } from "./productImageUrlsBatch";
 
 // We mock global.fetch; the hook uses it directly (same pattern as
-// verticals.test.ts and leads.test.tsx).
+// verticals.test.ts and leads.test.tsx). The new contract is a single
+// POST against /api/v1/products/image-urls:batch (FR1, FR5.2), not a
+// per-product GET — the tests pin the new endpoint URL, the body
+// shape, and the fact that exactly one request fires per page render
+// regardless of how many product IDs are visible (FR1.1, NFR1.1).
 const mockFetch = vi.fn();
 beforeEach(() => {
   mockFetch.mockReset();
@@ -22,37 +26,39 @@ function makeWrapper() {
   return QueryWrapper;
 }
 
-const fakeImageUrlsResponse = (productId: string) => ({
-  product_id: productId,
-  images: [
-    {
-      key: `cover-${productId}`,
-      url: `https://signed/${productId}/cover.jpg`,
-      expires_in: 3600,
-    },
-  ],
+const fakeBatchResponse = (productIds: string[]) => ({
+  covers: productIds.map((id) => ({
+    product_id: id,
+    key: `cover-${id}`,
+    url: `https://signed/${id}/cover.jpg`,
+    expires_in: 900,
+  })),
+  batch_size: productIds.length,
 });
 
 describe("useProductImageUrlsBatch", () => {
-  it("returns a Map<productId, imageUrl|null> populated from per-product queries", async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => fakeImageUrlsResponse("p1"),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => fakeImageUrlsResponse("p2"),
-      });
+  it("fires a single POST for all visible product IDs", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => fakeBatchResponse(["p1", "p2"]),
+    });
 
     const { result } = renderHook(
       () => useProductImageUrlsBatch(["p1", "p2"]),
-      {
-        wrapper: makeWrapper(),
-      },
+      { wrapper: makeWrapper() },
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // NFR1.1 — exactly one request, regardless of visible count.
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // Endpoint + method + body shape pinned by the schema tests.
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe("/api/v1/products/image-urls:batch");
+    expect(options.method).toBe("POST");
+    expect(options.credentials).toBe("include");
+    expect(JSON.parse(options.body)).toEqual({ product_ids: ["p1", "p2"] });
+
     expect(result.current.urls.get("p1")).toBe("https://signed/p1/cover.jpg");
     expect(result.current.urls.get("p2")).toBe("https://signed/p2/cover.jpg");
   });
@@ -66,15 +72,18 @@ describe("useProductImageUrlsBatch", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("degrades to null when the payload shape is invalid (url not a string)", async () => {
-    // The signed-URL endpoint is an untrusted network boundary. A payload
-    // whose `url` is not a string must NOT leak through as the image URL —
-    // the card falls back to its placeholder (spec §8: never crash, degrade).
+  it("degrades to null for every visible id when the payload shape is invalid", async () => {
+    // The signed-URL endpoint is an untrusted network boundary. A
+    // payload whose shape fails the Zod schema must NOT leak through
+    // as the image URL — the card falls back to its placeholder
+    // (spec §8: never crash, degrade).
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        product_id: "p1",
-        images: [{ key: "cover-p1", url: 12345, expires_in: 3600 }],
+        covers: [
+          { product_id: "p1", key: "k", url: 12345, expires_in: "oops" },
+        ],
+        batch_size: 1,
       }),
     });
 
@@ -86,22 +95,45 @@ describe("useProductImageUrlsBatch", () => {
     expect(result.current.urls.get("p1")).toBeNull();
   });
 
-  it("populates null for products whose signed-URL fetch fails (4xx/5xx)", async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => fakeImageUrlsResponse("p1"),
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ message: "Not found" }),
-      });
+  it("degrades to null for every visible id when the response is 4xx/5xx", async () => {
+    // OQ3 — an over-cap batch hits 413; the hook must NOT crash the
+    // page, every visible id should degrade to null so the cards
+    // render the placeholder.
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ detail: "batch_size 200 exceeds the limit of 100" }),
+    });
+
+    const { result } = renderHook(() => useProductImageUrlsBatch(["p1"]), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.urls.get("p1")).toBeNull();
+  });
+
+  it("populates null for products the backend omitted (not found / cross-tenant)", async () => {
+    // Backend returns only the products it could resolve. The map
+    // must expose null for the ones it dropped so the catalog grid's
+    // `urls.get(id) ?? null` fallback keeps working uniformly.
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        covers: [
+          {
+            product_id: "p1",
+            key: "cover-p1",
+            url: "https://signed/p1/cover.jpg",
+            expires_in: 900,
+          },
+        ],
+        batch_size: 2,
+      }),
+    });
 
     const { result } = renderHook(
       () => useProductImageUrlsBatch(["p1", "p2"]),
-      {
-        wrapper: makeWrapper(),
-      },
+      { wrapper: makeWrapper() },
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));

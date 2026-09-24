@@ -1,5 +1,9 @@
 """Domain ports (interfaces) for secondary actors."""
 
+from prosell.domain.ports.i_cdn_invalidator import (
+    CdnInvalidationError,
+    ICdnInvalidator,
+)
 from prosell.domain.ports.i_email_service import AbstractEmailService
 from prosell.domain.ports.i_encryption_service import IEncryptionService
 from prosell.domain.ports.i_facebook_marketplace_service import (
@@ -15,6 +19,8 @@ from prosell.domain.ports.i_totp_service import ITOTPService
 
 __all__ = [
     "AbstractEmailService",
+    "CdnInvalidationError",
+    "ICdnInvalidator",
     "IEncryptionService",
     "IFacebookMarketplaceOAuthService",
     "IJWTService",

@@ -54,12 +54,16 @@ def _make_spaces() -> MagicMock:
     forces the router to call generate_download_url after uploading.
     generate_download_url returns a presigned URL for any key (the upload
     path uses the router-generated file_path, not the upload_file result).
+    generate_cdn_download_url signs against the configured CDN endpoint
+    (FR3.1, NFR5.1) — the upload route now uses it for the URL returned
+    to the browser so the CDN caches the response on first hit.
     """
     spaces = MagicMock()
     spaces.upload_file = AsyncMock(
         return_value="orgs/tenant-1/products/abc.jpg",  # key, not URL
     )
     spaces.generate_download_url = AsyncMock(return_value=SIGNED_URL)
+    spaces.generate_cdn_download_url = AsyncMock(return_value=SIGNED_URL)
     spaces.check_file_exists = AsyncMock(return_value=True)
     return spaces
 

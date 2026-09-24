@@ -54,6 +54,12 @@ from prosell.application.dto.product.batch_availability import (
 from prosell.application.dto.product.batch_availability_request import (
     BatchAvailabilityRequest,
 )
+from prosell.application.dto.product.batch_cover_urls import (
+    BATCH_COVER_URLS_MAX_PRODUCTS,
+    BatchProductCoverUrlItem,
+    BatchProductCoverUrlsRequest,
+    BatchProductCoverUrlsResponse,
+)
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.batch_approve_products import (
@@ -113,6 +119,8 @@ from prosell.domain.exceptions.product_exceptions import (
     ProductRestoreTargetMissingError,
     ProductVersionConflictError,
 )
+from prosell.domain.ports.i_cdn_invalidator import ICdnInvalidator
+from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
 from prosell.domain.services.csv_export import (
     build_export_headers,
     build_export_row,
@@ -126,8 +134,10 @@ from prosell.domain.services.csv_product_parser import (
 from prosell.domain.services.storage_keys import extract_storage_key_from_value
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
+    get_cdn_invalidator,
     get_current_auth_user_from_cookie,
     get_spaces_service,
+    get_task_dispatcher,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
@@ -152,6 +162,7 @@ from prosell.infrastructure.repositories.product_repository_impl import (
     FILTER_VALUES_MAX_PER_KEY,
     SqlAlchemyProductRepository,
 )
+from prosell.infrastructure.services.do_spaces_service import DOSpacesService
 
 router = APIRouter()
 
@@ -506,7 +517,7 @@ async def create_product(
 async def bulk_upload_products(
     current_user: CurrentUser,
     db: DbSession,
-    csv_file: UploadFile = File(..., description="CSV file with product data"),
+    csv_file: Annotated[UploadFile, File(description="CSV file with product data")],
 ) -> BulkUploadUploadResult:
     """Bulk upload products from a schema-aware CSV file.
 
@@ -611,7 +622,7 @@ def _csv_safe(v: object) -> str:
 async def download_bulk_upload_errors_csv(
     current_user: CurrentUser,
     db: DbSession,
-    upload_id: UUID = Query(..., description="Upload ID from the bulk-upload response"),
+    upload_id: Annotated[UUID, Query(description="Upload ID from the bulk-upload response")],
 ) -> StreamingResponse:
     """Download a CSV of per-row errors from a previous bulk upload.
 
@@ -661,9 +672,12 @@ async def download_bulk_upload_errors_csv(
 async def export_catalog_csv(
     current_user: CurrentUser,
     db: DbSession,
-    category_id: UUID = Query(
-        ..., description="Category to export — the importer accepts exactly one category per file"
-    ),
+    category_id: Annotated[
+        UUID,
+        Query(
+            description="Category to export — the importer accepts exactly one category per file"
+        ),
+    ],
 ) -> StreamingResponse:
     """Export this category's catalog to CSV (FEAT-1).
 
@@ -1241,6 +1255,142 @@ async def get_product_image_urls(
     )
 
 
+@router.post(
+    "/image-urls:batch",
+    response_model=BatchProductCoverUrlsResponse,
+    summary="Sign cover URLs for a list of products in a single round-trip",
+)
+async def batch_product_cover_urls(
+    request: BatchProductCoverUrlsRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+    spaces: SpacesService,
+) -> BatchProductCoverUrlsResponse:
+    """Sign one cover URL per requested product (FR1, NFR1.1, NFR1.2).
+
+    The catalog grid previously fired one request per visible product via
+    GET /products/{id}/image-urls. Each request signed the whole gallery
+    even though the card consumes one URL. This endpoint collapses N
+    round-trips into one and signs ONLY the selected cover (thumbnail
+    derivative when present, gallery-cover fallback otherwise), routed
+    through the configured CDN (FR3.1, FR1.5).
+
+    Authorization, tenant-prefix validation, and ORG_ADMIN_VIEW_ALL
+    behavior mirror the single-product endpoint (FR1.2, FR1.3, FR6.1,
+    FR6.2, NFR2.2). Products that fail validation are silently dropped
+    from the response — partial success keeps the catalog grid simple
+    instead of forcing a per-product failure-recovery contract.
+
+    OQ3 — server-side cap matches the Pydantic max_length. The
+    duplication is intentional: an oversized request that bypasses the
+    schema validation (e.g. a direct call from another service) still
+    gets a 4xx.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    # OQ3 — belt-and-suspenders cap. Pydantic's max_length rejects
+    # oversized payloads at the schema boundary; this guard catches
+    # anything that arrives without going through the schema (rare,
+    # but cheap).
+    if len(request.product_ids) > BATCH_COVER_URLS_MAX_PRODUCTS:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=(
+                f"batch_size {len(request.product_ids)} exceeds the limit "
+                f"of {BATCH_COVER_URLS_MAX_PRODUCTS}"
+            ),
+        )
+
+    # NFR4.1 — structured audit log for ops. Never log signed URLs or
+    # tenant prefixes (the URL embeds the bucket + key already, so the
+    # batch_size/user_id/tenant_id triplet is enough to correlate with
+    # downstream traces without leaking the signed payload).
+    logger.info(
+        "Batch cover-URL signing: batch_size=%d user_id=%s tenant_id=%s",
+        len(request.product_ids),
+        current_user.id,
+        current_user.tenant_id,
+    )
+
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    product_repo = SqlAlchemyProductRepository(db)
+    org_repo = SqlAlchemyOrganizationRepository(db)
+
+    covers: list[BatchProductCoverUrlItem] = []
+
+    # De-duplicate while preserving order — a duplicated ID in the
+    # request body shouldn't double-sign or surface twice.
+    seen: set[UUID] = set()
+
+    for product_id in request.product_ids:
+        if product_id in seen:
+            continue
+        seen.add(product_id)
+
+        # Authorization mirror: tenant-scoped for non-admins (None for
+        # org admins to allow cross-organization lookups). FR1.2.
+        product = await product_repo.get_by_id(
+            product_id, None if is_org_admin else current_user.tenant_id
+        )
+        if not product:
+            # Either nonexistent, or visible to a different tenant.
+            # Drop silently — partial-success contract.
+            continue
+
+        # FR2.4 / FR2.5 — pick the thumbnail derivative (private 600x600)
+        # when present; fall back to the gallery-cover selection
+        # (`cover_image_key`) when null (legacy products without a
+        # generated thumbnail).
+        candidate_key: str | None = product.thumbnail_image_key
+        if not candidate_key:
+            candidate_key = product.cover_image_key
+        if not candidate_key:
+            # No cover, no thumbnail, no gallery-cover — nothing to
+            # sign. Drop silently.
+            continue
+
+        # FR1.3 / NFR2.2 — defense-in-depth: the signed key MUST start
+        # with a tenant prefix the caller is allowed to see. Same
+        # allowlist as the single-product endpoint (admin relaxation
+        # for legacy bulk-upload keys confirmed against a real org).
+        product_tenant_prefixes = (
+            f"orgs/{product.tenant_id}/",
+            f"vehicles/{product.tenant_id}/",
+        )
+        if not await _key_tenant_allowed(
+            candidate_key, product_tenant_prefixes, is_org_admin, org_repo
+        ):
+            # Cross-tenant key — defense in depth. Drop silently
+            # rather than echoing which IDs leaked across tenants.
+            continue
+
+        # FR1.5 / FR3.1 — sign against the CDN endpoint so the
+        # browser fetches through the CDN and the response is cached
+        # on first hit. The CDN signer inside DOSpacesService
+        # already enforces fail-fast when do_cdn_endpoint is blank
+        # (NFR5.1).
+        signed_url = await spaces.generate_cdn_download_url(candidate_key)
+
+        covers.append(
+            BatchProductCoverUrlItem(
+                product_id=product_id,
+                key=candidate_key,
+                url=signed_url,
+                # OQ2 — TTL is the CDN signer's default (15min),
+                # surfaced here so the frontend can decide when to
+                # re-sign (a refresh after expires_in seconds is
+                # sufficient).
+                expires_in=DOSpacesService.DEFAULT_SIGNED_URL_EXPIRES_IN,
+            )
+        )
+
+    return BatchProductCoverUrlsResponse(
+        covers=covers,
+        batch_size=len(request.product_ids),
+    )
+
+
 @router.patch("/{product_id}", response_model=ProductResponse)
 async def update_product(
     product_id: UUID,
@@ -1325,6 +1475,123 @@ async def update_product(
         await db.commit()
 
     return result
+
+
+class DeleteProductImageResponse(BaseModel):
+    """Response for DELETE /products/{id}/images/{key}."""
+
+    product_id: UUID
+    deleted_key: str
+    purge_outcome: str  # "success" | "queued_retry" | "failed_no_retry" — matches NFR4.2 labels
+
+
+@router.delete(
+    "/{product_id}/images/{image_key:path}",
+    response_model=DeleteProductImageResponse,
+    summary="Delete one image from a product (with CDN purge + retry compensation)",
+)
+async def delete_product_image(
+    product_id: UUID,
+    image_key: str,
+    current_user: CurrentUser,
+    db: DbSession,
+    spaces: SpacesService,
+    cdn_invalidator: Annotated[ICdnInvalidator, Depends(get_cdn_invalidator)],
+    task_dispatcher: Annotated[ITaskDispatcher, Depends(get_task_dispatcher)],
+) -> DeleteProductImageResponse:
+    """Remove one image from a product's gallery and invalidate its CDN cache.
+
+    FR4 — image-replacement/deletion must invalidate the CDN cache and
+    purge the storage object in the same flow, with compensation if the
+    CDN is transiently down. The endpoint:
+
+      1. Authorizes the caller (tenant-scoped for non-admins;
+         super_admin can target any tenant — FR6.1).
+      2. Validates the requested key is under a tenant prefix the
+         caller is allowed to see (FR1.3 / NFR2.2 — defense in depth).
+      3. Removes the key from `image_urls` (and clears
+         `cover_image_key` / `thumbnail_image_key` if they referenced
+         the same key, so the catalog never points at a missing
+         object).
+      4. Calls the purge use case to drop the CDN cache + delete the
+         storage object, with Taskiq retry on transient CDN failure
+         (NFR3.1, NFR3.2).
+      5. Returns 2xx regardless of the CDN outcome — the client gets
+         confirmation that the operation is in flight; the audit log
+         records the precise outcome (`success` / `queued_retry` /
+         `failed_no_retry` per NFR4.2) without ever exposing the
+         signed URL or the raw key.
+
+    Synchronous with the client confirmation (FR4.3): the storage
+    delete and the best-effort CDN purge happen before the response
+    is built. The Taskiq retry only covers a CDN that can't be reached
+    right now.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    product_repo = SqlAlchemyProductRepository(db)
+    org_repo = SqlAlchemyOrganizationRepository(db)
+
+    product = await product_repo.get_by_id(
+        product_id, None if is_org_admin else current_user.tenant_id
+    )
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    product_tenant_prefixes = (
+        f"orgs/{product.tenant_id}/",
+        f"vehicles/{product.tenant_id}/",
+    )
+    if not await _key_tenant_allowed(image_key, product_tenant_prefixes, is_org_admin, org_repo):
+        # Cross-tenant key: same defense in depth as the image-urls
+        # endpoint. 422 (Unprocessable Entity) is more informative
+        # than 403 here because the auth boundary was already cleared.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Image key is not under the product's tenant",
+        )
+
+    # Remove from gallery + clear cover/thumbnail if they pointed at
+    # the deleted key. The product must never advertise an image that
+    # the CDN is about to evict.
+    if image_key in product.image_urls:
+        product.image_urls = [k for k in product.image_urls if k != image_key]
+    if product.cover_image_key == image_key:
+        product.cover_image_key = None
+    if product.thumbnail_image_key == image_key:
+        product.thumbnail_image_key = None
+
+    await product_repo.update(product)
+    await db.commit()
+
+    # NFR4.1 / NFR4.2 — the purge use case handles CDN invalidation +
+    # storage delete + Taskiq retry. Audit log records the outcome.
+    from prosell.application.use_cases.product.purge_product_image import (
+        PurgeProductImageUseCase,
+    )
+
+    use_case = PurgeProductImageUseCase(
+        invalidator=cdn_invalidator,
+        dispatcher=task_dispatcher,
+        storage=spaces,
+    )
+    outcome = await use_case.execute(image_key)
+
+    logger.info(
+        "Image delete: product_id=%s key_prefix=%s purge_outcome=%s user_id=%s",
+        product_id,
+        image_key.split("/", 1)[0],
+        outcome,
+        current_user.id,
+    )
+
+    return DeleteProductImageResponse(
+        product_id=product_id,
+        deleted_key=image_key,
+        purge_outcome=outcome,
+    )
 
 
 @router.post("/batch/submit", response_model=BatchSubmitResponse)
@@ -2051,8 +2318,10 @@ async def archive_product(
 async def bulk_upload_preview(
     current_user: CurrentUser,
     db: DbSession,
-    csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
-    images_zip: UploadFile | None = File(None, description="ZIP with images (optional)"),
+    csv_file: Annotated[
+        UploadFile, File(description="CSV file (semicolon-delimited, client format)")
+    ],
+    images_zip: Annotated[UploadFile | None, File(description="ZIP with images (optional)")] = None,
 ) -> BulkUploadPreviewResponse:
     """
        Preview bulk upload — dry-run analysis of a client-format CSV.
@@ -2135,12 +2404,16 @@ async def bulk_upload_with_images(
     current_user: CurrentUser,
     db: DbSession,
     spaces: SpacesService,
-    csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
-    images_zip: UploadFile | None = File(None, description="Optional ZIP file with vehicle images"),
-    organization_id: UUID | None = Form(
-        None, description="Organization ID (optional if CSV has org codes)"
-    ),
-    category_id: UUID = Form(..., description="Category ID for vehicles"),
+    csv_file: Annotated[
+        UploadFile, File(description="CSV file (semicolon-delimited, client format)")
+    ],
+    category_id: Annotated[UUID, Form(description="Category ID for vehicles")],
+    images_zip: Annotated[
+        UploadFile | None, File(description="Optional ZIP file with vehicle images")
+    ] = None,
+    organization_id: Annotated[
+        UUID | None, Form(description="Organization ID (optional if CSV has org codes)")
+    ] = None,
 ) -> BulkUploadVehiclesResponse:
     """
     Bulk upload vehicles from CSV with optional image ZIP.

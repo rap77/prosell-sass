@@ -285,6 +285,23 @@ class Settings(BaseSettings):
         "load, so test environments that mock the storage service can "
         "leave it blank.",
     )
+    # CDN purge endpoint for FR4 cache invalidation. Optional in dev
+    # (the route is a no-op when blank); production deployments set
+    # both URL and bearer token. The CDN invalidator adapter raises
+    # CdnInvalidationError when these are blank at runtime, so the
+    # caller (purge use case) can queue a Taskiq retry instead of
+    # silently leaving the cache stale.
+    do_spaces_cdn_purge_url: str = Field(
+        default="",
+        description="Full URL of the CDN purge endpoint (e.g. "
+        "https://api.digitalocean.com/v2/cdn/endpoints/<id>/purge). "
+        "Empty in dev with MinIO (the adapter raises on first call).",
+    )
+    do_spaces_cdn_purge_token: str = Field(
+        default="",
+        description="Bearer token for the CDN purge endpoint. Must have "
+        "permission to purge the configured endpoint.",
+    )
 
     # S3-compatible endpoint override (use MinIO in dev, leave None for DO Spaces in prod)
     s3_endpoint_url: str | None = Field(

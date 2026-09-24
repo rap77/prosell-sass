@@ -60,3 +60,23 @@ class TaskiqTaskDispatcher(ITaskDispatcher):
                 publication_id=str(publication_id),
                 reason=str(exc),
             ) from exc
+
+    async def dispatch_cdn_purge(self, key: str) -> None:
+        """Enqueue a purge_cdn_cache_task for the given storage key.
+
+        Used as the compensation hook when a synchronous CDN purge
+        fails (NFR3.1, NFR3.2, FR4.4). The task body is the same
+        invalidation call, so re-running it is idempotent on the CDN
+        side.
+        """
+        try:
+            from prosell.infrastructure.tasks.use_cases.purge_cdn_cache_task import (
+                purge_cdn_cache_task,
+            )
+
+            await purge_cdn_cache_task.kiq(key=key)
+        except Exception as exc:
+            raise TaskDispatchError(
+                publication_id=f"cdn:{key}",
+                reason=str(exc),
+            ) from exc

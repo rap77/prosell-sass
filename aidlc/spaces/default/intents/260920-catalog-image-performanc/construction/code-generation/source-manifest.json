@@ -1,0 +1,146 @@
+{
+  "intent_id": "260920-catalog-image-performanc",
+  "stage": "code-generation",
+  "scope": "bugfix",
+  "test_strategy": "minimal",
+  "methodology": "test-after",
+  "generated_at": "2026-09-23",
+  "application_source_paths": [
+    {
+      "path": "apps/api/src/prosell/application/dto/product/batch_cover_urls.py",
+      "action": "created",
+      "purpose": "Batch cover-URL request/response DTOs (POST /products/image-urls:batch)."
+    },
+    {
+      "path": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "action": "created",
+      "purpose": "Use case: synchronous CDN purge with Taskiq retry compensation (FR4)."
+    },
+    {
+      "path": "apps/api/src/prosell/domain/ports/i_cdn_invalidator.py",
+      "action": "created",
+      "purpose": "Domain port for CDN cache invalidation (ICdnInvalidator + CdnInvalidationError)."
+    },
+    {
+      "path": "apps/api/src/prosell/domain/ports/i_task_dispatcher.py",
+      "action": "modified",
+      "purpose": "Added dispatch_cdn_purge abstract method (for the retry hook)."
+    },
+    {
+      "path": "apps/api/src/prosell/domain/ports/__init__.py",
+      "action": "modified",
+      "purpose": "Re-export ICdnInvalidator / CdnInvalidationError for the public port surface."
+    },
+    {
+      "path": "apps/api/src/prosell/core/config.py",
+      "action": "modified",
+      "purpose": "Added do_spaces_cdn_purge_url / do_spaces_cdn_purge_token settings (Step 6 environment config)."
+    },
+    {
+      "path": "apps/api/src/prosell/infrastructure/services/cdn_invalidator_do.py",
+      "action": "created",
+      "purpose": "DigitalOcean CDN purge adapter (httpx-based) for the ICdnInvalidator port."
+    },
+    {
+      "path": "apps/api/src/prosell/infrastructure/tasks/use_cases/purge_cdn_cache_task.py",
+      "action": "created",
+      "purpose": "Taskiq retry task: re-runs the CDN invalidation; idempotent at the provider."
+    },
+    {
+      "path": "apps/api/src/prosell/infrastructure/tasks/taskiq_task_dispatcher.py",
+      "action": "modified",
+      "purpose": "Implements dispatch_cdn_purge via purge_cdn_cache_task.kiq."
+    },
+    {
+      "path": "apps/api/src/prosell/infrastructure/api/dependencies.py",
+      "action": "modified",
+      "purpose": "Added get_cdn_invalidator DI factory; imports get_task_dispatcher alias for the new endpoint."
+    },
+    {
+      "path": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "action": "modified",
+      "purpose": "Added POST /products/image-urls:batch (FR1, NFR1.1) and DELETE /products/{id}/images/{key} (FR4)."
+    },
+    {
+      "path": "apps/web/src/lib/api/schemas/batchProductCoverUrls.ts",
+      "action": "created",
+      "purpose": "Zod schema for the batch cover-URL wire response."
+    },
+    {
+      "path": "apps/web/src/lib/api/productImageUrlsBatch.ts",
+      "action": "modified",
+      "purpose": "Replaced per-product useQueries with a single useQuery POST against /image-urls:batch (FR5.2)."
+    },
+    {
+      "path": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py",
+      "action": "created",
+      "purpose": "Tests for POST /products/image-urls:batch (FR1, FR2.5, FR6, NFR4.1, OQ3)."
+    },
+    {
+      "path": "apps/api/tests/unit/api/routers/test_delete_product_image.py",
+      "action": "created",
+      "purpose": "Tests for DELETE /products/{id}/images/{key} (FR4, NFR2.2, NFR3.1/NFR3.2, NFR4.2)."
+    },
+    {
+      "path": "apps/api/tests/unit/infrastructure/services/test_cdn_invalidator_do.py",
+      "action": "created",
+      "purpose": "Tests for the DigitalOcean CDN purge adapter (httpx happy-path + failure paths + config)."
+    },
+    {
+      "path": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py",
+      "action": "created",
+      "purpose": "Tests for the PurgeProductImageUseCase orchestration (success / queued_retry / failed_no_retry)."
+    },
+    {
+      "path": "apps/api/tests/unit/api/routers/test_image_router_signed_url.py",
+      "action": "modified",
+      "purpose": "Pre-existing test broken by the upload route's switch to generate_cdn_download_url; mock now covers the new CDN signer."
+    },
+    {
+      "path": "apps/api/tests/unit/api/routers/test_image_upload_cross_org.py",
+      "action": "modified",
+      "purpose": "Same mock-gap fix as test_image_router_signed_url.py."
+    },
+    {
+      "path": "apps/web/src/lib/api/productImageUrlsBatch.test.ts",
+      "action": "modified",
+      "purpose": "Tests pin the new single-POST contract (FR1.1, NFR1.1, OQ3 413, malformed degradation)."
+    }
+  ],
+  "deliverable_artifact_paths": [
+    {
+      "path": "aidlc/spaces/default/intents/260920-catalog-image-performanc/construction/code-generation/source-manifest.json",
+      "action": "created"
+    },
+    {
+      "path": "aidlc/spaces/default/intents/260920-catalog-image-performanc/construction/code-generation/code-summary.md",
+      "action": "created"
+    },
+    {
+      "path": "aidlc/spaces/default/intents/260920-catalog-image-performanc/construction/code-generation/traceability.json",
+      "action": "created"
+    },
+    {
+      "path": "aidlc/spaces/default/intents/260920-catalog-image-performanc/construction/code-generation/memory.md",
+      "action": "updated"
+    }
+  ],
+  "test_files_in_scope": [
+    "apps/api/tests/unit/infrastructure/images/test_image_optimizer.py",
+    "apps/api/tests/unit/api/routers/test_get_product_image_urls.py",
+    "apps/api/tests/unit/api/routers/test_product_router_image_signing.py",
+    "apps/api/tests/unit/api/routers/test_sign_image_urls_tenant_scope.py",
+    "apps/api/tests/unit/api/routers/test_image_router.py",
+    "apps/api/tests/unit/api/routers/test_image_router_signed_url.py",
+    "apps/api/tests/unit/api/routers/test_image_upload_cross_org.py",
+    "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py",
+    "apps/api/tests/unit/api/routers/test_delete_product_image.py",
+    "apps/api/tests/unit/infrastructure/services/test_cdn_invalidator_do.py",
+    "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py",
+    "apps/web/src/lib/api/productImageUrlsBatch.test.ts"
+  ],
+  "scope_notes": [
+    "Steps 2-7 (thumbnail persistence, pipeline, CDN config, signed URL routing) were already implemented in 23870cd24 (feat(images)) and merged into main before this session started. The plan fingerprint approved those surface decisions and this Code Generation run verified the baseline at Step 1.",
+    "The original plan referenced a previous commit's `cover_image_key` design. That field is the existing gallery-cover selection (unchanged); the new column added by the merged commit is `thumbnail_image_key` (nullable, private 600x600 derivative). Step 2 confirms the approved persistence boundary is `thumbnail_image_key` per the merged commit."
+  ]
+}

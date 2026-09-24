@@ -1,0 +1,309 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR5.4",
+    "FR6.1",
+    "FR6.2",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "POST /api/v1/products/image-urls:batch accepts N IDs and returns one signed cover URL per product."
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsOrgAdminAccess::test_org_admin_can_sign_cross_org_thumbnail",
+      "notes": "Reuses SqlAlchemyProductRepository.get_by_id with the same tenant-scoped vs. admin-cross-org logic as the single-product endpoint."
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsTenantScope::test_drops_cross_tenant_keys",
+      "notes": "_key_tenant_allowed runs per signed key with the same admin relaxation as the single-product endpoint."
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "Endpoint signs only the selected cover (thumbnail or cover_image_key fallback), never the gallery."
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "Calls generators.space.generate_cdn_download_url (CDN signer), not generate_download_url. CDN-routed URL surfaced to the browser."
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/images/image_optimizer.py",
+      "evidence": "apps/api/tests/unit/infrastructure/images/test_image_optimizer.py::TestImageOptimizerThumbnail",
+      "notes": "process_thumbnail produces a centered square crop, exactly 600x600, WebP-encoded."
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/image_router.py",
+      "evidence": "apps/api/tests/integration/test_image_upload.py (pre-existing); apps/api/tests/unit/api/routers/test_image_router.py",
+      "notes": "Upload path invokes spaces.upload_file without make_public for the thumbnail path; bucket stays private."
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/models/product_model.py",
+      "evidence": "apps/api/tests/integration/repositories/test_product_repository_thumbnail.py (pre-existing)",
+      "notes": "ProductModel.thumbnail_image_key column (nullable, 500 chars) plus the reversible Alembic migration 20260922_0001_add_thumbnail_image_key_to_product.py."
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "Batch endpoint surfaces the signed thumbnail URL via covers[].url; single product response (ProductResponse) already exposes thumbnail_image_key in the DTO."
+    },
+    {
+      "id": "FR2.5",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsLegacyFallback::test_signs_cover_image_key_when_thumbnail_missing",
+      "notes": "Endpoint picks thumbnail_image_key when present, else cover_image_key; no thumbnail and no cover = product omitted from the response."
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/services/do_spaces_service.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "generate_cdn_download_url signs against the configured cdn_endpoint with host-bound signature (CDN-routed URL)."
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/services/do_spaces_service.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_get_product_image_urls.py::TestGetProductImageUrlsSecurityFilters (pre-existing)",
+      "notes": "DOSpacesService._require_cdn_signer raises StorageUploadError on missing do_cdn_endpoint (NFR5.1 fail-fast)."
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/services/do_spaces_service.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "Same generate_cdn_download_url surfaces both thumbnail and (future) gallery signed URLs; CDN-routing consistent across surfaces."
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_delete_product_image.py::TestDeleteProductImageSuccessPath::test_returns_purge_outcome_success",
+      "notes": "DELETE /products/{id}/images/{key} calls PurgeProductImageUseCase.execute synchronously; CDN purge + storage delete happen before the 200 response."
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py::TestPurgeProductImageSuccess",
+      "notes": "Storage object is deleted via spaces.delete_file; CDN purge happens first; the response confirms both ran."
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py::TestPurgeProductImageSuccess::test_returns_success_when_invalidation_succeeds",
+      "notes": "The use case runs the synchronous invalidate + storage delete before returning the outcome label; the handler builds the 200 response only after."
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/tasks/use_cases/purge_cdn_cache_task.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py::TestPurgeProductImageQueuedRetry::test_dispatches_retry_on_invalidation_failure",
+      "notes": "When invalidate raises CdnInvalidationError, the use case enqueues a Taskiq retry (queued_retry outcome); the new image is retained (storage delete still runs)."
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "apps/web/src/components/catalog/ProductCard.tsx",
+      "evidence": "apps/web/src/lib/api/productImageUrlsBatch.test.ts::useProductImageUrlsBatch",
+      "notes": "ProductCard consumes a single imageUrl prop (unchanged); unoptimized is set when imageUrl is provided (FR5.3, signed-MINIO host-binding preserved)."
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/productImageUrlsBatch.ts",
+      "evidence": "apps/web/src/lib/api/productImageUrlsBatch.test.ts::TestBatchCoverUrlsHappyPath::test_fires_a_single_POST_for_all_visible_product_IDs",
+      "notes": "Replaced per-product useQueries fan-out with one POST against /api/v1/products/image-urls:batch (NFR1.1)."
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "apps/web/src/components/catalog/ProductCard.tsx",
+      "evidence": "apps/web/src/components/catalog/ProductCard.tsx (line ~149)",
+      "notes": "Image component still receives unoptimized={Boolean(imageUrl)} so signed CDN URLs bypass next/image optimization."
+    },
+    {
+      "id": "FR5.4",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/productImageUrlsBatch.ts",
+      "evidence": "apps/web/src/lib/api/productImageUrlsBatch.test.ts::TestBatchCoverUrlsEmptyRequest",
+      "notes": "Hook returns Map<id, null> when the backend omits a product (legacy fallback path uses attributes.image_urls; product stays decoupled here)."
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsOrgAdminAccess::test_org_admin_can_sign_cross_org_thumbnail",
+      "notes": "Batch endpoint reads products cross-tenant for ORG_ADMIN_VIEW_ALL users (matches the single-product endpoint)."
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsTenantScope::test_drops_cross_tenant_keys",
+      "notes": "Tenant-prefix check (_key_tenant_allowed) is identical for own-org and cross-org paths; no per-role relaxation."
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "apps/web/src/lib/api/productImageUrlsBatch.ts",
+      "evidence": "apps/web/src/lib/api/productImageUrlsBatch.test.ts::TestBatchCoverUrlsHappyPath::test_fires_a_single_POST_for_all_visible_product_IDs",
+      "notes": "Single POST regardless of K products (test asserts exactly one fetch for two visible IDs)."
+    },
+    {
+      "id": "NFR1.2",
+      "status": "Deferred",
+      "target": "aidlc/spaces/default/intents/260920-catalog-image-performanc/operation/performance-validation/",
+      "evidence": "Intentionally not measurable at this stage (no real CDN endpoint in unit tests).",
+      "notes": "Per unit-test-instructions: 'NFR1.2 and NFR1.3 require later measured p95 evidence; unit tests alone cannot prove timings in real CDN infrastructure.' Belongs to performance-validation (Stage 4.6). NOT claimed here."
+    },
+    {
+      "id": "NFR1.3",
+      "status": "Deferred",
+      "target": "aidlc/spaces/default/intents/260920-catalog-image-performanc/operation/performance-validation/",
+      "evidence": "Intentionally not measurable at this stage (no real CDN endpoint in unit tests).",
+      "notes": "Same posture as NFR1.2; requires p95 measurement against a warm CDN cache."
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/image_router.py",
+      "evidence": "apps/api/tests/integration/test_image_upload.py + apps/api/tests/unit/infrastructure/images/test_image_optimizer.py",
+      "notes": "Thumbnail upload does NOT pass make_public=True; bucket stays private. Signed CDN URL required to access."
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsTenantScope + test_get_product_image_urls.py (pre-existing)",
+      "notes": "Authorization + tenant-prefix check both run per signed key in the batch endpoint; same allowlist as the single-product endpoint."
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/services/do_spaces_service.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsHappyPath::test_returns_one_cover_url_per_product",
+      "notes": "DOSpacesService.DEFAULT_SIGNED_URL_EXPIRES_IN = 900 seconds (15 minutes); surfaced as expires_in in the batch response."
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py::TestPurgeProductImageQueuedRetry::test_dispatches_retry_on_invalidation_failure",
+      "notes": "When CDN invalidate fails, the storage object is still deleted and a Taskiq retry is enqueued. Response stays 2xx."
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py::TestPurgeProductImageQueuedRetry::test_dispatches_retry_on_invalidation_failure",
+      "notes": "Same posture as NFR3.1 (CDN invalidation has the same compensation contract as storage deletion)."
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/api/routers/product_router.py",
+      "evidence": "apps/api/tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsStructuredLogging::test_logs_batch_size_user_and_tenant",
+      "notes": "Endpoint logs 'Batch cover-URL signing: batch_size=%d user_id=%s tenant_id=%s' on every request; no signed URL or raw key in the log line."
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py::TestPurgeProductImageAuditLogContract",
+      "notes": "Outcome labels 'success' / 'queued_retry' / 'failed_no_retry' are stable strings logged by the use case + handler. No signed URL or raw key in any log."
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "apps/api/src/prosell/application/use_cases/product/purge_product_image.py",
+      "evidence": "apps/api/tests/unit/application/use_cases/product/test_purge_product_image.py",
+      "notes": "NFR4.3 is structural here — NFR4.3's cache hit/miss metrics live in the CDN provider and the use case emits the structured log records needed for ops dashboards."
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "apps/api/src/prosell/infrastructure/services/do_spaces_service.py",
+      "evidence": "apps/api/tests/unit/infrastructure/services/test_cdn_invalidator_do.py::TestDigitalOceanCdnInvalidatorConfig::test_missing_purge_url_raises",
+      "notes": "DOSpacesService._require_cdn_signer raises StorageUploadError on blank do_cdn_endpoint; DigitalOceanCdnInvalidator raises CdnInvalidationError when purge_url is blank. Same fail-fast posture."
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "apps/api/alembic/versions/20260922_0001_add_thumbnail_image_key_to_product.py",
+      "evidence": "apps/api/tests/integration/repositories/test_product_repository_thumbnail.py (pre-existing)",
+      "notes": "Reversible Alembic migration adds thumbnail_image_key (nullable, String(500)). Upgrade / downgrade both defined. Same mechanism as 20260812_0002_migrate_legacy_sedan_products.py."
+    }
+  ],
+  "open_questions_resolution": [
+    {
+      "id": "OQ1",
+      "decision": "Runtime fallback to cover_image_key. No backfill migration. Resolution: surfaced in code-summary.md; documented in tests/unit/api/routers/test_batch_product_cover_urls.py::TestBatchCoverUrlsLegacyFallback."
+    },
+    {
+      "id": "OQ2",
+      "decision": "15-minute TTL via DOSpacesService.DEFAULT_SIGNED_URL_EXPIRES_IN (already established). Surfaces as expires_in in the batch response."
+    },
+    {
+      "id": "OQ3",
+      "decision": "Hard cap of 100 product IDs per batch. Pydantic max_length returns 422; handler-level guard returns 413. Documented in BATCH_COVER_URLS_MAX_PRODUCTS and test_batch_product_cover_urls.py::TestBatchCoverUrlsBatchCap."
+    }
+  ]
+}

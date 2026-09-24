@@ -38,6 +38,12 @@ def mock_spaces() -> MagicMock:
     spaces = MagicMock()
     spaces.upload_file = AsyncMock(return_value="https://example.com/image.webp")
     spaces.generate_download_url = AsyncMock(return_value="https://example.com/image.webp?signed=1")
+    # The upload route signs via the CDN endpoint (FR3.1). The mock must
+    # expose the same async callable the router awaits, otherwise the
+    # handler hangs on `await spaces.generate_cdn_download_url(...)`.
+    spaces.generate_cdn_download_url = AsyncMock(
+        return_value="https://cdn.example.com/image.webp?signed=cdn"
+    )
     spaces.endpoint = "https://example.com"
     spaces.bucket = "test-bucket"
     return spaces

@@ -72,6 +72,7 @@ from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.ports import (
     AbstractEmailService,
+    ICdnInvalidator,
     IEncryptionService,
     IJWTService,
     IOAuthService,
@@ -711,6 +712,21 @@ def get_spaces_service() -> IDOSpacesService:
     from prosell.infrastructure.services.do_spaces_service import DOSpacesService
 
     return DOSpacesService()
+
+
+def get_cdn_invalidator() -> ICdnInvalidator:
+    """Get CDN invalidator instance (singleton).
+
+    Returns the DigitalOcean CDN invalidator by default; the
+    dependency is exposed as a factory (not @lru_cache) so tests
+    can override the implementation without colliding with the
+    cached singleton.
+    """
+    from prosell.infrastructure.services.cdn_invalidator_do import (
+        DigitalOceanCdnInvalidator,
+    )
+
+    return DigitalOceanCdnInvalidator()
 
 
 # =============================================================================
