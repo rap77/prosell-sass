@@ -41,6 +41,14 @@ export interface ImageEntry {
    * product (no upload needed in that case).
    */
   storageKey?: string;
+  /**
+   * Storage key of the private 600x600 thumbnail derivative, populated
+   * only for in-flight entries once their upload completes (the backend
+   * generates it at upload time — see `image_router.py::upload_image`).
+   * Seeded entries never have this: their thumbnail (if any) already lives
+   * on the product server-side, and this session did not re-upload them.
+   */
+  thumbnailKey?: string;
 }
 
 interface UploadStore {

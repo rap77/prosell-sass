@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from starlette.middleware.base import RequestResponseEndpoint
 
 from prosell.core.config import settings
+from prosell.core.logging_config import configure_logging
 from prosell.domain.exceptions.auth_exceptions import AuthDomainException
 from prosell.infrastructure.api.middleware import limiter
 from prosell.infrastructure.api.middleware.exception_handlers import (
@@ -53,6 +54,12 @@ from prosell.infrastructure.api.routers.public_product_router import router as p
 from prosell.infrastructure.api.routers.test_router import router as test_router
 from prosell.infrastructure.api.routers.vendedor_router import router as vendedor_router
 from prosell.infrastructure.api.routers.webhook_router import router as webhook_router
+
+# Root logger config — must run before any module-level `logger.info(...)`
+# call executes, and before uvicorn configures its own loggers (see
+# logging_config.py docstring for why app logs were silently dropped
+# without this).
+configure_logging(settings)
 
 
 # Response Models

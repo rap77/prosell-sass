@@ -109,6 +109,13 @@ export async function pollProcessingStatus(
   throw new Error("Processing timeout");
 }
 
+interface UploadImageDirectResponse {
+  url: string;
+  key: string;
+  thumbnail_url?: string;
+  thumbnail_key?: string;
+}
+
 /**
  * Upload image directly to backend with optimization
  * Backend will: optimize image, upload to DO Spaces, return presigned URL + key
@@ -116,11 +123,19 @@ export async function pollProcessingStatus(
  * @param organizationId - Optional target org (admin cross-org product creation)
  * @returns `url` (presigned, expires in 1h — for browser preview only) and
  *          `key` (raw storage path — persist this in `product.image_urls`).
+ *          `thumbnailUrl`/`thumbnailKey` are the private 600x600 catalog-card
+ *          derivative — persist `thumbnailKey` in `product.thumbnail_image_key`
+ *          (intent `260920-catalog-image-performanc`).
  */
 export async function uploadImageDirect(
   file: File,
   organizationId?: string,
-): Promise<{ url: string; key: string }> {
+): Promise<{
+  url: string;
+  key: string;
+  thumbnailUrl?: string;
+  thumbnailKey?: string;
+}> {
   const formData = new FormData();
   formData.append("file", file);
   if (organizationId) formData.append("organization_id", organizationId);
@@ -137,5 +152,11 @@ export async function uploadImageDirect(
     throw new Error(error.detail || "Failed to upload image");
   }
 
-  return res.json();
+  const data: UploadImageDirectResponse = await res.json();
+  return {
+    url: data.url,
+    key: data.key,
+    thumbnailUrl: data.thumbnail_url,
+    thumbnailKey: data.thumbnail_key,
+  };
 }

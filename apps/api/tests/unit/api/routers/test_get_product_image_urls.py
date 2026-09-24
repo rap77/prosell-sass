@@ -13,7 +13,7 @@ The endpoint must:
   3. Extract the storage key from each URL by stripping `endpoint + bucket/`.
   4. Filter by tenant prefix AFTER extraction (defense in depth).
   5. Drop unparseable URLs (no bucket marker) — fail-closed.
-  6. Sign via `spaces.generate_download_url(key)` per surviving key.
+  6. Sign via `spaces.generate_cdn_download_url(key)` per surviving key.
 """
 
 from collections.abc import AsyncGenerator
@@ -76,14 +76,14 @@ def _make_spaces(sign_map: dict[str, str] | None = None) -> AsyncMock:
     spaces = AsyncMock()
     spaces.bucket = BUCKET
     if sign_map is None:
-        spaces.generate_download_url = AsyncMock(
+        spaces.generate_cdn_download_url = AsyncMock(
             side_effect=lambda key: (
                 f"http://localhost:9000/{BUCKET}/{key}"
                 "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef"
             )
         )
     else:
-        spaces.generate_download_url = AsyncMock(side_effect=lambda key: sign_map[key])
+        spaces.generate_cdn_download_url = AsyncMock(side_effect=lambda key: sign_map[key])
     return spaces
 
 
@@ -238,7 +238,7 @@ class TestGetProductImageUrlsSecurityFilters:
         """
         # Fixture is consumed by side-effect (sets auth + spaces dependency_overrides).
         _, _ = async_client_with_spaces
-        # Use a strict allowlist so any unauthorized call to generate_download_url raises.
+        # Use a strict allowlist so any unauthorized call to generate_cdn_download_url raises.
         spaces = _make_spaces(
             sign_map={
                 f"orgs/{TEST_TENANT_ID}/products/mine.jpg": (
@@ -278,7 +278,7 @@ class TestGetProductImageUrlsSecurityFilters:
             f"Cross-tenant URL leaked through; got: {keys!r}"
         )
         # And the signer was called exactly once (only the caller-tenant key)
-        assert spaces.generate_download_url.await_count == 1
+        assert spaces.generate_cdn_download_url.await_count == 1
 
     @pytest.mark.asyncio
     async def test_drops_malformed_url_from_attributes(
@@ -338,7 +338,7 @@ class TestGetProductImageUrlsSecurityFilters:
             f"Attacker URL leaked into response: {urls!r}"
         )
         # Signer called exactly once (only the well-formed key)
-        assert spaces.generate_download_url.await_count == 1
+        assert spaces.generate_cdn_download_url.await_count == 1
 
 
 class TestGetProductImageUrlsEmpty:
@@ -410,7 +410,7 @@ class TestGetProductImageUrlsStripsQueryString:
             f"Query string was not stripped from the key: {signed['key']!r}"
         )
         # And the signer was called with the bare key, not the corrupted one.
-        spaces.generate_download_url.assert_awaited_once_with(key)
+        spaces.generate_cdn_download_url.assert_awaited_once_with(key)
 
     @pytest.mark.asyncio
     async def test_strips_query_string_from_attributes_image_url(
@@ -443,7 +443,7 @@ class TestGetProductImageUrlsStripsQueryString:
         assert signed["key"] == key, (
             f"Query string was not stripped from attributes URL: {signed['key']!r}"
         )
-        spaces.generate_download_url.assert_awaited_once_with(key)
+        spaces.generate_cdn_download_url.assert_awaited_once_with(key)
 
     @pytest.mark.asyncio
     async def test_mixed_corrupted_and_clean_urls_all_normalized(
@@ -477,7 +477,7 @@ class TestGetProductImageUrlsStripsQueryString:
         ], f"Both URLs must end up as bare keys; got: {keys!r}"
         # The signer must have been called with bare keys, never with
         # `?X-Amz-...` suffixes.
-        called_keys = [c.args[0] for c in spaces.generate_download_url.await_args_list]
+        called_keys = [c.args[0] for c in spaces.generate_cdn_download_url.await_args_list]
         for k in called_keys:
             assert "?" not in k, f"Signer was called with a query string: {k!r}"
 
@@ -519,7 +519,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         assert "X-Amz-Signature=" in signed["url"]
         # The signer MUST be called with the bare key, verbatim — no
         # bucket-prefix mangling.
-        spaces.generate_download_url.assert_awaited_once_with(key)
+        spaces.generate_cdn_download_url.assert_awaited_once_with(key)
 
     @pytest.mark.asyncio
     async def test_signs_bare_key_from_attributes(
@@ -542,7 +542,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         assert len(body["images"]) == 1
         assert body["images"][0]["key"] == key
         # The signer must be called with the bare key, not bucket-mangled.
-        spaces.generate_download_url.assert_awaited_once_with(key)
+        spaces.generate_cdn_download_url.assert_awaited_once_with(key)
 
     @pytest.mark.asyncio
     async def test_drops_cross_tenant_bare_key(
@@ -586,7 +586,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
             f"Cross-tenant bare key leaked; got: {keys!r}"
         )
         # Signer called exactly once — only the caller's tenant key.
-        assert spaces.generate_download_url.await_count == 1
+        assert spaces.generate_cdn_download_url.await_count == 1
 
 
 class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
@@ -628,7 +628,7 @@ class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
         assert response.status_code == status.HTTP_200_OK, response.text
         body = response.json()
         assert [img["key"] for img in body["images"]] == [legacy_key]
-        spaces.generate_download_url.assert_awaited_once_with(legacy_key)
+        spaces.generate_cdn_download_url.assert_awaited_once_with(legacy_key)
 
     @pytest.mark.asyncio
     async def test_org_admin_drops_legacy_key_when_tenant_does_not_exist(
@@ -662,4 +662,4 @@ class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
         assert body["images"] == [], (
             f"Key for a nonexistent tenant must be dropped, got: {body['images']!r}"
         )
-        spaces.generate_download_url.assert_not_awaited()
+        spaces.generate_cdn_download_url.assert_not_awaited()

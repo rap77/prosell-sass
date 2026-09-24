@@ -1182,6 +1182,11 @@ async def get_product_image_urls(
     time-limited signed download URLs for each image key stored in
     product.image_urls.
 
+    FR3.3 — signed against the CDN endpoint (`generate_cdn_download_url`),
+    same as the catalog-grid cover thumbnail and the batch cover-URL
+    endpoint, so gallery images are served through the CDN's cache
+    instead of hitting DO Spaces origin on every request.
+
     SECURITY: only keys under the product's tenant prefix are signed.
     Admins with ORG_ADMIN_VIEW_ALL can view images from any organization.
     """
@@ -1240,11 +1245,15 @@ async def get_product_image_urls(
         # instead of the product's tenant.
         if not await _key_tenant_allowed(key, product_tenant_prefixes, is_org_admin, org_repo):
             continue
+        # FR3.3 — sign against the CDN endpoint so gallery images are
+        # served through the same cached path as the catalog-grid cover
+        # thumbnail and the batch cover-URL endpoint, instead of hitting
+        # DO Spaces origin directly on every request.
         signed_images.append(
             ProductImageUrlResponse(
                 key=key,
-                url=await spaces.generate_download_url(key),
-                expires_in=3600,
+                url=await spaces.generate_cdn_download_url(key),
+                expires_in=DOSpacesService.DEFAULT_SIGNED_URL_EXPIRES_IN,
             )
         )
 
@@ -1397,12 +1406,25 @@ async def update_product(
     request: UpdateProductRequest,
     current_user: CurrentUser,
     db: DbSession,
+    spaces: SpacesService,
+    cdn_invalidator: Annotated[ICdnInvalidator, Depends(get_cdn_invalidator)],
+    task_dispatcher: Annotated[ITaskDispatcher, Depends(get_task_dispatcher)],
 ) -> ProductResponse:
     """
     Update a product.
 
     Only DRAFT, REJECTED, and PAUSED products can be edited.
     Admins with ORG_ADMIN_VIEW_ALL can edit products from any organization.
+
+    FR4.1 — when this PATCH replaces `thumbnail_image_key` with a new
+    value, the superseded key is invalidated on the CDN and deleted from
+    storage in the same flow (same purge use case the DELETE endpoint
+    uses). Scoped to `thumbnail_image_key` only: unlike `cover_image_key`
+    and `image_urls`, the thumbnail is never shared with the gallery, so
+    the old key is always safely orphaned once superseded — purging a
+    dropped `cover_image_key`/`image_urls` entry is NOT handled here (it
+    can still be referenced elsewhere in the gallery; see memory.md for
+    the scope note).
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
@@ -1435,6 +1457,10 @@ async def update_product(
             detail="Changing organization_id requires ORG_ADMIN_VIEW_ALL",
         )
 
+    # FR4.1 — captured before the use case mutates the entity, so we can
+    # detect a superseded thumbnail after the write commits.
+    old_thumbnail_image_key = product.thumbnail_image_key
+
     # All field application, the cover cross-field checks, and server-side
     # title recomposition live in the use case (it needs both the product
     # AND the category loaded — see UpdateProductUseCase).
@@ -1457,6 +1483,12 @@ async def update_product(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
+    # Commit the field changes (including a superseded thumbnail_image_key)
+    # BEFORE any CDN side-effect — never purge a cache entry for a change
+    # that is not yet durably persisted. Mirrors delete_product_image's
+    # "update, then commit, then purge" ordering.
+    await db.commit()
+
     # ponytail: sync FB account assignments inline (no use case overhead)
     if request.fb_account_ids is not None:
         await db.execute(
@@ -1473,6 +1505,31 @@ async def update_product(
                 ],
             )
         await db.commit()
+
+    # FR4.1 — the thumbnail was replaced with a new value this PATCH;
+    # invalidate the CDN cache + delete storage for the superseded key.
+    # Safe unconditionally: thumbnail_image_key is never shared with
+    # image_urls, so the old key is always orphaned once superseded.
+    if (
+        old_thumbnail_image_key is not None
+        and result.thumbnail_image_key != old_thumbnail_image_key
+    ):
+        from prosell.application.use_cases.product.purge_product_image import (
+            PurgeProductImageUseCase,
+        )
+
+        purge_use_case = PurgeProductImageUseCase(
+            invalidator=cdn_invalidator,
+            dispatcher=task_dispatcher,
+            storage=spaces,
+        )
+        purge_outcome = await purge_use_case.execute(old_thumbnail_image_key)
+        logger.info(
+            "Thumbnail replaced: product_id=%s purge_outcome=%s user_id=%s",
+            product_id,
+            purge_outcome,
+            current_user.id,
+        )
 
     return result
 

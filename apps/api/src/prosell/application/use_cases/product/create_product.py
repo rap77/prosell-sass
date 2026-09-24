@@ -83,6 +83,7 @@ class CreateProductUseCase:
             attributes=request.attributes,
             image_urls=request.image_urls,
             cover_image_key=request.cover_image_key,
+            thumbnail_image_key=request.thumbnail_image_key,
             location_city=request.location_city,
             location_state=request.location_state,
             location_zip=request.location_zip,

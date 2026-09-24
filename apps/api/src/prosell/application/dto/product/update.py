@@ -27,6 +27,10 @@ class UpdateProductRequest(BaseModel):
     # `model_validator(mode="after")` runs after the full model is
     # built and can see both fields.
     cover_image_key: str | None = None
+    # Storage key of the private 600x600 thumbnail derivative (PATCH
+    # semantics: None = unchanged). See `CreateProductRequest.thumbnail_image_key`
+    # for the full contract.
+    thumbnail_image_key: str | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None

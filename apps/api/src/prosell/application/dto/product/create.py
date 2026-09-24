@@ -116,6 +116,12 @@ class CreateProductRequest(BaseModel):
     # cross-field invariant below, symmetric with
     # `UpdateProductRequest._check_cover_in_images`.
     cover_image_key: str | None = None
+    # Storage key of the private 600x600 thumbnail derivative generated at
+    # upload time (see `image_router.py::upload_image`). Independent of
+    # `cover_image_key`/`image_urls` — a gallery entry, not itself part of
+    # the gallery. When absent, the catalog grid falls back to
+    # `cover_image_key`/`image_urls[0]` (intent `260920-catalog-image-performanc`).
+    thumbnail_image_key: str | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None

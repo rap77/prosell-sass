@@ -17,6 +17,13 @@ import { uploadImageDirect } from "@/lib/api/images";
 export interface UploadedImage {
   url: string;
   key: string;
+  /**
+   * Storage key of the private 600x600 thumbnail derivative, when the
+   * backend generated one for this upload. Persist this in
+   * `product.thumbnail_image_key` when this entry becomes the cover
+   * (intent `260920-catalog-image-performanc`).
+   */
+  thumbnailKey?: string;
 }
 
 /**
@@ -49,7 +56,10 @@ export function useImageUploadOptimized() {
       updateEntry(fileId, { status: "uploading" });
 
       // Upload to backend (optimizes + uploads to cloud)
-      const { url, key } = await uploadImageDirect(file, organizationId);
+      const { url, key, thumbnailKey } = await uploadImageDirect(
+        file,
+        organizationId,
+      );
 
       // Mark complete with the real storage key. The picker's tile
       // and the form's submit handler now both have a real key to
@@ -60,9 +70,10 @@ export function useImageUploadOptimized() {
         status: "complete",
         storageKey: key,
         preview: url,
+        thumbnailKey,
       });
 
-      return { url, key };
+      return { url, key, thumbnailKey };
     } catch (error) {
       updateEntry(fileId, { status: "error" });
       throw error;

@@ -507,6 +507,7 @@ export function UnifiedProductForm({
     data: Record<string, unknown>,
     imageKeys: string[],
     coverKey: string | null,
+    thumbnailKey?: string,
   ) => {
     const { price, description, ...formAttributes } =
       FIXED_FIELDS_SCHEMA_LOOSE.parse(data);
@@ -532,6 +533,11 @@ export function UnifiedProductForm({
       attributes,
       image_urls: imageKeys,
       ...(coverKey ? { cover_image_key: coverKey } : {}),
+      // ponytail: only sent when THIS session freshly uploaded a thumbnail
+      // for the cover entry — otherwise omit so the backend's PATCH
+      // semantics leave the product's existing thumbnail_image_key
+      // untouched (intent `260920-catalog-image-performanc`).
+      ...(thumbnailKey ? { thumbnail_image_key: thumbnailKey } : {}),
       // ponytail: FB account assignments only sent when dirty
       ...(fbAccountsDirty ? { fb_account_ids: selectedFbAccounts } : {}),
     };
@@ -559,8 +565,14 @@ export function UnifiedProductForm({
     data: Record<string, unknown>,
     imageKeys: string[],
     coverKey: string | null,
+    thumbnailKey?: string,
   ) => {
-    const payload = buildProductPayload(data, imageKeys, coverKey);
+    const payload = buildProductPayload(
+      data,
+      imageKeys,
+      coverKey,
+      thumbnailKey,
+    );
     const newProduct = await createProduct.mutateAsync({
       ...payload,
       category_id: category.id,
@@ -582,10 +594,16 @@ export function UnifiedProductForm({
     data: Record<string, unknown>,
     imageKeys: string[],
     coverKey: string | null,
+    thumbnailKey?: string,
   ) => {
     if (!productId) return;
 
-    const payload = buildProductPayload(data, imageKeys, coverKey);
+    const payload = buildProductPayload(
+      data,
+      imageKeys,
+      coverKey,
+      thumbnailKey,
+    );
 
     // Tenant cascade: if the org changed, send it via PATCH and let the
     // backend clear broker shares (they belong to the previous org).
@@ -630,11 +648,12 @@ export function UnifiedProductForm({
         .filter((k): k is string => Boolean(k));
       const coverEntry = images.find((e) => e.id === coverImageId);
       const coverKey = coverImageId ? (coverEntry?.storageKey ?? null) : null;
+      const thumbnailKey = coverEntry?.thumbnailKey;
 
       if (mode === "create") {
-        await handleCreateProduct(data, imageKeys, coverKey);
+        await handleCreateProduct(data, imageKeys, coverKey, thumbnailKey);
       } else if (mode === "edit") {
-        await handleUpdateProduct(data, imageKeys, coverKey);
+        await handleUpdateProduct(data, imageKeys, coverKey, thumbnailKey);
       }
     } catch (error) {
       setIsUploadingImages(false);

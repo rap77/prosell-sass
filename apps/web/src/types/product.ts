@@ -128,6 +128,16 @@ export interface CreateProductRequest {
    * cross-field invariant (cover must be in image_urls).
    */
   cover_image_key?: string | null;
+  /**
+   * Storage key of the private 600x600 thumbnail derivative generated at
+   * upload time (see `images.ts::uploadImageDirect`). Independent of
+   * `cover_image_key`/`image_urls`. When omitted (update) the backend
+   * leaves the product's existing value unchanged; when omitted at
+   * creation there is simply no thumbnail yet — the catalog grid falls
+   * back to `cover_image_key`/`image_urls[0]` (intent
+   * `260920-catalog-image-performanc`).
+   */
+  thumbnail_image_key?: string | null;
 }
 
 /**

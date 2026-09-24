@@ -119,6 +119,14 @@ class UpdateProductUseCase:
         if request.image_urls is not None and not request.image_urls:
             product.cover_image_key = None
 
+        # `thumbnail_image_key` — PATCH semantics (None = unchanged). Unlike
+        # `cover_image_key`, this is not validated against `image_urls`: the
+        # private thumbnail derivative is a separate object from the
+        # gallery, generated at upload time (`image_router.py::upload_image`),
+        # not itself a gallery entry.
+        if request.thumbnail_image_key is not None:
+            product.thumbnail_image_key = request.thumbnail_image_key
+
         if request.location_city is not None:
             product.location_city = request.location_city
         if request.location_state is not None:
