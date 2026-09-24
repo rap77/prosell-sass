@@ -282,6 +282,78 @@ class TestBatchCoverUrlsLegacyFallback:
         assert body["covers"] == [], "Product with no cover/thumbnail must be dropped, not echoed"
 
 
+class TestBatchCoverUrlsGalleryFallback:
+    """Bugfix (prod, 2026-09-24): a product with real images in
+    `image_urls` but neither `thumbnail_image_key` nor `cover_image_key`
+    set (e.g. BulkUploadVehiclesUseCase, which never populates either)
+    must still get a cover — falling back to the first gallery image,
+    same source the single-product gallery endpoint already reads from."""
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_first_gallery_image_bare_key(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        client, spaces = async_client_with_spaces
+        first = f"orgs/{TEST_TENANT_ID}/vehicles/{TEST_ORG_ID}/VIN123/1.jpg"
+        second = f"orgs/{TEST_TENANT_ID}/vehicles/{TEST_ORG_ID}/VIN123/2.jpg"
+        product = _make_product(
+            TEST_PRODUCT_A,
+            thumbnail_image_key=None,
+            cover_image_key=None,
+            image_urls=[first, second],
+        )
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+            response = await client.post(
+                "/api/v1/products/image-urls:batch",
+                json={"product_ids": [str(TEST_PRODUCT_A)]},
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert len(body["covers"]) == 1, (
+            f"Product with real image_urls but no cover/thumbnail pointer "
+            f"must still surface a cover, got: {body['covers']!r}"
+        )
+        assert body["covers"][0]["key"] == first
+        spaces.generate_cdn_download_url.assert_awaited_once_with(first)
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_first_gallery_image_full_url(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """`BulkUploadVehiclesUseCase` stores full public DO Spaces URLs
+        in `image_urls`, not bare keys — the fallback must extract the
+        key before signing, not pass the raw URL to the CDN signer."""
+        client, spaces = async_client_with_spaces
+        key = f"orgs/{TEST_TENANT_ID}/vehicles/{TEST_ORG_ID}/VIN123/1.jpg"
+        full_url = f"https://{BUCKET}.nyc3.digitaloceanspaces.com/{BUCKET}/{key}"
+        product = _make_product(
+            TEST_PRODUCT_A,
+            thumbnail_image_key=None,
+            cover_image_key=None,
+            image_urls=[full_url],
+        )
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+            response = await client.post(
+                "/api/v1/products/image-urls:batch",
+                json={"product_ids": [str(TEST_PRODUCT_A)]},
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert len(body["covers"]) == 1
+        assert body["covers"][0]["key"] == key
+        spaces.generate_cdn_download_url.assert_awaited_once_with(key)
+
+
 class TestBatchCoverUrlsTenantScope:
     """FR1.3 + NFR2.2 — tenant-prefix validation per signed key."""
 

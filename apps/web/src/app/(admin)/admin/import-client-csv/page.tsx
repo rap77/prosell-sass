@@ -25,6 +25,15 @@ import { BulkImportClientCSV } from "@/components/admin/BulkImportClientCSV";
 // never a fixed value — only its slug is stable. See project memory
 // "u1-cross-org-export-api" interpretation entry.
 const VEHICLES_VERTICAL_SLUG = "vehiculos-y-transporte";
+// Bugfix (prod, 2026-09-24): the ACTUAL category_id sent to the backend
+// must be the schema-bearing leaf ("Carros y Camionetas"), not the
+// vertical — the vertical carries no attribute_schema, so every vehicle
+// previously imported through this wizard got assigned a category with
+// no schema, and its edit form could only render generic/basic fields
+// instead of the real vehicle schema (make/model/year/VIN/etc). The
+// vertical's name is still shown in the dropdown (human-readable unit,
+// per the UX note below) — only the id that gets submitted changes.
+const CARS_AND_TRUCKS_LEAF_SLUG = "carros-y-camionetas";
 
 export default function ImportClientCSVPage() {
   const isAdmin = useRequireAdmin();
@@ -63,9 +72,15 @@ export default function ImportClientCSVPage() {
   const vehiclesVertical = allCategories?.find(
     (c) => c.slug === VEHICLES_VERTICAL_SLUG,
   );
-  const categories = vehiclesVertical
-    ? [{ id: vehiclesVertical.id, name: vehiclesVertical.name }]
-    : [];
+  const carsAndTrucksLeaf = allCategories?.find(
+    (c) => c.slug === CARS_AND_TRUCKS_LEAF_SLUG,
+  );
+  // The submitted id is the LEAF's (has the vehicle attribute_schema);
+  // the label shown to the user is still the vertical's (human-readable).
+  const categories =
+    vehiclesVertical && carsAndTrucksLeaf
+      ? [{ id: carsAndTrucksLeaf.id, name: vehiclesVertical.name }]
+      : [];
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -82,10 +97,13 @@ export default function ImportClientCSVPage() {
 
       {orgsLoading || catsLoading ? (
         <p className="text-xs text-ps-text-secondary">Cargando…</p>
-      ) : !vehiclesVertical ? (
+      ) : !vehiclesVertical || !carsAndTrucksLeaf ? (
         <p className="text-xs text-ps-error">
-          No se encontró la categoría &quot;{VEHICLES_VERTICAL_SLUG}&quot; — no
-          se puede importar hasta que exista.
+          No se encontró la categoría &quot;
+          {!vehiclesVertical
+            ? VEHICLES_VERTICAL_SLUG
+            : CARS_AND_TRUCKS_LEAF_SLUG}
+          &quot; — no se puede importar hasta que exista.
         </p>
       ) : (
         <BulkImportClientCSV

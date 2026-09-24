@@ -1355,8 +1355,21 @@ async def batch_product_cover_urls(
         if not candidate_key:
             candidate_key = product.cover_image_key
         if not candidate_key:
-            # No cover, no thumbnail, no gallery-cover — nothing to
-            # sign. Drop silently.
+            # Bugfix (prod, 2026-09-24): a product created without ever
+            # setting cover_image_key/thumbnail_image_key (e.g. bulk CSV
+            # vehicle import — BulkUploadVehiclesUseCase only populates
+            # image_urls) still has real photos; falling straight to
+            # "drop" here hid them from the catalog grid even though
+            # the edit form's gallery endpoint shows them fine (it reads
+            # the whole image_urls list, not just these two pointers).
+            # Mirror the gallery endpoint's own source: the first entry
+            # of the merged (top-level + legacy attributes.image_urls)
+            # candidate list.
+            merged = _merged_image_url_candidates(product)
+            candidate_key = extract_storage_key_from_value(merged[0]) if merged else None
+        if not candidate_key:
+            # No cover, no thumbnail, no gallery images at all — nothing
+            # to sign. Drop silently.
             continue
 
         # FR1.3 / NFR2.2 — defense-in-depth: the signed key MUST start
