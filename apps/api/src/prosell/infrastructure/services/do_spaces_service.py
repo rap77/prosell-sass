@@ -1,6 +1,7 @@
 """DigitalOcean Spaces integration for file storage."""
 
 import asyncio
+import logging
 from typing import Any, Final
 from uuid import uuid4
 
@@ -14,6 +15,8 @@ from prosell.application.ports.ido_spaces import (
     StorageUploadError,
 )
 from prosell.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class DOSpacesService(IDOSpacesService):
@@ -132,23 +135,32 @@ class DOSpacesService(IDOSpacesService):
             self.cdn_endpoint = self.public_endpoint
 
     def _require_cdn_signer(self) -> None:
-        """Fail-fast NFR5.1 if a signed-URL operation needs the CDN signer.
+        """Warn (NFR5.1) when a CDN-routed signed-URL operation has no
+        CDN endpoint configured.
 
-        Called by `generate_cdn_download_url` BEFORE signing so the
-        application fails at first use rather than serving unsigned
-        fallback URLs (which would silently bypass the CDN). In dev
-        with MinIO, callers can leave `do_cdn_endpoint` blank AND mock
-        the storage service — the validator never fires for that
-        code path.
+        Bugfix (prod, 2026-09-25): this used to hard-fail every call —
+        catalog-grid covers and the product gallery went down entirely
+        the moment `DO_CDN_ENDPOINT` was left unset (it was never wired
+        into any deploy config, staging or prod). `__init__` already
+        falls `self.cdn_signer` back to the public signer when the CDN
+        endpoint is blank (same host, same credentials — a functionally
+        valid signed URL, just not CDN-cached), so there was never a
+        real reason to reject the request outright. Warn loudly instead,
+        so the gap stays visible in logs without taking the feature
+        down while DigitalOcean Spaces CDN gets enabled.
+
+        Checks `self.cdn_endpoint` only (resolved once in `__init__` from
+        either a constructor override or `settings.do_cdn_endpoint`) —
+        not the global `settings` object again, so a constructor-injected
+        endpoint (tests, or a future per-request override) is respected
+        instead of silently re-reading the process-wide setting.
         """
-        cdn_not_configured = not self.cdn_endpoint or self.cdn_endpoint == self.public_endpoint
-        if cdn_not_configured and not settings.do_cdn_endpoint.strip():
-            raise StorageUploadError(
-                "do_cdn_endpoint must be configured (NFR5.1). "
-                "Set DO_CDN_ENDPOINT to the CDN host that serves signed "
-                "private URLs (e.g., https://prosell.nyc3.cdn."
-                "digitaloceanspaces.com in prod, http://localhost:9000 "
-                "in dev with MinIO)."
+        if not self.cdn_endpoint or self.cdn_endpoint == self.public_endpoint:
+            logger.warning(
+                "generate_cdn_download_url called with DO_CDN_ENDPOINT unset "
+                "(NFR5.1) — falling back to the public signer, so this "
+                "response will NOT be CDN-cached. Set DO_CDN_ENDPOINT once "
+                "DigitalOcean Spaces CDN is enabled."
             )
 
     async def generate_presigned_url(
@@ -336,11 +348,10 @@ class DOSpacesService(IDOSpacesService):
                 catalog page; longer values reduce signing churn.
 
         Returns:
-            Presigned URL valid for downloading the file from the CDN.
-
-        Raises:
-            StorageUploadError: If `do_cdn_endpoint` is blank (NFR5.1
-                fail-fast — the CDN signer cannot be created without it).
+            Presigned URL valid for downloading the file from the CDN,
+            or — when `do_cdn_endpoint` is unset — a presigned URL
+            against the public (non-CDN) endpoint, with a warning
+            logged (NFR5.1; see `_require_cdn_signer`).
         """
         self._require_cdn_signer()
         ttl = expires_in if expires_in is not None else self.DEFAULT_SIGNED_URL_EXPIRES_IN

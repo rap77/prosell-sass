@@ -284,3 +284,97 @@ class TestDOSpacesDualClientForSigning:
         mock_internal.generate_presigned_url.assert_not_called()
         # The returned URL matches what the signer produced
         assert url == signed_url
+
+
+class TestDOSpacesCdnFallback:
+    """Bugfix (prod, 2026-09-25): `generate_cdn_download_url` must never
+    hard-fail just because `DO_CDN_ENDPOINT` is unset — it did, and took
+    down the catalog grid AND the product detail gallery on staging (and
+    would have on prod) the moment those endpoints started routing
+    through it, because neither deploy config ever set that variable.
+    """
+
+    def test_falls_back_to_public_signer_when_cdn_endpoint_blank(self) -> None:
+        """No CDN endpoint configured -> still returns a real signed URL
+        (via the public signer), does not raise."""
+        signed_url = (
+            "http://localhost:9000/prosell-assets/x.jpg"
+            "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc123"
+        )
+
+        with patch("prosell.infrastructure.services.do_spaces_service.boto3") as mock_boto3:
+            mock_client = MagicMock(name="s3_client")
+            mock_client.generate_presigned_url.return_value = signed_url
+            mock_boto3.client.return_value = mock_client
+
+            service = DOSpacesService(
+                region="nyc3",
+                bucket_name="prosell-assets",
+                access_key="test-key",
+                secret_key="test-secret",
+                cdn_endpoint="",
+            )
+
+            import asyncio
+
+            url = asyncio.run(service.generate_cdn_download_url("x.jpg"))
+
+        assert url == signed_url
+        # No separate CDN client was created — the public/internal signer
+        # was reused (same behavior as no public_endpoint_url override).
+        assert service.cdn_signer is service.s3_signer
+
+    def test_warns_when_cdn_endpoint_blank(self, caplog) -> None:
+        """A warning is logged so the config gap stays visible in
+        `docker logs` — silent-but-working is not the goal, loud-but-working
+        is."""
+        with patch("prosell.infrastructure.services.do_spaces_service.boto3") as mock_boto3:
+            mock_boto3.client.return_value = MagicMock()
+
+            service = DOSpacesService(
+                region="nyc3",
+                bucket_name="prosell-assets",
+                access_key="test-key",
+                secret_key="test-secret",
+                cdn_endpoint="",
+            )
+
+            import asyncio
+            import logging
+
+            with caplog.at_level(logging.WARNING):
+                asyncio.run(service.generate_cdn_download_url("x.jpg"))
+
+        assert any("DO_CDN_ENDPOINT" in record.message for record in caplog.records)
+
+    def test_signs_against_cdn_endpoint_when_configured(self) -> None:
+        """When a CDN endpoint IS configured, it signs against the CDN
+        client (a distinct client from the public signer), not the
+        fallback path."""
+        cdn_signed_url = (
+            "https://prosell.nyc3.cdn.digitaloceanspaces.com/prosell-assets/x.jpg"
+            "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=cdn123"
+        )
+
+        with patch("prosell.infrastructure.services.do_spaces_service.boto3") as mock_boto3:
+            mock_internal = MagicMock(name="s3_client")
+            mock_cdn = MagicMock(name="cdn_signer")
+            mock_cdn.generate_presigned_url.return_value = cdn_signed_url
+            mock_boto3.client.side_effect = [mock_internal, mock_cdn]
+
+            service = DOSpacesService(
+                region="nyc3",
+                bucket_name="prosell-assets",
+                access_key="test-key",
+                secret_key="test-secret",
+                cdn_endpoint="https://prosell.nyc3.cdn.digitaloceanspaces.com",
+            )
+
+            import asyncio
+
+            url = asyncio.run(service.generate_cdn_download_url("x.jpg"))
+
+        assert url == cdn_signed_url
+        mock_cdn.generate_presigned_url.assert_called_once()
+        mock_internal.generate_presigned_url.assert_not_called()
+        assert service.cdn_signer is mock_cdn
