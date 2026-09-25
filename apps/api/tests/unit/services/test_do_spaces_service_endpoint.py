@@ -10,6 +10,8 @@ The boto3 client is mocked to avoid real network calls.
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from prosell.infrastructure.services.do_spaces_service import DOSpacesService
 
 
@@ -324,7 +326,7 @@ class TestDOSpacesCdnFallback:
         # was reused (same behavior as no public_endpoint_url override).
         assert service.cdn_signer is service.s3_signer
 
-    def test_warns_when_cdn_endpoint_blank(self, caplog) -> None:
+    def test_warns_when_cdn_endpoint_blank(self, caplog: pytest.LogCaptureFixture) -> None:
         """A warning is logged so the config gap stays visible in
         `docker logs` — silent-but-working is not the goal, loud-but-working
         is."""
@@ -378,3 +380,46 @@ class TestDOSpacesCdnFallback:
         mock_cdn.generate_presigned_url.assert_called_once()
         mock_internal.generate_presigned_url.assert_not_called()
         assert service.cdn_signer is mock_cdn
+
+
+class TestDOSpacesCdnUrlShape:
+    """Bugfix (prod, 2026-09-25): the CDN signer must produce
+    "<bucket>.<region>.cdn.digitaloceanspaces.com/<key>" — NOT
+    "<bucket>.<region>.cdn.digitaloceanspaces.com/<bucket>/<key>" (the
+    bucket duplicated in the path). DigitalOcean rejected the duplicated
+    form with `SignatureDoesNotMatch` in production — confirmed live
+    against the real CDN endpoint once enabled.
+
+    Real (unmocked) boto3 presigned-URL generation, since signing is
+    entirely local — no network call happens, so there's no need to
+    mock boto3 to assert on the exact URL boto3 constructs. This is the
+    only test in the file that exercises the real addressing logic
+    rather than a mocked client.
+    """
+
+    def test_cdn_url_has_bucket_as_subdomain_not_duplicated_in_path(self) -> None:
+        service = DOSpacesService(
+            region="atl1",
+            bucket_name="prosell-assets",
+            access_key="FAKEKEY",
+            secret_key="FAKESECRET",
+            # DO_CDN_ENDPOINT is a REGION-level host (what the fix
+            # requires) — NOT the bucket-specific host DO's dashboard
+            # displays after enabling CDN.
+            cdn_endpoint="https://atl1.cdn.digitaloceanspaces.com",
+        )
+
+        import asyncio
+
+        url = asyncio.run(
+            service.generate_cdn_download_url("orgs/tenant-1/products/a-real-key.webp")
+        )
+
+        assert url.startswith(
+            "https://prosell-assets.atl1.cdn.digitaloceanspaces.com/"
+            "orgs/tenant-1/products/a-real-key.webp?"
+        ), f"CDN URL has the wrong shape: {url!r}"
+        assert "/prosell-assets/orgs/" not in url, (
+            f"Bucket duplicated in the path — this is exactly the shape "
+            f"DO rejected with SignatureDoesNotMatch: {url!r}"
+        )

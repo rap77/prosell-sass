@@ -117,15 +117,35 @@ class DOSpacesService(IDOSpacesService):
         # the browser does NOT use yields an invalid signature. The CDN
         # proxies to the bucket and validates the signature using the
         # same access/secret keys.
+        #
+        # Bugfix (prod, 2026-09-25): DO_CDN_ENDPOINT is a REGION-level host
+        # (e.g. "https://atl1.cdn.digitaloceanspaces.com"), NOT the
+        # bucket-specific one DO's dashboard shows you — the bucket must
+        # come from boto3's own virtual-hosted-style addressing, forced
+        # here regardless of `s3_force_path_style` (which governs the
+        # ORIGIN signer, where path-style is correct because that
+        # endpoint is region-level too). Passing the already
+        # bucket-qualified CDN host straight through with path-style
+        # addressing put the bucket in the URL PATH as well as the host
+        # ("/prosell-assets/orgs/..." against a host that's already
+        # "prosell-assets.<region>.cdn...") — verified live against a
+        # real production CDN endpoint: DO rejected it with
+        # `SignatureDoesNotMatch` (the canonical URI botocore signed
+        # didn't match what DO's edge actually validated). Forcing
+        # "virtual" here makes botocore prepend the bucket as a subdomain
+        # onto the region-level endpoint, producing the exact same
+        # "<bucket>.<region>.cdn.digitaloceanspaces.com/<key>" shape DO's
+        # dashboard displays after enabling CDN.
         self.cdn_endpoint = override_cdn_endpoint.strip() if override_cdn_endpoint else ""
         if self.cdn_endpoint and self.cdn_endpoint != self.public_endpoint:
+            cdn_boto_config = Config(signature_version="s3v4", s3={"addressing_style": "virtual"})
             self.cdn_signer = boto3.client(
                 "s3",
                 region_name=self.region,
                 endpoint_url=self.cdn_endpoint,
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=secret_access_key,
-                config=boto_config,
+                config=cdn_boto_config,
             )
         else:
             # CDN endpoint not configured OR matches the public endpoint:
