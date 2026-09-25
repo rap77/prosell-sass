@@ -106,53 +106,62 @@ class DOSpacesService(IDOSpacesService):
             self.s3_signer = self.s3_client
             self.public_endpoint = self.endpoint
 
-        # CDN signer: signs presigned URLs against the configured CDN host.
-        # FR3.1, NFR5.1 — the browser fetches signed URLs from the CDN so
-        # the CDN caches and serves from origin on miss. Without this, the
-        # browser would hit the bucket endpoint directly, bypassing the
-        # CDN entirely (defense-in-depth violation against cache-failure
-        # storms and against load spikes).
+        # CDN signer: signs against the ORIGIN's virtual-hosted host, then
+        # `generate_cdn_download_url` swaps just the hostname to the CDN
+        # host in the resulting URL string — it does NOT sign directly
+        # against the CDN host. FR3.1, NFR5.1 — the browser fetches signed
+        # URLs from the CDN so the CDN caches and serves from origin on
+        # miss.
         #
-        # ponytail: the signature is host-bound; signing against a host
-        # the browser does NOT use yields an invalid signature. The CDN
-        # proxies to the bucket and validates the signature using the
-        # same access/secret keys.
+        # Bugfix (prod, 2026-09-25), two rounds, both verified live
+        # against a real production DO Spaces CDN endpoint (`curl`, not
+        # guessed):
+        #   1. Signing directly against the CDN host with path-style
+        #      addressing put the bucket in the URL path AS WELL AS the
+        #      host ("/prosell-assets/orgs/..." on a host that's already
+        #      "prosell-assets.<region>.cdn...") — DO rejected it with
+        #      SignatureDoesNotMatch.
+        #   2. Fixing the path (virtual-style, bucket only in the host)
+        #      STILL got SignatureDoesNotMatch. Root cause: DO's CDN sits
+        #      in front of the origin (Ceph RGW) and forwards the
+        #      ORIGIN's own hostname upstream, not the CDN-facing one the
+        #      browser used — so origin validates the signature against
+        #      ITS OWN hostname, never the CDN's. Confirmed by signing
+        #      against the origin host directly, then hand-swapping only
+        #      the hostname string to the CDN host: that URL returned
+        #      200. The previous "sign against the CDN host explicitly"
+        #      comment on this line was the ORIGINAL (untested) design
+        #      assumption — it was wrong.
         #
-        # Bugfix (prod, 2026-09-25): DO_CDN_ENDPOINT is a REGION-level host
-        # (e.g. "https://atl1.cdn.digitaloceanspaces.com"), NOT the
-        # bucket-specific one DO's dashboard shows you — the bucket must
-        # come from boto3's own virtual-hosted-style addressing, forced
-        # here regardless of `s3_force_path_style` (which governs the
-        # ORIGIN signer, where path-style is correct because that
-        # endpoint is region-level too). Passing the already
-        # bucket-qualified CDN host straight through with path-style
-        # addressing put the bucket in the URL PATH as well as the host
-        # ("/prosell-assets/orgs/..." against a host that's already
-        # "prosell-assets.<region>.cdn...") — verified live against a
-        # real production CDN endpoint: DO rejected it with
-        # `SignatureDoesNotMatch` (the canonical URI botocore signed
-        # didn't match what DO's edge actually validated). Forcing
-        # "virtual" here makes botocore prepend the bucket as a subdomain
-        # onto the region-level endpoint, producing the exact same
-        # "<bucket>.<region>.cdn.digitaloceanspaces.com/<key>" shape DO's
-        # dashboard displays after enabling CDN.
+        # DO_CDN_ENDPOINT is the REGION-level CDN host (e.g.
+        # "https://atl1.cdn.digitaloceanspaces.com"), not the
+        # bucket-specific one DO's dashboard shows after enabling CDN —
+        # used only to derive the swap target host below.
         self.cdn_endpoint = override_cdn_endpoint.strip() if override_cdn_endpoint else ""
         if self.cdn_endpoint and self.cdn_endpoint != self.public_endpoint:
-            cdn_boto_config = Config(signature_version="s3v4", s3={"addressing_style": "virtual"})
+            origin_virtual_config = Config(
+                signature_version="s3v4", s3={"addressing_style": "virtual"}
+            )
             self.cdn_signer = boto3.client(
                 "s3",
                 region_name=self.region,
-                endpoint_url=self.cdn_endpoint,
+                endpoint_url=f"https://{self.region}.digitaloceanspaces.com",
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=secret_access_key,
-                config=cdn_boto_config,
+                config=origin_virtual_config,
             )
+            self._cdn_swap_from_host = f"{self.bucket}.{self.region}.digitaloceanspaces.com"
+            cdn_host_no_scheme = self.cdn_endpoint.split("://", 1)[-1]
+            self._cdn_swap_to_host = f"{self.bucket}.{cdn_host_no_scheme}"
         else:
             # CDN endpoint not configured OR matches the public endpoint:
-            # reuse the existing signer. The signed URL is functionally
-            # identical (same host), no extra client needed.
+            # reuse the existing signer, no host swap needed. The signed
+            # URL is functionally identical (same host), no extra client
+            # needed.
             self.cdn_signer = self.s3_signer
             self.cdn_endpoint = self.public_endpoint
+            self._cdn_swap_from_host = None
+            self._cdn_swap_to_host = None
 
     def _require_cdn_signer(self) -> None:
         """Warn (NFR5.1) when a CDN-routed signed-URL operation has no
@@ -355,9 +364,11 @@ class DOSpacesService(IDOSpacesService):
         Used for the catalog-grid cover-thumbnail flow (FR3.1, FR5.1):
         the browser fetches the thumbnail from the configured CDN, the
         CDN caches the response and proxies the first request to the
-        origin. The signature is host-bound — signing against a host
-        the browser will NOT use yields an invalid signature, so we
-        sign against the CDN host explicitly.
+        origin. Signs against the ORIGIN's virtual-hosted host, then
+        swaps the hostname to the CDN host in the URL string — DO's CDN
+        forwards the origin's own hostname upstream, so the signature
+        must be computed against that host, not the CDN-facing one (see
+        `__init__`'s comment for how this was confirmed).
 
         Args:
             key: Storage key (e.g., "orgs/{org_id}/products/{uuid}-thumb.webp")
@@ -385,6 +396,8 @@ class DOSpacesService(IDOSpacesService):
                 ExpiresIn=ttl,
             )
         )
+        if self._cdn_swap_from_host and self._cdn_swap_to_host:
+            url = url.replace(self._cdn_swap_from_host, self._cdn_swap_to_host, 1)
         return url
 
     async def get_object(self, key: str) -> bytes:
