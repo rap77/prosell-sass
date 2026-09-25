@@ -9,7 +9,7 @@
  *   - Vehicle attribute grid
  *   - Publish / Edit action buttons
  *
- * All colors via var(--ps-*) tokens — dark/light automatic.
+ * All colors via semantic bg-ps-/text-ps- Tailwind classes — dark/light automatic.
  */
 
 import Link from "next/link";
@@ -29,6 +29,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Product } from "@/types/product";
 import type { ProductImage } from "@/types/product-image";
 import { isVehicleAttributes, type VehicleAttributes } from "@/types/vehicle";
+import { resolveVehicleConditionKey } from "@/lib/constants/fbVehicleOptions";
 import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
 import { ProductImageGallery } from "./ProductImageGallery";
 import { AvailabilityActions } from "./AvailabilityActions";
@@ -347,10 +348,12 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
         body_style: vehicleAttributes.body_type,
         exterior_color: vehicleAttributes.exterior_color,
         interior_color: vehicleAttributes.interior_color,
-        vehicle_condition: product.condition,
+        vehicle_condition: resolveVehicleConditionKey(
+          vehicleAttributes.vehicle_condition,
+        ),
         fuel_type: vehicleAttributes.fuel_type,
         transmission: vehicleAttributes.transmission,
-        clean_title: true,
+        clean_title: vehicleAttributes.clean_title,
         vin: vehicleAttributes.vin,
         vehicle_type: "car_truck",
       }

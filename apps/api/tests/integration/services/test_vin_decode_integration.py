@@ -161,11 +161,11 @@ class TestVINDecodeIntegration:
 
         # Act - First call (should hit API)
         with patch("httpx.AsyncClient", return_value=mock_client):
-            response1 = await decode_vin(request)
+            response1 = await decode_vin(request, vin_service=NHTSAVinService())
 
         # Act - Second call (should use cache, no API call)
         with patch("httpx.AsyncClient", return_value=mock_client):
-            response2 = await decode_vin(request)
+            response2 = await decode_vin(request, vin_service=NHTSAVinService())
 
         # Assert
         assert response1.cached is False
@@ -311,13 +311,13 @@ class TestVINDecodeIntegration:
 
         # Act
         with patch("httpx.AsyncClient", return_value=mock_client):
-            response = await decode_vin(request)
+            response = await decode_vin(request, vin_service=NHTSAVinService())
 
         # Assert - All fields populated
         assert response.vehicle is not None
         assert response.vehicle.year == 2020
         assert response.vehicle.make == "Toyota"  # Canonical Spanish catalog label
-        assert response.vehicle.model == "camry"  # Normalized to lowercase
+        assert response.vehicle.model == "Camry"  # Preserved verbatim from NHTSA
         assert response.vehicle.trim == "LE"
         assert response.vehicle.body_type == "Sedán"  # Canonical Spanish catalog label
         assert response.vehicle.drivetrain == "FWD"  # Normalized to UPPERCASE
@@ -347,7 +347,7 @@ class TestVINDecodeIntegration:
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
-            await decode_vin(request)
+            await decode_vin(request, vin_service=NHTSAVinService())
 
         assert exc_info.value.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert "Invalid VIN characters" in exc_info.value.detail
@@ -441,11 +441,11 @@ class TestVINDecodeEdgeCases:
 
         # Act
         with patch("httpx.AsyncClient", return_value=mock_client):
-            response = await decode_vin(request)
+            response = await decode_vin(request, vin_service=NHTSAVinService())
 
         # Assert - Required fields populated, optional fields are None
         assert response.vehicle.make == "Ford"
-        assert response.vehicle.model == "f-150"
+        assert response.vehicle.model == "F-150"  # Preserved verbatim from NHTSA
         assert response.vehicle.year == 2021
         assert response.vehicle.trim is None  # Not in NHTSA response
         assert response.vehicle.body_type is None  # Not in NHTSA response
@@ -481,7 +481,7 @@ class TestVINDecodeEdgeCases:
         mock_client.get.return_value = mock_response
 
         with patch("httpx.AsyncClient", return_value=mock_client):
-            response = await decode_vin(request)
+            response = await decode_vin(request, vin_service=NHTSAVinService())
 
         assert response.unmatched_fields == []
         assert response.vehicle.body_type == "Sedán"
@@ -522,7 +522,7 @@ class TestVINDecodeEdgeCases:
         mock_client.get.return_value = mock_response
 
         with patch("httpx.AsyncClient", return_value=mock_client):
-            response = await decode_vin(request)
+            response = await decode_vin(request, vin_service=NHTSAVinService())
 
         assert response.vehicle.body_type == "Otro"
         assert response.unmatched_fields == []
@@ -560,8 +560,8 @@ class TestVINDecodeEdgeCases:
         mock_client.get.return_value = mock_response
 
         with patch("httpx.AsyncClient", return_value=mock_client):
-            first = await decode_vin(request)
-            second = await decode_vin(request)
+            first = await decode_vin(request, vin_service=NHTSAVinService())
+            second = await decode_vin(request, vin_service=NHTSAVinService())
 
         assert first.cached is False
         assert second.cached is True

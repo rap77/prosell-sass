@@ -12,7 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectControlled } from "@/components/ui/select-controlled";
-import type { DecodedVehicle } from "@/lib/api/vehicles";
+import {
+  useVehicleModelsForMake,
+  type DecodedVehicle,
+} from "@/lib/api/vehicles";
 import { tLabel } from "@/lib/translations/vehicle-values";
 import { toTitleCase } from "@/lib/utils/toTitleCase";
 import type { AttributeSchemaEntry } from "@/types/category";
@@ -63,6 +66,20 @@ export function SchemaFieldRenderer({
   // below consumes it — every other branch just ignores the value.
   const watchedUnmatched = useWatch({ control, name: "_unmatchedFields" });
 
+  // Dependent select (e.g. model depends_on make): watch the field named
+  // in `depends_on` unconditionally (rules-of-hooks) — falls back to
+  // watching this field's own key when `depends_on` isn't set, which is
+  // harmless (same field the Controller below already registers).
+  const dependsOnValue = useWatch({
+    control,
+    name: entry.depends_on ?? fieldKey,
+  });
+  const isNhtsaModelsField = entry.options_source === "nhtsa_models";
+  const dependsOnFieldValue = isNhtsaModelsField
+    ? String(dependsOnValue ?? "").trim()
+    : undefined;
+  const dependentModelsQuery = useVehicleModelsForMake(dependsOnFieldValue);
+
   // VIN decode field
   if (entry.render_as === "vin_decode") {
     return (
@@ -109,6 +126,71 @@ export function SchemaFieldRenderer({
     );
   }
 
+  // Dependent select whose options come from an API call keyed by another
+  // field's value (today: model depends_on make, via NHTSA's model
+  // catalog) instead of a static curated `options` list.
+  if (isNhtsaModelsField) {
+    const makeSelected = Boolean(dependsOnFieldValue);
+    const dependsOnLabel = entry.depends_on
+      ? tLabel(entry.depends_on) !== entry.depends_on
+        ? tLabel(entry.depends_on)
+        : humanize(entry.depends_on)
+      : "la marca";
+    const models = dependentModelsQuery.data ?? [];
+
+    return (
+      <Controller
+        name={fieldKey}
+        control={control}
+        render={({ field, fieldState }) => {
+          const currentValue = String(field.value ?? "");
+          const hasCurrentValue = models.some(
+            (m) => m.toLowerCase() === currentValue.toLowerCase(),
+          );
+          // Keep an out-of-catalog current value (e.g. a VIN-decoded or
+          // hand-typed model NHTSA doesn't list) selectable, same pattern
+          // as the static-options branch below.
+          const displayOptions = (
+            hasCurrentValue || !currentValue
+              ? models
+              : [currentValue, ...models]
+          ).map((m) => ({ value: m, label: m }));
+
+          const placeholder = !makeSelected
+            ? `Elegí ${dependsOnLabel} primero`
+            : dependentModelsQuery.isLoading
+              ? "Cargando modelos..."
+              : `Seleccioná ${label}`;
+
+          return (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={inputId}>
+                {label}
+                {entry.required && <span className="text-destructive"> *</span>}
+              </Label>
+              <SelectControlled
+                id={inputId}
+                value={currentValue}
+                onChange={field.onChange}
+                options={displayOptions}
+                placeholder={placeholder}
+                disabled={
+                  disabled || !makeSelected || dependentModelsQuery.isLoading
+                }
+                aria-label={label}
+              />
+              {fieldState.error && (
+                <p className="text-sm text-destructive">
+                  {fieldState.error.message}
+                </p>
+              )}
+            </div>
+          );
+        }}
+      />
+    );
+  }
+
   // Select with options
   // ponytail: check options array, not type — schema uses filter_type for select
   const options = entry.options;
@@ -150,7 +232,7 @@ export function SchemaFieldRenderer({
                   value={currentValue}
                   onChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
                   options={displayOptions}
-                  placeholder={`Select ${label}`}
+                  placeholder={`Seleccioná ${label}`}
                   disabled={disabled}
                   aria-label={label}
                 />

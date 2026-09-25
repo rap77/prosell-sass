@@ -204,10 +204,10 @@ class BulkUploadPreviewUseCase:
             mapped_fields["attributes.exterior_color"] = mapped.exterior_color
         if mapped.interior_color:
             mapped_fields["attributes.interior_color"] = mapped.interior_color
-        if mapped.title_status:
-            mapped_fields["attributes.title_status"] = mapped.title_status
-        if mapped.title_state:
-            mapped_fields["attributes.title_state"] = mapped.title_state
+        if mapped.clean_title is not None:
+            mapped_fields["attributes.clean_title"] = mapped.clean_title
+        if mapped.vehicle_condition:
+            mapped_fields["attributes.vehicle_condition"] = mapped.vehicle_condition
         if mapped.fuel_type:
             mapped_fields["attributes.fuel_type"] = mapped.fuel_type
         if mapped.transmission:

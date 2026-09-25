@@ -262,34 +262,34 @@ def test_build_vehicle_zip_folder_name_uses_placeholder_for_missing_org_code() -
 # ── u1-cross-org-export-api: FR7 value-mapping fix (piso mínimo, punto 1) ───
 
 
-def test_build_client_format_row_clean_title_status() -> None:
-    # BR1.1 — "clean" -> "1" (inverse of CSVFieldMapper.parse_title_status)
+def test_build_client_format_row_clean_title_true() -> None:
+    # BR1.1 — True -> "1"
     row = build_client_format_row(
         row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
         attributes={},
-        title_status="clean",
+        clean_title=True,
     )
     assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "1"
 
 
-def test_build_client_format_row_rebuilt_title_status() -> None:
-    # BR1.1 — "rebuilt" -> "0"
+def test_build_client_format_row_clean_title_false() -> None:
+    # BR1.1 — False -> "0"
     row = build_client_format_row(
         row_id=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
         attributes={},
-        title_status="rebuilt",
+        clean_title=False,
     )
     assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "0"
 
 
-def test_build_client_format_row_missing_title_status_defaults_to_zero() -> None:
-    # BR1.1 — ``title_status`` absent on ``attributes`` renders "0"
+def test_build_client_format_row_missing_clean_title_defaults_to_zero() -> None:
+    # BR1.1 — ``clean_title`` absent on ``attributes`` renders "0"
     # (default to "not clean"). The client's CSV template encodes
     # ``clean_title`` as an explicit boolean and Excel/Sheets parses
     # an empty cell as a third undefined state, so the export must
@@ -300,24 +300,9 @@ def test_build_client_format_row_missing_title_status_defaults_to_zero() -> None
         price_cents=1780000,
         description=None,
         attributes={},
-        title_status=None,
+        clean_title=None,
     )
     assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "0"
-
-
-def test_build_client_format_row_unknown_title_status_defaults_to_zero() -> None:
-    # BR1.1 — ``title_status`` carrying any value other than "clean"
-    # (rebuilt, "unknown-value", garbage) also renders "0".
-    for raw in ("rebuilt", "unknown", "Salvage", ""):
-        row = build_client_format_row(
-            row_id=527,
-            org_code="MF",
-            price_cents=1780000,
-            description=None,
-            attributes={},
-            title_status=raw,
-        )
-        assert row[CLIENT_FORMAT_COLUMNS.index("clean_title")] == "0", raw
 
 
 def test_build_client_format_row_facebook_groups_joined_with_comma() -> None:

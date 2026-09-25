@@ -143,3 +143,18 @@ def test_car_schema_color_options_match_facebook_canonical():
     }
     assert set(_CAR_SCHEMA["exterior_color"]["options"]) == expected
     assert set(_CAR_SCHEMA["interior_color"]["options"]) == expected
+
+
+def test_car_schema_vehicle_condition_options_match_facebook_canonical():
+    # Same catalog-drift risk (#87) as the other select fields above:
+    # these five labels must match FB_VEHICLE_CONDITIONS.es in
+    # apps/web/src/lib/constants/fbVehicleOptions.ts exactly.
+    expected = {"Excelente", "Muy bueno", "Bueno", "Aceptable", "Malo"}
+    assert set(_CAR_SCHEMA["vehicle_condition"]["options"]) == expected
+
+
+def test_car_schema_model_is_a_make_dependent_select():
+    # SchemaFieldRenderer.tsx reads these two keys to fetch model options
+    # live from GET /vehicles/models?make=... instead of a static list.
+    assert _CAR_SCHEMA["model"]["depends_on"] == "make"
+    assert _CAR_SCHEMA["model"]["options_source"] == "nhtsa_models"

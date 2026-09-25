@@ -43,3 +43,22 @@ class IVINDecoderService(ABC):
             True if VIN format is valid, False otherwise
         """
         pass
+
+    @abstractmethod
+    async def get_models_for_make(self, make: str) -> list[str]:
+        """
+        Fetch the model catalog for a given make, for a dependent
+        make -> model select.
+
+        Args:
+            make: Vehicle make name (e.g. "Toyota", "Mercedes-Benz")
+
+        Returns:
+            Sorted, deduplicated list of model names. Empty list when
+            the provider has no models for the given make (an
+            unrecognized/misspelled make), not an error.
+
+        Raises:
+            httpx.HTTPStatusError: If the API request itself fails
+        """
+        pass

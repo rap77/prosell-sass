@@ -20,13 +20,14 @@
  * equivalents in `lib/api/products.ts`) and have been removed.
  */
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
   DecodeVinResponseSchema,
   type DecodedVehicle,
 } from "@/lib/api/schemas/decodeVin";
+import { VehicleModelsResponseSchema } from "@/lib/api/schemas/vehicleModels";
 
 // Re-export so existing `import type { DecodedVehicle } from "@/lib/api/vehicles"`
 // callers keep compiling. The canonical type lives in the schema module.
@@ -80,5 +81,32 @@ export function useDecodeVin() {
     onError: (err) => {
       toast.error(err.message || "Failed to decode VIN");
     },
+  });
+}
+
+/**
+ * Model options for a given make, for the make -> model dependent select
+ * (`SchemaFieldRenderer`'s `options_source: "nhtsa_models"` branch).
+ * Backed by NHTSA vPIC's `GetModelsForMake` via the backend's in-memory
+ * cache — disabled until `make` is a non-empty string.
+ */
+export function useVehicleModelsForMake(make: string | undefined) {
+  return useQuery({
+    queryKey: ["vehicle-models", make],
+    queryFn: async (): Promise<string[]> => {
+      const res = await fetch(
+        `/api/v1/vehicles/models?make=${encodeURIComponent(make ?? "")}`,
+        { credentials: "include" },
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch vehicle models");
+      }
+
+      const data = VehicleModelsResponseSchema.parse(await res.json());
+      return data.models;
+    },
+    enabled: Boolean(make && make.trim().length > 0),
+    staleTime: 24 * 60 * 60 * 1000, // 24h — NHTSA's catalog for a make is effectively static
   });
 }

@@ -179,3 +179,35 @@ export function resolveFbLabel(
 ): string | undefined {
   return options.find((o) => o.key === key)?.[lang];
 }
+
+// Client CSVs (and legacy data) may spell the "fair" condition tier
+// "Regular" instead of our canonical "Aceptable" — same concept, a
+// different word chosen by a different dealer. Extend this map if more
+// synonyms show up.
+const VEHICLE_CONDITION_SYNONYMS: Record<string, string> = {
+  regular: "fair",
+};
+
+/**
+ * Resolve a free-text vehicle condition label (as stored verbatim in
+ * `attributes.vehicle_condition` from a client CSV import) to the
+ * canonical FB_VEHICLE_CONDITIONS key the "Estado del vehículo" select
+ * expects as its value. Case-insensitive; falls back to a known synonym
+ * table for wording that doesn't match our Spanish labels exactly.
+ *
+ * @example
+ *   resolveVehicleConditionKey("Muy bueno") // → "very_good"
+ *   resolveVehicleConditionKey("Regular")   // → "fair"
+ *   resolveVehicleConditionKey("garbage")   // → undefined
+ */
+export function resolveVehicleConditionKey(
+  label: string | undefined,
+): string | undefined {
+  if (!label) return undefined;
+  const normalized = label.trim().toLowerCase();
+  const byLabel = FB_VEHICLE_CONDITIONS.find(
+    (o) =>
+      o.es.toLowerCase() === normalized || o.en.toLowerCase() === normalized,
+  );
+  return byLabel?.key ?? VEHICLE_CONDITION_SYNONYMS[normalized];
+}

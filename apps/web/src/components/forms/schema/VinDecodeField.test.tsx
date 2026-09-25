@@ -36,6 +36,28 @@ describe("mapDecodedToForm", () => {
     expect(setValue).toHaveBeenCalledWith("fuel_type", "gasoline");
   });
 
+  // Bug fix (2026-09-25): `model` has no static `options` list (its
+  // options come live from NHTSA via options_source), so before this fix
+  // it fell into the free-text branch and got Title Cased — mangling
+  // correctly-cased NHTSA acronym models ("RAV4" -> "Rav4", "C-HR" -> "C-Hr").
+  it("leaves a dependent-select field's value untouched (e.g. model, options_source nhtsa_models)", () => {
+    const setValue = vi.fn();
+    const schema: Record<string, AttributeSchemaEntry> = {
+      model: {
+        type: "string",
+        filter_type: "text",
+        depends_on: "make",
+        options_source: "nhtsa_models",
+        vin_decode_key: "model",
+      },
+    };
+    const decoded = { model: "RAV4" } as unknown as DecodedVehicle;
+
+    mapDecodedToForm(decoded, schema, setValue, []);
+
+    expect(setValue).toHaveBeenCalledWith("model", "RAV4");
+  });
+
   it("passes non-string values through unchanged", () => {
     const setValue = vi.fn();
     const schema: Record<string, AttributeSchemaEntry> = {

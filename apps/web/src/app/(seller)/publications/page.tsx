@@ -5,7 +5,7 @@
  *
  * Two view modes: Lista (table, default) + Grilla (cards).
  * All business logic preserved (optimistic rows, FB pages warning, modal).
- * All colors via var(--ps-*) tokens.
+ * All colors via semantic bg-ps-/text-ps- Tailwind classes.
  */
 
 import { useState } from "react";
@@ -36,6 +36,7 @@ import {
   resolveStorageImageUrl,
 } from "@/lib/api/productImages";
 import type { Product, ProductWithVehicle } from "@/types/product";
+import { resolveVehicleConditionKey } from "@/lib/constants/fbVehicleOptions";
 
 // Local category check for the publications view (the only remaining
 // frontend consumer of the vehicle-specific path). Reads
@@ -150,7 +151,7 @@ function mapProductStatusToPublicationStatus(
       return null;
   }
 }
-function toPublishableVehicleData(
+export function toPublishableVehicleData(
   product: ProductWithVehicle,
 ): PublishableVehicleData {
   const a = product.attributes;
@@ -168,10 +169,10 @@ function toPublishableVehicleData(
     body_style: a.body_type,
     exterior_color: a.exterior_color,
     interior_color: a.interior_color,
-    vehicle_condition: product.condition,
+    vehicle_condition: resolveVehicleConditionKey(a.vehicle_condition),
     fuel_type: a.fuel_type,
     transmission: a.transmission,
-    clean_title: true,
+    clean_title: a.clean_title,
     vin: a.vin,
     vehicle_type: "car_truck",
   };
@@ -205,7 +206,7 @@ function formatDate(v: string): string {
 
 function FbBadge() {
   return (
-    <span className="inline-flex items-center gap-1.25 text-xs text-ps-text-secondary">
+    <span className="inline-flex items-center gap-1 text-xs text-ps-text-secondary">
       <span className="flex h-4 w-4 items-center justify-center rounded bg-ps-cyan">
         <Facebook size={10} strokeWidth={2.5} className="text-white" />
       </span>
@@ -313,12 +314,9 @@ export function PublicationCard({
   image?: string;
 }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-ps-border-default bg-ps-surface transition-all duration-180 hover:border-ps-border-medium hover:shadow-ps-card-hover">
+    <article className="flex flex-col overflow-hidden rounded-xl border border-ps-border-default bg-ps-surface transition-all duration-180 hover:border-ps-border-medium hover:shadow-md">
       {/* Image */}
-      <div
-        className="relative bg-ps-bg-elevated"
-        style={{ aspectRatio: "16/9" }}
-      >
+      <div className="relative bg-ps-elevated" style={{ aspectRatio: "16/9" }}>
         {image ? (
           <Image
             src={image}
@@ -421,7 +419,7 @@ export default function PublicationsPage() {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="flex min-h-60vh items-center justify-center">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="w-full max-w-md rounded-2xl border border-ps-border-default bg-ps-surface p-10 text-center">
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-ps-error/25 bg-ps-error-bg">
             <AlertCircle
@@ -476,7 +474,7 @@ export default function PublicationsPage() {
           <div className="flex items-center gap-2.5">
             {/* View mode toggle */}
             {publicationRows.length > 0 && (
-              <div className="flex gap-0.5 rounded-lg border border-ps-border-default bg-ps-bg-elevated p-0.75">
+              <div className="flex gap-0.5 rounded-lg border border-ps-border-default bg-ps-elevated p-0.75">
                 {VIEW_TABS.map(({ id, label, icon: Icon }) => {
                   const active = viewMode === id;
                   return (
@@ -485,9 +483,9 @@ export default function PublicationsPage() {
                       type="button"
                       onClick={() => setViewMode(id)}
                       className={cn(
-                        "inline-flex h-7 items-center gap-1.25 rounded px-2.5 text-xs transition-all duration-150",
+                        "inline-flex h-7 items-center gap-1 rounded px-2.5 text-xs transition-all duration-150",
                         active
-                          ? "bg-ps-surface font-semibold text-ps-cyan shadow-sm shadow-ps-tab-hover"
+                          ? "bg-ps-surface font-semibold text-ps-cyan shadow-sm"
                           : "font-normal text-ps-text-secondary",
                       )}
                     >
@@ -542,7 +540,7 @@ export default function PublicationsPage() {
           <div className="overflow-hidden rounded-2xl border border-ps-border-default bg-ps-surface">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b border-ps-border-subtle bg-ps-bg-elevated">
+                <tr className="border-b border-ps-border-subtle bg-ps-elevated">
                   {[
                     "",
                     "Vehículo",
@@ -568,7 +566,7 @@ export default function PublicationsPage() {
                   >
                     {/* Thumbnail */}
                     <td className="w-16 p-5 align-top">
-                      <div className="relative h-10 w-10 overflow-hidden rounded bg-ps-bg-elevated">
+                      <div className="relative h-10 w-10 overflow-hidden rounded bg-ps-elevated">
                         {pub.imageKey ? (
                           <Image
                             src={resolveStorageImageUrl(pub.imageKey)}

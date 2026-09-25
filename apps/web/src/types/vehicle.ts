@@ -56,6 +56,12 @@ export interface VehicleAttributes {
   // Branch info
   stock_number?: string; // 0-100 chars
   vin_verified?: boolean; // default: false
+
+  // Title status
+  clean_title?: boolean; // "Título limpio" — same key/type the Category schema and FB sync use
+
+  // Vehicle condition (Facebook grading scale: Excelente/Muy bueno/Bueno/Aceptable/Malo)
+  vehicle_condition?: string;
 }
 
 /**

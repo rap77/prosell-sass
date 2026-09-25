@@ -7,20 +7,21 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.application.ports.ivin_decoder_service import IVINDecoderService
+from prosell.application.use_cases.product.list_products import ListProductsUseCase
 from prosell.domain.entities.user import User
 from prosell.domain.services.facebook_vehicle_value_catalog import get_options, reconcile
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
+    get_list_products_use_case,
     get_spaces_service,
+    get_vin_service,
 )
 from prosell.infrastructure.api.routers.image_router import sign_image_urls
-from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.services import fueleconomy_service
 from prosell.infrastructure.services.nhtsa_normalizer import normalize_nhtsa_value
-from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 
 router = APIRouter()
 
@@ -28,6 +29,11 @@ router = APIRouter()
 # unmatched_fields is cached alongside the vehicle/raw_data so a cache hit
 # returns the same BR1.2 signal a fresh decode would (u1-vehicle-catalog-api).
 _vin_cache: dict[str, tuple["DecodedVehicle", dict[str, Any], list[str]]] = {}
+
+# Simple in-memory cache for make -> models lookups (process-scoped,
+# dev/test only), keyed by the lowercased make — NHTSA's model catalog for
+# a given make is effectively static within a process lifetime.
+_models_cache: dict[str, list[str]] = {}
 
 
 # Request/Response Models
@@ -121,7 +127,7 @@ class VehicleListItem(BaseModel):
 @router.get("", response_model=VehicleListItem, status_code=status.HTTP_200_OK)
 async def list_vehicles(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    db: Annotated[AsyncSession, Depends(get_async_session)],
+    use_case: Annotated[ListProductsUseCase, Depends(get_list_products_use_case)],
     spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
     skip: Annotated[int, Query(alias="offset", ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -132,19 +138,11 @@ async def list_vehicles(
     List vehicles (delegates to product catalog with auth).
     Returns vehicle products for the authenticated tenant.
     """
-    from prosell.application.use_cases.product.list_products import ListProductsUseCase
-    from prosell.infrastructure.repositories.product_repository_impl import (
-        SqlAlchemyProductRepository,
-    )
-
     if current_user.tenant_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No organization associated with account.",
         )
-
-    repo = SqlAlchemyProductRepository(db)
-    use_case = ListProductsUseCase(repo)
 
     result = await use_case.execute(
         tenant_id=current_user.tenant_id,
@@ -193,7 +191,10 @@ async def list_vehicles(
 
 
 @router.post("/decode-vin", response_model=VINDecodeResponse, status_code=status.HTTP_201_CREATED)
-async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
+async def decode_vin(
+    request: VINDecodeRequest,
+    vin_service: Annotated[IVINDecoderService, Depends(get_vin_service)],
+) -> VINDecodeResponse:
     """
     Decode VIN using NHTSA VPIC API with Facebook Marketplace normalization.
 
@@ -204,8 +205,6 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
     - transmission: lowercase (e.g., "automatic", "manual")
     - fuel_type: lowercase (e.g., "gasoline", "diesel", "electric")
     """
-    vin_service = NHTSAVinService()
-
     # Check in-memory cache first
     vin_upper = request.vin.upper()
     if vin_upper in _vin_cache:
@@ -399,10 +398,20 @@ def _normalize_and_reconcile(
 
 
 def _normalize_model(model: str | None) -> str | None:
-    """Normalize model name to lowercase."""
+    """Trim NHTSA's raw model name, preserving its casing verbatim.
+
+    `model` has no canonical catalog to reconcile against (unlike `make`/
+    `body_type`/etc.) — NHTSA's `Model` field is already properly cased
+    for the overwhelming majority of vehicles (e.g. "RAV4", "C-HR", "Land
+    Cruiser"), which is also the capitalized format Facebook Marketplace
+    expects. This used to lowercase unconditionally, which actively
+    destroyed correctly-cased acronym models — verified against real data
+    (docs/data39.csv has "Rav4", "Cr-V", "Hr-V" where the real model
+    names are "RAV4", "CR-V", "HR-V") before this fix.
+    """
     if not model:
         return None
-    return model.lower().strip()
+    return model.strip()
 
 
 class MPGDataResponse(BaseModel):
@@ -433,8 +442,60 @@ async def get_mpg(
             return MPGDataResponse()
         return MPGDataResponse(**data)
     except Exception:
-        # ponytail: silent fail, MPG is optional enrichment
+        # MPG is optional enrichment — never fail the request over it, but
+        # log so a real bug (bad args, network failure, malformed payload)
+        # doesn't disappear as indistinguishable from "no MPG data available".
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "MPG lookup failed for year=%s make=%s model=%s", year, make, model
+        )
         return MPGDataResponse()
+
+
+class VehicleModelsResponse(BaseModel):
+    """Model catalog for a given make (dependent make -> model select)."""
+
+    make: str = Field(..., description="The make the models were looked up for")
+    models: list[str] = Field(
+        default_factory=list,
+        description="Model names NHTSA has on record for this make, sorted alphabetically.",
+    )
+    cached: bool = Field(False, description="True if result was served from in-memory cache")
+
+
+@router.get("/models", response_model=VehicleModelsResponse, status_code=status.HTTP_200_OK)
+async def get_models_for_make(
+    make: Annotated[str, Query(min_length=1)],
+    vin_service: Annotated[IVINDecoderService, Depends(get_vin_service)],
+) -> VehicleModelsResponse:
+    """Look up NHTSA's model catalog for a given make.
+
+    Feeds the make -> model dependent select in the vehicle form. Returns
+    an empty `models` list (not an error) for a make NHTSA doesn't
+    recognize — the vPIC API itself returns HTTP 200 with no results for
+    that case.
+    """
+    cache_key = make.strip().lower()
+    if cache_key in _models_cache:
+        return VehicleModelsResponse(make=make, models=_models_cache[cache_key], cached=True)
+
+    try:
+        models = await vin_service.get_models_for_make(make)
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.exception("NHTSA models lookup failed for make=%s", make)
+
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to fetch vehicle models via NHTSA API",
+        ) from e
+
+    _models_cache[cache_key] = models
+
+    return VehicleModelsResponse(make=make, models=models, cached=False)
 
 
 # ============================================================================

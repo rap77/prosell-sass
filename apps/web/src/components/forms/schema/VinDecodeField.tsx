@@ -87,7 +87,7 @@ export function VinDecodeField({
           value={value}
           onChange={handleChange}
           disabled={disabled || isPending}
-          placeholder="Enter 17-character VIN"
+          placeholder="Ingresá el VIN de 17 caracteres"
           maxLength={17}
           className="font-mono uppercase"
           aria-label="VIN"
@@ -101,17 +101,17 @@ export function VinDecodeField({
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Decoding...
+              Decodificando...
             </>
           ) : (
-            "Decode"
+            "Decodificar"
           )}
         </Button>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {!error && value.length > 0 && !isValidLength && (
         <p className="text-sm text-muted-foreground">
-          {17 - value.length} characters remaining
+          Faltan {17 - value.length} caracteres
         </p>
       )}
     </div>
@@ -150,12 +150,17 @@ export function mapDecodedToForm(
     if (!(decodeKey in decoded)) continue;
     const value = decoded[decodeKey as keyof DecodedVehicle];
     if (value !== undefined && value !== null) {
-      // FR6.1: Title Case free-text fields (no `options` — e.g. model, trim).
-      // Select-backed fields (options present, e.g. make/body_type/drivetrain,
-      // already normalized to Facebook's controlled vocabulary) are left
-      // exactly as decoded so their value keeps matching the schema's options.
+      // FR6.1: Title Case genuinely free-text fields (no `options` — e.g.
+      // trim). Select-backed fields (options present, e.g.
+      // make/body_type/drivetrain, already normalized to Facebook's
+      // controlled vocabulary) and dependent-select fields (e.g. model,
+      // options_source "nhtsa_models" — NHTSA already returns proper
+      // casing, "RAV4"/"C-HR"/"Land Cruiser") are left exactly as decoded:
+      // toTitleCase's lowercase-then-recapitalize would destroy correctly
+      // -cased acronym values ("RAV4" -> "Rav4", "C-HR" -> "C-Hr").
       const isSelectField =
-        Array.isArray(entry.options) && entry.options.length > 0;
+        (Array.isArray(entry.options) && entry.options.length > 0) ||
+        entry.options_source !== undefined;
       setValue(
         key,
         typeof value === "string" && !isSelectField

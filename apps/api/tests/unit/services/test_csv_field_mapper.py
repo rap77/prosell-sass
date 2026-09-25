@@ -37,32 +37,32 @@ class TestLocationParsing:
         assert result.state == "FL"
 
 
-class TestTitleStatusParsing:
+class TestCleanTitleParsing:
     """Tests for clean_title field parsing."""
 
-    def test_parses_clean_title_1_as_clean(self):
-        """'1' maps to title_status='clean'."""
-        result = CSVFieldMapper.parse_title_status("1")
+    def test_parses_clean_title_1_as_true(self):
+        """'1' maps to clean_title=True."""
+        result = CSVFieldMapper.parse_clean_title("1")
 
-        assert result.status == "clean"
+        assert result.clean_title is True
 
-    def test_parses_clean_title_0_as_rebuilt(self):
-        """'0' maps to title_status='rebuilt'."""
-        result = CSVFieldMapper.parse_title_status("0")
+    def test_parses_clean_title_0_as_false(self):
+        """'0' maps to clean_title=False."""
+        result = CSVFieldMapper.parse_clean_title("0")
 
-        assert result.status == "rebuilt"
+        assert result.clean_title is False
 
     def test_parses_empty_as_none(self):
-        """Empty string maps to title_status=None."""
-        result = CSVFieldMapper.parse_title_status("")
+        """Empty string maps to clean_title=None."""
+        result = CSVFieldMapper.parse_clean_title("")
 
-        assert result.status is None
+        assert result.clean_title is None
 
     def test_parses_none_as_none(self):
-        """None maps to title_status=None."""
-        result = CSVFieldMapper.parse_title_status(None)
+        """None maps to clean_title=None."""
+        result = CSVFieldMapper.parse_clean_title(None)
 
-        assert result.status is None
+        assert result.clean_title is None
 
 
 class TestFacebookGroupsParsing:
@@ -213,8 +213,8 @@ class TestCSVFieldMapperMapRow:
         assert result.body_style == "SUV"
         assert result.exterior_color == "Gris"
         assert result.interior_color == "Negro"
-        assert result.title_status == "rebuilt"
-        assert result.title_state == "Muy bueno"
+        assert result.clean_title is False
+        assert result.vehicle_condition == "Muy bueno"
         assert result.fuel_type == "Gasolina"
         assert result.transmission == "Transmisión automática"
         assert result.description == "FORD EXPLORER XLT"
@@ -243,7 +243,7 @@ class TestCSVFieldMapperMapRow:
         assert result.location_city == "Orlando"
         assert result.location_state is None
         assert result.year is None
-        assert result.title_status is None
+        assert result.clean_title is None
         assert result.publicado is False
         assert result.facebook_groups is None
         assert result.image_path is None

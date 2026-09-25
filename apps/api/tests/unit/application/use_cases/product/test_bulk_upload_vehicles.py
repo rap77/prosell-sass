@@ -230,7 +230,7 @@ class TestBulkUploadVehiclesUseCase:
         assert attrs["mileage"] == 70000
         assert attrs["mileage_unit"] == "miles"
         assert attrs["exterior_color"] == "Gris"
-        assert attrs["title_status"] == "clean"
+        assert attrs["clean_title"] is True
         assert attrs["facebook_groups"] == ["1", "2"]
         assert attrs["publicado"] is True
         # location_city and location_state are product fields, not attributes
@@ -244,7 +244,7 @@ class TestBulkUploadVehiclesUseCase:
         assert attrs2["year"] == 2019
         assert attrs2["make"] == "Toyota"
         assert attrs2["model"] == "Camry"
-        assert attrs2["title_status"] == "rebuilt"
+        assert attrs2["clean_title"] is False
         assert attrs2["publicado"] is False
         assert second_product.location_city == "Miami"
         assert second_product.location_state == "FL"

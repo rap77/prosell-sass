@@ -67,6 +67,43 @@ class NHTSAVinService(IVINDecoderService):
 
             return raw_data
 
+    async def get_models_for_make(self, make: str) -> list[str]:
+        """
+        Fetch NHTSA's model catalog for a given make (vPIC
+        GetModelsForMake), for a dependent make -> model select.
+
+        Returns model names exactly as NHTSA provides them — already
+        Title Case for the overwhelming majority (e.g. "Corolla", "Land
+        Cruiser", "RAV4") — matching the capitalized format Facebook
+        Marketplace expects for vehicle listings. Never lowercases,
+        unlike the VIN-decode normalization pipeline
+        (`_normalize_model()` in vehicle_router.py), which serves a
+        different purpose (canonical matching against the internal
+        attribute catalog).
+
+        Args:
+            make: Vehicle make name (e.g. "Toyota", "Mercedes-Benz")
+
+        Returns:
+            Sorted, deduplicated list of model names. Empty list when
+            NHTSA has no models for the given make — the vPIC API
+            returns HTTP 200 with an empty `Results` array for an
+            unrecognized/misspelled make, not an error.
+
+        Raises:
+            httpx.HTTPStatusError: If the API request itself fails
+        """
+        url = f"{self.BASE_URL}/vehicles/GetModelsForMake/{make}"
+        params = {"format": "json"}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+            results = data.get("Results", [])
+            return sorted({r["Model_Name"] for r in results if r.get("Model_Name")})
+
     async def is_valid_vin(self, vin: str) -> bool:
         """
         Validate VIN format.

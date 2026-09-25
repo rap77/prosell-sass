@@ -142,7 +142,7 @@ class TestBulkUploadPreview:
         assert row1["mapped_fields"]["attributes.make"] == "Ford"
         assert row1["mapped_fields"]["attributes.model"] == "Explorer"
         assert row1["mapped_fields"]["attributes.mileage"] == 70000
-        assert row1["mapped_fields"]["attributes.title_status"] == "clean"
+        assert row1["mapped_fields"]["attributes.clean_title"] is True
         assert row1["mapped_fields"]["attributes.facebook_groups"] == ["1", "2"]
         assert row1["mapped_fields"]["attributes.publicado"] is True
         assert row1["images_found"] == ["IMG/Vehiculos/MF/2020-EXPLORER"]
@@ -167,13 +167,13 @@ class TestBulkUploadPreview:
         assert row1["mapped_fields"]["location_city"] == "Orlando"
         assert row1["mapped_fields"]["location_state"] == "FL"
 
-    async def test_preview_title_status_clean(
+    async def test_preview_clean_title_true(
         self,
         async_client: AsyncClient,
         auth_headers: dict[str, str],
         client_csv_valid: str,
     ) -> None:
-        """clean_title '1' maps to title_status='clean'."""
+        """clean_title '1' maps to attributes.clean_title=True."""
         response = await async_client.post(
             "/api/v1/products/bulk-upload/preview",
             files={"csv_file": ("client.csv", client_csv_valid, "text/csv")},
@@ -184,15 +184,15 @@ class TestBulkUploadPreview:
         data = response.json()
 
         row1 = data["rows"][0]
-        assert row1["mapped_fields"]["attributes.title_status"] == "clean"
+        assert row1["mapped_fields"]["attributes.clean_title"] is True
 
-    async def test_preview_title_status_rebuilt(
+    async def test_preview_clean_title_false(
         self,
         async_client: AsyncClient,
         auth_headers: dict[str, str],
         client_csv_valid: str,
     ) -> None:
-        """clean_title '0' maps to title_status='rebuilt'."""
+        """clean_title '0' maps to attributes.clean_title=False."""
         response = await async_client.post(
             "/api/v1/products/bulk-upload/preview",
             files={"csv_file": ("client.csv", client_csv_valid, "text/csv")},
@@ -203,7 +203,7 @@ class TestBulkUploadPreview:
         data = response.json()
 
         row2 = data["rows"][1]
-        assert row2["mapped_fields"]["attributes.title_status"] == "rebuilt"
+        assert row2["mapped_fields"]["attributes.clean_title"] is False
 
     async def test_preview_missing_vin_marks_row_not_importable(
         self,

@@ -462,10 +462,10 @@ class BulkUploadVehiclesUseCase:
             attributes["exterior_color"] = mapped_row.exterior_color
         if mapped_row.interior_color:
             attributes["interior_color"] = mapped_row.interior_color
-        if mapped_row.title_status:
-            attributes["title_status"] = mapped_row.title_status
-        if mapped_row.title_state:
-            attributes["title_state"] = mapped_row.title_state
+        if mapped_row.clean_title is not None:
+            attributes["clean_title"] = mapped_row.clean_title
+        if mapped_row.vehicle_condition:
+            attributes["vehicle_condition"] = mapped_row.vehicle_condition
         if mapped_row.fuel_type:
             attributes["fuel_type"] = mapped_row.fuel_type
         if mapped_row.transmission:

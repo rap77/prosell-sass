@@ -87,10 +87,10 @@ class LocationParseResult(ValueObject):
     state: str | None
 
 
-class TitleStatusResult(ValueObject):
+class CleanTitleResult(ValueObject):
     """Result of parsing a clean_title field."""
 
-    status: Literal["clean", "rebuilt"] | None
+    clean_title: bool | None
 
 
 class FacebookGroupsResult(ValueObject):
@@ -136,8 +136,8 @@ class MappedCSVRow:
     body_style: str | None = None
     exterior_color: str | None = None
     interior_color: str | None = None
-    title_status: Literal["clean", "rebuilt"] | None = None
-    title_state: str | None = None
+    clean_title: bool | None = None
+    vehicle_condition: str | None = None
     fuel_type: str | None = None
     transmission: str | None = None
     description: str | None = None
@@ -148,7 +148,7 @@ class MappedCSVRow:
 
 
 # =============================================================================
-# STATE MAPPING (known state strings -> title_state values)
+# STATE MAPPING (known state strings -> location_state values)
 # =============================================================================
 
 _STATE_ABBREV_TO_CODE: dict[str, str] = {
@@ -192,24 +192,24 @@ class CSVFieldMapper:
             return LocationParseResult(city=location, state=None)
 
     @staticmethod
-    def parse_title_status(clean_title: str | None) -> TitleStatusResult:
+    def parse_clean_title(clean_title: str | None) -> CleanTitleResult:
         """Parse clean_title field.
 
         Args:
-            clean_title: "1"=clean, "0"=rebuilt, ""=None
+            clean_title: "1"=clean (True), "0"=rebuilt (False), ""=None
 
         Returns:
-            TitleStatusResult with status
+            CleanTitleResult with clean_title
         """
         if not clean_title:
-            return TitleStatusResult(status=None)
+            return CleanTitleResult(clean_title=None)
 
         stripped = clean_title.strip()
         if stripped == "1":
-            return TitleStatusResult(status="clean")
+            return CleanTitleResult(clean_title=True)
         elif stripped == "0":
-            return TitleStatusResult(status="rebuilt")
-        return TitleStatusResult(status=None)
+            return CleanTitleResult(clean_title=False)
+        return CleanTitleResult(clean_title=None)
 
     @staticmethod
     def parse_facebook_groups(groups: str | None) -> FacebookGroupsResult:
@@ -304,7 +304,7 @@ class CSVFieldMapper:
 
         # Parse individual fields
         location = CSVFieldMapper.parse_location(row.get("location"))
-        title_status = CSVFieldMapper.parse_title_status(row.get("clean_title"))
+        clean_title_result = CSVFieldMapper.parse_clean_title(row.get("clean_title"))
         facebook_groups = CSVFieldMapper.parse_facebook_groups(row.get("groups"))
         mileage_result = CSVFieldMapper.parse_mileage(row.get("mileage"))
         year_result = CSVFieldMapper.parse_year(row.get("year"))
@@ -364,9 +364,12 @@ class CSVFieldMapper:
                 "interior_color",
                 row_number,
             ),
-            title_status=title_status.status,
-            title_state=_truncate(
-                row.get("state", "").strip(), MAX_SHORT_TEXT_LENGTH, "title_state", row_number
+            clean_title=clean_title_result.clean_title,
+            vehicle_condition=_truncate(
+                row.get("state", "").strip(),
+                MAX_SHORT_TEXT_LENGTH,
+                "vehicle_condition",
+                row_number,
             ),
             fuel_type=_truncate(
                 row.get("fuel_type", "").strip(), MAX_SHORT_TEXT_LENGTH, "fuel_type", row_number

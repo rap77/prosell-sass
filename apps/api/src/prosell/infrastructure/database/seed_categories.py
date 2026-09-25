@@ -168,6 +168,12 @@ _CAR_SCHEMA: dict = {
         "filter_type": "text",
         "vin_decode_key": "model",
         "group": "basic",
+        # Dependent select: the form fetches its options live from NHTSA
+        # (GET /vehicles/models?make=...) keyed by the current "make"
+        # value, instead of a static curated options list — the
+        # make->model taxonomy is too large to maintain by hand.
+        "depends_on": "make",
+        "options_source": "nhtsa_models",
     },
     "year": {
         "type": "number",
@@ -192,6 +198,15 @@ _CAR_SCHEMA: dict = {
         "required": False,
         "filterable": True,
         "filter_type": "boolean",
+        "group": "basic",
+    },
+    "vehicle_condition": {
+        "type": "string",
+        "label": "Condición del vehículo",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["Excelente", "Muy bueno", "Bueno", "Aceptable", "Malo"],
         "group": "basic",
     },
     # ═══════════════════════════════════════════════════════════════════════════

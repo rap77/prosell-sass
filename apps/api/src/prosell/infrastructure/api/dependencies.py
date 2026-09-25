@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.organization.create_organization import (
         CreateOrganizationUseCase,
     )
+    from prosell.application.use_cases.product.list_products import ListProductsUseCase
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
     from prosell.application.use_cases.user_branch.assign_user_branch import (
         AssignUserBranchUseCase,
@@ -45,13 +46,6 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.user_branch.remove_user_branch import (
         RemoveUserBranchUseCase,
     )
-    from prosell.infrastructure.repositories.facebook_account_repository_impl import (
-        SqlAlchemyFacebookAccountRepository,
-    )
-    from prosell.infrastructure.repositories.facebook_page_repository_impl import (
-        SqlAlchemyFacebookPageRepository,
-    )
-
 # NOTE: from __future__ import annotations makes all annotations lazy strings,
 # which means FastAPI's Depends() resolution still works since it uses
 # get_type_hints() which resolves string annotations at runtime using the
@@ -63,6 +57,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.application.ports.ivin_decoder_service import IVINDecoderService
 from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
 from prosell.application.use_cases.organization.invite_organization_owner import (
     InviteOrganizationOwnerUseCase,
@@ -714,6 +709,26 @@ def get_spaces_service() -> IDOSpacesService:
     return DOSpacesService()
 
 
+@lru_cache
+def get_vin_service() -> IVINDecoderService:
+    """Get NHTSA VIN decoder service instance (singleton via lru_cache)."""
+    from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
+
+    return NHTSAVinService()
+
+
+async def get_list_products_use_case(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> ListProductsUseCase:
+    """Get ListProducts use case instance (repo built from the request-scoped session)."""
+    from prosell.application.use_cases.product.list_products import ListProductsUseCase
+    from prosell.infrastructure.repositories.product_repository_impl import (
+        SqlAlchemyProductRepository,
+    )
+
+    return ListProductsUseCase(SqlAlchemyProductRepository(session))
+
+
 def get_cdn_invalidator() -> ICdnInvalidator:
     """Get CDN invalidator instance (singleton).
 
@@ -736,7 +751,7 @@ def get_cdn_invalidator() -> ICdnInvalidator:
 
 async def get_facebook_account_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyFacebookAccountRepository:
+) -> IFacebookAccountRepository:
     """Get Facebook Account repository instance."""
     from prosell.infrastructure.repositories.facebook_account_repository_impl import (
         SqlAlchemyFacebookAccountRepository,
@@ -747,7 +762,7 @@ async def get_facebook_account_repository(
 
 async def get_facebook_page_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyFacebookPageRepository:
+) -> IFacebookPageRepository:
     """Get Facebook Page repository instance."""
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,

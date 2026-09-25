@@ -57,12 +57,21 @@ _CSV_FILENAME = "catalogo.csv"
 
 def _attr_str(attributes: Mapping[str, object], key: str) -> str | None:
     """Read one `Product.attributes` value as `str | None` (FR7) — the
-    JSONB column is typed `object` per key; every FR7 column this use
-    case resolves explicitly (`vin`, `body_type`, `title_status`,
-    `title_state`) is expected to already be a plain string, so this is
-    a type-narrowing helper, not a format conversion."""
+    JSONB column is typed `object` per key; every FR7 string column this
+    use case resolves explicitly (`vin`, `body_type`, `vehicle_condition`) is
+    expected to already be a plain string, so this is a type-narrowing
+    helper, not a format conversion."""
     value = attributes.get(key)
     return None if value is None else str(value)
+
+
+def _attr_bool(attributes: Mapping[str, object], key: str) -> bool | None:
+    """Read one `Product.attributes` value as `bool | None` (FR7) —
+    `clean_title` is the only boolean FR7 column; anything that isn't
+    already a real `bool` (missing, or a stray legacy string/number) is
+    treated as unknown rather than coerced."""
+    value = attributes.get(key)
+    return value if isinstance(value, bool) else None
 
 
 def _attr_str_list(attributes: Mapping[str, object], key: str) -> list[str] | None:
@@ -263,10 +272,10 @@ class ExportCatalogClientFormatUseCase:
                     attributes=attrs,
                     vin=_attr_str(attrs, "vin"),
                     body_style=_attr_str(attrs, "body_type"),
-                    title_status=_attr_str(attrs, "title_status"),
+                    clean_title=_attr_bool(attrs, "clean_title"),
                     facebook_groups=_attr_str_list(attrs, "facebook_groups"),
                     facebook_groups_fallback=facebook_groups_fallback,
-                    state=_attr_str(attrs, "title_state"),
+                    state=_attr_str(attrs, "vehicle_condition"),
                     category=category,
                     vehicle_type=vehicle_type,
                     location_city=location_city,

@@ -76,6 +76,13 @@ export interface AttributeSchemaEntry {
   vin_decode_key?: string;
   /** Special renderer type for form fields. */
   render_as?: "vin_decode" | "textarea" | "select";
+  /** Names another field in this schema whose current value gates this
+   * one's dynamic options (e.g. `model` depends_on `make`). */
+  depends_on?: string;
+  /** Names a dynamic options provider the form renderer resolves at
+   * render time instead of a static `options` list — fetched keyed by
+   * the field named in `depends_on`. */
+  options_source?: "nhtsa_models";
   /** Allow extra fields from backend (pydantic extra="allow"). */
   [key: string]: unknown;
 }

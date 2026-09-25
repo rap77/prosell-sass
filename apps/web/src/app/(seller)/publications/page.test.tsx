@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { buildPublicationRows, PublicationCard } from "./page";
-import type { Product } from "@/types/product";
+import {
+  buildPublicationRows,
+  toPublishableVehicleData,
+  PublicationCard,
+} from "./page";
+import type { Product, ProductWithVehicle } from "@/types/product";
 
 // FR2.1 regression: BUG-2's root cause was the "Lista" table having no
 // thumbnail column at all, and the "Grilla" card never receiving an
@@ -56,6 +60,67 @@ describe("buildPublicationRows", () => {
     const rows = buildPublicationRows([product]);
 
     expect(rows[0].imageKey).toBeUndefined();
+  });
+});
+
+// Bug fix (2026-09-25): a CSV-imported vehicle's `clean_title` boolean was
+// never read here — the "Título limpio" checkbox always showed unchecked
+// regardless of the import, because this mapper hardcoded `true` instead
+// of reading `attributes.clean_title`.
+describe("toPublishableVehicleData", () => {
+  it("carries the product's real clean_title value through", () => {
+    const product = makeVehicleProduct({
+      attributes: {
+        category: "vehicle",
+        vin: "1HGBH41JXMN109186",
+        make: "Toyota",
+        model: "Camry",
+        year: 2020,
+        mileage: 0,
+        clean_title: false,
+      },
+    }) as ProductWithVehicle;
+
+    const vehicleData = toPublishableVehicleData(product);
+
+    expect(vehicleData.clean_title).toBe(false);
+  });
+
+  it("leaves clean_title undefined when the attribute was never set", () => {
+    const product = makeVehicleProduct() as ProductWithVehicle;
+
+    const vehicleData = toPublishableVehicleData(product);
+
+    expect(vehicleData.clean_title).toBeUndefined();
+  });
+
+  // Bug fix (2026-09-25): this mapper read `product.condition` (generic
+  // ecommerce enum, always "used" for CSV-imported vehicles) instead of
+  // the real Facebook condition grade under `attributes.vehicle_condition`.
+  it("translates the CSV's real vehicle_condition into the FB canonical key", () => {
+    const product = makeVehicleProduct({
+      attributes: {
+        category: "vehicle",
+        vin: "1HGBH41JXMN109186",
+        make: "Toyota",
+        model: "Camry",
+        year: 2020,
+        mileage: 0,
+        vehicle_condition: "Muy bueno",
+      },
+    }) as ProductWithVehicle;
+
+    const vehicleData = toPublishableVehicleData(product);
+
+    expect(vehicleData.vehicle_condition).toBe("very_good");
+  });
+
+  it("leaves vehicle_condition undefined instead of falling back to product.condition", () => {
+    const product = makeVehicleProduct() as ProductWithVehicle;
+
+    const vehicleData = toPublishableVehicleData(product);
+
+    expect(vehicleData.vehicle_condition).toBeUndefined();
   });
 });
 
