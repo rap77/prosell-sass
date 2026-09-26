@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useInfiniteProducts } from "@/lib/api/products";
+import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import {
   useBatchApproveProducts,
   useBatchRejectProducts,
@@ -72,6 +73,17 @@ export default function ReviewQueuePage() {
   const rejectMutation = useBatchRejectProducts();
   const resubmitMutation = useSubmitProductsForApproval();
 
+  // Extract products from infinite query
+  const products: Product[] = data?.pages.flatMap((page) => page.items) ?? [];
+
+  // Signed cover-image URLs for the visible tab's products (same batch
+  // endpoint the catalog grid uses) — never build a raw storage URL
+  // client-side, the bucket is private. Called unconditionally (rules of
+  // hooks), ahead of the permission gate below.
+  const { urls: productImageUrls } = useProductImageUrlsBatch(
+    products.map((p) => p.id),
+  );
+
   const isActionable = ACTIONABLE_TABS.has(activeTab);
 
   // Permission gate
@@ -134,9 +146,6 @@ export default function ReviewQueuePage() {
     setLastResults(null);
   };
 
-  // Extract products from infinite query
-  const products: Product[] = data?.pages.flatMap((page) => page.items) ?? [];
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -167,6 +176,7 @@ export default function ReviewQueuePage() {
             return (
               <button
                 key={tab.id}
+                id={`tab-${tab.id}`}
                 role="tab"
                 type="button"
                 aria-selected={isActive}
@@ -205,6 +215,7 @@ export default function ReviewQueuePage() {
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
               selectable={isActionable}
+              imageUrls={productImageUrls}
             />
           )}
         </div>

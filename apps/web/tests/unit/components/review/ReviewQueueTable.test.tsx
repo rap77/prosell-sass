@@ -66,6 +66,13 @@ describe("ReviewQueueTable", () => {
 
   let mockOnSelectionChange: ReturnType<typeof vi.fn>;
 
+  // Cover-URL resolution moved to the batch endpoint the page container
+  // calls (`useProductImageUrlsBatch`) — this component just renders
+  // whatever the map hands it. Most tests here don't care about images,
+  // so an empty map (every product falls back to the placeholder icon)
+  // is the right default.
+  const emptyImageUrls = new Map<string, string | null>();
+
   beforeEach(() => {
     mockOnSelectionChange = vi.fn();
   });
@@ -76,6 +83,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -90,6 +98,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -104,6 +113,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -119,6 +129,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -132,6 +143,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -154,6 +166,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -171,6 +184,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set(["product-1"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -188,6 +202,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -207,6 +222,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set(["product-1", "product-2", "product-3"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -222,6 +238,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set(["product-1", "product-2", "product-3"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -235,6 +252,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set(["product-1"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -250,6 +268,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -265,6 +284,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set(["product-1"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -283,6 +303,7 @@ describe("ReviewQueueTable", () => {
         products={[]}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -296,6 +317,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -335,6 +357,7 @@ describe("ReviewQueueTable", () => {
         products={products}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -349,6 +372,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -381,6 +405,7 @@ describe("ReviewQueueTable", () => {
         products={products}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -407,6 +432,7 @@ describe("ReviewQueueTable", () => {
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
         selectable={false}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -430,23 +456,36 @@ describe("ReviewQueueTable", () => {
         products={[productWithoutDate]}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("renders product images with correct dimensions", () => {
+  // Cover resolution ("which key/URL is this product's thumbnail") moved
+  // server-side into the `/products/image-urls:batch` endpoint — this
+  // component just renders `imageUrls.get(product.id)`. The legacy
+  // attributes.image_urls-merge regression this used to guard now lives
+  // where that resolution actually happens: getCoverImageKey.test.ts /
+  // getProductImageKeys.test.ts.
+  it("renders product images for products with a resolved cover URL", () => {
     const { container } = render(
       <ReviewQueueTable
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={
+          new Map([
+            ["product-1", "https://example.com/signed/image1.jpg"],
+            ["product-2", "https://example.com/signed/image2.jpg"],
+          ])
+        }
       />,
     );
 
     const images = container.querySelectorAll("img");
-    // Should have 2 images (product-1 and product-2, product-3 has no images)
+    // product-1 and product-2 have a resolved cover; product-3 doesn't.
     expect(images.length).toBe(2);
 
     images.forEach((img) => {
@@ -455,45 +494,13 @@ describe("ReviewQueueTable", () => {
     });
   });
 
-  // FR1.1 regression: BUG-1's root cause was reading `product.image_urls`
-  // directly instead of the shared `getCoverImageKey` resolver, which also
-  // merges the legacy `attributes.image_urls` location (see
-  // lib/api/productImages.ts). A product whose images only live in the
-  // legacy location must still show its thumbnail.
-  it("renders the thumbnail for a product with images only in the legacy attributes.image_urls location", () => {
-    const legacyProduct = makeProduct({
-      id: "product-legacy",
-      title: "Legacy Location Product",
-      image_urls: [],
-      attributes: {
-        category: "vehicle",
-        vin: "1HGBH41JXMN109187",
-        make: "Legacy",
-        model: "Legacy",
-        year: 2018,
-        mileage: 1000,
-        image_urls: ["legacy/cover.jpg"],
-      } as unknown as Product["attributes"],
-    });
-
-    const { container } = render(
-      <ReviewQueueTable
-        products={[legacyProduct]}
-        selectedIds={new Set()}
-        onSelectionChange={mockOnSelectionChange}
-      />,
-    );
-
-    const images = container.querySelectorAll("img");
-    expect(images.length).toBe(1);
-  });
-
   it("applies hover styles to table rows", () => {
     const { container } = render(
       <ReviewQueueTable
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -511,6 +518,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set()}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -528,6 +536,7 @@ describe("ReviewQueueTable", () => {
         products={mockProducts}
         selectedIds={new Set(["product-2"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 
@@ -541,6 +550,7 @@ describe("ReviewQueueTable", () => {
         products={reversedProducts}
         selectedIds={new Set(["product-2"])}
         onSelectionChange={mockOnSelectionChange}
+        imageUrls={emptyImageUrls}
       />,
     );
 

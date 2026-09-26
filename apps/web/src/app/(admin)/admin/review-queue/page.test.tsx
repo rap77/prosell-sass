@@ -28,6 +28,14 @@ vi.mock("@/lib/api/products", () => ({
   useSubmitProductsForApproval: () => mockUseSubmitProductsForApproval(),
 }));
 
+// Real hook calls react-query's useQuery; mocked like the sibling data
+// hooks above so these tests don't need a QueryClientProvider wrapper.
+const mockUseProductImageUrlsBatch = vi.fn();
+vi.mock("@/lib/api/productImageUrlsBatch", () => ({
+  useProductImageUrlsBatch: (...args: unknown[]) =>
+    mockUseProductImageUrlsBatch(...args),
+}));
+
 const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -79,6 +87,10 @@ describe("ReviewQueuePage", () => {
     mockUseSubmitProductsForApproval.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
+    });
+    mockUseProductImageUrlsBatch.mockReturnValue({
+      urls: new Map(),
+      isLoading: false,
     });
   });
 

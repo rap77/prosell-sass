@@ -9,10 +9,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  getCoverImageKey,
-  resolveStorageImageUrl,
-} from "@/lib/api/productImages";
 import { isVehicleProduct, type Product } from "@/types/product";
 
 interface ReviewQueueTableProps {
@@ -21,6 +17,14 @@ interface ReviewQueueTableProps {
   onSelectionChange: (selectedIds: Set<string>) => void;
   /** Hide the checkbox column entirely for tabs with no bulk action. */
   selectable?: boolean;
+  /**
+   * Signed cover-image URL per product id (from `useProductImageUrlsBatch`
+   * at the page container). Never build a raw storage URL client-side —
+   * the bucket is private, so an unsigned URL 404s/403s (same class of bug
+   * documented on `getProductImageKeys`/`CatalogDetailView`). A missing or
+   * `null` entry means "no cover" and falls back to the placeholder icon.
+   */
+  imageUrls: Map<string, string | null>;
 }
 
 // ponytail: local label map, same pattern as ProductAuditTrail.tsx —
@@ -72,6 +76,11 @@ function RejectionReasonCell({ reason }: { reason: string }) {
   );
 }
 
+// ponytail (7df66de1): some legacy/bulk-imported rows have a title like
+// "PO" or "CF" (an org code that leaked into the title field) instead of a
+// real one — not vehicle-less, just undescriptive. `<= 5 chars` is the
+// heuristic that catches those; anything longer is treated as a real
+// title and shown as-is, vehicle or not.
 function getProductDisplayTitle(product: Product): string {
   if (product.title.length > 5) return product.title;
   if (!isVehicleProduct(product)) return product.title;
@@ -83,6 +92,7 @@ export function ReviewQueueTable({
   selectedIds,
   onSelectionChange,
   selectable = true,
+  imageUrls,
 }: ReviewQueueTableProps) {
   const handleToggleAll = (checked: boolean) => {
     if (checked) {
@@ -148,7 +158,7 @@ export function ReviewQueueTable({
         </thead>
         <tbody>
           {products.map((product) => {
-            const coverKey = getCoverImageKey(product);
+            const coverUrl = imageUrls.get(product.id);
             return (
               <tr
                 key={product.id}
@@ -168,9 +178,9 @@ export function ReviewQueueTable({
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-ps-elevated">
-                      {coverKey ? (
+                      {coverUrl ? (
                         <Image
-                          src={resolveStorageImageUrl(coverKey)}
+                          src={coverUrl}
                           alt={product.title}
                           width={48}
                           height={48}
