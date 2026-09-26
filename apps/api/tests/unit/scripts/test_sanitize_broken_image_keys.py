@@ -1,17 +1,24 @@
-"""Unit tests for the pure logic in
+"""Unit tests for the logic in
 `apps/api/scripts/sanitize_broken_image_keys.py`.
 
-The DB-touching and S3-touching parts of the script require live
-infrastructure and are exercised manually against staging/prod. Here
-we test the pure helpers (`sanitize_storage_key`, `is_legacy_bad_key`,
-`find_renames_for_product`, `_dedupe_renames`) so the data-shape
-invariants are pinned by tests."""
+The DB-touching parts of the script require live infrastructure and are
+exercised manually against staging/prod. Here we test the pure helpers
+(`sanitize_storage_key`, `is_legacy_bad_key`, `find_renames_for_product`,
+`_dedupe_renames`) plus `rename_in_storage` against a mocked S3 client
+-- that last piece was previously untested with the same "exercise
+manually against prod" rationale, which is exactly how a real
+production incident slipped through: `PendingRename.old_key`/`new_key`
+are the full-URL DB representation, but every S3 call needs the bare
+key, and the first version of this function passed the raw URL straight
+through, 404ing every single CopyObject the first time it ran for
+real."""
 
 from __future__ import annotations
 
 import importlib.util
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -462,3 +469,75 @@ class TestDedupeRenames:
         assert "collision" in captured.err
         assert "bad name.jpg" in captured.err
         assert "bad name (1).jpg" in captured.err
+
+
+class TestRenameInStorage:
+    """`rename_in_storage` takes `PendingRename.old_key`/`new_key` --
+    the full DB representation (a URL, for a row that stores full
+    URLs) -- but every S3 call needs the BARE key. Regression: the
+    first production run of this script sent the raw URL straight to
+    boto3 as the S3 key, and every single CopyObject 404'd with
+    NoSuchKey. No DB changes were made (the script aborts cleanly on
+    any storage failure), but the rename never actually happened."""
+
+    def _make_spaces(self) -> MagicMock:
+        spaces = MagicMock()
+        spaces.bucket = "prosell-assets"
+        spaces.s3_client = MagicMock()
+        return spaces
+
+    @pytest.mark.asyncio
+    async def test_uses_bare_keys_for_s3_calls_not_full_urls(self, module) -> None:
+        spaces = self._make_spaces()
+        old_url = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+        )
+        new_url = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp_Image_2026-09-12_at_8.44.04_AM_1_.jpeg"
+        )
+        old_bare_key = (
+            "orgs/56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+        )
+        new_bare_key = (
+            "orgs/56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp_Image_2026-09-12_at_8.44.04_AM_1_.jpeg"
+        )
+
+        await module.rename_in_storage(spaces, old_url, new_url)
+
+        spaces.s3_client.copy_object.assert_called_once_with(
+            Bucket="prosell-assets",
+            Key=new_bare_key,
+            CopySource={"Bucket": "prosell-assets", "Key": old_bare_key},
+        )
+        spaces.s3_client.head_object.assert_called_once_with(
+            Bucket="prosell-assets", Key=new_bare_key
+        )
+        spaces.s3_client.delete_object.assert_called_once_with(
+            Bucket="prosell-assets", Key=old_bare_key
+        )
+
+    @pytest.mark.asyncio
+    async def test_works_for_bare_keys_too(self, module) -> None:
+        """A row already stored as a bare key (no URL) must keep working
+        -- extraction is a no-op passthrough for that shape."""
+        spaces = self._make_spaces()
+        old_key = "orgs/a-b-c-d/vehicles/e-f-g-h/bad name.jpg"
+        new_key = "orgs/a-b-c-d/vehicles/e-f-g-h/bad_name.jpg"
+
+        await module.rename_in_storage(spaces, old_key, new_key)
+
+        spaces.s3_client.copy_object.assert_called_once_with(
+            Bucket="prosell-assets",
+            Key=new_key,
+            CopySource={"Bucket": "prosell-assets", "Key": old_key},
+        )

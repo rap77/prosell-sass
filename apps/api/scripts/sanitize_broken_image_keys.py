@@ -64,6 +64,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import select
 
 from prosell.domain.services.storage_key_sanitizer import is_url, sanitize_storage_key, url_path
+from prosell.domain.services.storage_keys import extract_storage_key_from_value
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import ProductModel
 from prosell.infrastructure.services.do_spaces_service import DOSpacesService
@@ -215,6 +216,14 @@ async def rename_in_storage(spaces: DOSpacesService, old_key: str, new_key: str)
     failure so the caller can mark this rename as failed and abort
     the DB update.
 
+    `old_key`/`new_key` are `PendingRename` values -- the full DB
+    representation (a URL, for a row that stores full URLs). S3
+    operations need the BARE key (no scheme/host/bucket), so this
+    extracts it first via the same helper `generate_download_url`
+    uses for the identical reason (production incident, first real
+    run of this script: every CopyObject 404'd with NoSuchKey because
+    the full URL was sent as the S3 key verbatim).
+
     The verify-by-head_object is belt-and-suspenders: copy_object
     already raises on most failures, but a head_object after the
     copy confirms the new object is reachable before we delete the
@@ -222,21 +231,25 @@ async def rename_in_storage(spaces: DOSpacesService, old_key: str, new_key: str)
     so re-running this script is safe even if a prior partial run
     already deleted the old key."""
     bucket = spaces.bucket
+    old_bare_key = extract_storage_key_from_value(old_key)
+    new_bare_key = extract_storage_key_from_value(new_key)
+    if not old_bare_key or not new_bare_key:
+        raise ValueError(f"Could not extract a bare storage key from {old_key!r} / {new_key!r}")
     await asyncio.to_thread(
         spaces.s3_client.copy_object,
         Bucket=bucket,
-        Key=new_key,
-        CopySource={"Bucket": bucket, "Key": old_key},
+        Key=new_bare_key,
+        CopySource={"Bucket": bucket, "Key": old_bare_key},
     )
     await asyncio.to_thread(
         spaces.s3_client.head_object,
         Bucket=bucket,
-        Key=new_key,
+        Key=new_bare_key,
     )
     await asyncio.to_thread(
         spaces.s3_client.delete_object,
         Bucket=bucket,
-        Key=old_key,
+        Key=old_bare_key,
     )
 
 
