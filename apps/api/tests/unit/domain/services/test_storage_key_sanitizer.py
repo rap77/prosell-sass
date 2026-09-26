@@ -9,7 +9,7 @@ count as "not a bare storage key")."""
 
 from __future__ import annotations
 
-from prosell.domain.services.storage_key_sanitizer import is_url, sanitize_storage_key
+from prosell.domain.services.storage_key_sanitizer import is_url, sanitize_storage_key, url_path
 
 BAD_KEY = (
     "orgs/56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
@@ -20,6 +20,25 @@ GOOD_KEY = (
     "orgs/56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
     "56e652de-c522-4664-a977-4bb18586f2fa/1FTNR1YV8FKA66889/"
     "WhatsApp_Image_2026-09-12_at_8.42.31_AM_1_.jpeg"
+)
+
+# The exact real production row (Chevrolet Traverse, prosellweb.com prod DB,
+# 2026-09-26) that slipped past the first version of this sanitizer: a
+# GENUINE production bug, not a hypothetical -- the bulk-upload flow wrote
+# the full URL with the broken filename straight into `image_urls`, and the
+# first `is_url` guard skipped the ENTIRE url (scheme, host, AND path)
+# instead of just protecting the scheme/host.
+BROKEN_PROD_URL = (
+    "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+    "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+)
+SANITIZED_PROD_URL = (
+    "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+    "WhatsApp_Image_2026-09-12_at_8.44.04_AM_1_.jpeg"
 )
 
 
@@ -56,11 +75,26 @@ class TestSanitizeStorageKey:
         )
         assert sanitize_storage_key(url) == url
 
-    def test_leaves_https_url_unchanged(self) -> None:
-        url = (
-            "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/abc/vehicles/bad name (1).jpeg"
-        )
+    def test_leaves_clean_https_url_unchanged(self) -> None:
+        url = "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/abc/vehicles/clean.jpeg"
         assert sanitize_storage_key(url) == url
+
+    def test_sanitizes_broken_filename_inside_a_url_path(self) -> None:
+        """Regression: the exact real production row that slipped past
+        the FIRST version of this fix. A URL is not automatically
+        healthy just because it's a URL -- the bulk-upload flow writes
+        the raw, unencoded phone-cam filename straight into the URL's
+        path, same as it would into a bare key. Only skipping
+        sanitization for the whole URL (instead of just its
+        scheme/host) left this row broken after the first deploy."""
+        assert sanitize_storage_key(BROKEN_PROD_URL) == SANITIZED_PROD_URL
+
+    def test_preserves_port_in_url_host(self) -> None:
+        """The guard must not eat a legitimate port separator while
+        fixing a broken path alongside it."""
+        url = "http://localhost:9002/prosell-assets/vehicles/e-f-g-h/bad name (1).jpg"
+        expected = "http://localhost:9002/prosell-assets/vehicles/e-f-g-h/bad_name_1_.jpg"
+        assert sanitize_storage_key(url) == expected
 
     def test_legacy_vehicles_prefix_sanitized_too(self) -> None:
         bad = "vehicles/56e652de-c522-4664-a977-4bb18586f2fa/bad name.jpg"
@@ -76,9 +110,24 @@ class TestSanitizeStorageKey:
         twice = sanitize_storage_key(once)
         assert once == twice
 
+    def test_is_idempotent_for_a_broken_url(self) -> None:
+        once = sanitize_storage_key(BROKEN_PROD_URL)
+        twice = sanitize_storage_key(once)
+        assert once == twice
+
     def test_collapses_runs_of_underscores(self) -> None:
         assert sanitize_storage_key("a ( b.jpg") == "a_b.jpg"
 
     def test_does_not_alter_uuid_or_vin_segments(self) -> None:
         key = "orgs/aaaa-bbbb-cccc-dddd/vehicles/eeee-ffff-gggg-hhhh/1FMSK7DH7LGA77418/x.jpg"
         assert sanitize_storage_key(key) == key
+
+
+class TestUrlPath:
+    def test_returns_path_only(self) -> None:
+        assert url_path("https://host:9002/prosell-assets/x.jpg") == "/prosell-assets/x.jpg"
+
+    def test_returns_path_for_broken_prod_url(self) -> None:
+        assert url_path(BROKEN_PROD_URL).endswith(
+            "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+        )

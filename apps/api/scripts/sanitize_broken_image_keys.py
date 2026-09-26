@@ -63,7 +63,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import select
 
-from prosell.domain.services.storage_key_sanitizer import is_url, sanitize_storage_key
+from prosell.domain.services.storage_key_sanitizer import is_url, sanitize_storage_key, url_path
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import ProductModel
 from prosell.infrastructure.services.do_spaces_service import DOSpacesService
@@ -89,13 +89,19 @@ class PendingRename:
 
 def is_legacy_bad_key(key: str) -> bool:
     """True iff key has chars outside the original pre-fix DTO regex
-    alphabet -- the exact rejection criterion of the production bug. A
-    full http(s) URL is never "legacy bad" -- it isn't a storage key at
-    all, and its `://` would otherwise false-positive on every healthy
-    row (see `is_url`)."""
-    if not key or is_url(key):
+    alphabet -- the exact rejection criterion of the production bug.
+
+    For a full http(s) URL, only the PATH is checked (see `url_path`)
+    -- the scheme/host is never "legacy bad" on its own (a port's `:`
+    or a domain's `.` isn't a broken filename), but a URL's path CAN
+    still carry the exact same bad filename a bare key would (real
+    production row: `https://.../orgs/.../WhatsApp Image ... (1).jpeg`
+    -- the bulk-upload flow writes full URLs, not just bare keys, so
+    this is not a hypothetical case)."""
+    if not key:
         return False
-    return bool(_LEGACY_BAD_CHAR_RE.search(key))
+    haystack = url_path(key) if is_url(key) else key
+    return bool(_LEGACY_BAD_CHAR_RE.search(haystack))
 
 
 def find_renames_for_product(
@@ -185,7 +191,7 @@ def _dedupe_renames(renames: list[PendingRename]) -> list[PendingRename]:
 
     if conflicts:
         print(
-            "ERROR: " + str(len(conflicts)) + " sanitized-key collision(s) "
+            f"ERROR: {len(conflicts)} sanitized-key collision(s) "
             "detected. Refusing to auto-resolve; would silently overwrite "
             "distinct storage objects. Inspect and re-run with PRODUCT_ID "
             "for the affected rows.",
@@ -193,12 +199,12 @@ def _dedupe_renames(renames: list[PendingRename]) -> list[PendingRename]:
         )
         for tgt_key, members in conflicts:
             print(
-                "  target " + tgt_key[2] + " (product=" + tgt_key[0] + ", "
-                "field=" + tgt_key[1] + ") is reached from:",
+                f"  target {tgt_key[2]} (product={tgt_key[0]}, "
+                f"field={tgt_key[1]}) is reached from:",
                 file=sys.stderr,
             )
             for m in members:
-                print("    " + m.old_key, file=sys.stderr)
+                print(f"    {m.old_key}", file=sys.stderr)
         sys.exit(2)
 
     return deduped
@@ -239,9 +245,9 @@ async def main() -> None:
     product_filter = os.environ.get("PRODUCT_ID")
 
     print("=== ProSell broken image key sanitizer ===")
-    print("DRY_RUN    = " + str(dry_run))
+    print(f"DRY_RUN    = {dry_run}")
     if product_filter:
-        print("PRODUCT_ID = " + product_filter)
+        print(f"PRODUCT_ID = {product_filter}")
     print()
 
     async with async_session_maker() as session:
@@ -270,12 +276,12 @@ async def main() -> None:
             )
         all_renames = _dedupe_renames(all_renames)
 
-    print("Products scanned: " + str(len(products)))
-    print("Renames queued:  " + str(len(all_renames)))
+    print(f"Products scanned: {len(products)}")
+    print(f"Renames queued:  {len(all_renames)}")
     for r in all_renames:
-        print("  [" + r.product_id + "] " + r.field + ":")
-        print("    old: " + r.old_key)
-        print("    new: " + r.new_key)
+        print(f"  [{r.product_id}] {r.field}:")
+        print(f"    old: {r.old_key}")
+        print(f"    new: {r.new_key}")
     print()
 
     if not all_renames:
@@ -293,26 +299,17 @@ async def main() -> None:
     for r in all_renames:
         try:
             await rename_in_storage(spaces, r.old_key, r.new_key)
-            print("  [storage OK] " + r.field + ": " + r.old_key + " -> " + r.new_key)
+            print(f"  [storage OK] {r.field}: {r.old_key} -> {r.new_key}")
         except (ClientError, BotoCoreError) as exc:  # pragma: no cover -- infra failure
             storage_failures.append((r, str(exc)))
-            print(
-                "  [storage FAIL] "
-                + r.field
-                + ": "
-                + r.old_key
-                + " -> "
-                + r.new_key
-                + ": "
-                + str(exc)
-            )
+            print(f"  [storage FAIL] {r.field}: {r.old_key} -> {r.new_key}: {exc}")
 
     if storage_failures:
         print()
-        print("!! " + str(len(storage_failures)) + " storage rename(s) failed. Aborting DB update.")
+        print(f"!! {len(storage_failures)} storage rename(s) failed. Aborting DB update.")
         print("   No DB changes were made. Re-run after fixing the cause to retry.")
         for r, err in storage_failures:
-            print("   - " + r.field + ": " + r.old_key + " -> " + r.new_key + ": " + err)
+            print(f"   - {r.field}: {r.old_key} -> {r.new_key}: {err}")
         sys.exit(1)
 
     async with async_session_maker() as session:
@@ -333,11 +330,7 @@ async def main() -> None:
 
         await session.commit()
         print(
-            "  [DB OK] "
-            + str(len(all_renames))
-            + " field(s) updated across "
-            + str(len(db_products))
-            + " product(s)."
+            f"  [DB OK] {len(all_renames)} field(s) updated across {len(db_products)} product(s)."
         )
 
     print()

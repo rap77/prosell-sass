@@ -49,6 +49,23 @@ GOOD_KEY = (
     "WhatsApp_Image_2026-09-12_at_8.42.31_AM_1_.jpeg"
 )
 
+# The exact real production row (Chevrolet Traverse, prod DB, 2026-09-26)
+# that slipped past the first version of this sanitizer: the bulk-upload
+# flow writes full URLs into image_urls, and the first `is_url` guard
+# skipped the ENTIRE url instead of just protecting its scheme/host.
+BROKEN_PROD_URL = (
+    "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+    "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+)
+SANITIZED_PROD_URL = (
+    "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+    "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+    "WhatsApp_Image_2026-09-12_at_8.44.04_AM_1_.jpeg"
+)
+
 
 class TestNormalizeStorageKeyHelper:
     """Pure helper contract -- applies only to bare storage keys."""
@@ -59,18 +76,24 @@ class TestNormalizeStorageKeyHelper:
     def test_passes_clean_storage_key_unchanged(self) -> None:
         assert normalize_storage_key(GOOD_KEY) == GOOD_KEY
 
-    def test_leaves_https_url_unchanged(self) -> None:
-        """Signed/external URLs must NOT be rewritten -- the signer
-        treats them as URLs; replacing `:` with `_` would break the
-        scheme."""
-        url = (
-            "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/abc/vehicles/bad name (1).jpeg"
-        )
+    def test_leaves_clean_https_url_unchanged(self) -> None:
+        """A URL's scheme/host must NOT be rewritten -- the signer
+        treats them as URL structure; replacing `:` with `_` would
+        break the scheme, and a port's `:` isn't a broken filename."""
+        url = "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/abc/vehicles/clean.jpeg"
         assert normalize_storage_key(url) == url
 
-    def test_leaves_http_url_unchanged(self) -> None:
+    def test_leaves_clean_http_url_unchanged(self) -> None:
         url = "http://minio:9000/orgs/abc/img.jpg"
         assert normalize_storage_key(url) == url
+
+    def test_sanitizes_broken_filename_inside_a_url_path(self) -> None:
+        """Regression: the exact real production row that slipped past
+        the FIRST version of this fix. A URL is not automatically
+        healthy just because it's a URL -- the bulk-upload flow writes
+        the raw, unencoded phone-cam filename straight into the URL's
+        path. Only the path gets rewritten; scheme/host stay intact."""
+        assert normalize_storage_key(BROKEN_PROD_URL) == SANITIZED_PROD_URL
 
     def test_legacy_vehicles_prefix_sanitized_too(self) -> None:
         bad = "vehicles/56e652de-c522-4664-a977-4bb18586f2fa/bad name.jpg"
@@ -127,6 +150,41 @@ class TestUpdateProductSanitizesImageUrls:
 
         assert existing.image_urls == [GOOD_KEY], (
             f"image_urls must be sanitized before persistence. Got {existing.image_urls!r}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_patch_persists_sanitized_full_url(self) -> None:
+        """Regression: the exact real production row that slipped past
+        the FIRST version of this fix (a full URL, not a bare key, with
+        the broken filename in its path)."""
+        existing = _make_existing_product(image_urls=[])
+        product_repo = AsyncMock()
+        product_repo.get_by_id = AsyncMock(return_value=existing)
+        product_repo.update = AsyncMock(return_value=existing)
+        category_repo = AsyncMock()
+        category_repo.get_by_id_or_global = AsyncMock(
+            return_value=type("C", (), {"presentation": None, "tenant_id": None})()
+        )
+
+        request = UpdateProductRequest.model_construct(
+            image_urls=[BROKEN_PROD_URL],
+            title=None,
+            description=None,
+            price_cents=None,
+            category_id=None,
+            condition=None,
+            attributes=None,
+            cover_image_key=None,
+            thumbnail_image_key=None,
+            location_city=None,
+            location_state=None,
+            location_zip=None,
+        )
+        use_case = UpdateProductUseCase(product_repo, category_repo)
+        await use_case.execute(existing.id, existing.tenant_id, request)
+
+        assert existing.image_urls == [SANITIZED_PROD_URL], (
+            f"broken URL path must be sanitized before persistence. Got {existing.image_urls!r}"
         )
 
     @pytest.mark.asyncio

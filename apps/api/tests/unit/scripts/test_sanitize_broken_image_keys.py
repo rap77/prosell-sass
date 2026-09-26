@@ -101,11 +101,27 @@ class TestSanitizeStorageKey:
         )
         assert module.sanitize_storage_key(url) == url
 
-    def test_leaves_https_url_unchanged(self, module) -> None:
-        url = (
-            "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/abc/vehicles/bad name (1).jpeg"
-        )
+    def test_leaves_clean_https_url_unchanged(self, module) -> None:
+        url = "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/abc/vehicles/clean.jpeg"
         assert module.sanitize_storage_key(url) == url
+
+    def test_sanitizes_broken_filename_inside_a_url_path(self, module) -> None:
+        """Regression: the exact real production row (Chevrolet
+        Traverse, prod DB) that the FIRST version of this fix missed --
+        it skipped the whole URL instead of just its scheme/host."""
+        url = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+        )
+        expected = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp_Image_2026-09-12_at_8.44.04_AM_1_.jpeg"
+        )
+        assert module.sanitize_storage_key(url) == expected
 
     def test_is_idempotent(self, module) -> None:
         """Running sanitize twice yields the same result (the second
@@ -163,6 +179,19 @@ class TestIsLegacyBadKey:
         url = "https://prosell-assets.atl1.digitaloceanspaces.com/orgs/a-b-c-d/x.jpg"
         assert module.is_legacy_bad_key(url) is False
 
+    def test_broken_url_path_is_legacy(self, module) -> None:
+        """Regression: the exact real production row (Chevrolet
+        Traverse, prod DB) that the FIRST version of this fix missed --
+        it skipped the whole URL instead of checking its path. A URL is
+        not automatically clean just because it's a URL."""
+        url = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+        )
+        assert module.is_legacy_bad_key(url) is True
+
 
 class TestFindRenamesForProduct:
     """`find_renames_for_product` should enumerate every rename across
@@ -193,6 +222,35 @@ class TestFindRenamesForProduct:
             assert ")" not in r.new_key
             assert r.product_id == "pid"
             assert r.tenant_id == "tid"
+
+    def test_queues_rename_for_broken_url_shaped_product(self, module) -> None:
+        """Regression: the real production row this script must actually
+        fix. image_urls holds full URLs (as bulk-upload writes them),
+        one of them has the broken phone-cam filename in its path."""
+        broken = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/"
+            "WhatsApp Image 2026-09-12 at 8.44.04 AM (1).jpeg"
+        )
+        clean = (
+            "https://atl1.digitaloceanspaces.com/prosell-assets/orgs/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/vehicles/"
+            "56e652de-c522-4664-a977-4bb18586f2fa/1GNKRJKDXHJ344338/2.jpeg"
+        )
+        renames = module.find_renames_for_product(
+            product_id="pid",
+            tenant_id="tid",
+            raw_urls=[broken, clean],
+            cover_key=broken,
+            thumbnail_key=None,
+        )
+        assert len(renames) == 2
+        for r in renames:
+            assert r.old_key == broken
+            assert r.new_key.startswith("https://atl1.digitaloceanspaces.com/")
+            assert " " not in r.new_key
+            assert "(" not in r.new_key
 
     def test_returns_empty_for_clean_product(self, module) -> None:
         clean_urls = ["orgs/a-b-c-d/vehicles/e-f-g-h/x.jpg"]
