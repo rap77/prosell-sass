@@ -1194,6 +1194,10 @@ export interface ProductFilters {
    * (existing backend behavior for `GET /api/v1/products`).
    */
   organization_id?: string;
+  /** Catalog header toggle — true keeps only products on marketplace. */
+  published_to_marketplace?: boolean;
+  /** Catalog header toggle — true keeps only products with images. */
+  has_images?: boolean;
 }
 
 /**
@@ -1217,6 +1221,19 @@ export function useInfiniteProducts(
     queryParams.append("category_id", filters.category_id);
   if (filters?.organization_id)
     queryParams.append("organization_id", filters.organization_id);
+  // The boolean toggles only go on the wire when the user has actually
+  // picked a value — `undefined` (omitted) must NOT be serialized as the
+  // string "undefined", it must simply be absent so the backend skips the
+  // filter.
+  if (filters?.published_to_marketplace !== undefined) {
+    queryParams.append(
+      "published_to_marketplace",
+      String(filters.published_to_marketplace),
+    );
+  }
+  if (filters?.has_images !== undefined) {
+    queryParams.append("has_images", String(filters.has_images));
+  }
   for (const [key, value] of Object.entries(filters?.attributes ?? {})) {
     if (value) queryParams.append(`attr.${key}`, value);
   }
@@ -1255,6 +1272,26 @@ export function useInfiniteProducts(
         if (filters?.category_id) {
           filtered = filtered.filter(
             (p) => p.category_id === filters.category_id,
+          );
+        }
+
+        // published_to_marketplace — true keeps only products on the
+        // marketplace, false keeps only those that aren't.
+        if (filters?.published_to_marketplace !== undefined) {
+          const want = filters.published_to_marketplace;
+          filtered = filtered.filter(
+            (p) => p.published_to_marketplace === want,
+          );
+        }
+
+        // has_images — true keeps only products with at least one image,
+        // false keeps only products without images.
+        if (filters?.has_images !== undefined) {
+          const want = filters.has_images;
+          filtered = filtered.filter((p) =>
+            want
+              ? (p.image_urls?.length ?? 0) > 0
+              : (p.image_urls?.length ?? 0) === 0,
           );
         }
 

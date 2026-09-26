@@ -229,3 +229,217 @@ async def test_list_products_filtered_by_category(async_client_as_admin: AsyncCl
     assert list_resp.status_code == 200, list_resp.text
     ids = [p["id"] for p in list_resp.json()["products"]]
     assert prod_id in ids, f"Product {prod_id} should appear in category filter"
+
+
+# ─── Catalog filters: published_to_marketplace / has_images ────────────────
+# These two query params were added so the catalog header can filter the
+# list by marketplace visibility and image presence without overloading
+# the `status` filter or doing client-side filtering. They use the same
+# `?organization_id=` and `?category_id=` pre-conditions as the existing
+# `?status=` and `?condition=` tests.
+
+
+@pytest.mark.asyncio
+async def test_list_products_filtered_by_published_to_marketplace_true(
+    async_client_as_admin: AsyncClient, admin_user
+):
+    """published_to_marketplace=true keeps only products with the flag set."""
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
+    org_id = str(admin_user.tenant_id)
+
+    published_resp = await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=True,
+        ),
+    )
+    assert published_resp.status_code == 201, published_resp.text
+    published_id = published_resp.json()["id"]
+
+    # A non-published product in the same category should be filtered out.
+    await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=False,
+        ),
+    )
+
+    list_resp = await async_client_as_admin.get(
+        f"/api/v1/products?category_id={cat_id}&published_to_marketplace=true"
+    )
+    assert list_resp.status_code == 200, list_resp.text
+    ids = [p["id"] for p in list_resp.json()["products"]]
+    assert published_id in ids
+    assert all(p["published_to_marketplace"] for p in list_resp.json()["products"])
+
+
+@pytest.mark.asyncio
+async def test_list_products_filtered_by_published_to_marketplace_false(
+    async_client_as_admin: AsyncClient, admin_user
+):
+    """published_to_marketplace=false keeps only products NOT on marketplace."""
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
+    org_id = str(admin_user.tenant_id)
+
+    await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=True,
+        ),
+    )
+    draft_resp = await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=False,
+        ),
+    )
+    assert draft_resp.status_code == 201, draft_resp.text
+    draft_id = draft_resp.json()["id"]
+
+    list_resp = await async_client_as_admin.get(
+        f"/api/v1/products?category_id={cat_id}&published_to_marketplace=false"
+    )
+    assert list_resp.status_code == 200, list_resp.text
+    ids = [p["id"] for p in list_resp.json()["products"]]
+    assert draft_id in ids
+    assert all(not p["published_to_marketplace"] for p in list_resp.json()["products"])
+
+
+@pytest.mark.asyncio
+async def test_list_products_filtered_by_has_images_true(
+    async_client_as_admin: AsyncClient, admin_user
+):
+    """has_images=true keeps only products with at least one image."""
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
+    org_id = str(admin_user.tenant_id)
+
+    with_image = base_product_payload(
+        tenant_id=str(admin_user.tenant_id),
+        org_id=org_id,
+        cat_id=cat_id,
+        image_urls=["cover.jpg", "side.jpg"],
+    )
+    with_image_resp = await async_client_as_admin.post("/api/v1/products", json=with_image)
+    assert with_image_resp.status_code == 201, with_image_resp.text
+    with_image_id = with_image_resp.json()["id"]
+
+    await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            image_urls=[],
+        ),
+    )
+
+    list_resp = await async_client_as_admin.get(
+        f"/api/v1/products?category_id={cat_id}&has_images=true"
+    )
+    assert list_resp.status_code == 200, list_resp.text
+    ids = [p["id"] for p in list_resp.json()["products"]]
+    assert with_image_id in ids
+    assert all(p["image_urls"] for p in list_resp.json()["products"])
+
+
+@pytest.mark.asyncio
+async def test_list_products_filtered_by_has_images_false(
+    async_client_as_admin: AsyncClient, admin_user
+):
+    """has_images=false keeps only products with no images."""
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
+    org_id = str(admin_user.tenant_id)
+
+    await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            image_urls=["cover.jpg"],
+        ),
+    )
+    no_image_resp = await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            image_urls=[],
+        ),
+    )
+    assert no_image_resp.status_code == 201, no_image_resp.text
+    no_image_id = no_image_resp.json()["id"]
+
+    list_resp = await async_client_as_admin.get(
+        f"/api/v1/products?category_id={cat_id}&has_images=false"
+    )
+    assert list_resp.status_code == 200, list_resp.text
+    ids = [p["id"] for p in list_resp.json()["products"]]
+    assert no_image_id in ids
+    assert all(not p["image_urls"] for p in list_resp.json()["products"])
+
+
+@pytest.mark.asyncio
+async def test_list_products_filtered_combined_published_and_has_images(
+    async_client_as_admin: AsyncClient, admin_user
+):
+    """Both filters compose: only published products with images come back."""
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
+    org_id = str(admin_user.tenant_id)
+
+    # The product that should match BOTH filters.
+    both_resp = await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=True,
+            image_urls=["cover.jpg"],
+        ),
+    )
+    assert both_resp.status_code == 201, both_resp.text
+    both_id = both_resp.json()["id"]
+
+    # Products that should NOT match — one fails published, the other fails has_images.
+    await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=False,
+            image_urls=["cover.jpg"],
+        ),
+    )
+    await async_client_as_admin.post(
+        "/api/v1/products",
+        json=base_product_payload(
+            tenant_id=str(admin_user.tenant_id),
+            org_id=org_id,
+            cat_id=cat_id,
+            published_to_marketplace=True,
+            image_urls=[],
+        ),
+    )
+
+    list_resp = await async_client_as_admin.get(
+        f"/api/v1/products?category_id={cat_id}&published_to_marketplace=true&has_images=true"
+    )
+    assert list_resp.status_code == 200, list_resp.text
+    ids = [p["id"] for p in list_resp.json()["products"]]
+    assert ids == [both_id]
+    assert list_resp.json()["total"] == 1

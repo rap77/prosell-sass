@@ -35,6 +35,7 @@ import { DataGridSkeleton } from "@/components/datagrid/DataGridSkeleton";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
 import { CategorySelector } from "@/components/filters/CategorySelector";
+import { QuickFilters } from "@/components/filters/QuickFilters";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
@@ -45,6 +46,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import {
   StatusBadge,
   type VehicleStatus,
@@ -66,6 +68,7 @@ import { useOrganizationStore } from "@/stores/organizationStore";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import { collectLeavesWithPaths } from "@/lib/utils/collect-leaves-with-paths";
 import { getApiStatus } from "@/lib/utils/getApiStatus";
 import { getAttributeMap } from "@/types/product";
 import { cn } from "@/lib/utils";
@@ -396,11 +399,21 @@ export default function CatalogPage() {
     allOrganizationsCount,
   );
   const { data: verticalsData } = useOrgVerticals(organizationId);
-  const allCategories = (verticalsData?.verticals ?? []).flatMap(
-    (vertical) => vertical.categories,
-  );
+  // Leaf-only dropdown: walk every vertical's category tree, collect leaves
+  // with their breadcrumb path (parent names between the vertical root and
+  // the leaf). The previous `.flatMap(v => v.categories)` only exposed the
+  // first level, hiding actual selectable leaves nested one or two levels
+  // deeper (e.g. "Carros y Camionetas" lives under "Vehículos Terrestres").
+  const categoryLeaves = collectLeavesWithPaths(verticalsData?.verticals ?? []);
+  // Lookup the currently-selected category from the leaves list — by
+  // construction, only leaves are selectable, so internal (non-leaf)
+  // categories never reach this branch. If the URL carries an id that is
+  // no longer a leaf (e.g. left over from the old top-level-only model),
+  // we fall through to `null` and the FilterSidebar renders with no
+  // `filter_fields`.
   const selectedCategory =
-    allCategories.find((c) => c.id === selectedCategoryId) ?? null;
+    categoryLeaves.find((entry) => entry.leaf.id === selectedCategoryId)
+      ?.leaf ?? null;
   const filterFields = selectedCategory?.filter_fields ?? [];
 
   const { values } = useCatalogFilters(filterFields);
@@ -408,6 +421,24 @@ export default function CatalogPage() {
 
   const search = searchParams.get("search") ?? "";
   const status = getApiStatus(searchParams.get("status") ?? undefined);
+  // `published` and `has_images` are 3-state toggles in `QuickFilters`:
+  // "any" (param absent) / "true" / "false". Only forward `true`/`false`
+  // to the API — leaving the param off preserves the prior behavior of
+  // "no filter on this dimension".
+  const publishedRaw = searchParams.get("published");
+  const hasImagesRaw = searchParams.get("has_images");
+  const publishedToMarketplace =
+    publishedRaw === "true"
+      ? true
+      : publishedRaw === "false"
+        ? false
+        : undefined;
+  const hasImages =
+    hasImagesRaw === "true"
+      ? true
+      : hasImagesRaw === "false"
+        ? false
+        : undefined;
 
   // ponytail: view mode lives in the URL (not local state) so it survives
   // navigating to a product's detail page and back — a plain useState
@@ -461,6 +492,8 @@ export default function CatalogPage() {
       viewingOrgId === "ALL_ORGS"
         ? undefined
         : (viewingOrgId ?? organizationId ?? undefined),
+    published_to_marketplace: publishedToMarketplace,
+    has_images: hasImages,
   };
 
   const {
@@ -483,6 +516,17 @@ export default function CatalogPage() {
   const { urls: productImageUrls } = useProductImageUrlsBatch(
     allProducts.map((p) => p.id),
   );
+
+  // Per-category product counts derived from the loaded products — drives
+  // both the leaf dropdown ("· N productos" suffix) and the empty-leaves
+  // filter. Counts are scoped to the current filter set on purpose: a
+  // category whose products all disappear under the active filters still
+  // appears as empty and gets dropped from the dropdown.
+  const productCountsByCategory: Record<string, number> = {};
+  for (const product of allProducts) {
+    productCountsByCategory[product.category_id] =
+      (productCountsByCategory[product.category_id] ?? 0) + 1;
+  }
 
   // category_id → { presentation, schema, verticalSlug }.
   // Fallback chain per the foundation spec: category-level presentation
@@ -758,14 +802,15 @@ export default function CatalogPage() {
           <div className="pt-5 px-6 pb-0 border-b border-ps-border-subtle bg-ps-base">
             <div className="max-w-[280px] mb-4">
               <CategorySelector
-                categories={allCategories}
+                leaves={categoryLeaves}
                 value={selectedCategoryId}
                 onChange={setSelectedCategoryId}
+                productCounts={productCountsByCategory}
               />
             </div>
 
             {/* ponytail: vertical layout on mobile (flex-col), horizontal on desktop (md:flex-row) to prevent overflow */}
-            <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-start md:justify-between md:gap-4">
+            <div className="flex flex-col gap-3 mb-3 md:flex-row md:items-start md:justify-between md:gap-4">
               {/* Title + count */}
               <div>
                 <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ps-text-primary leading-tight">
@@ -792,7 +837,13 @@ export default function CatalogPage() {
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
                     className={cn(
-                      "h-9 w-full pl-8 pr-3 border rounded-lg bg-ps-input-bg text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
+                      // px-[14px] mirrors the Button size="sm" horizontal
+                      // padding so the three header elements (search,
+                      // Exportar, Agregar producto) sit on the same visual
+                      // baseline of 36px height and matched horizontal
+                      // padding — see deliverable 5 in the catalog header
+                      // refactor.
+                      "h-9 w-full pl-8 pr-[14px] border rounded-lg bg-ps-input-bg text-ps-text-primary text-[13px] outline-none box-border md:w-[220px]",
                       searchFocused
                         ? "border-ps-border-active shadow-input-focus"
                         : "border-ps-border-default",
@@ -801,15 +852,21 @@ export default function CatalogPage() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-transparent text-ps-text-primary border border-ps-border-default rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      // px-[14px] on top of Button size="sm" (which is px-3)
+                      // keeps the same horizontal padding as the search
+                      // input and the "Agregar producto" button so the
+                      // three header elements share a visual baseline —
+                      // see deliverable 5 of the catalog header refactor.
+                      className="px-[14px]"
                       aria-label="Exportar catálogo"
                       data-testid="export-catalog-menu-trigger"
                     >
                       <Download size={14} strokeWidth={2.5} />
                       <span className="hidden md:inline">Exportar</span>
-                    </button>
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
@@ -828,17 +885,25 @@ export default function CatalogPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <button
-                  type="button"
+                <Button
+                  size="sm"
+                  className="px-[14px]"
                   onClick={() => router.push("/catalog/create")}
-                  className="h-9 px-[14px] inline-flex items-center gap-[6px] bg-ps-cyan text-ps-base border-0 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
                   aria-label="Agregar producto"
                 >
                   <Plus size={14} strokeWidth={2.5} />
                   {/* ponytail: hide text on mobile (icon only), show on desktop */}
                   <span className="hidden md:inline">Agregar producto</span>
-                </button>
+                </Button>
               </div>
+            </div>
+
+            {/* QuickFilters row — sits below the search/CTAs and stays
+                right-aligned on desktop, wrapping naturally on mobile.
+                Only renders once products are loaded so the status
+                dropdown can derive its options from real data. */}
+            <div className="flex justify-end mb-3">
+              <QuickFilters products={allProducts} statusOrder={STATUS_ORDER} />
             </div>
 
             {/* View mode tabs */}

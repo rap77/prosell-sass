@@ -70,6 +70,8 @@ class AbstractProductRepository(ABC):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list["AttributeFilter"] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -91,6 +93,12 @@ class AbstractProductRepository(ABC):
             min_price_cents: Minimum price filter
             max_price_cents: Maximum price filter
             attribute_filters: Dynamic filters over the JSONB `attributes` column
+            published_to_marketplace: When True/False, only products whose
+                `published_to_marketplace` flag matches. None skips the
+                filter.
+            has_images: When True, only products with at least one entry in
+                their `image_urls` JSONB array. When False, only products
+                with an empty or null `image_urls` array. None skips.
             skip: Number of records to skip (pagination)
             limit: Max records to return (pagination)
             order_by: Field to order by
@@ -241,6 +249,8 @@ class AbstractProductRepository(ABC):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list["AttributeFilter"] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> int:
         """
         Count products matching the same filters `get_all()` accepts.
@@ -256,6 +266,8 @@ class AbstractProductRepository(ABC):
             min_price_cents: Minimum price filter
             max_price_cents: Maximum price filter
             attribute_filters: Dynamic filters over the JSONB `attributes` column
+            published_to_marketplace: See `get_all()`.
+            has_images: See `get_all()`.
 
         Returns:
             Total count of products matching every filter above

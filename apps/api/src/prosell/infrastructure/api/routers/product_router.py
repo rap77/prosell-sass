@@ -880,6 +880,8 @@ async def list_products(
     product_status: str | None = Query(default=None, alias="status"),
     condition: str | None = None,
     is_featured: bool | None = None,
+    published_to_marketplace: bool | None = None,
+    has_images: bool | None = None,
     search: str | None = None,
     min_price: int | None = None,
     max_price: int | None = None,
@@ -894,6 +896,11 @@ async def list_products(
     - **status**: Filter by status (draft, pending, published, etc.)
     - **condition**: Filter by condition (new, used, etc.)
     - **is_featured**: Filter by featured status
+    - **published_to_marketplace**: Filter by marketplace visibility flag
+      (true / false). Omit the param to skip the filter.
+    - **has_images**: Filter by whether the product has any images in its
+      `image_urls` array (true = at least one image, false = none). Omit
+      to skip the filter.
     - **search**: Text search in title/description
     - **min_price**: Minimum price in cents
     - **max_price**: Maximum price in cents
@@ -970,6 +977,8 @@ async def list_products(
         status=product_status,
         condition=condition,
         is_featured=is_featured,
+        published_to_marketplace=published_to_marketplace,
+        has_images=has_images,
         search_query=search,
         min_price_cents=min_price,
         max_price_cents=max_price,

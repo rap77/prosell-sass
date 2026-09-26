@@ -122,6 +122,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> Select:
         """Apply the WHERE clauses shared by `get_all()` and `count()`.
 
@@ -147,6 +149,28 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if is_featured is not None:
             stmt = stmt.where(ProductModel.is_featured == is_featured)
+
+        if published_to_marketplace is not None:
+            stmt = stmt.where(ProductModel.published_to_marketplace == published_to_marketplace)
+
+        # `image_urls` is a JSONB array, nullable. The catalog wants
+        # "has at least one image" / "has no images" — implemented via
+        # PostgreSQL's `jsonb_array_length` (NULL → NULL, which is
+        # falsy in both branches, so `True` requires
+        # `IS NOT NULL AND length > 0` while `False` collapses the two
+        # empty cases into `OR`).
+        if has_images is True:
+            stmt = stmt.where(
+                ProductModel.image_urls.is_not(None)
+                & (func.jsonb_array_length(ProductModel.image_urls) > 0)
+            )
+        elif has_images is False:
+            stmt = stmt.where(
+                or_(
+                    ProductModel.image_urls.is_(None),
+                    func.jsonb_array_length(ProductModel.image_urls) == 0,
+                )
+            )
 
         if search_query:
             search_term = f"%{search_query}%"
@@ -193,6 +217,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -211,6 +237,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
             attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
         )
 
         # Ordering
@@ -409,6 +437,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> int:
         """Count products. tenant_id=None lifts tenant isolation.
 
@@ -427,9 +457,11 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
             attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
         )
         result = await self.session.execute(stmt)
-        return result.scalar() or 0
+        return result.scalar_one() or 0
 
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""

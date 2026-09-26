@@ -335,6 +335,8 @@ class StubProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -350,6 +352,8 @@ class StubProductRepository(AbstractProductRepository):
             min_price_cents,
             max_price_cents,
             attribute_filters,
+            published_to_marketplace,
+            has_images,
             order_by,
             order_desc,
         )
@@ -433,6 +437,8 @@ class StubProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> int:
         del (
             category_id,
@@ -443,6 +449,8 @@ class StubProductRepository(AbstractProductRepository):
             min_price_cents,
             max_price_cents,
             attribute_filters,
+            published_to_marketplace,
+            has_images,
         )
         products = [product for product in self.products.values() if product.tenant_id == tenant_id]
         if organization_id is not None:
