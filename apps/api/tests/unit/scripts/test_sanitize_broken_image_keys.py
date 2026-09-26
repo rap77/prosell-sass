@@ -325,11 +325,13 @@ class TestFindRenamesForProduct:
 
 
 class TestDedupeRenames:
-    """`_dedupe_renames` collapses duplicate `(product_id, field,
-    old_key)` triples -- e.g., when `image_urls` carries the same
-    broken key twice. It also detects new_key collisions (two distinct
-    old_keys that sanitize to the same new_key) and refuses to
-    proceed -- a CopyObject is destructive for the second source."""
+    """`_dedupe_renames` collapses by PHYSICAL FILE (bare storage key), not by field.
+
+    Multiple fields (image_urls, cover_image_key, thumbnail_image_key)
+    may reference the SAME physical S3 object. The function returns
+    UnifiedRename objects that combine all fields pointing to the same
+    physical file into a single S3 rename operation.
+    """
 
     def test_dedupes_repeated_old_key(self, module) -> None:
         r1 = module.PendingRename(
@@ -347,9 +349,18 @@ class TestDedupeRenames:
             new_key="good.jpg",
         )
         out = module._dedupe_renames([r1, r2])
-        assert out == [r1]
+        assert len(out) == 1
+        assert out[0].product_id == "pid"
+        assert out[0].old_key == "bad.jpg"
+        assert out[0].new_key == "good.jpg"
+        assert out[0].fields == ("image_urls",)
 
-    def test_keeps_different_fields(self, module) -> None:
+    def test_collapses_same_physical_file_across_fields(self, module) -> None:
+        """The FIX: same physical file in image_urls AND cover_image_key
+        must collapse to ONE UnifiedRename with both fields.
+
+        This was the bug: the old code returned 2 PendingRenames,
+        causing the second CopyObject to fail (source already deleted)."""
         r1 = module.PendingRename(
             product_id="pid",
             tenant_id="tid",
@@ -365,7 +376,11 @@ class TestDedupeRenames:
             new_key="good.jpg",
         )
         out = module._dedupe_renames([r1, r2])
-        assert len(out) == 2
+        assert len(out) == 1
+        assert out[0].product_id == "pid"
+        assert out[0].old_key == "bad.jpg"
+        assert out[0].new_key == "good.jpg"
+        assert set(out[0].fields) == {"image_urls", "cover_image_key"}
 
     def test_keeps_different_products(self, module) -> None:
         r1 = module.PendingRename(
@@ -391,9 +406,8 @@ class TestDedupeRenames:
     def test_collision_detected_and_aborts(
         self, module, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        """Two distinct old_keys that sanitize the same way would
-        silently overwrite each other in S3. The dedupe must abort
-        so a human can disambiguate instead of losing data."""
+        """Two distinct physical files that sanitize to the same new_key
+        for the same field would silently overwrite each other in S3."""
         r1 = module.PendingRename(
             product_id="pid",
             tenant_id="tid",
@@ -405,68 +419,34 @@ class TestDedupeRenames:
             product_id="pid",
             tenant_id="tid",
             field="image_urls",
-            old_key="foo (1).jpg",  # different source
+            old_key="foo (1).jpg",  # different physical source
             new_key="foo_1_.jpg",  # different target
         )
         # No collision here because targets differ. Sanity check.
         module._dedupe_renames([r1, r2])
 
-        # Actual collision: both old_keys sanitize to same new_key.
+        # Actual collision: two DIFFERENT physical files sanitize to same new_key
         r3 = module.PendingRename(
-            product_id="pid",
-            tenant_id="tid",
-            field="image_urls",
-            old_key="foo.jpg",
-            new_key="foo_.jpg",
-        )
-        r4 = module.PendingRename(
-            product_id="pid",
-            tenant_id="tid",
-            field="image_urls",
-            old_key="foo.jpg",  # different suffix, same base
-            new_key="foo_.jpg",  # same target as r3
-        )
-        # Same source dedupes to one -- this shouldn't trigger
-        # the collision exit.
-        module._dedupe_renames([r3, r4])
-
-        # Real collision: different old_keys, same new_key.
-        r5 = module.PendingRename(
-            product_id="pid",
-            tenant_id="tid",
-            field="image_urls",
-            old_key="bad name.jpg",
-            new_key="bad_name.jpg",
-        )
-        r6 = module.PendingRename(
-            product_id="pid",
-            tenant_id="tid",
-            field="image_urls",
-            old_key="bad name (1).jpg",  # different source
-            new_key="bad_name_1_.jpg",  # different target -- no collision
-        )
-        module._dedupe_renames([r5, r6])
-
-        # Now actually force a collision.
-        r7 = module.PendingRename(
             product_id="pid",
             tenant_id="tid",
             field="image_urls",
             old_key="bad name.jpg",
             new_key="collide.jpg",
         )
-        r8 = module.PendingRename(
+        r4 = module.PendingRename(
             product_id="pid",
             tenant_id="tid",
             field="image_urls",
-            old_key="bad name (1).jpg",  # different source
-            new_key="collide.jpg",  # same target as r7
+            old_key="bad name (1).jpg",  # different physical source
+            new_key="collide.jpg",  # SAME target
         )
         with pytest.raises(SystemExit) as exc_info:
-            module._dedupe_renames([r7, r8])
+            module._dedupe_renames([r3, r4])
         assert exc_info.value.code == 2
         captured = capsys.readouterr()
         assert "collision" in captured.err
+        assert "bad name.jpg" in captured.err
+        assert "bad name (1).jpg" in captured.err
         assert "bad name.jpg" in captured.err
         assert "bad name (1).jpg" in captured.err
 

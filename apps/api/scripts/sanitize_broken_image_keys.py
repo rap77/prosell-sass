@@ -88,6 +88,23 @@ class PendingRename:
     new_key: str
 
 
+@dataclass(frozen=True)
+class UnifiedRename:
+    """One physical file rename + all DB fields that must point to the new key.
+
+    Multiple PendingRename entries that share the same physical old_key
+    (e.g. cover_image_key and image_urls[0] both pointing to the same S3 object)
+    are collapsed into a single UnifiedRename. The S3 rename runs ONCE,
+    then ALL listed fields are updated in the DB.
+    """
+
+    product_id: str
+    tenant_id: str
+    old_key: str
+    new_key: str
+    fields: tuple[str, ...]  # all fields that referenced old_key
+
+
 def is_legacy_bad_key(key: str) -> bool:
     """True iff key has chars outside the original pre-fix DTO regex
     alphabet -- the exact rejection criterion of the production bug.
@@ -147,48 +164,67 @@ def find_renames_for_product(
     return renames
 
 
-def _dedupe_renames(renames: list[PendingRename]) -> list[PendingRename]:
-    """Dedupe by (product_id, field, old_key). image_urls may carry the
-    same broken key twice if a user re-submitted; only one rename is
-    needed.
+def _dedupe_renames(renames: list[PendingRename]) -> list[UnifiedRename]:
+    """Dedupe by PHYSICAL FILE (bare storage key), not by field.
 
-    Also detects collisions: two DISTINCT old_keys that sanitize to
-    the same new_key would silently overwrite each other in S3
-    (CopyObject + DeleteObject is destructive for the second copy's
-    source). When such a collision exists across DIFFERENT rows
-    (image_urls + cover_image_key for the same product, or two products
-    that happen to share a sanitized key shape) we cannot resolve it
-    automatically -- the right answer is to stop and surface the
-    conflict for a human to disambiguate by renaming one of the source
-    files.
+    Multiple fields (image_urls, cover_image_key, thumbnail_image_key)
+    may reference the SAME physical S3 object. We must:
+    1. Collapse all fields pointing to the same old_key into ONE S3 rename
+    2. Run the S3 rename ONCE (CopyObject + head_object + DeleteObject)
+    3. Update ALL affected fields in the DB to point to the new_key
+
+    Also detects collisions: two DISTINCT physical old_keys that sanitize
+    to the same new_key would silently overwrite each other in S3.
     """
-    # Stage 1: dedupe by (product, field, old_key) -- the no-op case.
-    seen: set[tuple[str, str, str]] = set()
-    deduped: list[PendingRename] = []
-    for r in renames:
-        k = (r.product_id, r.field, r.old_key)
-        if k in seen:
-            continue
-        seen.add(k)
-        deduped.append(r)
+    # Stage 1: extract bare keys and group by (product_id, bare_old_key)
+    from prosell.domain.services.storage_keys import extract_storage_key_from_value
 
-    # Stage 2: detect new_key collisions. Same product + same field +
-    # same old_key are already deduped, so any further collision means
-    # either (a) two different old_keys in the same product/field
-    # chain sanitize the same way (e.g. `foo.jpg` and `foo (1).jpg`),
-    # or (b) two different products would write to the same S3 target.
-    # Both are unsafe to auto-resolve.
-    targets: dict[tuple[str, str, str], PendingRename] = {}
-    conflicts: list[tuple[tuple[str, str, str], list[PendingRename]]] = []
-    for r in deduped:
-        key = (r.product_id, r.field, r.new_key)
-        if key in targets:
-            existing = targets[key]
-            if existing.old_key != r.old_key:
-                conflicts.append((key, [existing, r]))
-                continue
-        else:
-            targets[key] = r
+    # Group renames by (product_id, bare_old_key) -> list of PendingRename
+    groups: dict[tuple[str, str], list[PendingRename]] = {}
+    for r in renames:
+        bare_old = extract_storage_key_from_value(r.old_key)
+        if not bare_old:
+            # Should not happen - is_legacy_bad_key already filtered these
+            continue
+        key = (r.product_id, bare_old)
+        groups.setdefault(key, []).append(r)
+
+    # Stage 2: build UnifiedRename per group, validate no collisions
+    unified: list[UnifiedRename] = []
+    targets: dict[tuple[str, str, str], UnifiedRename] = {}  # (product_id, field, new_key)
+    conflicts: list[tuple[tuple[str, str, str], list[UnifiedRename]]] = []
+
+    for (product_id, _bare_old), group in groups.items():
+        # All PendingRename in this group share the same bare_old_key
+        # Pick the first one's old_key/new_key as canonical
+        first = group[0]
+        old_key = first.old_key
+        new_key = first.new_key
+
+        # Collect all unique fields that reference this physical file
+        fields = tuple(sorted({r.field for r in group}))
+
+        unified_rename = UnifiedRename(
+            product_id=product_id,
+            tenant_id=first.tenant_id,
+            old_key=old_key,
+            new_key=new_key,
+            fields=fields,
+        )
+        unified.append(unified_rename)
+
+        # Stage 3: detect new_key collisions across DIFFERENT physical files
+        # (product_id, field, new_key) - if two different old_keys map to same
+        # new_key for the same field, we'd overwrite in S3
+        for field in fields:
+            target_key = (product_id, field, new_key)
+            if target_key in targets:
+                existing = targets[target_key]
+                if existing.old_key != old_key:
+                    conflicts.append((target_key, [existing, unified_rename]))
+                    continue
+            else:
+                targets[target_key] = unified_rename
 
     if conflicts:
         print(
@@ -205,10 +241,10 @@ def _dedupe_renames(renames: list[PendingRename]) -> list[PendingRename]:
                 file=sys.stderr,
             )
             for m in members:
-                print(f"    {m.old_key}", file=sys.stderr)
+                print(f"    {m.old_key} (fields: {m.fields})", file=sys.stderr)
         sys.exit(2)
 
-    return deduped
+    return unified
 
 
 async def rename_in_storage(spaces: DOSpacesService, old_key: str, new_key: str) -> None:
@@ -287,17 +323,17 @@ async def main() -> None:
                     thumbnail_key=product.thumbnail_image_key,
                 )
             )
-        all_renames = _dedupe_renames(all_renames)
+        unified_renames = _dedupe_renames(all_renames)
 
     print(f"Products scanned: {len(products)}")
-    print(f"Renames queued:  {len(all_renames)}")
-    for r in all_renames:
-        print(f"  [{r.product_id}] {r.field}:")
+    print(f"Renames queued:  {len(unified_renames)}")
+    for r in unified_renames:
+        print(f"  [{r.product_id}] fields={r.fields}:")
         print(f"    old: {r.old_key}")
         print(f"    new: {r.new_key}")
     print()
 
-    if not all_renames:
+    if not unified_renames:
         print("Nothing to sanitize. Done.")
         return
 
@@ -308,42 +344,47 @@ async def main() -> None:
     print("--- APPLYING ---")
     spaces = DOSpacesService()
 
-    storage_failures: list[tuple[PendingRename, str]] = []
-    for r in all_renames:
+    storage_failures: list[tuple[UnifiedRename, str]] = []
+    for r in unified_renames:
         try:
             await rename_in_storage(spaces, r.old_key, r.new_key)
-            print(f"  [storage OK] {r.field}: {r.old_key} -> {r.new_key}")
+            print(f"  [storage OK] {r.fields}: {r.old_key} -> {r.new_key}")
         except (ClientError, BotoCoreError) as exc:  # pragma: no cover -- infra failure
             storage_failures.append((r, str(exc)))
-            print(f"  [storage FAIL] {r.field}: {r.old_key} -> {r.new_key}: {exc}")
+            print(f"  [storage FAIL] {r.fields}: {r.old_key} -> {r.new_key}: {exc}")
 
     if storage_failures:
         print()
         print(f"!! {len(storage_failures)} storage rename(s) failed. Aborting DB update.")
         print("   No DB changes were made. Re-run after fixing the cause to retry.")
         for r, err in storage_failures:
-            print(f"   - {r.field}: {r.old_key} -> {r.new_key}: {err}")
+            print(f"   - {r.fields}: {r.old_key} -> {r.new_key}: {err}")
         sys.exit(1)
 
     async with async_session_maker() as session:
-        ids = [str(r.product_id) for r in all_renames]
+        ids = [str(r.product_id) for r in unified_renames]
         result = await session.execute(select(ProductModel).where(ProductModel.id.in_(ids)))
         db_products = {str(p.id): p for p in result.scalars().all()}
 
-        for r in all_renames:
+        total_fields_updated = 0
+        for r in unified_renames:
             product = db_products[r.product_id]
-            if r.field == "image_urls":
-                product.image_urls = [
-                    r.new_key if v == r.old_key else v for v in (product.image_urls or [])
-                ]
-            elif r.field == "cover_image_key":
-                product.cover_image_key = r.new_key
-            elif r.field == "thumbnail_image_key":
-                product.thumbnail_image_key = r.new_key
+            for field in r.fields:
+                if field == "image_urls":
+                    product.image_urls = [
+                        r.new_key if v == r.old_key else v for v in (product.image_urls or [])
+                    ]
+                elif field == "cover_image_key":
+                    product.cover_image_key = r.new_key
+                elif field == "thumbnail_image_key":
+                    product.thumbnail_image_key = r.new_key
+                total_fields_updated += 1
 
         await session.commit()
         print(
-            f"  [DB OK] {len(all_renames)} field(s) updated across {len(db_products)} product(s)."
+            f"  [DB OK] {total_fields_updated} field(s) updated across "
+            f"{len(db_products)} product(s) "
+            f"({len(unified_renames)} physical file rename(s))."
         )
 
     print()
