@@ -466,6 +466,19 @@ class TestRenameInStorage:
         spaces.s3_client = MagicMock()
         return spaces
 
+    def _setup_rename_mock(self, spaces: MagicMock, _old: str, _new: str) -> None:
+        """Configure mock: new_key 404, old_key exists, rename succeeds."""
+        from botocore.exceptions import ClientError
+
+        # First head_object (for new_key) -> 404
+        # Second head_object (for old_key) -> success
+        # Third head_object (post-copy verify) -> success
+        spaces.s3_client.head_object.side_effect = [
+            ClientError({"Error": {"Code": "404"}}, "HeadObject"),  # new_key not found
+            None,  # old_key found (success)
+            None,  # post-copy verify success
+        ]
+
     @pytest.mark.asyncio
     async def test_uses_bare_keys_for_s3_calls_not_full_urls(self, module) -> None:
         spaces = self._make_spaces()
@@ -492,6 +505,7 @@ class TestRenameInStorage:
             "WhatsApp_Image_2026-09-12_at_8.44.04_AM_1_.jpeg"
         )
 
+        self._setup_rename_mock(spaces, old_bare_key, new_bare_key)
         await module.rename_in_storage(spaces, old_url, new_url)
 
         spaces.s3_client.copy_object.assert_called_once_with(
@@ -499,9 +513,8 @@ class TestRenameInStorage:
             Key=new_bare_key,
             CopySource={"Bucket": "prosell-assets", "Key": old_bare_key},
         )
-        spaces.s3_client.head_object.assert_called_once_with(
-            Bucket="prosell-assets", Key=new_bare_key
-        )
+        # head_object called 3 times: new_key check (404), old_key check, post-copy verify
+        assert spaces.s3_client.head_object.call_count == 3
         spaces.s3_client.delete_object.assert_called_once_with(
             Bucket="prosell-assets", Key=old_bare_key
         )
@@ -514,6 +527,7 @@ class TestRenameInStorage:
         old_key = "orgs/a-b-c-d/vehicles/e-f-g-h/bad name.jpg"
         new_key = "orgs/a-b-c-d/vehicles/e-f-g-h/bad_name.jpg"
 
+        self._setup_rename_mock(spaces, old_key, new_key)
         await module.rename_in_storage(spaces, old_key, new_key)
 
         spaces.s3_client.copy_object.assert_called_once_with(
@@ -521,3 +535,41 @@ class TestRenameInStorage:
             Key=new_key,
             CopySource={"Bucket": "prosell-assets", "Key": old_key},
         )
+
+    @pytest.mark.asyncio
+    async def test_idempotent_when_new_key_already_exists(self, module) -> None:
+        """If new_key already exists in S3, skip rename and return success."""
+        spaces = self._make_spaces()
+        old_key = "orgs/a-b-c-d/vehicles/e-f-g-h/bad name.jpg"
+        new_key = "orgs/a-b-c-d/vehicles/e-f-g-h/bad_name.jpg"
+
+        # new_key exists -> head_object succeeds immediately, no further calls
+        spaces.s3_client.head_object.return_value = None
+
+        await module.rename_in_storage(spaces, old_key, new_key)
+
+        # No copy_object or delete_object should be called
+        spaces.s3_client.copy_object.assert_not_called()
+        spaces.s3_client.delete_object.assert_not_called()
+        # head_object called once (for new_key check)
+        spaces.s3_client.head_object.assert_called_once_with(Bucket="prosell-assets", Key=new_key)
+
+    @pytest.mark.asyncio
+    async def test_raises_when_neither_key_exists(self, module) -> None:
+        """If neither old_key nor new_key exists, raise FileNotFoundError."""
+        from botocore.exceptions import ClientError
+
+        spaces = self._make_spaces()
+        old_key = "orgs/a-b-c-d/vehicles/e-f-g-h/missing.jpg"
+        new_key = "orgs/a-b-c-d/vehicles/e-f-g-h/missing_renamed.jpg"
+
+        # Both head_object calls return 404
+        spaces.s3_client.head_object.side_effect = [
+            ClientError({"Error": {"Code": "404"}}, "HeadObject"),  # new_key not found
+            ClientError({"Error": {"Code": "404"}}, "HeadObject"),  # old_key not found
+        ]
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            await module.rename_in_storage(spaces, old_key, new_key)
+        assert "Neither old_key" in str(exc_info.value)
+        assert "nor new_key" in str(exc_info.value)

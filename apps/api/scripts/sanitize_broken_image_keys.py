@@ -248,29 +248,51 @@ def _dedupe_renames(renames: list[PendingRename]) -> list[UnifiedRename]:
 
 
 async def rename_in_storage(spaces: DOSpacesService, old_key: str, new_key: str) -> None:
-    """S3 CopyObject + head_object verify + DeleteObject. Raises on
-    failure so the caller can mark this rename as failed and abort
-    the DB update.
+    """S3 CopyObject + head_object verify + DeleteObject. Idempotent:
+    if new_key already exists, assumes rename was already done (e.g. prior
+    partial run that updated S3 but aborted before DB update) and returns
+    success. Only does the actual rename if old_key exists and new_key
+    doesn't.
 
-    `old_key`/`new_key` are `PendingRename` values -- the full DB
-    representation (a URL, for a row that stores full URLs). S3
-    operations need the BARE key (no scheme/host/bucket), so this
-    extracts it first via the same helper `generate_download_url`
-    uses for the identical reason (production incident, first real
-    run of this script: every CopyObject 404'd with NoSuchKey because
-    the full URL was sent as the S3 key verbatim).
-
-    The verify-by-head_object is belt-and-suspenders: copy_object
-    already raises on most failures, but a head_object after the
-    copy confirms the new object is reachable before we delete the
-    old one. delete_object on a missing key is a silent no-op per S3,
-    so re-running this script is safe even if a prior partial run
-    already deleted the old key."""
+    `old_key`/`new_key` are the full DB representation (a URL, for rows
+    that store full URLs). S3 operations need the BARE key (no scheme/host/bucket).
+    """
     bucket = spaces.bucket
     old_bare_key = extract_storage_key_from_value(old_key)
     new_bare_key = extract_storage_key_from_value(new_key)
     if not old_bare_key or not new_bare_key:
         raise ValueError(f"Could not extract a bare storage key from {old_key!r} / {new_key!r}")
+
+    # Idempotency: check if new_key already exists (rename already completed in S3)
+    try:
+        await asyncio.to_thread(
+            spaces.s3_client.head_object,
+            Bucket=bucket,
+            Key=new_bare_key,
+        )
+        # new_key exists - rename already done in S3, nothing to do
+        return
+    except ClientError as e:
+        if e.response.get("Error", {}).get("Code") != "404":  # type: ignore[typeddict-item]
+            raise
+        # new_key doesn't exist - fall through to check old_key
+
+    # Check if old_key exists
+    try:
+        await asyncio.to_thread(
+            spaces.s3_client.head_object,
+            Bucket=bucket,
+            Key=old_bare_key,
+        )
+    except ClientError as e:
+        if e.response.get("Error", {}).get("Code") == "404":  # type: ignore[typeddict-item]
+            # Neither old nor new exists - this is an error
+            raise FileNotFoundError(
+                f"Neither old_key ({old_bare_key}) nor new_key ({new_bare_key}) exists in S3"
+            ) from None
+        raise
+
+    # Both checks passed: old_key exists, new_key doesn't - do the rename
     await asyncio.to_thread(
         spaces.s3_client.copy_object,
         Bucket=bucket,
