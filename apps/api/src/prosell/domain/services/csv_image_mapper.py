@@ -13,12 +13,27 @@ DO Spaces key format:
   {do_spaces_prefix}/{tenant_id}/{organization_id}/{vin}/{filename}
 """
 
+import re
 import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import PurePosixPath
 from uuid import UUID
+
+# Characters allowed in the DO Spaces key beyond the base filename alphabet
+# `[A-Za-z0-9._-]`. Anything outside this set is replaced with `_` so the
+# resulting key round-trips through the DTO storage-key validator in
+# `application/dto/product/create.py` (whose `[A-Za-z0-9._/\-]+` regex
+# would otherwise reject e.g. spaces, parens, colons).
+#
+# The DTO regex is ALSO relaxed to accept spaces + parens for backward
+# compatibility with already-imported products (see create.py), but the
+# mapper still normalizes aggressively here so every fresh import lands
+# on a clean, predictable key — fewer special chars means fewer places
+# that need URL-encoding-aware code.
+_FILENAME_NORMALIZE_RE = re.compile(r"[^A-Za-z0-9._\-]")
+_FILENAME_COLLAPSE_RE = re.compile(r"_+")
 
 # =============================================================================
 # SIZE LIMITS (prevent ZIP bomb / decompression bomb attacks)
@@ -234,8 +249,16 @@ class CSVImageMapper:
         """
         Sanitize a filename extracted from a ZIP entry.
 
-        Strips all path components, keeping only the base name.
-        Rejects filenames containing path separators (path traversal attempts).
+        Strips all path components, keeping only the base name. Rejects
+        filenames containing path separators (path traversal attempts).
+        Normalizes characters that the DTO storage-key regex
+        (`application/dto/product/create.py`) would reject — without
+        this step, a real-world phone-cam filename like
+        ``WhatsApp Image 2026-09-12 at 8.42.31 AM (1).jpeg`` lands in
+        the DB with spaces/parens and the product becomes uneditable
+        (the PATCH validator raises 422 on the round-trip). Anything
+        outside ``[A-Za-z0-9._-]`` is replaced with ``_``; runs of ``_``
+        collapse to a single ``_``; leading/trailing ``_`` are stripped.
 
         Args:
             filename: Raw filename from ZIP entry
@@ -258,7 +281,17 @@ class CSVImageMapper:
         base = PurePosixPath(filename).name
         if not base:
             raise ValueError(f"Invalid filename in ZIP: '{filename}'")
-        return base
+        # Normalize characters outside `[A-Za-z0-9._-]` to `_`, collapse
+        # runs, strip leading/trailing underscores. Applied AFTER the path-
+        # component strip so the basename keeps its dot (extension separator).
+        normalized = _FILENAME_NORMALIZE_RE.sub("_", base)
+        normalized = _FILENAME_COLLAPSE_RE.sub("_", normalized).strip("_")
+        if not normalized:
+            # Filename was made entirely of disallowed chars (e.g. " ( ).jpeg"
+            # would normalize to "jpeg" because the dot and letters survive,
+            # but " ( ) " alone would collapse to ""). Reject as invalid.
+            raise ValueError(f"Invalid filename in ZIP: '{filename}'")
+        return normalized
 
     def _build_do_spaces_key(
         self,

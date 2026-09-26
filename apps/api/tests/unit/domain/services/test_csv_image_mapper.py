@@ -31,7 +31,11 @@ class TestSanitizeFilename:
     def test_strips_path_components(self) -> None:
         mapper = CSVImageMapper()
         assert mapper._sanitize_filename("folder/sub/img.png") == "img.png"
-        assert mapper._sanitize_filename(" Ford / Explorer / img1.jpg ") == " img1.jpg "
+        # Spaces around the name (left by `PurePosixPath.name` when the
+        # original had whitespace) are normalized to `_` then stripped,
+        # yielding a clean basename. The path-component strip happens
+        # BEFORE character normalization, so the basename is preserved.
+        assert mapper._sanitize_filename(" Ford / Explorer / img1.jpg ") == "img1.jpg"
 
     def test_rejects_backslash(self) -> None:
         mapper = CSVImageMapper()
@@ -53,6 +57,42 @@ class TestSanitizeFilename:
     def test_accepts_plain_filename(self) -> None:
         mapper = CSVImageMapper()
         assert mapper._sanitize_filename("img1.jpg") == "img1.jpg"
+
+    def test_normalizes_phone_cam_filenames(self) -> None:
+        """Regression: real-world phone-cam filenames contain spaces,
+        parens, and colons — all of which the DTO storage-key regex
+        rejects. The sanitizer must rewrite them to the safe alphabet
+        so the resulting DO Spaces key round-trips through every PATCH
+        / GET. Verified by the production error where a product with
+        `WhatsApp Image 2026-09-12 at 8.42.31 AM (1).jpeg` became
+        uneditable (422 on save) until the bad key was cleaned up.
+        """
+        mapper = CSVImageMapper()
+        assert (
+            mapper._sanitize_filename("WhatsApp Image 2026-09-12 at 8.42.31 AM (1).jpeg")
+            == "WhatsApp_Image_2026-09-12_at_8.42.31_AM_1_.jpeg"
+        )
+
+    def test_collapses_runs_of_underscores(self) -> None:
+        """Adjacent disallowed chars must collapse to a single `_` so
+        the resulting filename stays readable (no `___` runs)."""
+        mapper = CSVImageMapper()
+        # Three disallowed chars in a row — ` ( ` — collapse to `_`.
+        assert mapper._sanitize_filename("a ( b.jpg") == "a_b.jpg"
+
+    def test_strips_leading_trailing_underscores(self) -> None:
+        """A filename that starts/ends with disallowed chars (e.g. a
+        leading space) should not produce a key with leading `_`."""
+        mapper = CSVImageMapper()
+        assert mapper._sanitize_filename(" img.jpg") == "img.jpg"
+        assert mapper._sanitize_filename("img.jpg ") == "img.jpg"
+
+    def test_rejects_all_disallowed_filename(self) -> None:
+        """A filename made entirely of disallowed chars (e.g. spaces +
+        parens only) is invalid — there is no recoverable basename."""
+        mapper = CSVImageMapper()
+        with pytest.raises(ValueError, match="Invalid filename"):
+            mapper._sanitize_filename(" ( ) ")
 
 
 class TestReadZipContents:

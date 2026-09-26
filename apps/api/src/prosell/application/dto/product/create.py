@@ -20,12 +20,22 @@ _ALLOWED_IMAGE_URL_SCHEMES = frozenset({"http", "https"})
 # bulk-uploaded product's existing image keys gets rejected here before ever
 # reaching that check. The tenant segment is a UUID-shaped string (not
 # strictly version-validated here — the router layer enforces real tenant
-# scope). The rest of the path permits alphanum, dot, underscore, dash, and
-# forward slash (so filenames like `image_v1.0.jpg` are still valid).
-# Anchored to the start, no leading slash. The `_has_no_traversal_segment`
-# helper separately rejects `..` segments to block path-traversal attempts
-# that the dot char allows.
-_STORAGE_KEY_PATTERN = re.compile(r"^(?:orgs|vehicles)/[0-9a-fA-F-]{36}/[A-Za-z0-9._/\-]+$")
+# scope). The rest of the path permits alphanum, dot, underscore, dash,
+# space, parentheses, and forward slash (so filenames like
+# `image_v1.0.jpg`, `WhatsApp Image 2026-09-12 at 8.42.31 AM (1).jpeg`, and
+# nested subfolders are all valid).
+#
+# Why allow spaces + parens here (not just `[A-Za-z0-9._/\-]`)?
+# Pre-sanitization-fix bulk-uploaded products in production have storage
+# keys with phone-cam-style filenames ("WhatsApp Image ... (1).jpeg"). The
+# validator must round-trip those existing keys verbatim, or the product's
+# edit form will 422 on every save — the user can't delete the broken image
+# via UI. New imports are sanitized upstream by `CSVImageMapper._sanitize_filename`,
+# so fresh keys no longer need spaces/parens; this relaxation is purely
+# backward-compat. Anchored to start, no leading slash. The
+# `_has_no_traversal_segment` helper separately rejects `..` segments to
+# block path-traversal attempts that the dot char allows.
+_STORAGE_KEY_PATTERN = re.compile(r"^(?:orgs|vehicles)/[0-9a-fA-F-]{36}/[A-Za-z0-9._/\- ()]+$")
 
 
 def _has_no_traversal_segment(value: str) -> bool:

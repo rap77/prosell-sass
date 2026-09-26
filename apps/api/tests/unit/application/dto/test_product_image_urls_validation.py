@@ -116,6 +116,26 @@ class TestCreateProductRequestImageUrlsValidation:
         request = self._valid_create([key])
         assert request.image_urls == [key]
 
+    def test_phone_cam_filename_storage_key_is_accepted(self) -> None:
+        """Regression: pre-sanitization-fix bulk-uploaded products have
+        keys with phone-cam-style filenames (spaces + parens). The
+        validator must round-trip those existing keys verbatim so the
+        edit form can PATCH the product and delete the broken image —
+        otherwise the user is locked out with a 422 on every save.
+        Verified by the production error on
+        `orgs/<uuid>/vehicles/<uuid>/<vin>/WhatsApp Image ... (1).jpeg`.
+        New imports are sanitized upstream by `CSVImageMapper` so they
+        no longer need this allowance; the relaxation is purely for
+        backward compatibility.
+        """
+        key = (
+            "orgs/11111111-1111-1111-1111-111111111111/vehicles/"
+            "22222222-2222-2222-2222-222222222222/1FMSK7DH7LGA77418/"
+            "WhatsApp Image 2026-09-12 at 8.42.31 AM (1).jpeg"
+        )
+        request = self._valid_create([key])
+        assert request.image_urls == [key]
+
     @pytest.mark.parametrize(
         "bad_key",
         [
@@ -194,6 +214,20 @@ class TestUpdateProductRequestImageUrlsValidation:
         key = (
             "vehicles/11111111-1111-1111-1111-111111111111/"
             "22222222-2222-2222-2222-222222222222/1FMSK7DH7LGA77418/1.jpg"
+        )
+        request = self._valid_update([key])
+        assert request.image_urls == [key]
+
+    def test_phone_cam_filename_storage_key_is_accepted(self) -> None:
+        """Mirrors the Create case: pre-sanitization-fix bulk-uploaded
+        products have keys with phone-cam-style filenames (spaces +
+        parens). The PATCH path (the one that 422'd in production)
+        must accept the same shape so the edit form can save.
+        """
+        key = (
+            "orgs/11111111-1111-1111-1111-111111111111/vehicles/"
+            "22222222-2222-2222-2222-222222222222/1FMSK7DH7LGA77418/"
+            "WhatsApp Image 2026-09-12 at 8.42.31 AM (1).jpeg"
         )
         request = self._valid_update([key])
         assert request.image_urls == [key]
