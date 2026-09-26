@@ -16,6 +16,7 @@ from prosell.domain.repositories.product_ownership_repository import (
     AbstractProductOwnershipRepository,
 )
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.services.storage_key_sanitizer import sanitize_storage_key
 from prosell.domain.services.template_composer import resolve_title
 
 
@@ -66,6 +67,27 @@ class UpdateProductUseCase:
         product = await self.product_repository.get_by_id(product_id, tenant_id)
         if not product:
             raise ProductNotFoundError(str(product_id))
+
+        # Defense in depth: the relaxed DTO regex (post-fix, commits
+        # 072bfa10 + parent) accepts legacy phone-cam-style keys for
+        # backward compat with pre-fix imports. A client PATCH could
+        # therefore re-introduce bad keys. Re-apply the same alphabet
+        # normalization CSV bulk-upload uses, on every write here, so
+        # the DB-stored alphabet stays `[A-Za-z0-9._/-]` regardless of
+        # entry path. Idempotent: clean keys pass through unchanged.
+        if request.image_urls is not None:
+            request = request.model_copy(
+                update={
+                    "image_urls": [sanitize_storage_key(k) for k in request.image_urls],
+                }
+            )
+        if request.cover_image_key is not None or request.thumbnail_image_key is not None:
+            update: dict[str, object] = {}
+            if request.cover_image_key is not None:
+                update["cover_image_key"] = sanitize_storage_key(request.cover_image_key)
+            if request.thumbnail_image_key is not None:
+                update["thumbnail_image_key"] = sanitize_storage_key(request.thumbnail_image_key)
+            request = request.model_copy(update=update)
 
         # Apply the request's set fields (PATCH: None means unchanged).
         if request.title is not None:

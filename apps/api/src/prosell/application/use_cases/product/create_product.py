@@ -7,6 +7,7 @@ from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.services.storage_key_sanitizer import sanitize_storage_key
 from prosell.domain.services.template_composer import resolve_title
 
 
@@ -50,7 +51,10 @@ class CreateProductUseCase:
         category.validate_attributes(request.attributes or {})
 
         # 1c. Auto-generate stock_number from VIN if not provided
-        attrs: dict[str, object] = request.attributes or {}
+        # Copy, don't alias -- mutating request.attributes in place below
+        # would silently mutate the caller's own dict (a shared mutable
+        # object), since `x or {}` returns the SAME dict when non-empty.
+        attrs: dict[str, object] = dict(request.attributes) if request.attributes else {}
         vin_str = attrs.get("vin")
         if isinstance(vin_str, str) and len(vin_str) >= 6 and "stock_number" not in attrs:
             attrs["stock_number"] = vin_str[-6:].upper()
@@ -68,6 +72,27 @@ class CreateProductUseCase:
         # when it declares one; otherwise keep the request-provided title
         # (backward-compatible fallback). Shared with the PATCH handler.
         title = resolve_title(category.presentation, attrs, fallback=request.title) or request.title
+
+        # 2c. Defense in depth: re-apply the storage-key alphabet
+        # normalization to image-bearing fields, the same way
+        # UpdateProductUseCase does on PATCH. Prevents legacy
+        # phone-cam-style keys from entering the DB through a client
+        # POST that bypasses the CSV bulk-upload sanitizer.
+        request = request.model_copy(
+            update={
+                "image_urls": [sanitize_storage_key(k) for k in (request.image_urls or [])],
+                "cover_image_key": (
+                    sanitize_storage_key(request.cover_image_key)
+                    if request.cover_image_key
+                    else None
+                ),
+                "thumbnail_image_key": (
+                    sanitize_storage_key(request.thumbnail_image_key)
+                    if request.thumbnail_image_key
+                    else None
+                ),
+            }
+        )
 
         # 3. Create product entity
         product = Product.create(
