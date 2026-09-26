@@ -31,6 +31,7 @@ import type { ProductImage } from "@/types/product-image";
 import { isVehicleAttributes, type VehicleAttributes } from "@/types/vehicle";
 import { resolveVehicleConditionKey } from "@/lib/constants/fbVehicleOptions";
 import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
+import { formatDate } from "@/lib/utils/format";
 import { ProductImageGallery } from "./ProductImageGallery";
 import { AvailabilityActions } from "./AvailabilityActions";
 import { AvailableTransitions } from "./AvailableTransitions";
@@ -296,8 +297,8 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   if (error || !product) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 py-12 px-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-ps-error-bg border border-destructive flex items-center justify-center">
-          <AlertCircle size={24} strokeWidth={2} className="text-destructive" />
+        <div className="w-14 h-14 rounded-2xl bg-ps-error-bg border border-ps-error/25 flex items-center justify-center">
+          <AlertCircle size={24} strokeWidth={2} className="text-ps-error" />
         </div>
         <div>
           <h1 className="m-0 text-xl font-semibold text-ps-text-primary">
@@ -467,6 +468,9 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                   <h1 className="mt-1.5 m-0 text-2xl font-bold tracking-[-0.02em] text-ps-text-primary leading-[1.2]">
                     {product.title}
                   </h1>
+                  <p className="mt-1 m-0 text-xs text-ps-text-tertiary">
+                    Cargado el {formatDate(product.created_at, "es-AR")}
+                  </p>
                 </div>
                 {isGridStatus(product.status) ? (
                   <StatusBadge

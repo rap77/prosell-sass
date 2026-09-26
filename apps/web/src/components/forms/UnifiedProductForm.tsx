@@ -65,6 +65,7 @@ import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { getMileageFieldOverride } from "@/lib/utils/mileageUnit";
+import { formatDate } from "@/lib/utils/format";
 import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
 import type { Broker } from "@/lib/api/schemas/organizations";
 import type { CategoryNode } from "@/types/category";
@@ -728,6 +729,25 @@ export function UnifiedProductForm({
           )}
         />
       </section>
+
+      {/* Upload date (fixed field, view-only — edit mode only) */}
+      {mode === "edit" && existingProduct && (
+        <section className="flex flex-col gap-4 scroll-mt-20">
+          <h2 className="text-lg font-semibold" data-label="Fecha de carga">
+            Fecha de carga
+          </h2>
+          <div className="flex flex-col gap-2 max-w-xs">
+            <Label htmlFor="created_at">Cargado el</Label>
+            <Input
+              id="created_at"
+              type="text"
+              value={formatDate(existingProduct.created_at, "es-AR")}
+              disabled
+              readOnly
+            />
+          </div>
+        </section>
+      )}
 
       {/* Dynamic sections from attribute_groups */}
       {sortedGroups.map((group, idx) => (
