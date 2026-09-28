@@ -46,6 +46,16 @@ def base_product_payload(tenant_id: str, org_id: str, cat_id: str, **overrides) 
     return payload
 
 
+async def publish_product(client: AsyncClient, product_id: str) -> None:
+    """Move a created product through the workflow that enables marketplace visibility."""
+    submit_response = await client.post(f"/api/v1/products/{product_id}/submit")
+    assert submit_response.status_code == 200, submit_response.text
+
+    approve_response = await client.post(f"/api/v1/products/{product_id}/approve")
+    assert approve_response.status_code == 200, approve_response.text
+    assert approve_response.json()["published_to_marketplace"] is True
+
+
 # ─── SC-3: Attribute validation on POST /products ─────────────────────────────
 
 
@@ -253,11 +263,11 @@ async def test_list_products_filtered_by_published_to_marketplace_true(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=True,
         ),
     )
     assert published_resp.status_code == 201, published_resp.text
     published_id = published_resp.json()["id"]
+    await publish_product(async_client_as_admin, published_id)
 
     # A non-published product in the same category should be filtered out.
     await async_client_as_admin.post(
@@ -266,7 +276,6 @@ async def test_list_products_filtered_by_published_to_marketplace_true(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=False,
         ),
     )
 
@@ -287,22 +296,22 @@ async def test_list_products_filtered_by_published_to_marketplace_false(
     cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
     org_id = str(admin_user.tenant_id)
 
-    await async_client_as_admin.post(
+    published_resp = await async_client_as_admin.post(
         "/api/v1/products",
         json=base_product_payload(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=True,
         ),
     )
+    assert published_resp.status_code == 201, published_resp.text
+    await publish_product(async_client_as_admin, published_resp.json()["id"])
     draft_resp = await async_client_as_admin.post(
         "/api/v1/products",
         json=base_product_payload(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=False,
         ),
     )
     assert draft_resp.status_code == 201, draft_resp.text
@@ -325,11 +334,17 @@ async def test_list_products_filtered_by_has_images_true(
     cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
     org_id = str(admin_user.tenant_id)
 
+    # Storage keys, not bare filenames — `cover.jpg` fails the
+    # `_STORAGE_KEY_PATTERN` validator (422). Tenant-prefixed form
+    # matches what the bulk-upload CSV importer actually emits.
     with_image = base_product_payload(
         tenant_id=str(admin_user.tenant_id),
         org_id=org_id,
         cat_id=cat_id,
-        image_urls=["cover.jpg", "side.jpg"],
+        image_urls=[
+            f"orgs/{admin_user.tenant_id}/vehicles/cover.jpg",
+            f"orgs/{admin_user.tenant_id}/vehicles/side.jpg",
+        ],
     )
     with_image_resp = await async_client_as_admin.post("/api/v1/products", json=with_image)
     assert with_image_resp.status_code == 201, with_image_resp.text
@@ -368,7 +383,7 @@ async def test_list_products_filtered_by_has_images_false(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            image_urls=["cover.jpg"],
+            image_urls=[f"orgs/{admin_user.tenant_id}/vehicles/cover.jpg"],
         ),
     )
     no_image_resp = await async_client_as_admin.post(
@@ -407,12 +422,12 @@ async def test_list_products_filtered_combined_published_and_has_images(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=True,
-            image_urls=["cover.jpg"],
+            image_urls=[f"orgs/{admin_user.tenant_id}/vehicles/cover.jpg"],
         ),
     )
     assert both_resp.status_code == 201, both_resp.text
     both_id = both_resp.json()["id"]
+    await publish_product(async_client_as_admin, both_id)
 
     # Products that should NOT match — one fails published, the other fails has_images.
     await async_client_as_admin.post(
@@ -421,8 +436,7 @@ async def test_list_products_filtered_combined_published_and_has_images(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=False,
-            image_urls=["cover.jpg"],
+            image_urls=[f"orgs/{admin_user.tenant_id}/vehicles/cover.jpg"],
         ),
     )
     await async_client_as_admin.post(
@@ -431,7 +445,6 @@ async def test_list_products_filtered_combined_published_and_has_images(
             tenant_id=str(admin_user.tenant_id),
             org_id=org_id,
             cat_id=cat_id,
-            published_to_marketplace=True,
             image_urls=[],
         ),
     )

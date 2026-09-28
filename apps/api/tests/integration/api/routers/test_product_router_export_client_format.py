@@ -19,6 +19,7 @@ requires `ORG_ADMIN_VIEW_ALL` (BR2.1) and produces a distinct
 `catalogo_TODAS_*.zip` filename (BR2.8).
 """
 
+import itertools
 import zipfile
 from collections.abc import AsyncGenerator
 from io import BytesIO
@@ -54,6 +55,10 @@ _REQUIRED_EXPORT_PARAMS = {
     "base_folder": "orgs/",
     "facebook_groups_fallback": "General",
 }
+
+# The export requires a durable, positive vehicle code in JSONB. Keep fixture
+# products representative of the create path while remaining unique per test.
+_vehicle_code_seq = itertools.count(start=1)
 
 
 @pytest_asyncio.fixture
@@ -150,6 +155,7 @@ def _make_product(
         "model": "Explorer",
         "mileage": 70000,
         "exterior_color": "Gris",
+        "vehicle_code": str(next(_vehicle_code_seq)),
     }
     if vin is not None:
         # A distinguishing per-product value tests can assert on in the
