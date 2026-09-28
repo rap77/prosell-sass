@@ -11,6 +11,7 @@ import {
   Globe,
   CheckCircle,
   Tag,
+  CirclePause,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,11 @@ export const VEHICLE_STATUS = {
   ONLINE: "online",
   SOLD: "sold",
   RESERVED: "reserved",
+  // Catalog display slot for the backend `ProductStatus.PAUSED` workflow
+  // state (the seller hit "En mantenimiento" from the AvailabilityActions
+  // menu). Lives next to "Borrador" rather than collapsing into it —
+  // see mapProductStatusToVehicleStatus for the rationale.
+  MAINTENANCE: "maintenance",
 } as const;
 
 export type VehicleStatus =
@@ -79,6 +85,11 @@ const STATUS_CONFIG: Record<VehicleStatus, StatusConfig> = {
     icon: Tag,
     label: "Apartado",
   },
+  maintenance: {
+    colorClass: "text-ps-warning",
+    icon: CirclePause,
+    label: "En mantenimiento",
+  },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
@@ -87,7 +98,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <span
       data-testid="vehicle-status"
-      className={`inline-flex items-center gap-1 rounded-full bg-black/85 px-2.5 py-[3px] text-xs font-medium whitespace-nowrap shadow-sm ${colorClass}`}
+      className={`inline-flex items-center gap-1 rounded-full bg-ps-elevated px-2.5 py-[3px] text-xs font-medium whitespace-nowrap shadow-sm ${colorClass}`}
     >
       <Icon size={12} strokeWidth={2.5} aria-hidden="true" />
       <span className="sr-only">{status}:</span>
