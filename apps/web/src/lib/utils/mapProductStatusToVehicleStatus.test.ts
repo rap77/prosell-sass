@@ -47,8 +47,8 @@ describe("mapProductStatusToVehicleStatus — pass-through", () => {
 });
 
 describe("mapProductStatusToVehicleStatus — workflow-only collapse", () => {
-  it("maps `paused` to `draft` (paused is inactive, not visible)", () => {
-    expect(mapProductStatusToVehicleStatus("paused")).toBe("draft");
+  it("maps `paused` to `maintenance` (paused has its own display slot — 'En mantenimiento')", () => {
+    expect(mapProductStatusToVehicleStatus("paused")).toBe("maintenance");
   });
 
   it("maps `rejected` to `failed` (rejection is approval failure)", () => {

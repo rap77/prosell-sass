@@ -152,6 +152,7 @@ const STATUS_ORDER: VehicleStatus[] = [
   "online",
   "pending",
   "draft",
+  "maintenance",
   "expired",
   "failed",
   "sold",
@@ -433,12 +434,15 @@ export default function CatalogPage() {
       : publishedRaw === "false"
         ? false
         : undefined;
-  const hasImages =
-    hasImagesRaw === "true"
-      ? true
-      : hasImagesRaw === "false"
-        ? false
-        : undefined;
+  // 3-state toggle: `?has_images=true` → true, `?has_images=false` →
+  // false, missing → undefined. The literal `true` / `false` / `undefined`
+  // pass through to the API's nullable boolean filter unchanged.
+  function parseHasImagesToggle(raw: string | null): boolean | undefined {
+    if (raw === "true") return true;
+    if (raw === "false") return false;
+    return undefined;
+  }
+  const hasImages = parseHasImagesToggle(hasImagesRaw);
 
   // ponytail: view mode lives in the URL (not local state) so it survives
   // navigating to a product's detail page and back — a plain useState

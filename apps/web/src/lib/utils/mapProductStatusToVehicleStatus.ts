@@ -6,16 +6,22 @@
  *     tracks. Includes the workflow-only literals `paused`, `rejected`,
  *     and `archived` that the catalog grid doesn't surface as separate
  *     display states.
- *   - `VehicleStatus` (8 display literals) — what the existing
+ *   - `VehicleStatus` (9 display literals) — what the existing
  *     `StatusBadge` knows how to render (icon + label + colors).
  *
  * `reserved` is a pass-through (its own display slot, "Apartado") — it
  * used to collapse into `pending`, which made an apartado vehicle
  * indistinguishable from one still awaiting review.
  *
- * The three remaining workflow-only literals collapse to the nearest
+ * `paused` similarly has its own slot ("Mantenimiento" — seller hit
+ * "En mantenimiento" from the AvailabilityActions menu) instead of
+ * collapsing into `draft`. The two states have very different seller
+ * intent (draft = still being edited; paused = deliberately taken
+ * offline) and lumping them together made the catalog filter show
+ * paused products under "Borrador" with no way to disambiguate.
+ *
+ * The remaining workflow-only literals still collapse to the nearest
  * existing display slot:
- *   paused   → draft   (inactive, not visible to buyers)
  *   rejected → failed  (approval workflow failure)
  *   archived → expired (no longer active)
  *
@@ -39,7 +45,7 @@ const MAP = {
   draft: "draft",
   pending: "pending",
   published: "published",
-  paused: "draft",
+  paused: "maintenance",
   reserved: "reserved",
   sold: "sold",
   rejected: "failed",
@@ -59,6 +65,7 @@ const VEHICLE_STATUS_TO_PRODUCT_STATUS = {
   online: "published",
   sold: "sold",
   reserved: "reserved",
+  maintenance: "paused",
 } as const satisfies Record<VehicleStatus, Product["status"]>;
 
 export function mapProductStatusToVehicleStatus(status: string): VehicleStatus {

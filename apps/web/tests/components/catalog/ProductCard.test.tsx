@@ -175,10 +175,15 @@ describe("ProductCard — rendering", () => {
     expect(screen.getByTestId("vehicle-status")).toBeInTheDocument();
   });
 
-  it("invokes the T6a status mapper for workflow-only literals (paused → draft badge)", () => {
+  it("invokes the T6a status mapper for workflow-only literals (paused → 'En mantenimiento' badge)", () => {
     // Pin: a workflow-only Product.status like "paused" (NOT a VehicleStatus
-    // literal) must render the "draft" badge — proves the card calls
-    // mapProductStatusToVehicleStatus and not a naive pass-through.
+    // literal) must render the "En mantenimiento" badge — proves the card
+    // calls mapProductStatusToVehicleStatus and not a naive pass-through.
+    // `paused` has its own display slot rather than collapsing into
+    // `draft` because the two states have very different seller intent
+    // (draft = still being edited; paused = deliberately taken offline
+    // for maintenance) and lumping them together hid paused products from
+    // the catalog filter.
     render(
       <ProductCard
         product={{ ...baseProduct, status: "paused" }}
@@ -192,7 +197,7 @@ describe("ProductCard — rendering", () => {
         onDelete={noop}
       />,
     );
-    expect(screen.getByText("Borrador")).toBeInTheDocument();
+    expect(screen.getByText("En mantenimiento")).toBeInTheDocument();
   });
 });
 
