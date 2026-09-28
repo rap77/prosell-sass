@@ -18,6 +18,7 @@ import {
   useSetProductBrokers,
   useSubmitProductsForApproval,
   exportCatalogClientFormat,
+  useNextVehicleCode,
 } from "@/lib/api/products";
 import type { CreateProductRequest, Product } from "@/types/product";
 
@@ -117,6 +118,19 @@ describe("useSetProductBrokers", () => {
   });
 });
 
+describe("useNextVehicleCode", () => {
+  it("does not fetch when disabled", async () => {
+    mockFetch.mockClear();
+    const { result } = renderHook(
+      () => useNextVehicleCode({ enabled: false }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.fetchStatus).toBe("idle"));
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
 describe("createProductWithVehicle", () => {
   beforeEach(() => {
     mockFetch.mockClear();
@@ -141,6 +155,7 @@ describe("createProductWithVehicle", () => {
         mileage: 50000,
       },
       status: "draft",
+      thumbnail_image_key: "thumbnails/prod-123.jpg",
       is_featured: false,
       published_to_marketplace: false,
       view_count: 0,
@@ -187,6 +202,7 @@ describe("createProductWithVehicle", () => {
     );
 
     expect(result).toEqual(mockProduct);
+    expect(result.thumbnail_image_key).toBe("thumbnails/prod-123.jpg");
   });
 
   it("should preserve published_to_marketplace from the backend response (finding #7)", async () => {

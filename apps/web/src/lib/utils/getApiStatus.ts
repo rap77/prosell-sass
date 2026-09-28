@@ -22,6 +22,7 @@
  */
 
 import type { VehicleStatus } from "@/components/datagrid/StatusBadge";
+import type { Product } from "@/types/product";
 
 /**
  * Compile-time exhaustive map: every key of `VehicleStatus` must
@@ -39,6 +40,17 @@ const VALID_STATUS_MAP = {
   reserved: true,
 } as const satisfies Record<VehicleStatus, true>;
 
+const VALID_PRODUCT_STATUS_MAP = {
+  draft: true,
+  pending: true,
+  published: true,
+  paused: true,
+  reserved: true,
+  sold: true,
+  rejected: true,
+  archived: true,
+} as const satisfies Record<Product["status"], true>;
+
 /**
  * Re-export the map (read-only) for the test that pins the 7-key
  * correspondence between `VehicleStatus` and the membership check.
@@ -50,4 +62,12 @@ export { VALID_STATUS_MAP };
 export function getApiStatus(s: string | undefined): VehicleStatus | undefined {
   if (!s) return undefined;
   return s in VALID_STATUS_MAP ? (s as VehicleStatus) : undefined;
+}
+
+/** Narrows the backend product-status query parameter from the URL. */
+export function getProductStatus(
+  s: string | undefined,
+): Product["status"] | undefined {
+  if (!s) return undefined;
+  return s in VALID_PRODUCT_STATUS_MAP ? (s as Product["status"]) : undefined;
 }

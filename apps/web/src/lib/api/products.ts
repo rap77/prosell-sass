@@ -62,6 +62,12 @@ const productSchema = z.object({
   org_code: z.string().nullish(),
   org_color: z.string().nullish(),
   category_id: z.string(),
+  // Durable, globally-unique legacy product id (BIGINT). Optional on the
+  // wire because legacy products predate the column. Field-level error
+  // path is fed by the form's `useCreateProduct` / `useUpdateProduct`
+  // `onError` handler when the server returns 409
+  // `DuplicateVehicleCodeError`.
+  vehicle_code: z.number().nullish(),
   title: z.string(),
   slug: z.string().nullish(),
   description: z.string().nullish(),
@@ -81,6 +87,7 @@ const productSchema = z.object({
   attributes: z.custom<ProductAttributes>(isProductAttributes),
   image_urls: z.array(z.string()).optional(),
   cover_image_key: z.string().nullish(),
+  thumbnail_image_key: z.string().nullish(),
   location_city: z.string().nullish(),
   location_state: z.string().nullish(),
   location_zip: z.string().nullish(),
@@ -221,6 +228,51 @@ export function useCreateProduct(): UseMutationResult<
     onError: (err) => {
       toast.error(err.message || "Failed to create product");
     },
+  });
+}
+
+/**
+ * Pre-fetch the next available `vehicle_code` for the product create form.
+ *
+ * The backend's `VehicleCodeAllocator` returns `MAX(vehicle_code) + 1`
+ * (or `1` if no row has one yet). The form uses this as the editable
+ * default for the `vehicle_code` input — the seller can override it
+ * before save, and the value lands in the catalog CSV's `id` column as
+ * a durable, globally-unique legacy product id.
+ *
+ * Cache key `["products", "next-vehicle-code"]` is separate from the
+ * product list so an invalidation on create/update doesn't affect the
+ * pre-fetched default. `staleTime: 30s` keeps the number from racing
+ * while the user fills the form (a slow concurrent insert could bump
+ * MAX, but the field is editable — the worst case is a duplicate error
+ * surfaced by `useCreateProduct`'s `onError`). Pass `{ enabled: false }`
+ * when the caller does not need a create-form default.
+ */
+export interface NextVehicleCodeOptions {
+  enabled?: boolean;
+}
+
+export function useNextVehicleCode(
+  options: NextVehicleCodeOptions = {},
+): UseQueryResult<{ vehicle_code: number }, Error> {
+  return useQuery({
+    queryKey: ["products", "next-vehicle-code"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/products/next-vehicle-code", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch next vehicle code"),
+        );
+      }
+      return z
+        .object({ vehicle_code: z.number().int().positive() })
+        .parse(await res.json());
+    },
+    staleTime: 30 * 1000,
+    enabled: options.enabled ?? true,
   });
 }
 
@@ -1168,18 +1220,8 @@ export function transformProductToVehicle(product: Product): {
 }
 
 export interface ProductFilters {
-  status?:
-    | "published"
-    | "pending"
-    | "failed"
-    | "draft"
-    | "expired"
-    | "online"
-    | "sold"
-    | "rejected"
-    | "paused"
-    | "reserved"
-    | "archived";
+  /** Backend `Product.status` literal sent to `GET /products`. */
+  status?: Product["status"];
   search?: string;
   /** Scopes the list to one category; required for `attributes` to apply. */
   category_id?: string;

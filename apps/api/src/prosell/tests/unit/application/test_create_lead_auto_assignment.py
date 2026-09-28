@@ -1,5 +1,6 @@
 """Unit tests for CreateLeadUseCase auto-assignment integration."""
 
+from collections.abc import Iterable
 from datetime import datetime
 from uuid import UUID, uuid4
 
@@ -322,6 +323,29 @@ class StubProductRepository(AbstractProductRepository):
     ) -> dict[str, list[str]]:
         del tenant_id, category_id, keys
         return {}
+
+    async def get_max_vehicle_code(self) -> int | None:
+        # Stub returns `None` (no products tracked have a code yet) —
+        # the lead-auto-assignment tests never exercise the
+        # `VehicleCodeAllocator` path.
+        return None
+
+    async def allocate_next_vehicle_code(self) -> int:
+        """Return a deterministic code for this in-memory test double."""
+        codes = [product.vehicle_code for product in self.products.values()]
+        return max((code for code in codes if code is not None), default=0) + 1
+
+    async def vehicle_code_exists(
+        self, code: int, *, exclude_product_id: UUID | None = None
+    ) -> bool:
+        del code, exclude_product_id
+        return False
+
+    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        # Stub returns the empty set — the lead-auto-assignment tests
+        # never exercise the preview's batched collision lookup.
+        del codes
+        return set()
 
     async def get_all(
         self,

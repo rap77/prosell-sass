@@ -1,6 +1,7 @@
 """Product repository interface."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from datetime import datetime
 from uuid import UUID
 
@@ -433,5 +434,76 @@ class AbstractProductRepository(ABC):
 
         Returns:
             Mapping of key -> sorted list of distinct non-null values
+        """
+        pass
+
+    @abstractmethod
+    async def get_max_vehicle_code(self) -> int | None:
+        """
+        Return the largest `vehicle_code` currently persisted, or `None`
+        if no product has one yet.
+
+        Tenant-agnostic on purpose: `vehicle_code` is a globally-unique
+        legacy product id (the partial unique index
+        `ix_products_vehicle_code_unique` is global), so the allocator
+        must look across every tenant. Backs
+        `VehicleCodeAllocator.allocate_next()`.
+
+        Returns:
+            Largest persisted `vehicle_code`, or `None` if no row has one.
+        """
+        pass
+
+    @abstractmethod
+    async def allocate_next_vehicle_code(self) -> int:
+        """Atomically reserve the next globally unique vehicle code.
+
+        The persistence implementation must use a database-native allocation
+        primitive so concurrent product creations cannot receive the same
+        value.
+        """
+        pass
+
+    @abstractmethod
+    async def vehicle_code_exists(
+        self, code: int, *, exclude_product_id: UUID | None = None
+    ) -> bool:
+        """
+        Return whether any product currently uses `code` as its `vehicle_code`.
+
+        Optional `exclude_product_id` lets `UpdateProductUseCase` reuse the
+        same uniqueness check without false-positives on the row being
+        updated.
+
+        Args:
+            code: The `vehicle_code` value to test for collision.
+            exclude_product_id: Optional product id to ignore (used when
+                validating a PATCH — the row being updated already has
+                that value, so it shouldn't count as a collision with
+                itself).
+
+        Returns:
+            True iff some other product already holds `code`.
+        """
+        pass
+
+    @abstractmethod
+    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        """
+        Return the subset of `codes` that are currently in use as `vehicle_code`.
+
+        Bulk variant of `vehicle_code_exists` — `BulkUploadPreviewUseCase`
+        walks every distinct `csv_id` in the CSV once and needs a single
+        round-trip to flag the rows whose codes already collide with a
+        persisted product. Iterating `vehicle_code_exists` per row works
+        for small CSVs but blows up on the multi-thousand-row client file
+        the client uploads today.
+
+        Args:
+            codes: Iterable of candidate `vehicle_code` values to test.
+
+        Returns:
+            Set of codes from `codes` that are already in use. Empty if
+            none of them are, or if `codes` is empty.
         """
         pass

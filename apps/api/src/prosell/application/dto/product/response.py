@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import cast
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from prosell.domain.entities.product import Product
 
@@ -17,7 +17,7 @@ class ProductSummaryForLead(BaseModel):
     price_cents: int
     currency: str
     status: str
-    attributes: dict[str, object] = {}
+    attributes: dict[str, object] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
 
@@ -36,6 +36,12 @@ class ProductResponse(BaseModel):
     org_code: str | None = None
     org_color: str | None = None
     category_id: UUID
+    # Durable, globally-unique legacy product id (`vehicle_code`).
+    # Surfaces in the `id` column of the client-format catalog CSV (see
+    # `Product.vehicle_code`). Nullable for backward compat with
+    # pre-existing rows. BIGINT on the wire, 12-digit cap per the
+    # product decision.
+    vehicle_code: int | None = None
     title: str
     slug: str | None = None
     description: str | None = None
@@ -43,9 +49,9 @@ class ProductResponse(BaseModel):
     currency: str
     condition: str
     status: str
-    attributes: dict[str, object] = {}
+    attributes: dict[str, object] = Field(default_factory=dict)
     # Image URLs at product level (moved from VehicleAttributes)
-    image_urls: list[str] = []
+    image_urls: list[str] = Field(default_factory=list)
     # First-class pointer to the cover image. Single source of truth
     # for "which image is the cover" — used by the catalog grid, the
     # detail view hero, and any thumbnail surface. Settable
@@ -66,7 +72,7 @@ class ProductResponse(BaseModel):
     is_featured: bool
     published_to_marketplace: bool
     # FB accounts assigned to publish this product. Empty = any account.
-    fb_account_ids: list[UUID] = []
+    fb_account_ids: list[UUID] = Field(default_factory=list)
     view_count: int
     favorite_count: int
     submitted_for_approval_at: datetime | None = None
@@ -104,6 +110,7 @@ class ProductResponse(BaseModel):
             org_code=org_code,
             org_color=org_color,
             category_id=product.category_id,
+            vehicle_code=product.vehicle_code,
             title=product.title,
             slug=product.slug,
             description=product.description,

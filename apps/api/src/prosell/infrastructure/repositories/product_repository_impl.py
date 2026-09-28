@@ -1,9 +1,10 @@
 """SQLAlchemy implementation of Product repository."""
 
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select
+from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
@@ -64,6 +65,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             archived_at=product.archived_at,
             archived_from_status=product.archived_from_status,
             version=product.version,
+            vehicle_code=product.vehicle_code,
             created_at=product.created_at,
             updated_at=product.updated_at,
         )
@@ -389,6 +391,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
         model.archived_from_status = product.archived_from_status
+        model.vehicle_code = product.vehicle_code
         model.version += 1
 
         if old_status != model.status:
@@ -700,6 +703,70 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""
         return Product.model_validate(model, from_attributes=True)
+
+    async def get_max_vehicle_code(self) -> int | None:
+        """Return the largest `vehicle_code` currently persisted, or `None`.
+
+        Tenant-agnostic: `vehicle_code` is globally unique across the
+        platform (see `AbstractProductRepository.get_max_vehicle_code`),
+        so the allocator must look across every tenant. The expression
+        is a single scalar aggregate — runs in O(1) regardless of table
+        size (indexed scan via `ix_products_vehicle_code_unique`).
+        """
+        result = await self.session.execute(select(func.max(ProductModel.vehicle_code)))
+        max_code = result.scalar_one_or_none()
+        # `func.max` on a fully-NULL column returns `None` directly; on a
+        # column with values it returns the actual Python int. Either is
+        # what the caller expects — no coercion needed.
+        return max_code
+
+    async def allocate_next_vehicle_code(self) -> int:
+        """Allocate a globally unique vehicle code from PostgreSQL sequence.
+
+        ``nextval`` is atomic across concurrent transactions and does not
+        depend on a stale ``MAX(vehicle_code)`` read. PostgreSQL sequences may
+        have gaps after rollbacks, which is correct: vehicle codes require
+        uniqueness and durability, not contiguity.
+        """
+        result = await self.session.execute(text("SELECT nextval('products_vehicle_code_seq')"))
+        vehicle_code = result.scalar_one()
+        if not isinstance(vehicle_code, int):
+            raise RuntimeError("products_vehicle_code_seq returned a non-integer value")
+        return vehicle_code
+
+    async def vehicle_code_exists(
+        self, code: int, *, exclude_product_id: UUID | None = None
+    ) -> bool:
+        """Return whether any product uses `code` as its `vehicle_code`.
+
+        Uses the `ix_products_vehicle_code_unique` partial index — the
+        query is a single indexed lookup regardless of table size.
+        `exclude_product_id` lets `UpdateProductUseCase` reuse this check
+        without flagging the row being updated as a self-collision.
+        """
+        stmt = select(ProductModel.id).where(ProductModel.vehicle_code == code)
+        if exclude_product_id is not None:
+            stmt = stmt.where(ProductModel.id != exclude_product_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
+    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        """Return the subset of `codes` currently in use as `vehicle_code`.
+
+        Single `WHERE vehicle_code IN (...)` query — O(N log N) over the
+        candidate set, indexed via `ix_products_vehicle_code_unique` so the
+        DB scan stays bounded by the size of the result. Empty input
+        short-circuits to an empty set without touching the DB.
+        """
+        codes_list = list(codes)
+        if not codes_list:
+            return set()
+        stmt = select(ProductModel.vehicle_code).where(ProductModel.vehicle_code.in_(codes_list))
+        result = await self.session.execute(stmt)
+        # `vehicle_code` is BIGINT NULL; rows where it IS NULL can't be in
+        # the result set anyway (the IN clause skips them), so we filter
+        # defensively in case the partial index ever changes.
+        return {code for code in result.scalars().all() if code is not None}
 
     def _audit_log_to_entity(self, model: ProductAuditLogModel) -> ProductAuditLog:
         """Convert ORM model to domain entity."""

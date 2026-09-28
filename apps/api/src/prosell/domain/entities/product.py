@@ -26,6 +26,19 @@ class Product(DomainModel):
     tenant_id: UUID  # For multi-tenant isolation
     organization_id: UUID  # Owner organization
     category_id: UUID
+    # Durable, globally-unique legacy product id (a.k.a. `vehicle_code`).
+    # Surfaces in the `id` column of the client-format catalog CSV so
+    # legacy tools and the future `fb-autopost` integration can reference
+    # a product across exports by a stable identifier that survives
+    # re-export. UNIQUE across the whole platform (the super_admin
+    # manages multiple orgs and treats it as a legacy product id), not
+    # per-tenant. Nullable for backward compat with pre-existing products
+    # that were never assigned one. `BIGINT` storage — wide enough for
+    # ~92 quintillion rows so it doesn't clip at 2.1B like `INTEGER`
+    # would. Editable in the UI before save; allocator picks MAX + 1 on
+    # auto-creation. Allocated on import from the client CSV's `id`
+    # column. See migration `20260926_0001_add_vehicle_code_to_product.py`.
+    vehicle_code: int | None = None
 
     # Basic info
     title: str = Field(..., min_length=1, max_length=500)
@@ -121,6 +134,7 @@ class Product(DomainModel):
         location_city: str | None = None,
         location_state: str | None = None,
         location_zip: str | None = None,
+        vehicle_code: int | None = None,
     ) -> "Product":
         """
         Factory method for new product creation.
@@ -138,9 +152,13 @@ class Product(DomainModel):
             attributes: Category-specific attributes (optional)
             image_urls: Ordered gallery image URLs (optional)
             cover_image_key: Storage key of the cover image (optional)
+            thumbnail_image_key: Storage key of the thumbnail derivative (optional)
             location_city: Shipping/pickup city (optional)
             location_state: Shipping/pickup state (optional)
-            location_zip: Shipping/pickup zip (optional)
+            location_zip: Shipping/pickup ZIP (optional)
+            vehicle_code: Durable, globally-unique legacy product id
+                (optional — None lets the application layer allocate the
+                next MAX + 1 via `VehicleCodeAllocator`)
 
         Returns:
             New Product entity in DRAFT status
@@ -167,6 +185,7 @@ class Product(DomainModel):
             location_city=location_city,
             location_state=location_state,
             location_zip=location_zip,
+            vehicle_code=vehicle_code,
             status=ProductStatus.DRAFT,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),

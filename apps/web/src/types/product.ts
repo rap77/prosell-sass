@@ -20,6 +20,13 @@ export interface Product {
   /** Organization tag color (hex). Derived from products.organization_id JOIN organizations. */
   org_color?: string | null;
   category_id: string;
+  /**
+   * Durable, globally-unique legacy product id (`vehicle_code`). Surfaces
+   * in the `id` column of the client-format catalog CSV. Nullable for
+   * backward compat with pre-existing products. Persisted as BIGINT
+   * on the backend; surfaced as a JSON number on the wire.
+   */
+  vehicle_code?: number | null;
 
   // Basic info
   title: string;
@@ -55,6 +62,9 @@ export interface Product {
   // falls back to `image_urls[0]` when this is null/undefined (see
   // `getCoverImageKey` in `lib/api/productImages.ts`).
   cover_image_key?: string | null;
+  // Storage key of the private catalog-card thumbnail. Legacy products
+  // without this derivative fall back to their gallery image.
+  thumbnail_image_key?: string | null;
 
   // Location
   location_city?: string | null;
@@ -106,6 +116,14 @@ export interface CreateProductRequest {
   // never a client field — it is injected from the JWT.
   organization_id?: string;
   category_id: string;
+  /**
+   * Optional durable, globally-unique legacy product id (BIGINT on the
+   * backend). When omitted the backend's `VehicleCodeAllocator` picks
+   * the next MAX + 1. When supplied, the backend rejects (HTTP 409 +
+   * `DuplicateVehicleCodeError`) if another product already holds it.
+   * See `useNextVehicleCode()` for the form's editable default.
+   */
+  vehicle_code?: number | null;
   slug?: string;
   description?: string;
   currency?: string;
@@ -152,6 +170,13 @@ export interface UpdateProductRequest {
   location_city?: string;
   location_state?: string;
   location_zip?: string;
+  /**
+   * `vehicle_code` — PATCH semantics (omitted = unchanged). When
+   * supplied, the backend validates uniqueness excluding self and
+   * returns 409 on collision (handled as a field-level error on the
+   * form).
+   */
+  vehicle_code?: number | null;
 }
 
 /**

@@ -9,6 +9,7 @@ from prosell.domain.repositories.category_repository import AbstractCategoryRepo
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.storage_key_sanitizer import sanitize_storage_key
 from prosell.domain.services.template_composer import resolve_title
+from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
 
 
 class CreateProductUseCase:
@@ -18,9 +19,17 @@ class CreateProductUseCase:
         self,
         product_repository: AbstractProductRepository,
         category_repository: AbstractCategoryRepository,
+        vehicle_code_allocator: VehicleCodeAllocator | None = None,
     ) -> None:
         self.product_repository = product_repository
         self.category_repository = category_repository
+        # Optional for backward compatibility with existing unit tests that
+        # build `CreateProductUseCase(product_repo, category_repo)` without
+        # an allocator. When omitted, callers must always supply an
+        # explicit `vehicle_code` in the request — the use case never
+        # allocates implicitly (avoids silently picking the wrong code in
+        # tests that predate the feature).
+        self._vehicle_code_allocator = vehicle_code_allocator
 
     async def execute(self, request: CreateProductRequest) -> ProductResponse:
         """
@@ -34,6 +43,8 @@ class CreateProductUseCase:
 
         Raises:
             CategoryNotFoundError: If category does not exist
+            DuplicateVehicleCodeError: If the caller supplied an explicit
+                `vehicle_code` already used by another product.
             ValueError: If validation fails
         """
         # 1. Validate category exists. A product may reference the tenant's
@@ -94,6 +105,23 @@ class CreateProductUseCase:
             }
         )
 
+        # 2d. Resolve `vehicle_code`:
+        #   * caller supplied an explicit code — validate uniqueness
+        #     against the partial unique index (fail fast with
+        #     DuplicateVehicleCodeError instead of letting the INSERT
+        #     blow up with a generic IntegrityError);
+        #   * caller did not supply one — ask the allocator to pick
+        #     MAX(vehicle_code) + 1 (or 1 if none yet exist);
+        #   * allocator not wired (legacy test fixtures) — leave the
+        #     entity's `vehicle_code` as `None`, matching the pre-feature
+        #     behavior. The DB column is nullable so the INSERT succeeds
+        #     and the row simply has no code.
+        vehicle_code: int | None = request.vehicle_code
+        if vehicle_code is not None:
+            await self._reserve_vehicle_code_or_raise(vehicle_code)
+        elif self._vehicle_code_allocator is not None:
+            vehicle_code = await self._vehicle_code_allocator.allocate_next()
+
         # 3. Create product entity
         product = Product.create(
             title=title,
@@ -112,9 +140,21 @@ class CreateProductUseCase:
             location_city=request.location_city,
             location_state=request.location_state,
             location_zip=request.location_zip,
+            vehicle_code=vehicle_code,
         )
 
         # 4. Persist
         product = await self.product_repository.create(product)
 
         return ProductResponse.from_entity(product)
+
+    async def _reserve_vehicle_code_or_raise(self, vehicle_code: int) -> None:
+        """Validate that `vehicle_code` is free before the INSERT commits.
+
+        Without an allocator wired (legacy test fixtures), skip the
+        check — the partial unique index still rejects a duplicate at
+        INSERT time as a final safety net.
+        """
+        if self._vehicle_code_allocator is None:
+            return
+        await self._vehicle_code_allocator.reserve(vehicle_code)

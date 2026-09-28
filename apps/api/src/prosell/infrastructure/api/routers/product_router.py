@@ -112,6 +112,7 @@ from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import (
+    DuplicateVehicleCodeError,
     EmptyCatalogExportError,
     ExportLimitExceededError,
     ProductInvalidStatusTransitionError,
@@ -132,6 +133,7 @@ from prosell.domain.services.csv_product_parser import (
     CSVProductParser,
 )
 from prosell.domain.services.storage_keys import extract_storage_key_from_value
+from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_cdn_invalidator,
@@ -499,12 +501,22 @@ async def create_product(
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
-    use_case = CreateProductUseCase(product_repo, category_repo)
+    # `vehicle_code` allocator — same session as the rest of the
+    # request so the MAX(vehicle_code) read and the subsequent INSERT
+    # share a transaction and the partial unique index is the only
+    # collision gate (see `vehicle_code_allocator.py` docstring).
+    vehicle_code_allocator = VehicleCodeAllocator(product_repo)
+    use_case = CreateProductUseCase(product_repo, category_repo, vehicle_code_allocator)
 
     try:
         return await use_case.execute(request)
     except CategoryNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except DuplicateVehicleCodeError as e:
+        # 409 (Conflict) signals the caller-supplied `vehicle_code` is
+        # already in use by another product. The frontend surfaces this
+        # under the form's `vehicle_code` input as a field-level error.
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
@@ -870,6 +882,49 @@ async def export_catalog_client_format(
     )
 
 
+class NextVehicleCodeResponse(BaseModel):
+    """Response payload for the next vehicle-code endpoint."""
+
+    vehicle_code: int
+
+
+@router.get("/next-vehicle-code", response_model=NextVehicleCodeResponse)
+async def get_next_vehicle_code(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> NextVehicleCodeResponse:
+    """Return the next likely `vehicle_code` as a NON-MUTATING preview.
+
+    Backed by `VehicleCodeAllocator.peek_next` (MAX + 1, no sequence
+    consumed) rather than `allocate_next` (which would burn a `nextval`
+    slot every time the create form's pre-fetch fires, even if the user
+    abandons the form). The actual durability path on POST still uses
+    `allocate_next` — duplicates across concurrent inserts are caught
+    by the partial unique index and surfaced to the form as a 409.
+
+    Used by the product create form to pre-fill the editable `vehicle_code`
+    field with the platform-wide next value (the super_admin's view of the
+    catalog is cross-tenant — see `Product.vehicle_code`). Tenant-scoped
+    callers see the SAME next value as super_admins because `vehicle_code`
+    is globally unique by design, not per-tenant.
+
+    No body, no query params. Response is `{"vehicle_code": <int>}`.
+    """
+    # Auth-only — any authenticated user (including tenant-scoped
+    # sellers) can ask for the next code so the form's editable
+    # default is always populated, no matter the role. The user still
+    # must be authenticated (this route lives behind the standard
+    # auth dependency); the explicit `current_user` parameter
+    # documents that fact for future readers.
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    product_repo = SqlAlchemyProductRepository(db)
+    allocator = VehicleCodeAllocator(product_repo)
+    next_code = await allocator.peek_next()
+    return NextVehicleCodeResponse(vehicle_code=next_code)
+
+
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     request: Request,
@@ -877,7 +932,7 @@ async def list_products(
     db: DbSession,
     organization_id: UUID | None = None,
     category_id: UUID | None = None,
-    product_status: str | None = Query(default=None, alias="status"),
+    product_status: ProductStatus | None = Query(default=None, alias="status"),
     condition: str | None = None,
     is_featured: bool | None = None,
     published_to_marketplace: bool | None = None,
@@ -974,7 +1029,7 @@ async def list_products(
         tenant_id=effective_tenant,
         organization_id=organization_id,
         category_id=category_id,
-        status=product_status,
+        status=product_status.value if product_status else None,
         condition=condition,
         is_featured=is_featured,
         published_to_marketplace=published_to_marketplace,
@@ -1502,6 +1557,11 @@ async def update_product(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+    except DuplicateVehicleCodeError as e:
+        # PATCH picked a `vehicle_code` already held by another product.
+        # The frontend shows it as a field-level error on the
+        # `vehicle_code` input.
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
@@ -2460,7 +2520,10 @@ async def bulk_upload_preview(
 
     # Execute preview use case
     can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
-    use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
+    use_case = BulkUploadPreviewUseCase(
+        SqlAlchemyOrganizationRepository(db),
+        SqlAlchemyProductRepository(db),
+    )
     try:
         result = await use_case.execute(
             csv_content,

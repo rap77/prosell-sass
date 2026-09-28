@@ -97,6 +97,7 @@ class TestBulkUploadPersistsImageUrls:
         # Mock product repo, capturing every create/update call
         product_repo = AsyncMock()
         product_repo.get_by_vin.return_value = None  # New product (create path)
+        product_repo.vehicle_code_exists.return_value = False
         captured: list[Product] = []
 
         async def capture(entity: Product) -> Product:

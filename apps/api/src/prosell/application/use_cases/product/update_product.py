@@ -10,7 +10,10 @@ from uuid import UUID
 
 from prosell.application.dto.product import ProductResponse
 from prosell.application.dto.product.update import UpdateProductRequest
-from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
+from prosell.domain.exceptions.product_exceptions import (
+    DuplicateVehicleCodeError,
+    ProductNotFoundError,
+)
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_ownership_repository import (
     AbstractProductOwnershipRepository,
@@ -62,11 +65,28 @@ class UpdateProductUseCase:
             PermissionError: If a non-admin caller attempts to change
                 organization_id (defense in depth — the router should also
                 reject this with 403).
+            DuplicateVehicleCodeError: If the caller supplied a new
+                `vehicle_code` already used by another product.
             ValueError: If cover_image_key is not in the product's image list
         """
         product = await self.product_repository.get_by_id(product_id, tenant_id)
         if not product:
             raise ProductNotFoundError(str(product_id))
+
+        # `vehicle_code` — handled BEFORE the PATCH-style field cascade
+        # so the cross-row uniqueness check (excluding self) can run
+        # against the live product state, not after we already mutated
+        # the entity. When `vehicle_code` is set to its current value
+        # (no-op PATCH) we skip the check; when it's set to a NEW value
+        # we check it doesn't collide with any other row.
+        if (
+            request.vehicle_code is not None
+            and request.vehicle_code != product.vehicle_code
+            and await self.product_repository.vehicle_code_exists(
+                request.vehicle_code, exclude_product_id=product.id
+            )
+        ):
+            raise DuplicateVehicleCodeError(request.vehicle_code)
 
         # Defense in depth: the relaxed DTO regex (post-fix, commits
         # 072bfa10 + parent) accepts legacy phone-cam-style keys for
@@ -155,6 +175,12 @@ class UpdateProductUseCase:
             product.location_state = request.location_state
         if request.location_zip is not None:
             product.location_zip = request.location_zip
+        # `vehicle_code` — PATCH semantics (None = unchanged). Uniqueness
+        # was already validated above (excluding self) so applying it here
+        # is a straight assignment. The use case never allocates a new
+        # code on update — the seller typed this exact value in the form.
+        if request.vehicle_code is not None:
+            product.vehicle_code = request.vehicle_code
 
         # Recompose the title from the category's presentation template when
         # it declares one; otherwise keep the current title (the request's

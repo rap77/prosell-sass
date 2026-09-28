@@ -18,7 +18,11 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { getApiStatus, VALID_STATUS_MAP } from "@/lib/utils/getApiStatus";
+import {
+  getApiStatus,
+  getProductStatus,
+  VALID_STATUS_MAP,
+} from "@/lib/utils/getApiStatus";
 import type { VehicleStatus } from "@/components/datagrid/StatusBadge";
 
 const ALL_STATUSES: VehicleStatus[] = [
@@ -57,5 +61,12 @@ describe("getApiStatus", () => {
     // hand-rolled set and forgets a key, this test catches it.
     const keys = Object.keys(VALID_STATUS_MAP).sort();
     expect(keys).toEqual([...ALL_STATUSES].sort());
+  });
+});
+
+describe("getProductStatus", () => {
+  it("accepts backend status literals and rejects display-only values", () => {
+    expect(getProductStatus("rejected")).toBe("rejected");
+    expect(getProductStatus("failed")).toBeUndefined();
   });
 });

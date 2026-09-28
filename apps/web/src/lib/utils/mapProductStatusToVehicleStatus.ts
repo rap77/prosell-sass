@@ -46,7 +46,28 @@ const MAP = {
   archived: "expired",
 } as const satisfies Record<Product["status"], VehicleStatus>;
 
+/**
+ * Converts a catalog display status back to the status literal accepted by
+ * `GET /products`. Display-only states must never reach the API directly.
+ */
+const VEHICLE_STATUS_TO_PRODUCT_STATUS = {
+  published: "published",
+  pending: "pending",
+  failed: "rejected",
+  draft: "draft",
+  expired: "archived",
+  online: "published",
+  sold: "sold",
+  reserved: "reserved",
+} as const satisfies Record<VehicleStatus, Product["status"]>;
+
 export function mapProductStatusToVehicleStatus(status: string): VehicleStatus {
   if (status in MAP) return MAP[status as keyof typeof MAP];
   return "draft";
+}
+
+export function mapVehicleStatusToProductStatus(
+  status: VehicleStatus,
+): Product["status"] {
+  return VEHICLE_STATUS_TO_PRODUCT_STATUS[status];
 }

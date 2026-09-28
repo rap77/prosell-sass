@@ -8,22 +8,43 @@
  *
  * URL params:
  *   - status         (already wired before this component existed; same shape)
- *   - published      (true / false / absent for Cualquier)
- *   - has_images     (true / false / absent for Cualquier)
+ *   - published      (true / false / absent for "Todos")
+ *   - has_images     (true / false / absent for "Todos")
  *
- * Status dropdown values come from the loaded products so the seller never
- * sees a status that would always return zero rows in the current view.
+ * Status dropdown values come from the `statusOrder` (all possible
+ * `VehicleStatus` values), not from the loaded products. Showing only
+ * statuses present in the current page creates a UX trap: picking one
+ * status hides the other options, so the seller can't switch between
+ * them without first clearing the filter.
+ *
+ * NOTE: a fuller "only-applied" implementation would need a backend
+ * facets endpoint (`GET /products/status-facets`) that returns the
+ * distinct statuses present in the user's catalog regardless of the
+ * current filter set. Tracked separately.
+ *
  * The toggle groups are explicit buttons (not `<select>`s) because the
- * third "Cualquier" state is a clearer reset action when it has its own
+ * third "Todos" state is a clearer reset action when it has its own
  * button than as a dropdown option.
+ *
+ * "Aprobado para Marketplace" labels the boolean filter on the
+ * `published_to_marketplace` column — set by `Product.approve()` when a
+ * pending product is approved at the prosel-sass level. The actual
+ * publication to Facebook Marketplace is handled by the separate
+ * `fb-autopost` desktop app (currently in development), which can push a
+ * single approved product to multiple Facebook accounts. So the toggle
+ * filters by *approval*, not by *live status*.
  */
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Product } from "@/types/product";
 import type { VehicleStatus } from "@/components/datagrid/StatusBadge";
-import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import {
+  mapProductStatusToVehicleStatus,
+  mapVehicleStatusToProductStatus,
+} from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { cn } from "@/lib/utils";
 
 interface QuickFiltersProps {
@@ -67,7 +88,7 @@ function TriStateToggle({
   testIdPrefix: string;
 }) {
   const options: { state: TriState; text: string }[] = [
-    { state: "any", text: "Cualquier" },
+    { state: "any", text: "Todos" },
     { state: "true", text: "Sí" },
     { state: "false", text: "No" },
   ];
@@ -112,15 +133,49 @@ export function QuickFilters({ products, statusOrder }: QuickFiltersProps) {
   const publishedParam = searchParams.get("published");
   const hasImagesParam = searchParams.get("has_images");
 
-  // Status options = only the statuses currently present in the loaded
-  // products (translated via `mapProductStatusToVehicleStatus`), ordered
-  // by the caller's `statusOrder` so the dropdown reads consistently with
-  // the rest of the catalog UI. Inline computation — React Compiler
-  // handles memoization (project PR #24 convention).
-  const presentStatuses = new Set(
-    products.map((p) => mapProductStatusToVehicleStatus(p.status)),
-  );
-  const availableStatuses = statusOrder.filter((s) => presentStatuses.has(s));
+  // Capture the *applied* statuses (the subset present in the user's
+  // catalog) on the FIRST render where products are loaded and no status
+  // filter is active. Once captured, the list is frozen — picking a
+  // status doesn't shrink the dropdown to just that status + "Todos",
+  // so the seller can switch between applied statuses freely.
+  //
+  // The state is initialized after products load, then intentionally kept
+  // unchanged so selecting a status never collapses the options list.
+  //
+  // Edge cases handled:
+  //   - products still loading       → state stays null → falls back to
+  //                                    full `statusOrder`
+  //   - page loaded with ?status=...  → state stays null while filter is
+  //                                    active; falls back to full
+  //                                    statusOrder; state captures the
+  //                                    next time the user clears the
+  //                                    filter and products reload
+  //                                    unfiltered
+  const [appliedStatuses, setAppliedStatuses] = useState<
+    VehicleStatus[] | null
+  >(null);
+  useEffect(() => {
+    if (appliedStatuses !== null || statusParam || products.length === 0) {
+      return;
+    }
+
+    const present = new Set(
+      products.map((product) =>
+        mapProductStatusToVehicleStatus(product.status),
+      ),
+    );
+    // The source changes asynchronously from the catalog query. This one-time
+    // state capture is the observable behavior: it freezes the applied list.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above.
+    setAppliedStatuses(statusOrder.filter((status) => present.has(status)));
+  }, [appliedStatuses, products, statusOrder, statusParam]);
+
+  // First-render fallback (before products load, or while a status
+  // filter is in the URL): show the full status order. After capture,
+  // return the frozen "applied" subset.
+  const availableStatuses: VehicleStatus[] = appliedStatuses ?? [
+    ...statusOrder,
+  ];
 
   function updateParam(key: string, next: string | null) {
     const params = new URLSearchParams(searchParams);
@@ -156,11 +211,19 @@ export function QuickFilters({ products, statusOrder }: QuickFiltersProps) {
           data-testid="quick-filters-status-select"
           value={statusParam ?? ""}
           onChange={(e) => setStatus(e.target.value)}
-          className="bg-transparent text-[13px] text-ps-text-primary outline-none cursor-pointer"
+          // `color-scheme: dark` tells the browser to render the native
+          // dropdown options with a dark palette — without it the
+          // open-options popup inherits the OS light theme and the text
+          // is invisible against the project's dark background.
+          className="bg-ps-input-bg text-[13px] text-ps-text-primary outline-none cursor-pointer"
+          style={{ colorScheme: "dark" }}
         >
-          <option value="">Cualquier</option>
+          <option value="">Todos</option>
           {availableStatuses.map((status) => (
-            <option key={status} value={status}>
+            <option
+              key={status}
+              value={mapVehicleStatusToProductStatus(status)}
+            >
               {STATUS_LABELS[status]}
             </option>
           ))}
@@ -168,7 +231,7 @@ export function QuickFilters({ products, statusOrder }: QuickFiltersProps) {
       </label>
 
       <TriStateToggle
-        label="Publicado en Marketplace"
+        label="Aprobado para Marketplace"
         value={parseTriState(publishedParam)}
         onChange={setPublished}
         testIdPrefix="quick-filters-published"

@@ -69,7 +69,7 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { collectLeavesWithPaths } from "@/lib/utils/collect-leaves-with-paths";
-import { getApiStatus } from "@/lib/utils/getApiStatus";
+import { getProductStatus } from "@/lib/utils/getApiStatus";
 import { getAttributeMap } from "@/types/product";
 import { cn } from "@/lib/utils";
 import type {
@@ -420,7 +420,7 @@ export default function CatalogPage() {
   const { data: facetValues = {} } = useFilterValues(selectedCategoryId);
 
   const search = searchParams.get("search") ?? "";
-  const status = getApiStatus(searchParams.get("status") ?? undefined);
+  const status = getProductStatus(searchParams.get("status") ?? undefined);
   // `published` and `has_images` are 3-state toggles in `QuickFilters`:
   // "any" (param absent) / "true" / "false". Only forward `true`/`false`
   // to the API — leaving the param off preserves the prior behavior of

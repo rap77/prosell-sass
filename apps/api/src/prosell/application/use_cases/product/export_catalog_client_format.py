@@ -225,6 +225,16 @@ class ExportCatalogClientFormatUseCase:
         included_products: list[Product] = []
 
         for product in products:
+            # Defense in depth — every product should have a `vehicle_code`
+            # after migration `20260926_0001_add_vehicle_code_to_product.py`
+            # (which backfills every pre-existing row) and the
+            # `VehicleCodeAllocator` on the create path. Still, treat a
+            # NULL `vehicle_code` as a BR1.7-style exclusion rather than
+            # writing a literal "0" into the CSV's `id` column — that
+            # would corrupt downstream tooling that expects the legacy
+            # product id (a positive integer, often 1..N).
+            if product.vehicle_code is None:
+                continue
             vertical_slug = await self._resolve_vertical_slug(
                 product.category_id, vertical_slug_by_leaf_category_id
             )
@@ -258,18 +268,47 @@ class ExportCatalogClientFormatUseCase:
                 org_code=org_code,
             )
 
+            # Build the `label` column value from the product's load date.
+            # `client-format` CSV expects a slash-separated DD/MM/YYYY
+            # string in that column (matches what the downstream tool
+            # imports into spreadsheet apps). `created_at` is timezone-
+            # aware UTC; the date itself doesn't change with timezone
+            # conversion. Guarded with `None` to avoid `strftime` blowing
+            # up on a malformed row.
+            label_value = (
+                product.created_at.strftime("%d/%m/%Y")
+                if getattr(product, "created_at", None) is not None
+                else None
+            )
+
             rows.append(
                 build_client_format_row(
-                    # Sequential position within THIS export, 1-based —
-                    # only counting rows that actually make it in (BR1.7
-                    # exclusions above never consume a number). Matches
-                    # the plain small integers the client's reference
-                    # CSV uses in `id`, never the product's own UUID.
-                    row_id=len(rows) + 1,
+                    # Durable, globally-unique legacy product id
+                    # (`Product.vehicle_code`). Replaces the previous
+                    # 1-based positional row_id so the same product
+                    # exports with the SAME `id` value across every
+                    # re-export — the value lives in the partial unique
+                    # index `ix_products_vehicle_code_unique` and
+                    # surfaces as the `id` column of the client-format
+                    # CSV (byte-for-byte compatibility with
+                    # `docs/data39.csv`, whose own `id` column already
+                    # carries this number). BR1.7 exclusions above still
+                    # drop the row entirely — non-contiguous codes in the
+                    # output CSV are an accepted trade-off (the column
+                    # name stays `id`; the meaning is now stable across
+                    # exports instead of sequential within one). The
+                    # `None` guard one block above guarantees a value
+                    # here, so `row_id` is always a positive int.
+                    vehicle_code=product.vehicle_code,
                     org_code=org_code,
                     price_cents=product.price_cents,
                     description=product.description,
                     attributes=attrs,
+                    # Caller-built label (load date DD/MM/YYYY); see the
+                    # `csv_export.py` note for why this is now an
+                    # explicit parameter rather than read from
+                    # `attributes["label"]`.
+                    label=label_value,
                     vin=_attr_str(attrs, "vin"),
                     body_style=_attr_str(attrs, "body_type"),
                     clean_title=_attr_bool(attrs, "clean_title"),

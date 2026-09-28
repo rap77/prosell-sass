@@ -1,7 +1,9 @@
 """Test ExportCatalogClientFormatUseCase (u1-catalog-export-api, u1-cross-org-export-api)."""
 
 import csv
+import itertools
 import zipfile
+from datetime import UTC, datetime
 from io import BytesIO
 from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
@@ -26,6 +28,12 @@ from prosell.domain.value_objects.product_status import ProductStatus
 # Matches the one confirmed entry in category_translation.CATEGORY_TRANSLATION_TABLE.
 _VEHICLES_VERTICAL_SLUG = "vehiculos-y-transporte"
 
+# Module-level counter so multiple `_make_product(...)` calls in the same
+# test produce monotonically increasing `vehicle_code` values by default —
+# mirrors the platform's real allocator (MAX + 1) at the test scale. Tests
+# that need a specific code pass `vehicle_code=...` explicitly.
+_vehicle_code_seq = itertools.count(start=1)
+
 
 def _make_product(
     tenant_id: UUID,
@@ -35,8 +43,10 @@ def _make_product(
     category_id: UUID | None = None,
     location_city: str | None = None,
     location_state: str | None = None,
+    created_at: datetime | None = None,
+    vehicle_code: int | None = None,
 ) -> Product:
-    return Product(
+    product = Product(
         id=uuid4(),
         tenant_id=tenant_id,
         organization_id=tenant_id,
@@ -45,6 +55,13 @@ def _make_product(
         price_cents=1780000,
         status=ProductStatus.PUBLISHED,
         description="Great vehicle",
+        # Each test product carries a `vehicle_code` so the use case's
+        # defense-in-depth `if product.vehicle_code is None: continue`
+        # guard does not skip them. Tests that explicitly want to test
+        # the `None` branch pass `vehicle_code=None`. The default pulls
+        # from a module-level counter so multiple products in the same
+        # test get distinct, monotonically increasing codes.
+        vehicle_code=vehicle_code if vehicle_code is not None else next(_vehicle_code_seq),
         attributes={
             "year": 2020,
             "make": "Ford",
@@ -56,6 +73,13 @@ def _make_product(
         location_city=location_city,
         location_state=location_state,
     )
+    if created_at is not None:
+        # Override the entity's auto-generated `created_at` so the test
+        # can assert an exact date in the CSV's `label` column (the
+        # label carries the formatted load date, see
+        # `export_catalog_client_format.py`).
+        product.created_at = created_at
+    return product
 
 
 def _make_category_repository(
@@ -558,18 +582,20 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert len(csv_lines) == 1  # header only — the excluded product has no row
 
     @pytest.mark.asyncio
-    async def test_csv_id_column_is_sequential_and_skips_no_number_for_excluded_products(
-        self,
-    ) -> None:
-        # `id` must be a plain 1-based sequential position within the
-        # export (matching the client's own reference CSV, e.g. "527"),
-        # never the product's internal UUID — and a BR1.7-excluded
-        # product in the middle must NOT consume a number (no gap).
+    async def test_csv_id_column_carries_durable_vehicle_code(self) -> None:
+        # `id` is now the product's durable, globally-unique `vehicle_code`
+        # (NOT a positional 1-based row counter) — so the same product
+        # exports with the SAME `id` value across every re-export.
+        # BR1.7-excluded products in the middle STILL drop the row
+        # entirely, which means the surviving codes can be non-contiguous
+        # (e.g. `[14, 16]` instead of `[1, 2]`). The column name stays
+        # `id` so `docs/data39.csv` and downstream tools stay
+        # byte-for-byte compatible — only the meaning changed.
         tenant_id = uuid4()
         untranslated_category_id = uuid4()
-        included_a = _make_product(tenant_id)
-        excluded = _make_product(tenant_id, category_id=untranslated_category_id)
-        included_b = _make_product(tenant_id)
+        included_a = _make_product(tenant_id, vehicle_code=14)
+        excluded = _make_product(tenant_id, vehicle_code=15, category_id=untranslated_category_id)
+        included_b = _make_product(tenant_id, vehicle_code=16)
         category_repository = _make_category_repository(
             {untranslated_category_id: "otra-vertical-sin-traduccion"}
         )
@@ -593,7 +619,35 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
             csv_lines = archive.read("catalogo.csv").decode("utf-8").strip("\r\n").splitlines()
         id_column = CLIENT_FORMAT_COLUMNS.index("id")
         row_ids = [line.split(";")[id_column] for line in csv_lines[1:]]
-        assert row_ids == ["1", "2"]
+        # Excluded (code=15) drops out — surviving codes are non-contiguous.
+        assert row_ids == ["14", "16"]
+
+    @pytest.mark.asyncio
+    async def test_label_column_is_product_created_at_formatted_dd_mm_yyyy(self) -> None:
+        # The `label` column of the client-format CSV carries the product's
+        # load date formatted as DD/MM/YYYY with slashes — the format the
+        # downstream tool expects for spreadsheet apps. The same date is
+        # also rendered the same way across every row regardless of `id`.
+        tenant_id = uuid4()
+        product_a = _make_product(tenant_id, created_at=datetime(2026, 9, 26, 14, 30, tzinfo=UTC))
+        product_b = _make_product(tenant_id, created_at=datetime(2026, 1, 5, 9, 0, tzinfo=UTC))
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id, product_count=2, products=[product_a, product_b]
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="base/",
+            facebook_groups_fallback="",
+        )
+
+        assert result.product_count == 2
+        with zipfile.ZipFile(BytesIO(result.zip_bytes)) as archive:
+            csv_lines = archive.read("catalogo.csv").decode("utf-8").strip("\r\n").splitlines()
+        label_column = CLIENT_FORMAT_COLUMNS.index("label")
+        labels = [line.split(";")[label_column] for line in csv_lines[1:]]
+        assert labels == ["26/09/2026", "05/01/2026"]
 
     @pytest.mark.asyncio
     async def test_cap_exceeded_in_all_organizations_mode_raises_export_limit_exceeded_error(

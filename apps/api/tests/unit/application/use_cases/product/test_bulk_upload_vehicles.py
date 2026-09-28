@@ -37,6 +37,7 @@ class TestBulkUploadVehiclesUseCase:
         organization_id fallback — when the caller supplies one, unresolved
         per-row codes fall back to it instead (see the per-row loop)."""
         product_repository = AsyncMock()
+        product_repository.vehicle_code_exists.return_value = False
         organization_repository = AsyncMock()
         organization_repository.get_by_codes.return_value = []
         use_case = BulkUploadVehiclesUseCase(
@@ -67,6 +68,7 @@ class TestBulkUploadVehiclesUseCase:
 
         # Mock product repository
         product_repository = AsyncMock()
+        product_repository.vehicle_code_exists.return_value = False
         # First call returns None (create), second call returns existing (update)
         product_repository.get_by_vin.side_effect = [
             None,  # First VIN doesn't exist
@@ -146,6 +148,7 @@ class TestBulkUploadVehiclesUseCase:
         category_id = uuid4()
 
         product_repository = AsyncMock()
+        product_repository.vehicle_code_exists.return_value = False
         category_repository = AsyncMock()
 
         organization_repository = AsyncMock()
@@ -174,6 +177,86 @@ class TestBulkUploadVehiclesUseCase:
         assert "VIN is required" in result.results[0].errors[0]
 
     @pytest.mark.asyncio
+    async def test_use_case_marks_duplicate_vehicle_code_as_row_failure(self):
+        """A persisted CSV id collision must not abort subsequent import rows."""
+        tenant_id = uuid4()
+        organization_id = uuid4()
+        category_id = uuid4()
+        csv_content = (
+            "id;title;price;VIN\n42;DJ;25000;1FMSK7DH7LGA77418\n43;DJ;25000;2T1BURHE0LC123456\n"
+        )
+
+        product_repository = AsyncMock()
+        product_repository.get_by_vin.side_effect = [None, None]
+        product_repository.vehicle_code_exists.side_effect = [True, False]
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+        )
+
+        result = await use_case.execute(
+            csv_content=csv_content,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+        )
+
+        assert result.imported_count == 1
+        assert result.failed_count == 1
+        assert result.results[0].status == "failed"
+        assert result.results[0].errors == ["vehicle_code 42 is already used by another product"]
+        assert result.results[1].status == "imported"
+        product_repository.create.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_use_case_preserves_existing_images_when_import_has_no_zip(self):
+        """A CSV-only upsert must not clear images already stored on the product."""
+        tenant_id = uuid4()
+        organization_id = uuid4()
+        category_id = uuid4()
+        csv_content = "id;title;price;VIN\n42;DJ;25000;1FMSK7DH7LGA77418\n"
+        existing_images = ["https://spaces.example.com/vehicles/existing.jpg"]
+        existing = Product.create(
+            title="Existing vehicle",
+            price_cents=1,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            image_urls=existing_images,
+        )
+
+        product_repository = AsyncMock()
+        product_repository.get_by_vin.return_value = existing
+        product_repository.vehicle_code_exists.return_value = False
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+        )
+
+        result = await use_case.execute(
+            csv_content=csv_content,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+        )
+
+        assert result.updated_count == 1
+        assert existing.image_urls == existing_images
+        product_repository.update.assert_awaited_once_with(existing)
+
+    @pytest.mark.asyncio
     async def test_use_case_builds_attributes_correctly(self, sample_csv: str):
         """Test that attributes are correctly built from CSV fields."""
         # Arrange
@@ -183,6 +266,7 @@ class TestBulkUploadVehiclesUseCase:
 
         product_repository = AsyncMock()
         product_repository.get_by_vin.return_value = None
+        product_repository.vehicle_code_exists.return_value = False
         created_products = []
 
         async def mock_create(product):
@@ -261,6 +345,7 @@ class TestBulkUploadVehiclesUseCase:
 
         product_repository = AsyncMock()
         product_repository.get_by_vin.return_value = None
+        product_repository.vehicle_code_exists.return_value = False
         created_products = []
 
         async def mock_create(product):
@@ -346,3 +431,85 @@ class TestBulkUploadVehiclesUseCase:
         assert set(call_args.args[0]) == {"DJ", "RM"}
         assert call_args.kwargs == {"tenant_id": caller_tenant_id}
         product_repository.create.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_runtime_fails_row_when_csv_path_missing_from_zip(self):
+        """Defense in depth (matches the preview's image-filename check):
+        when the CSV `path` column references an image but the ZIP didn't
+        actually contain a matching file, the runtime path must surface
+        it as a per-row failure BEFORE writing to the DB — otherwise the
+        row would persist with zero images and the user has no way to
+        know why their images are gone."""
+        import io as _io
+        import zipfile as _zipfile
+
+        tenant_id = uuid4()
+        organization_id = uuid4()
+        category_id = uuid4()
+
+        # CSV whose `path` column is "IMG/Vehiculos/MF/2020-EXPLORER" —
+        # a folder prefix, NOT a filename. The CSVImageMapper will NOT
+        # find anything under that exact prefix in our test ZIP (which
+        # only contains "Ford/Explorer/2020/img1.jpg"), so the row
+        # triggers the missing-image branch.
+        csv_content = (
+            "id;title;price;category;type;location;year;make;model;mileage;body_style;"
+            "exterior_color;interior_color;clean_title;state;fuel_type;transmission;"
+            "option;description;path;groups;label;publicado;VIN\n"
+            "1;DJ;2500000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
+            "Gris;Negro;1;FL;Gas;Automatic;;;Ford/Explorer/2020/img1.jpg;1,2;01/01/25;1;"
+            "1FMSK7DH7LGA77418\n"
+        )
+
+        # Build a real ZIP that contains a different VIN's folder so the
+        # mapper returns an empty `mapped` for our row.
+        zip_buf = _io.BytesIO()
+        with _zipfile.ZipFile(zip_buf, "w", _zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("SomeOtherVin/img1.jpg", b"junk-bytes")
+        zip_bytes = zip_buf.getvalue()
+
+        product_repository = AsyncMock()
+        # No existing product → create branch (also exercises the
+        # pre-write guard so we don't persist an orphan row).
+        product_repository.get_by_vin.return_value = None
+        product_repository.vehicle_code_exists.return_value = False
+
+        category_repository = AsyncMock()
+        category_repository.get_by_id.return_value = Mock(id=category_id, tenant_id=tenant_id)
+
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
+
+        do_spaces_service = AsyncMock()
+
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=category_repository,
+            organization_repository=organization_repository,
+            do_spaces_service=do_spaces_service,
+        )
+
+        result = await use_case.execute(
+            csv_content=csv_content,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            zip_bytes=zip_bytes,
+        )
+
+        assert result.total_rows == 1
+        assert result.failed_count == 1
+        assert result.imported_count == 0
+        assert result.results[0].status == "failed"
+        assert result.results[0].product_id is None
+        assert result.results[0].images_uploaded == 0
+        assert result.results[0].errors == [
+            "image 'Ford/Explorer/2020/img1.jpg' not found in upload"
+        ]
+        # Critical: the row must NOT have been persisted.
+        product_repository.create.assert_not_awaited()
+        product_repository.update.assert_not_awaited()
+        # And no upload calls fired either (zero images to upload).
+        do_spaces_service.upload_file.assert_not_awaited()

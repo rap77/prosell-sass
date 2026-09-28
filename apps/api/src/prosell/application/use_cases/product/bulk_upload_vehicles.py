@@ -21,6 +21,7 @@ from uuid import UUID
 from prosell.application.dto.product.create import CreateProductRequest
 from prosell.application.ports.ido_spaces import IDOSpacesService, StorageUploadError
 from prosell.domain.entities.product import Product
+from prosell.domain.exceptions.product_exceptions import DuplicateVehicleCodeError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
@@ -205,7 +206,7 @@ class BulkUploadVehiclesUseCase:
                 else:
                     failed_count += 1
 
-            except (ValueError, KeyError) as e:
+            except (DuplicateVehicleCodeError, ValueError, KeyError) as e:
                 logger.error("Row %d failed: %s", mapped_row.row_number, e)
                 failed_count += 1
                 results.append(
@@ -351,7 +352,12 @@ class BulkUploadVehiclesUseCase:
             title_parts.append(mapped_row.model)
         title = " ".join(title_parts) if title_parts else f"Vehicle {vin}"
 
-        # Build CreateProductRequest
+        # Build CreateProductRequest. `vehicle_code` is sourced from the
+        # CSV's `id` column when present — this is the value the export
+        # writes back into the same `id` column, so a re-export
+        # round-trips the same identifier. The use case validates
+        # uniqueness against `Product.vehicle_code_exists` and raises
+        # `DuplicateVehicleCodeError` on collision.
         request = CreateProductRequest(
             title=title,
             price_cents=mapped_row.price_cents,
@@ -363,10 +369,20 @@ class BulkUploadVehiclesUseCase:
             attributes=cast(dict[str, object], attributes),
             location_city=mapped_row.location_city,
             location_state=mapped_row.location_state,
+            vehicle_code=mapped_row.csv_id,
         )
 
         # Check if product with this VIN already exists (upsert)
         existing = await self.product_repository.get_by_vin(vin, tenant_id)
+
+        # Runtime imports may bypass preview, so retain the same duplicate
+        # validation at the write path. Existing VIN matches may keep their
+        # own code but cannot claim a code held by a different product.
+        if mapped_row.csv_id is not None and await self.product_repository.vehicle_code_exists(
+            mapped_row.csv_id,
+            exclude_product_id=existing.id if existing else None,
+        ):
+            raise DuplicateVehicleCodeError(mapped_row.csv_id)
 
         product_id: UUID
         status: str
@@ -390,19 +406,53 @@ class BulkUploadVehiclesUseCase:
                 except StorageUploadError as e:
                     logger.error("Failed to upload image %s: %s", img.do_spaces_key, e)
 
+        # Defense in depth (matches preview's image-filename validation):
+        # if the row's CSV `path` column referenced an image but the
+        # ZIP didn't actually contain a matching file, the upload
+        # silently completes with zero images — the preview catches
+        # this BEFORE the upload, but the runtime path also has to
+        # surface it as a per-row failure so a partial upload (where
+        # the user skipped preview) doesn't leave the row half-imported.
+        # Only fires when a ZIP was actually supplied (image_mapping is
+        # not None); without a ZIP the user opted out of image upload.
+        # Detected BEFORE the DB write so we never persist an orphan
+        # row whose images are silently missing.
+        if image_mapping is not None and mapped_row.image_path and not uploaded_urls:
+            return VehicleImportRowResult(
+                row_number=mapped_row.row_number,
+                vin=vin,
+                product_id=None,
+                images_uploaded=0,
+                status="failed",
+                errors=[
+                    f"image '{mapped_row.image_path}' not found in upload",
+                ],
+            )
+
         if existing:
             # Update existing product
             product_id = existing.id
             status = "updated"
 
-            # Update fields
+            # Update fields. `vehicle_code` is overwritten with the CSV's
+            # `id` column when present so a re-imported catalog
+            # re-aligns the legacy id (e.g. if the CSV was edited
+            # outside ProSell between imports). When the CSV has no
+            # `id` column for this row we leave the existing value
+            # untouched (a no-op PATCH, never a destructive clear).
             existing.title = request.title
             existing.price_cents = request.price_cents
             existing.description = request.description
             existing.attributes = request.attributes
             existing.location_city = request.location_city
             existing.location_state = request.location_state
-            existing.image_urls = uploaded_urls
+            # A CSV-only re-import has no replacement images. Preserve the
+            # existing gallery instead of treating the absence of a ZIP as
+            # an explicit request to clear it.
+            if uploaded_urls:
+                existing.image_urls = uploaded_urls
+            if request.vehicle_code is not None:
+                existing.vehicle_code = request.vehicle_code
 
             await self.product_repository.update(existing)
         else:
@@ -419,6 +469,7 @@ class BulkUploadVehiclesUseCase:
                 location_city=request.location_city,
                 location_state=request.location_state,
                 image_urls=uploaded_urls,
+                vehicle_code=request.vehicle_code,
             )
 
             created = await self.product_repository.create(product)

@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import BIGINT, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -132,6 +132,16 @@ class ProductModel(Base):
     # fetched at a stale version instead of silently overwriting it.
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
+    # Durable, globally-unique legacy product id (`vehicle_code`). Surfaces
+    # in the `id` column of the client-format catalog CSV (replacing the
+    # previous 1-based positional `row_id`). Nullable for backward compat
+    # with pre-existing rows. Globally unique when set — see the partial
+    # unique index below and migration
+    # `20260926_0001_add_vehicle_code_to_product.py` (the migration is the
+    # source of truth for the partial-index shape on existing databases).
+    # `BIGINT` (not `INTEGER`) so it doesn't clip at ~2.1B in a decade.
+    vehicle_code: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -152,6 +162,19 @@ class ProductModel(Base):
             "attributes",
             postgresql_using="gin",
             postgresql_ops={"attributes": "jsonb_path_ops"},
+        ),
+        # Partial unique index — enforces global uniqueness of `vehicle_code`
+        # when set, while letting pre-existing NULL rows coexist (legacy
+        # products without a code). Mirrors migration
+        # `20260926_0001_add_vehicle_code_to_product.py`; declared here so
+        # `Base.metadata.create_all()` (used in tests / fresh envs) also
+        # creates the index. The migration is the source of truth for
+        # production databases.
+        Index(
+            "ix_products_vehicle_code_unique",
+            "vehicle_code",
+            unique=True,
+            postgresql_where=text("vehicle_code IS NOT NULL"),
         ),
     )
 

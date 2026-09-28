@@ -73,7 +73,11 @@ describe("QuickFilters", () => {
     );
   });
 
-  it("lists only statuses present in the loaded products, in the caller's order", () => {
+  it("on first load (no URL filter), captures and shows only the statuses present in the loaded products", () => {
+    // After products load, the dropdown shows only statuses that exist
+    // in the catalog — but the captured list is frozen at this point.
+    // (The effect runs inside `act()` so by the time we read the
+    // options, capture has fired.)
     const products = [
       makeProduct("draft"),
       makeProduct("draft"),
@@ -86,33 +90,81 @@ describe("QuickFilters", () => {
     const optionTexts = Array.from(select.querySelectorAll("option")).map(
       (opt) => opt.textContent,
     );
-    // Status labels match `mapProductStatusToVehicleStatus` (no collapsed
-    // workflow-only statuses present in the seed data here).
+    // Statuses present: draft, published, sold → 3 + Todos.
+    expect(optionTexts).toEqual(["Todos", "Publicado", "Borrador", "Vendido"]);
+  });
+
+  it("keeps the captured applied list after the user picks a status (no self-collapse)", async () => {
+    // First render with products ⇒ captures applied statuses.
+    // Picking a status filters products down to just that status, but
+    // the captured list must stay stable — otherwise the seller can't
+    // switch between applied statuses without first clearing the filter.
+    const initialProducts = [
+      makeProduct("draft"),
+      makeProduct("published"),
+      makeProduct("sold"),
+    ];
+
+    // Simulate the catalog page by re-rendering with progressively
+    // filtered products (mimicking what useInfiniteProducts does).
+    const { rerender } = render(
+      <QuickFilters products={initialProducts} statusOrder={STATUS_ORDER} />,
+    );
+    expect(
+      Array.from(
+        screen
+          .getByTestId("quick-filters-status-select")
+          .querySelectorAll("option"),
+      ).map((o) => o.textContent),
+    ).toEqual(["Todos", "Publicado", "Borrador", "Vendido"]);
+
+    // After picking "Publicado", the catalog reloads with only published
+    // products. The dropdown must still show the same captured list.
+    const filteredProducts = [makeProduct("published")];
+    rerender(
+      <QuickFilters products={filteredProducts} statusOrder={STATUS_ORDER} />,
+    );
+    expect(
+      Array.from(
+        screen
+          .getByTestId("quick-filters-status-select")
+          .querySelectorAll("option"),
+      ).map((o) => o.textContent),
+    ).toEqual(["Todos", "Publicado", "Borrador", "Vendido"]);
+  });
+
+  it("falls back to the full statusOrder while products are still loading on first paint", () => {
+    // First render with `products=[]` ⇒ ref stays null ⇒ full list.
+    render(<QuickFilters products={[]} statusOrder={STATUS_ORDER} />);
+    const optionTexts = Array.from(
+      screen
+        .getByTestId("quick-filters-status-select")
+        .querySelectorAll("option"),
+    ).map((o) => o.textContent);
     expect(optionTexts).toEqual([
-      "Cualquier",
+      "Todos",
       "Publicado",
+      "Apartado",
+      "Online",
+      "Pendiente",
       "Borrador",
+      "Expirado",
+      "Rechazado",
       "Vendido",
     ]);
   });
 
-  it("excludes statuses that no loaded product carries (filter keeps list tight)", () => {
-    const products = [makeProduct("draft")];
-    render(<QuickFilters products={products} statusOrder={STATUS_ORDER} />);
-    const select = screen.getByTestId("quick-filters-status-select");
-    const optionTexts = Array.from(select.querySelectorAll("option")).map(
-      (opt) => opt.textContent,
-    );
-    expect(optionTexts).toEqual(["Cualquier", "Borrador"]);
-  });
-
-  it("renders an empty status list (plus 'Cualquier') when no products are loaded", () => {
-    render(<QuickFilters products={[]} statusOrder={STATUS_ORDER} />);
-    const select = screen.getByTestId("quick-filters-status-select");
-    const optionTexts = Array.from(select.querySelectorAll("option")).map(
-      (opt) => opt.textContent,
-    );
-    expect(optionTexts).toEqual(["Cualquier"]);
+  it("uses the caller's `statusOrder` so the custom order reads consistently", () => {
+    const customOrder = ["draft", "published"] as const;
+    const products = [makeProduct("draft"), makeProduct("published")];
+    render(<QuickFilters products={products} statusOrder={customOrder} />);
+    expect(
+      Array.from(
+        screen
+          .getByTestId("quick-filters-status-select")
+          .querySelectorAll("option"),
+      ).map((o) => o.textContent),
+    ).toEqual(["Todos", "Borrador", "Publicado"]);
   });
 
   it("picking a status writes the `status` URL param", async () => {
@@ -130,7 +182,22 @@ describe("QuickFilters", () => {
     expect(url).toContain("status=published");
   });
 
-  it("clicking 'Sí' on the published toggle writes `published=true` and pushing again with 'Cualquier' clears it", async () => {
+  it("translates the rejected display status to the backend status parameter", async () => {
+    const user = userEvent.setup();
+    const products = [makeProduct("rejected")];
+    render(<QuickFilters products={products} statusOrder={STATUS_ORDER} />);
+
+    await user.selectOptions(
+      screen.getByTestId("quick-filters-status-select"),
+      "rejected",
+    );
+
+    expect(String(pushMock.mock.calls[0]?.[0] ?? "")).toContain(
+      "status=rejected",
+    );
+  });
+
+  it("clicking 'Sí' on the published toggle writes `published=true` and pushing again with 'Todos' clears it", async () => {
     const user = userEvent.setup();
     render(<QuickFilters products={[]} statusOrder={STATUS_ORDER} />);
 
