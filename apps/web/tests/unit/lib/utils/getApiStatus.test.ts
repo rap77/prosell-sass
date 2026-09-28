@@ -30,6 +30,7 @@ const ALL_STATUSES: VehicleStatus[] = [
   "pending",
   "failed",
   "draft",
+  "maintenance",
   "expired",
   "online",
   "sold",
@@ -53,11 +54,11 @@ describe("getApiStatus", () => {
     expect(getApiStatus(undefined)).toBeUndefined();
   });
 
-  it("VALID_STATUS_MAP has exactly the 8 VehicleStatus keys", () => {
+  it("VALID_STATUS_MAP has exactly the 9 VehicleStatus keys", () => {
     // This pins the derive contract: if a new VehicleStatus is added to
     // the union, TypeScript will fail the `Record<VehicleStatus, true>`
     // annotation in the source file (compile-time). At runtime, this
-    // test pins the count to 8 — if someone replaces the Record with a
+    // test pins the count — if someone replaces the Record with a
     // hand-rolled set and forgets a key, this test catches it.
     const keys = Object.keys(VALID_STATUS_MAP).sort();
     expect(keys).toEqual([...ALL_STATUSES].sort());

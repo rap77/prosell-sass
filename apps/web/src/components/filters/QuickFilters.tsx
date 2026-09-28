@@ -63,6 +63,7 @@ const STATUS_LABELS: Record<VehicleStatus, string> = {
   online: "Online",
   pending: "Pendiente",
   draft: "Borrador",
+  maintenance: "En mantenimiento",
   expired: "Expirado",
   failed: "Rechazado",
   sold: "Vendido",

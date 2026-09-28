@@ -34,6 +34,7 @@ const VALID_STATUS_MAP = {
   pending: true,
   failed: true,
   draft: true,
+  maintenance: true,
   expired: true,
   online: true,
   sold: true,
