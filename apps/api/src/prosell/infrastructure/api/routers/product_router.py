@@ -1411,6 +1411,24 @@ async def batch_product_cover_urls(
             # to sign. Drop silently.
             continue
 
+        # Normalize the candidate key once. The raw values above may
+        # be bare keys (`orgs/<uuid>/...`) OR full URLs
+        # (`scheme://host/<bucket>/<key>`) — `extract_storage_key_from_value`
+        # normalizes either to the bare key. Without this, both the
+        # tenant allowlist AND the CDN signer would see the raw URL:
+        # the allowlist would fail (a URL doesn't start with
+        # `orgs/...`) and the signer would concatenate the base URL
+        # onto the raw URL, producing a broken
+        # `http://cdn/<full-url>?X-Amz-...` artifact. Normalize once,
+        # pass the bare key to every downstream consumer.
+        normalized_key = (
+            extract_storage_key_from_value(candidate_key)
+            if isinstance(candidate_key, str)
+            else None
+        )
+        if not normalized_key:
+            continue
+
         # FR1.3 / NFR2.2 — defense-in-depth: the signed key MUST start
         # with a tenant prefix the caller is allowed to see. Same
         # allowlist as the single-product endpoint (admin relaxation
@@ -1420,7 +1438,7 @@ async def batch_product_cover_urls(
             f"vehicles/{product.tenant_id}/",
         )
         if not await _key_tenant_allowed(
-            candidate_key, product_tenant_prefixes, is_org_admin, org_repo
+            normalized_key, product_tenant_prefixes, is_org_admin, org_repo
         ):
             # Cross-tenant key — defense in depth. Drop silently
             # rather than echoing which IDs leaked across tenants.
@@ -1431,12 +1449,12 @@ async def batch_product_cover_urls(
         # on first hit. The CDN signer inside DOSpacesService
         # already enforces fail-fast when do_cdn_endpoint is blank
         # (NFR5.1).
-        signed_url = await spaces.generate_cdn_download_url(candidate_key)
+        signed_url = await spaces.generate_cdn_download_url(normalized_key)
 
         covers.append(
             BatchProductCoverUrlItem(
                 product_id=product_id,
-                key=candidate_key,
+                key=normalized_key,
                 url=signed_url,
                 # OQ2 — TTL is the CDN signer's default (15min),
                 # surfaced here so the frontend can decide when to
