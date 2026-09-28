@@ -766,13 +766,25 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         # `~ '^[0-9]+$'` guards against non-numeric strings blowing up
         # the bigint cast; numeric rows pass through the cast and compare
         # against the requested code.
+        #
+        # The `exclude_id` predicate uses `CAST(:p AS UUID) IS NULL`
+        # rather than the more common `:p::uuid IS NULL` shortcut —
+        # SQLAlchemy's bind-parameter parser eats `:exclude_id::uuid`
+        # as a single named bind (`:exclude_id::uuid`) and emits
+        # `syntax error at or near ":"` on PostgreSQL when the cast
+        # appears adjacent to a parameter name. The `CAST()` form
+        # keeps the bind name and the type annotation cleanly separated.
+        # When `exclude_product_id` is None, we substitute the zero
+        # UUID so the `id != :exclude_id` branch matches every real
+        # row (no product carries the zero UUID).
+        ZERO_UUID = "00000000-0000-0000-0000-000000000000"  # noqa: N806
         stmt = text(
             """
             SELECT 1
             FROM products
             WHERE attributes->>'vehicle_code' ~ '^[0-9]+$'
               AND (attributes->>'vehicle_code')::bigint = :code
-              AND (:exclude_id::uuid IS NULL OR id != :exclude_id::uuid)
+              AND id != CAST(:exclude_id AS UUID)
             LIMIT 1
             """
         )
@@ -780,7 +792,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             stmt,
             {
                 "code": code,
-                "exclude_id": str(exclude_product_id) if exclude_product_id else None,
+                "exclude_id": (str(exclude_product_id) if exclude_product_id else ZERO_UUID),
             },
         )
         return result.scalar_one_or_none() is not None
