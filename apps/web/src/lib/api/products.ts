@@ -62,6 +62,13 @@ const productSchema = z.object({
   org_code: z.string().nullish(),
   org_color: z.string().nullish(),
   category_id: z.string(),
+  // Note: the durable, globally-unique legacy product id (vehicle_code)
+  // no longer lives at the top level of the wire payload — it moved into
+  // the `attributes` JSONB column under the `vehicle_code` key (see
+  // backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb).
+  // Vehicle categories' attribute_schema defines the field's type and
+  // constraints; consumers that need the value should read it from
+  // `attributes["vehicle_code"]` directly.
   title: z.string(),
   slug: z.string().nullish(),
   description: z.string().nullish(),
@@ -81,6 +88,7 @@ const productSchema = z.object({
   attributes: z.custom<ProductAttributes>(isProductAttributes),
   image_urls: z.array(z.string()).optional(),
   cover_image_key: z.string().nullish(),
+  thumbnail_image_key: z.string().nullish(),
   location_city: z.string().nullish(),
   location_state: z.string().nullish(),
   location_zip: z.string().nullish(),
@@ -221,6 +229,44 @@ export function useCreateProduct(): UseMutationResult<
     onError: (err) => {
       toast.error(err.message || "Failed to create product");
     },
+  });
+}
+
+/**
+ * Pre-fetch the next available `vehicle_code` for the product create form.
+ *
+ * DEPRECATED (no-op): `vehicle_code` moved out of the top-level Product
+ * column and into the `attributes` JSONB (backend migration
+ * 20260927_0001_move_vehicle_code_to_attributes_jsonb). The field is
+ * now driven by the vehicle category's `attribute_schema` and rendered
+ * alongside the rest of the `identificacion` group. Allocation is
+ * owned by the use case's allocator, not exposed to the form.
+ *
+ * This stub still returns a properly-typed `UseQueryResult` (with
+ * `enabled: false` so the network request is never fired) so any stale
+ * caller in the codebase continues to compile and behave as a
+ * permanently-idle query. The companion test pins the never-throws
+ * behavior so the next migration owner can remove the export safely
+ * once all callers are gone.
+ */
+export interface NextVehicleCodeOptions {
+  enabled?: boolean;
+}
+
+export function useNextVehicleCode(
+  _options: NextVehicleCodeOptions = {},
+): UseQueryResult<{ vehicle_code: number }, Error> {
+  return useQuery({
+    queryKey: ["products", "next-vehicle-code", "deprecated"],
+    queryFn: async () => {
+      throw new Error(
+        "useNextVehicleCode is deprecated: vehicle_code moved into " +
+          "attributes JSONB (migration 20260927_0001). Drive the field " +
+          "through the category's attribute_schema instead.",
+      );
+    },
+    enabled: false,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
@@ -1168,18 +1214,8 @@ export function transformProductToVehicle(product: Product): {
 }
 
 export interface ProductFilters {
-  status?:
-    | "published"
-    | "pending"
-    | "failed"
-    | "draft"
-    | "expired"
-    | "online"
-    | "sold"
-    | "rejected"
-    | "paused"
-    | "reserved"
-    | "archived";
+  /** Backend `Product.status` literal sent to `GET /products`. */
+  status?: Product["status"];
   search?: string;
   /** Scopes the list to one category; required for `attributes` to apply. */
   category_id?: string;
@@ -1194,6 +1230,10 @@ export interface ProductFilters {
    * (existing backend behavior for `GET /api/v1/products`).
    */
   organization_id?: string;
+  /** Catalog header toggle — true keeps only products on marketplace. */
+  published_to_marketplace?: boolean;
+  /** Catalog header toggle — true keeps only products with images. */
+  has_images?: boolean;
 }
 
 /**
@@ -1217,6 +1257,19 @@ export function useInfiniteProducts(
     queryParams.append("category_id", filters.category_id);
   if (filters?.organization_id)
     queryParams.append("organization_id", filters.organization_id);
+  // The boolean toggles only go on the wire when the user has actually
+  // picked a value — `undefined` (omitted) must NOT be serialized as the
+  // string "undefined", it must simply be absent so the backend skips the
+  // filter.
+  if (filters?.published_to_marketplace !== undefined) {
+    queryParams.append(
+      "published_to_marketplace",
+      String(filters.published_to_marketplace),
+    );
+  }
+  if (filters?.has_images !== undefined) {
+    queryParams.append("has_images", String(filters.has_images));
+  }
   for (const [key, value] of Object.entries(filters?.attributes ?? {})) {
     if (value) queryParams.append(`attr.${key}`, value);
   }
@@ -1255,6 +1308,26 @@ export function useInfiniteProducts(
         if (filters?.category_id) {
           filtered = filtered.filter(
             (p) => p.category_id === filters.category_id,
+          );
+        }
+
+        // published_to_marketplace — true keeps only products on the
+        // marketplace, false keeps only those that aren't.
+        if (filters?.published_to_marketplace !== undefined) {
+          const want = filters.published_to_marketplace;
+          filtered = filtered.filter(
+            (p) => p.published_to_marketplace === want,
+          );
+        }
+
+        // has_images — true keeps only products with at least one image,
+        // false keeps only products without images.
+        if (filters?.has_images !== undefined) {
+          const want = filters.has_images;
+          filtered = filtered.filter((p) =>
+            want
+              ? (p.image_urls?.length ?? 0) > 0
+              : (p.image_urls?.length ?? 0) === 0,
           );
         }
 

@@ -306,3 +306,23 @@ describe("UnifiedProductForm Facebook Marketplace indicator", () => {
     expect(section?.querySelector("input")).not.toBeInTheDocument();
   });
 });
+
+// ── vehicle_code (post-20260927_0001 JSONB move) ─────────────────────────
+//
+// The legacy id is no longer a top-level form field — it moved into
+// `attributes["vehicle_code"]` (backend migration
+// 20260927_0001_move_vehicle_code_to_attributes_jsonb) and is driven
+// by the vehicle category's `attribute_schema`. The dynamic
+// `SchemaFormSection` renders the input inside the "identificacion"
+// group, alongside VIN / make / model / year, so the previous
+// dedicated section + `coerceVehicleCodeForSubmit` helper +
+// `VEHICLE_CODE_SCHEMA` block were all removed from `UnifiedProductForm.tsx`
+// in the same commit that moved the value into attributes.
+//
+// The category's `attribute_schema` defines the field's type and
+// constraints (positive integer for vehicle categories); the use
+// case's allocator populates a value when the caller omits one.
+// Tests for the field's behavior now live in
+// `category-schema-editor.test.tsx` (admin-side) and
+// `test_create_product_use_case.py` (server-side allocation +
+// collision). The form no longer has its own bespoke contract.

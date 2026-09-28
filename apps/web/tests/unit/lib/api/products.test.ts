@@ -18,6 +18,7 @@ import {
   useSetProductBrokers,
   useSubmitProductsForApproval,
   exportCatalogClientFormat,
+  useNextVehicleCode,
 } from "@/lib/api/products";
 import type { CreateProductRequest, Product } from "@/types/product";
 
@@ -117,6 +118,32 @@ describe("useSetProductBrokers", () => {
   });
 });
 
+describe("useNextVehicleCode", () => {
+  it("returns a permanently-idle query — the field moved into the attributes JSONB", async () => {
+    // The hook used to pre-fetch a default `vehicle_code` value for the
+    // create form. After the JSONB move (migration
+    // 20260927_0001_move_vehicle_code_to_attributes_jsonb), the field
+    // is driven by the vehicle category's `attribute_schema` and
+    // rendered by `SchemaFormSection` inside the "identificacion"
+    // group. Allocation happens server-side via the use case's
+    // allocator; the form no longer needs a pre-fetch endpoint.
+    //
+    // The hook is preserved as a non-throwing `useQuery` with
+    // `enabled: false` so any stale caller compiles AND never fires a
+    // network request. The queryFn is dead-code; TanStack Query will
+    // never invoke it.
+    mockFetch.mockClear();
+    const { result } = renderHook(() => useNextVehicleCode(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.fetchStatus).toBe("idle"));
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isFetching).toBe(false);
+  });
+});
+
 describe("createProductWithVehicle", () => {
   beforeEach(() => {
     mockFetch.mockClear();
@@ -141,6 +168,7 @@ describe("createProductWithVehicle", () => {
         mileage: 50000,
       },
       status: "draft",
+      thumbnail_image_key: "thumbnails/prod-123.jpg",
       is_featured: false,
       published_to_marketplace: false,
       view_count: 0,
@@ -187,6 +215,7 @@ describe("createProductWithVehicle", () => {
     );
 
     expect(result).toEqual(mockProduct);
+    expect(result.thumbnail_image_key).toBe("thumbnails/prod-123.jpg");
   });
 
   it("should preserve published_to_marketplace from the backend response (finding #7)", async () => {

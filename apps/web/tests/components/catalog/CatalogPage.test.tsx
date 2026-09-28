@@ -192,6 +192,16 @@ describe("CatalogPage — dynamic filters", () => {
   });
 
   it("renders the category selector and the generic filter sidebar", () => {
+    // CatalogPage — leaf filter refactor: the new CategorySelector only
+    // renders a `<select>` once at least one leaf has a product. The
+    // `make=Toyota` URL keeps the sidebar showing checkboxes.
+    mockProducts = [
+      makeProduct({
+        category_id: "c1",
+        attributes: { category: "generic", make: "Toyota" },
+      }),
+    ];
+
     render(<CatalogPage />);
 
     expect(
@@ -204,6 +214,14 @@ describe("CatalogPage — dynamic filters", () => {
 
   it("passes the active attribute filter to useInfiniteProducts as attr.<key>", () => {
     mockSearchParams = new URLSearchParams("make=Toyota");
+    // Seed a product in category c1 so the CategorySelector auto-selects
+    // c1 (the leaf refactor only auto-selects when a leaf has products).
+    mockProducts = [
+      makeProduct({
+        category_id: "c1",
+        attributes: { category: "generic", make: "Toyota" },
+      }),
+    ];
 
     render(<CatalogPage />);
 
@@ -215,6 +233,13 @@ describe("CatalogPage — dynamic filters", () => {
   });
 
   it("pushes the make filter to the URL when a checkbox is toggled", async () => {
+    // Seed a product in c1 so the FilterSidebar renders its checkboxes.
+    mockProducts = [
+      makeProduct({
+        category_id: "c1",
+        attributes: { category: "generic", make: "Toyota" },
+      }),
+    ];
     const user = userEvent.setup();
     render(<CatalogPage />);
 
@@ -263,6 +288,14 @@ describe("CatalogPage — dynamic filters", () => {
       key: "year",
       filter_type: "range",
     });
+    // Seed a product in c1 so the leaf auto-select fires (the new
+    // CategorySelector only auto-selects leaves with products).
+    mockProducts = [
+      makeProduct({
+        category_id: "c1",
+        attributes: { category: "generic", year: 2018 } as never,
+      }),
+    ];
 
     render(<CatalogPage />);
 

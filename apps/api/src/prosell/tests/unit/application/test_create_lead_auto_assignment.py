@@ -1,5 +1,6 @@
 """Unit tests for CreateLeadUseCase auto-assignment integration."""
 
+from collections.abc import Iterable
 from datetime import datetime
 from uuid import UUID, uuid4
 
@@ -323,6 +324,43 @@ class StubProductRepository(AbstractProductRepository):
         del tenant_id, category_id, keys
         return {}
 
+    async def get_max_vehicle_code(self) -> int | None:
+        # Stub returns `None` (no products tracked have a code yet) —
+        # the lead-auto-assignment tests never exercise the
+        # `VehicleCodeAllocator` path.
+        return None
+
+    async def allocate_next_vehicle_code(self) -> int:
+        """Return a deterministic code for this in-memory test double.
+
+        Reads the JSONB-side `attributes["vehicle_code"]` value off
+        each tracked product (text), casts to int for the math, and
+        returns max + 1. Tests that predate the JSONB move still expect
+        an int — only the storage shape changed.
+        """
+        codes: list[int] = []
+        for product in self.products.values():
+            raw = (product.attributes or {}).get("vehicle_code")
+            if raw is None or raw == "":
+                continue
+            try:
+                codes.append(int(str(raw)))
+            except (TypeError, ValueError):
+                continue
+        return max(codes, default=0) + 1
+
+    async def vehicle_code_exists(
+        self, code: int, *, exclude_product_id: UUID | None = None
+    ) -> bool:
+        del code, exclude_product_id
+        return False
+
+    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        # Stub returns the empty set — the lead-auto-assignment tests
+        # never exercise the preview's batched collision lookup.
+        del codes
+        return set()
+
     async def get_all(
         self,
         tenant_id: UUID | None,
@@ -335,6 +373,8 @@ class StubProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -350,6 +390,8 @@ class StubProductRepository(AbstractProductRepository):
             min_price_cents,
             max_price_cents,
             attribute_filters,
+            published_to_marketplace,
+            has_images,
             order_by,
             order_desc,
         )
@@ -433,6 +475,8 @@ class StubProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> int:
         del (
             category_id,
@@ -443,6 +487,8 @@ class StubProductRepository(AbstractProductRepository):
             min_price_cents,
             max_price_cents,
             attribute_filters,
+            published_to_marketplace,
+            has_images,
         )
         products = [product for product in self.products.values() if product.tenant_id == tenant_id]
         if organization_id is not None:

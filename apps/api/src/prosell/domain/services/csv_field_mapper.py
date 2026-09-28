@@ -145,6 +145,16 @@ class MappedCSVRow:
     facebook_groups: list[str] | None = None
     label: str | None = None
     publicado: bool = False
+    # `csv_id` — the value of the CSV's `id` column (the same column that
+    # the export writes the durable `Product.vehicle_code` into). On
+    # import, the bulk-upload path threads this into the persisted
+    # product's `vehicle_code` so a re-export round-trips the same
+    # identifier. Distinct from `row_number` (the CSV row's line
+    # counter for error reporting — NEVER confuse the two: `row_number`
+    # is for error messages, `csv_id` is for the legacy product id
+    # that becomes `Product.vehicle_code`). `None` when the CSV has no
+    # `id` column or the column is empty for that row.
+    csv_id: int | None = None
 
 
 # =============================================================================
@@ -389,4 +399,32 @@ class CSVFieldMapper:
                 row.get("label", "").strip(), MAX_SHORT_TEXT_LENGTH, "label", row_number
             ),
             publicado=CSVFieldMapper.parse_publicado(row.get("publicado")),
+            # The CSV's `id` column carries the legacy product id that
+            # the export writes `Product.vehicle_code` into — importing
+            # the same value lets a re-export round-trip the same
+            # identifier. Empty / non-numeric / missing values parse to
+            # `None`, in which case the bulk-upload use case falls back
+            # to the allocator (or skips the column for the product, per
+            # the caller's choice).
+            csv_id=CSVFieldMapper._parse_optional_int(row.get("id")),
         )
+
+    @staticmethod
+    def _parse_optional_int(value: str | None) -> int | None:
+        """Parse an optional integer field, returning `None` for empty / invalid values.
+
+        Used for the CSV `id` column (`csv_id`): when the column is
+        absent, blank, or carries a non-numeric value we want `None`,
+        not a `ValueError` that aborts the whole row's parsing.
+        Strict integer parsing — leading/trailing whitespace is stripped
+        but no leading `+`/`-` is accepted (negative vehicle codes are
+        nonsense and would slip past the BIGINT range check).
+        """
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            return None
+        if not re.fullmatch(r"[1-9][0-9]*", stripped):
+            return None
+        return int(stripped)

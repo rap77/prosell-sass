@@ -1,6 +1,7 @@
 """Product repository interface."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from datetime import datetime
 from uuid import UUID
 
@@ -70,6 +71,8 @@ class AbstractProductRepository(ABC):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list["AttributeFilter"] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -91,6 +94,12 @@ class AbstractProductRepository(ABC):
             min_price_cents: Minimum price filter
             max_price_cents: Maximum price filter
             attribute_filters: Dynamic filters over the JSONB `attributes` column
+            published_to_marketplace: When True/False, only products whose
+                `published_to_marketplace` flag matches. None skips the
+                filter.
+            has_images: When True, only products with at least one entry in
+                their `image_urls` JSONB array. When False, only products
+                with an empty or null `image_urls` array. None skips.
             skip: Number of records to skip (pagination)
             limit: Max records to return (pagination)
             order_by: Field to order by
@@ -241,6 +250,8 @@ class AbstractProductRepository(ABC):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list["AttributeFilter"] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> int:
         """
         Count products matching the same filters `get_all()` accepts.
@@ -256,6 +267,8 @@ class AbstractProductRepository(ABC):
             min_price_cents: Minimum price filter
             max_price_cents: Maximum price filter
             attribute_filters: Dynamic filters over the JSONB `attributes` column
+            published_to_marketplace: See `get_all()`.
+            has_images: See `get_all()`.
 
         Returns:
             Total count of products matching every filter above
@@ -421,5 +434,90 @@ class AbstractProductRepository(ABC):
 
         Returns:
             Mapping of key -> sorted list of distinct non-null values
+        """
+        pass
+
+    @abstractmethod
+    async def get_max_vehicle_code(self) -> int | None:
+        """
+        Return the largest `vehicle_code` currently persisted, or `None`
+        if no product has one yet.
+
+        Tenant-agnostic on purpose: `vehicle_code` is a globally-unique
+        legacy product id scoped to vehicle categories only, persisted
+        inside `attributes->>'vehicle_code'` (a JSONB text field). The
+        uniqueness invariant is enforced by the functional partial index
+        `ix_products_attrs_vehicle_code_unique`. The allocator backs
+        `VehicleCodeAllocator.peek_next()` and walks across every tenant
+        because the value must remain globally unique for the client
+        CSV's ``id`` column to round-trip.
+
+        Returns:
+            Largest persisted `vehicle_code` cast to int, or `None` if
+            no row has one. Non-numeric values (defensive — the index
+            is text-typed) are ignored.
+        """
+        pass
+
+    @abstractmethod
+    async def allocate_next_vehicle_code(self) -> int:
+        """Atomically reserve the next globally unique vehicle code.
+
+        Calls ``nextval('products_vehicle_code_seq')`` for race-free
+        allocation across concurrent product creations. The caller is
+        responsible for storing the returned value as text under
+        ``attributes["vehicle_code"]`` on the product row. The sequence
+        remains after the JSONB move (migration
+        ``20260927_0001_move_vehicle_code_to_attributes_jsonb.py``) — only
+        the column the value lands in changed.
+        """
+        pass
+
+    @abstractmethod
+    async def vehicle_code_exists(
+        self, code: int, *, exclude_product_id: UUID | None = None
+    ) -> bool:
+        """
+        Return whether any product currently uses `code` as its `vehicle_code`.
+
+        Backs `VehicleCodeAllocator.reserve()` for fail-fast collision
+        detection. Looks up against `attributes->>'vehicle_code'` (cast
+        to bigint so callers can pass an int and the index does the
+        numeric comparison via ``~ '^[0-9]+$'`` predicate).
+
+        Optional `exclude_product_id` lets `UpdateProductUseCase` reuse
+        the same uniqueness check without false-positives on the row
+        being updated.
+
+        Args:
+            code: The `vehicle_code` value to test for collision.
+            exclude_product_id: Optional product id to ignore (used when
+                validating a PATCH — the row being updated already has
+                that value, so it shouldn't count as a collision with
+                itself).
+
+        Returns:
+            True iff some other product already holds `code`.
+        """
+        pass
+
+    @abstractmethod
+    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        """
+        Return the subset of `codes` that are currently in use as `vehicle_code`.
+
+        Bulk variant of `vehicle_code_exists` — `BulkUploadPreviewUseCase`
+        walks every distinct `csv_id` in the CSV once and needs a single
+        round-trip to flag the rows whose codes already collide with a
+        persisted product. Iterating `vehicle_code_exists` per row works
+        for small CSVs but blows up on the multi-thousand-row client file
+        the client uploads today.
+
+        Args:
+            codes: Iterable of candidate `vehicle_code` values to test.
+
+        Returns:
+            Set of codes from `codes` that are already in use. Empty if
+            none of them are, or if `codes` is empty.
         """
         pass

@@ -141,7 +141,12 @@ _CLIENT_FORMAT_ATTRIBUTE_COLUMNS: frozenset[str] = frozenset(
         "interior_color",
         "fuel_type",
         "transmission",
-        "label",
+        # `label` is NOT sourced from `attributes` — the use case passes
+        # the product's load date (`Product.created_at`) formatted as
+        # `DD/MM/YYYY` through the explicit `label=` parameter of
+        # `build_client_format_row()`. Mixing the two paths (attributes
+        # vs. explicit param) would let a stale attribute key silently
+        # overwrite the formatted date the client-format CSV needs.
     }
 )
 
@@ -171,11 +176,12 @@ def _sanitize_formula_injection(value: str) -> str:
 
 def build_client_format_row(
     *,
-    row_id: int,
+    vehicle_code: int | None,
     org_code: object | None,
     price_cents: int,
     description: str | None,
     attributes: Mapping[str, object],
+    label: str | None = None,
     vin: str | None = None,
     body_style: str | None = None,
     clean_title: bool | None = None,
@@ -190,19 +196,39 @@ def build_client_format_row(
 ) -> list[str]:
     """Build one row of the client-format CSV (u1-catalog-export-api).
 
-    `row_id` is a 1-based sequential position within the export (the
-    caller assigns it, incrementing only for rows that actually make it
-    into the file — BR1.7 exclusions never consume a number), matching
-    the plain small integers the client's own reference CSV uses in its
-    `id` column — never the product's internal database UUID.
+    `vehicle_code` is the durable, globally-unique legacy product id
+    (`Product.attributes["vehicle_code"]`) that ends up in the CSV's
+    `id` column. Replaces the previous positional 1-based row_id, so
+    the same product exports with the same `id` value across every
+    re-export. Post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`
+    the value lives in the JSONB `attributes` column (under the
+    `vehicle_code` key) and uniqueness is enforced by the functional
+    partial index `ix_products_attrs_vehicle_code_unique` over
+    `(attributes->>'vehicle_code')`. The column name on the wire
+    stays `id` — only the meaning changed (stable, not per-export
+    sequential). Non-contiguous codes are an accepted trade-off because
+    BR1.7 exclusions still drop the row entirely (no renumerating), so
+    the export's `id` values can have gaps when a category fails to
+    translate.
+
+    `vehicle_code=None` is defensively tolerated: the caller's expected
+    path is to skip such rows upstream (the use case does), so this
+    branch only fires if a future caller forgets. Renders an empty
+    string in the `id` column rather than a literal "0" (which would
+    collide with a legitimately allocated code of 0 — not possible
+    today because the allocator starts at 1, but defensive).
 
     Most column values not covered by a dedicated product field still come
     directly from `attributes` under the same column name (BR1.3 "mapeo
     directo de atributos"). Nine columns are the FR7 exception: `category`,
     `type`, `location`, `VIN`, `body_style`, `clean_title`, `state`,
-    `groups` and `path` are NOT read from `attributes` under a matching key
-    (that key doesn't exist on the product model) — the caller resolves
-    each one and passes it in explicitly:
+    `groups`, and `path` are NOT read from `attributes` under a matching
+    key (that key doesn't exist on the product model) — the caller
+    resolves each one and passes it in explicitly. Same pattern for
+    `label`: the caller computes the formatted load date
+    (`Product.created_at` → `DD/MM/YYYY`) and passes it as the `label=`
+    parameter, instead of reading from `attributes["label"]` (which
+    would silently win over the formatted date).
 
     - `vin`/`body_style`/`state` — the caller reads them from `attributes`
       under their REAL key (`vin`, `body_type`, `vehicle_condition` — BR1.5,
@@ -242,7 +268,7 @@ def build_client_format_row(
     location = f"{location_city or ''} {location_state or ''}".strip()
 
     values: dict[str, object | None] = {
-        "id": row_id,
+        "id": vehicle_code,
         "cod_dealer": org_code,
         "price": f"{price_cents / 100:.2f}",
         "description": description,
@@ -257,6 +283,11 @@ def build_client_format_row(
         "type": vehicle_type,
         "location": location,
         "path": path,
+        # Caller-built formatted load date (DD/MM/YYYY); never read from
+        # `attributes["label"]` — that path was removed from
+        # `_CLIENT_FORMAT_ATTRIBUTE_COLUMNS` to keep a single source of
+        # truth.
+        "label": label,
     }
     for column in _CLIENT_FORMAT_ATTRIBUTE_COLUMNS:
         values[column] = attributes.get(column)

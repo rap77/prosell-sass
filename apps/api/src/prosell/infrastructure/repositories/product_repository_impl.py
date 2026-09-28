@@ -1,9 +1,10 @@
 """SQLAlchemy implementation of Product repository."""
 
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select
+from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
@@ -64,6 +65,12 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             archived_at=product.archived_at,
             archived_from_status=product.archived_from_status,
             version=product.version,
+            # Note: `vehicle_code` no longer lives on the product model —
+            # it persists inside `attributes["vehicle_code"]` (JSONB)
+            # since migration 20260927_0001. The column-to-entity map
+            # below is identical to the JSONB-write path; we just rely
+            # on the model's `attributes` JSONB field to round-trip the
+            # value.
             created_at=product.created_at,
             updated_at=product.updated_at,
         )
@@ -122,6 +129,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> Select:
         """Apply the WHERE clauses shared by `get_all()` and `count()`.
 
@@ -147,6 +156,28 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if is_featured is not None:
             stmt = stmt.where(ProductModel.is_featured == is_featured)
+
+        if published_to_marketplace is not None:
+            stmt = stmt.where(ProductModel.published_to_marketplace == published_to_marketplace)
+
+        # `image_urls` is a JSONB array, nullable. The catalog wants
+        # "has at least one image" / "has no images" — implemented via
+        # PostgreSQL's `jsonb_array_length` (NULL → NULL, which is
+        # falsy in both branches, so `True` requires
+        # `IS NOT NULL AND length > 0` while `False` collapses the two
+        # empty cases into `OR`).
+        if has_images is True:
+            stmt = stmt.where(
+                ProductModel.image_urls.is_not(None)
+                & (func.jsonb_array_length(ProductModel.image_urls) > 0)
+            )
+        elif has_images is False:
+            stmt = stmt.where(
+                or_(
+                    ProductModel.image_urls.is_(None),
+                    func.jsonb_array_length(ProductModel.image_urls) == 0,
+                )
+            )
 
         if search_query:
             search_term = f"%{search_query}%"
@@ -193,6 +224,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -211,6 +244,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
             attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
         )
 
         # Ordering
@@ -361,6 +396,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
         model.archived_from_status = product.archived_from_status
+        # Note: `vehicle_code` round-trips through the JSONB
+        # `model.attributes` column; no dedicated column to update.
         model.version += 1
 
         if old_status != model.status:
@@ -409,6 +446,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
     ) -> int:
         """Count products. tenant_id=None lifts tenant isolation.
 
@@ -427,9 +466,11 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
             attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
         )
         result = await self.session.execute(stmt)
-        return result.scalar() or 0
+        return result.scalar_one() or 0
 
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""
@@ -668,6 +709,113 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""
         return Product.model_validate(model, from_attributes=True)
+
+    async def get_max_vehicle_code(self) -> int | None:
+        """Return the largest `vehicle_code` currently persisted, or `None`.
+
+        Tenant-agnostic: `vehicle_code` is a globally-unique legacy
+        product id scoped to vehicle categories; it now lives at
+        `attributes->>'vehicle_code'` (JSONB text). The regex filter
+        `~ '^[0-9]+$'` keeps non-numeric legacy values from breaking the
+        cast; the partial index `ix_products_attrs_vehicle_code_unique`
+        backs the lookup so the query stays O(1) regardless of table size.
+        """
+        # `attributes->>'vehicle_code' ~ '^[0-9]+$'` restricts to numeric
+        # strings (the index is text-typed to coexist with legacy data);
+        # the cast `::bigint` then runs only over rows we know are
+        # numeric. MAX is a single scalar aggregate.
+        result = await self.session.execute(
+            text(
+                """
+                SELECT MAX((attributes->>'vehicle_code')::bigint)
+                FROM products
+                WHERE attributes->>'vehicle_code' ~ '^[0-9]+$'
+                """
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def allocate_next_vehicle_code(self) -> int:
+        """Allocate a globally unique vehicle code from PostgreSQL sequence.
+
+        ``nextval`` is atomic across concurrent transactions and does not
+        depend on a stale ``MAX(attributes->>'vehicle_code')`` read.
+        PostgreSQL sequences may have gaps after rollbacks, which is
+        correct: vehicle codes require uniqueness and durability, not
+        contiguity. The sequence survives the JSONB move intact; only the
+        column the value lands in changed.
+        """
+        result = await self.session.execute(text("SELECT nextval('products_vehicle_code_seq')"))
+        vehicle_code = result.scalar_one()
+        if not isinstance(vehicle_code, int):
+            raise RuntimeError("products_vehicle_code_seq returned a non-integer value")
+        return vehicle_code
+
+    async def vehicle_code_exists(
+        self, code: int, *, exclude_product_id: UUID | None = None
+    ) -> bool:
+        """Return whether any product uses `code` as its `vehicle_code`.
+
+        Looks up against `attributes->>'vehicle_code'` (JSONB text) cast
+        to bigint, with the same regex guard as `get_max_vehicle_code`.
+        Hits the partial functional index — single indexed lookup
+        regardless of table size. `exclude_product_id` lets
+        `UpdateProductUseCase` reuse this check without flagging the
+        row being updated as a self-collision.
+        """
+        # `~ '^[0-9]+$'` guards against non-numeric strings blowing up
+        # the bigint cast; numeric rows pass through the cast and compare
+        # against the requested code.
+        stmt = text(
+            """
+            SELECT 1
+            FROM products
+            WHERE attributes->>'vehicle_code' ~ '^[0-9]+$'
+              AND (attributes->>'vehicle_code')::bigint = :code
+              AND (:exclude_id::uuid IS NULL OR id != :exclude_id::uuid)
+            LIMIT 1
+            """
+        )
+        result = await self.session.execute(
+            stmt,
+            {
+                "code": code,
+                "exclude_id": str(exclude_product_id) if exclude_product_id else None,
+            },
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        """Return the subset of `codes` currently in use as `vehicle_code`.
+
+        Single query: `attributes->>'vehicle_code' = ANY(:codes_text)`,
+        filtered through the regex guard so only numeric candidates are
+        cast and compared. Hits the partial functional index
+        `ix_products_attrs_vehicle_code_unique` so the DB scan stays
+        bounded by the size of the result. Empty input short-circuits to
+        an empty set without touching the DB.
+        """
+        codes_list = list(codes)
+        if not codes_list:
+            return set()
+        # Cast incoming ints to text to match the JSONB-side representation;
+        # the regex on the right side of the comparison
+        # (`'^[0-9]+$'` inverted via `~`) catches anything that wouldn't
+        # cast cleanly. Single round-trip against the partial functional
+        # index.
+        stmt = text(
+            """
+            SELECT DISTINCT (attributes->>'vehicle_code')::bigint AS code
+            FROM products
+            WHERE attributes->>'vehicle_code' = ANY(:codes_text)
+              AND attributes->>'vehicle_code' ~ '^[0-9]+$'
+            """
+        )
+        result = await self.session.execute(
+            stmt,
+            {"codes_text": [str(c) for c in codes_list]},
+        )
+        return {row for row in result.scalars().all() if row is not None}
 
     def _audit_log_to_entity(self, model: ProductAuditLogModel) -> ProductAuditLog:
         """Convert ORM model to domain entity."""

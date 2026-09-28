@@ -171,7 +171,7 @@ def test_client_format_columns_match_data39_header() -> None:
 def test_build_client_format_row_option_always_empty() -> None:
     # FR1.4/BR1.4 — option is always exported empty
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description="Some description",
@@ -183,7 +183,7 @@ def test_build_client_format_row_option_always_empty() -> None:
 def test_build_client_format_row_description_populated() -> None:
     # FR1.4/BR1.4 — description carries the product's saved value
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description="make your appointment",
@@ -195,7 +195,7 @@ def test_build_client_format_row_description_populated() -> None:
 def test_build_client_format_row_exterior_color_from_attributes() -> None:
     # BR2.3 — the exterior_color column reads the real attribute key
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -206,7 +206,7 @@ def test_build_client_format_row_exterior_color_from_attributes() -> None:
 
 def test_build_client_format_row_publicado_always_one() -> None:
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -217,13 +217,43 @@ def test_build_client_format_row_publicado_always_one() -> None:
 
 def test_build_client_format_row_missing_attribute_renders_empty() -> None:
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
         attributes={},
     )
     assert row[CLIENT_FORMAT_COLUMNS.index("VIN")] == ""
+
+
+def test_build_client_format_row_label_uses_explicit_parameter() -> None:
+    # The `label` column is now an explicit parameter (not read from
+    # `attributes["label"]` — that path was removed to keep the
+    # formatted load date as the single source of truth).
+    # Any non-empty string passed through is preserved; the use case is
+    # responsible for the DD/MM/YYYY formatting.
+    row = build_client_format_row(
+        vehicle_code=527,
+        org_code="MF",
+        price_cents=1780000,
+        description=None,
+        attributes={"label": "stale-attribute-value"},  # must NOT win
+        label="26/09/2026",
+    )
+    assert row[CLIENT_FORMAT_COLUMNS.index("label")] == "26/09/2026"
+
+
+def test_build_client_format_row_label_none_renders_empty() -> None:
+    # No label provided and no fallback — empty cell, never
+    # `attributes["label"]`'s value.
+    row = build_client_format_row(
+        vehicle_code=527,
+        org_code="MF",
+        price_cents=1780000,
+        description=None,
+        attributes={"label": "would-leak-if-attributes-still-won"},
+    )
+    assert row[CLIENT_FORMAT_COLUMNS.index("label")] == ""
 
 
 # ── u1-catalog-export-api: BR2.2 Organization.code edge cases ───────────────
@@ -265,7 +295,7 @@ def test_build_vehicle_zip_folder_name_uses_placeholder_for_missing_org_code() -
 def test_build_client_format_row_clean_title_true() -> None:
     # BR1.1 — True -> "1"
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -278,7 +308,7 @@ def test_build_client_format_row_clean_title_true() -> None:
 def test_build_client_format_row_clean_title_false() -> None:
     # BR1.1 — False -> "0"
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -295,7 +325,7 @@ def test_build_client_format_row_missing_clean_title_defaults_to_zero() -> None:
     # an empty cell as a third undefined state, so the export must
     # always carry an explicit "0" or "1".
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -308,7 +338,7 @@ def test_build_client_format_row_missing_clean_title_defaults_to_zero() -> None:
 def test_build_client_format_row_facebook_groups_joined_with_comma() -> None:
     # BR1.2 — list[str] joined with "," when non-empty, fallback ignored
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -322,7 +352,7 @@ def test_build_client_format_row_facebook_groups_joined_with_comma() -> None:
 def test_build_client_format_row_empty_facebook_groups_uses_fallback() -> None:
     # BR2.7 — empty/absent facebook_groups falls back, never an empty string
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -337,7 +367,7 @@ def test_build_client_format_row_vin_body_style_state_from_explicit_params() -> 
     # BR1.5/BR1.6/BR1.8 — read from the real attribute keys, passed in by
     # the caller (not from a matching-but-nonexistent `attributes` key).
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -354,7 +384,7 @@ def test_build_client_format_row_vin_body_style_state_from_explicit_params() -> 
 def test_build_client_format_row_location_combines_city_and_state() -> None:
     # BR1.4 — location_city/location_state are dedicated Product fields
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -367,7 +397,7 @@ def test_build_client_format_row_location_combines_city_and_state() -> None:
 
 def test_build_client_format_row_location_missing_parts_renders_no_stray_space() -> None:
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -381,7 +411,7 @@ def test_build_client_format_row_location_missing_parts_renders_no_stray_space()
 def test_build_client_format_row_category_and_type_from_explicit_params() -> None:
     # BR1.3 — resolved by the caller via category_translation, passed in
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -396,7 +426,7 @@ def test_build_client_format_row_category_and_type_from_explicit_params() -> Non
 def test_build_client_format_row_path_uses_explicit_param() -> None:
     # FR8.4/BR2.6 — the caller passes the already-built path
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,
@@ -432,7 +462,7 @@ def test_resolve_client_category_type_unknown_vertical_returns_none() -> None:
 
 def test_build_client_format_row_sanitizes_leading_equals() -> None:
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description="=SUM(A1:A10)",
@@ -448,7 +478,7 @@ def test_build_client_format_row_sanitizes_leading_plus_minus_at() -> None:
         ("@SUM(1+1)", "'@SUM(1+1)"),
     ):
         row = build_client_format_row(
-            row_id=527,
+            vehicle_code=527,
             org_code="MF",
             price_cents=1780000,
             description=dangerous,
@@ -459,7 +489,7 @@ def test_build_client_format_row_sanitizes_leading_plus_minus_at() -> None:
 
 def test_build_client_format_row_normal_value_is_unchanged() -> None:
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description="A perfectly normal description",
@@ -473,7 +503,7 @@ def test_build_client_format_row_sanitizes_attribute_sourced_columns_too() -> No
     # coming from `attributes` (e.g. an unreconciled VIN-decode fallback
     # value, see team-practices.md) must be sanitized the same way.
     row = build_client_format_row(
-        row_id=527,
+        vehicle_code=527,
         org_code="MF",
         price_cents=1780000,
         description=None,

@@ -20,6 +20,13 @@ export interface Product {
   /** Organization tag color (hex). Derived from products.organization_id JOIN organizations. */
   org_color?: string | null;
   category_id: string;
+  // Note: the durable, globally-unique legacy product id (vehicle_code)
+  // no longer lives at the top level of the product payload — it
+  // moved into the `attributes` JSONB under the `vehicle_code` key
+  // (backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb).
+  // Vehicle categories' attribute_schema defines the field's type and
+  // constraints; readers should pull it from `attributes.vehicle_code`
+  // when needed.
 
   // Basic info
   title: string;
@@ -55,6 +62,9 @@ export interface Product {
   // falls back to `image_urls[0]` when this is null/undefined (see
   // `getCoverImageKey` in `lib/api/productImages.ts`).
   cover_image_key?: string | null;
+  // Storage key of the private catalog-card thumbnail. Legacy products
+  // without this derivative fall back to their gallery image.
+  thumbnail_image_key?: string | null;
 
   // Location
   location_city?: string | null;
@@ -106,6 +116,13 @@ export interface CreateProductRequest {
   // never a client field — it is injected from the JWT.
   organization_id?: string;
   category_id: string;
+  /**
+   * Note: the legacy `vehicle_code` field is no longer a top-level
+   * property of the create request. It moved into the `attributes`
+   * JSONB under the `vehicle_code` key for vehicle categories; the
+   * category's `attribute_schema` defines its type/constraints. The
+   * backend's allocator populates a value when the caller omits it.
+   */
   slug?: string;
   description?: string;
   currency?: string;
@@ -152,6 +169,12 @@ export interface UpdateProductRequest {
   location_city?: string;
   location_state?: string;
   location_zip?: string;
+  // Note: the legacy `vehicle_code` field is no longer a top-level
+  // property of the update request. Updates flow through `attributes`
+  // (a partial map merges into the existing one — see
+  // `Product.update_attributes`); collision check on the new
+  // `attributes["vehicle_code"]` value runs against the JSONB
+  // functional unique index.
 }
 
 /**

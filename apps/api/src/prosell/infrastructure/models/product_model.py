@@ -132,6 +132,17 @@ class ProductModel(Base):
     # fetched at a stale version instead of silently overwriting it.
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
+    # Note on `vehicle_code`: it used to be a first-class BIGINT column
+    # on this table (migration 20260926_0001 added it). It now lives
+    # inside the JSONB `attributes` column at the key ``vehicle_code``
+    # because the field is scoped to vehicle categories only and there's
+    # no benefit to having a NULL-occupied column on every non-vehicle
+    # row. The DB-level uniqueness invariant survives via a functional
+    # partial unique index on `attributes->>'vehicle_code'`, declared in
+    # migration 20260927_0001. The atomic allocation sequence
+    # `products_vehicle_code_seq` also persists so callers can still
+    # pull race-free codes via `nextval`.
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

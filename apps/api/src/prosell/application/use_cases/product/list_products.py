@@ -38,6 +38,8 @@ class ListProductsUseCase:
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> ProductListResponse:
@@ -55,6 +57,9 @@ class ListProductsUseCase:
             min_price_cents: Minimum price
             max_price_cents: Maximum price
             attribute_filters: Dynamic filters over JSONB `attributes` column
+            published_to_marketplace: Filter by marketplace visibility flag
+            has_images: True keeps products with ≥1 image, False keeps
+                products with no images, None skips the filter
             skip: Pagination offset
             limit: Max records
 
@@ -77,6 +82,8 @@ class ListProductsUseCase:
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
             attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
             skip=skip,
             limit=limit,
         )
@@ -94,6 +101,8 @@ class ListProductsUseCase:
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
             attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
         )
 
         return ProductListResponse(

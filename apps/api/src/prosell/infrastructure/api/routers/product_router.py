@@ -496,10 +496,23 @@ async def create_product(
     # ponytail: admins upload to target org's tenant, not their own
     validate_image_urls_for_tenant(request.image_urls, target_org_id)
 
-    # Execute use case
+    # Execute use case. `vehicle_code` lives inside `attributes` now
+    # (post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`);
+    # the use case's allocator still runs (the create path auto-fills
+    # `attributes["vehicle_code"]` if the caller omitted it) and the
+    # JSONB functional unique index is the final collision gate. The
+    # router wires a `VehicleCodeAllocator` over the same repo so the
+    # allocator's `nextval` / `vehicle_code_exists` calls share the
+    # use case's session and transaction.
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
-    use_case = CreateProductUseCase(product_repo, category_repo)
+    from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
+
+    use_case = CreateProductUseCase(
+        product_repo,
+        category_repo,
+        VehicleCodeAllocator(product_repo),
+    )
 
     try:
         return await use_case.execute(request)
@@ -870,6 +883,23 @@ async def export_catalog_client_format(
     )
 
 
+class NextVehicleCodeResponse(BaseModel):
+    """Response payload for the next vehicle-code endpoint.
+
+    Kept as a model definition so the type stays available for any
+    consumer that imported it during the brief window when
+    `GET /next-vehicle-code` was public. The route itself was removed
+    in the same commit that moved `vehicle_code` from a top-level
+    column into the JSONB `attributes` column — there is no
+    per-vehicle-code request payload to pre-fill, so the form now
+    reads/writes the field through the dynamic schema like every
+    other category attribute. See migration
+    `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`.
+    """
+
+    vehicle_code: int
+
+
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     request: Request,
@@ -877,9 +907,11 @@ async def list_products(
     db: DbSession,
     organization_id: UUID | None = None,
     category_id: UUID | None = None,
-    product_status: str | None = Query(default=None, alias="status"),
+    product_status: ProductStatus | None = Query(default=None, alias="status"),
     condition: str | None = None,
     is_featured: bool | None = None,
+    published_to_marketplace: bool | None = None,
+    has_images: bool | None = None,
     search: str | None = None,
     min_price: int | None = None,
     max_price: int | None = None,
@@ -894,6 +926,11 @@ async def list_products(
     - **status**: Filter by status (draft, pending, published, etc.)
     - **condition**: Filter by condition (new, used, etc.)
     - **is_featured**: Filter by featured status
+    - **published_to_marketplace**: Filter by marketplace visibility flag
+      (true / false). Omit the param to skip the filter.
+    - **has_images**: Filter by whether the product has any images in its
+      `image_urls` array (true = at least one image, false = none). Omit
+      to skip the filter.
     - **search**: Text search in title/description
     - **min_price**: Minimum price in cents
     - **max_price**: Maximum price in cents
@@ -967,9 +1004,11 @@ async def list_products(
         tenant_id=effective_tenant,
         organization_id=organization_id,
         category_id=category_id,
-        status=product_status,
+        status=product_status.value if product_status else None,
         condition=condition,
         is_featured=is_featured,
+        published_to_marketplace=published_to_marketplace,
+        has_images=has_images,
         search_query=search,
         min_price_cents=min_price,
         max_price_cents=max_price,
@@ -1372,6 +1411,24 @@ async def batch_product_cover_urls(
             # to sign. Drop silently.
             continue
 
+        # Normalize the candidate key once. The raw values above may
+        # be bare keys (`orgs/<uuid>/...`) OR full URLs
+        # (`scheme://host/<bucket>/<key>`) — `extract_storage_key_from_value`
+        # normalizes either to the bare key. Without this, both the
+        # tenant allowlist AND the CDN signer would see the raw URL:
+        # the allowlist would fail (a URL doesn't start with
+        # `orgs/...`) and the signer would concatenate the base URL
+        # onto the raw URL, producing a broken
+        # `http://cdn/<full-url>?X-Amz-...` artifact. Normalize once,
+        # pass the bare key to every downstream consumer.
+        normalized_key = (
+            extract_storage_key_from_value(candidate_key)
+            if isinstance(candidate_key, str)
+            else None
+        )
+        if not normalized_key:
+            continue
+
         # FR1.3 / NFR2.2 — defense-in-depth: the signed key MUST start
         # with a tenant prefix the caller is allowed to see. Same
         # allowlist as the single-product endpoint (admin relaxation
@@ -1381,7 +1438,7 @@ async def batch_product_cover_urls(
             f"vehicles/{product.tenant_id}/",
         )
         if not await _key_tenant_allowed(
-            candidate_key, product_tenant_prefixes, is_org_admin, org_repo
+            normalized_key, product_tenant_prefixes, is_org_admin, org_repo
         ):
             # Cross-tenant key — defense in depth. Drop silently
             # rather than echoing which IDs leaked across tenants.
@@ -1392,12 +1449,12 @@ async def batch_product_cover_urls(
         # on first hit. The CDN signer inside DOSpacesService
         # already enforces fail-fast when do_cdn_endpoint is blank
         # (NFR5.1).
-        signed_url = await spaces.generate_cdn_download_url(candidate_key)
+        signed_url = await spaces.generate_cdn_download_url(normalized_key)
 
         covers.append(
             BatchProductCoverUrlItem(
                 product_id=product_id,
-                key=candidate_key,
+                key=normalized_key,
                 url=signed_url,
                 # OQ2 — TTL is the CDN signer's default (15min),
                 # surfaced here so the frontend can decide when to
@@ -2451,7 +2508,10 @@ async def bulk_upload_preview(
 
     # Execute preview use case
     can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
-    use_case = BulkUploadPreviewUseCase(SqlAlchemyOrganizationRepository(db))
+    use_case = BulkUploadPreviewUseCase(
+        SqlAlchemyOrganizationRepository(db),
+        SqlAlchemyProductRepository(db),
+    )
     try:
         result = await use_case.execute(
             csv_content,
