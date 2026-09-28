@@ -355,9 +355,16 @@ class BulkUploadVehiclesUseCase:
         # Build CreateProductRequest. `vehicle_code` is sourced from the
         # CSV's `id` column when present — this is the value the export
         # writes back into the same `id` column, so a re-export
-        # round-trips the same identifier. The use case validates
-        # uniqueness against `Product.vehicle_code_exists` and raises
-        # `DuplicateVehicleCodeError` on collision.
+        # round-trips the same identifier. The value lives inside
+        # `attributes["vehicle_code"]` (post-`20260927_0001`); we
+        # populate it as text to match the JSONB storage shape, and the
+        # use case's allocator + reserve() handle the allocation vs.
+        # explicit-code branches. We duplicate the collision check here
+        # at the write path so runtime imports that bypass preview fail
+        # fast with `DuplicateVehicleCodeError`.
+        bulk_attributes = dict(attributes)
+        if mapped_row.csv_id is not None:
+            bulk_attributes["vehicle_code"] = str(mapped_row.csv_id)
         request = CreateProductRequest(
             title=title,
             price_cents=mapped_row.price_cents,
@@ -366,10 +373,9 @@ class BulkUploadVehiclesUseCase:
             category_id=category_id,
             description=mapped_row.description,
             condition=ProductCondition.USED,
-            attributes=cast(dict[str, object], attributes),
+            attributes=cast(dict[str, object], bulk_attributes),
             location_city=mapped_row.location_city,
             location_state=mapped_row.location_state,
-            vehicle_code=mapped_row.csv_id,
         )
 
         # Check if product with this VIN already exists (upsert)
@@ -434,16 +440,17 @@ class BulkUploadVehiclesUseCase:
             product_id = existing.id
             status = "updated"
 
-            # Update fields. `vehicle_code` is overwritten with the CSV's
-            # `id` column when present so a re-imported catalog
-            # re-aligns the legacy id (e.g. if the CSV was edited
-            # outside ProSell between imports). When the CSV has no
-            # `id` column for this row we leave the existing value
-            # untouched (a no-op PATCH, never a destructive clear).
+            # Update fields. `vehicle_code` lives inside
+            # `attributes["vehicle_code"]` since the JSONB move; we
+            # merge it into the existing attributes so other category
+            # fields are preserved. When the CSV has no `id` column for
+            # this row we leave the existing value untouched (a no-op
+            # PATCH, never a destructive clear).
             existing.title = request.title
             existing.price_cents = request.price_cents
             existing.description = request.description
-            existing.attributes = request.attributes
+            if request.attributes is not None:
+                existing.attributes = {**(existing.attributes or {}), **request.attributes}
             existing.location_city = request.location_city
             existing.location_state = request.location_state
             # A CSV-only re-import has no replacement images. Preserve the
@@ -451,8 +458,6 @@ class BulkUploadVehiclesUseCase:
             # an explicit request to clear it.
             if uploaded_urls:
                 existing.image_urls = uploaded_urls
-            if request.vehicle_code is not None:
-                existing.vehicle_code = request.vehicle_code
 
             await self.product_repository.update(existing)
         else:
@@ -469,7 +474,6 @@ class BulkUploadVehiclesUseCase:
                 location_city=request.location_city,
                 location_state=request.location_state,
                 image_urls=uploaded_urls,
-                vehicle_code=request.vehicle_code,
             )
 
             created = await self.product_repository.create(product)

@@ -225,16 +225,31 @@ class ExportCatalogClientFormatUseCase:
         included_products: list[Product] = []
 
         for product in products:
-            # Defense in depth — every product should have a `vehicle_code`
-            # after migration `20260926_0001_add_vehicle_code_to_product.py`
-            # (which backfills every pre-existing row) and the
+            # Defense in depth — every vehicle-category product should have a
+            # `vehicle_code` after migration `20260927_0001_*` and the
             # `VehicleCodeAllocator` on the create path. Still, treat a
-            # NULL `vehicle_code` as a BR1.7-style exclusion rather than
-            # writing a literal "0" into the CSV's `id` column — that
-            # would corrupt downstream tooling that expects the legacy
-            # product id (a positive integer, often 1..N).
-            if product.vehicle_code is None:
+            # NULL/empty `attributes["vehicle_code"]` as a BR1.7-style
+            # exclusion rather than writing a literal "0" into the CSV's
+            # `id` column — that would corrupt downstream tooling that
+            # expects the legacy product id (a positive integer, often
+            # 1..N). The attribute can be `None`, an empty string, or a
+            # non-numeric value (defensive against legacy data).
+            vehicle_code_raw = (product.attributes or {}).get("vehicle_code")
+            if vehicle_code_raw is None or str(vehicle_code_raw).strip() == "":
                 continue
+            # Defensive: the JSONB functional index restricts itself
+            # to numeric values (the regex guard in
+            # product_repository_impl). A non-numeric legacy entry
+            # (whitespace, accidental text, etc.) must NOT crash the
+            # export — we drop the row as a BR1.7-style exclusion
+            # instead, matching the comment above.
+            try:
+                vehicle_code_int = int(str(vehicle_code_raw).strip())
+            except (TypeError, ValueError):
+                continue
+            if vehicle_code_int <= 0:
+                continue
+            vehicle_code_raw = vehicle_code_int
             vertical_slug = await self._resolve_vertical_slug(
                 product.category_id, vertical_slug_by_leaf_category_id
             )
@@ -284,22 +299,23 @@ class ExportCatalogClientFormatUseCase:
             rows.append(
                 build_client_format_row(
                     # Durable, globally-unique legacy product id
-                    # (`Product.vehicle_code`). Replaces the previous
-                    # 1-based positional row_id so the same product
-                    # exports with the SAME `id` value across every
-                    # re-export — the value lives in the partial unique
-                    # index `ix_products_vehicle_code_unique` and
+                    # (`attributes["vehicle_code"]`). Replaces the
+                    # previous 1-based positional row_id so the same
+                    # product exports with the SAME `id` value across
+                    # every re-export — the value lives in the partial
+                    # functional unique index
+                    # `ix_products_attrs_vehicle_code_unique` and
                     # surfaces as the `id` column of the client-format
                     # CSV (byte-for-byte compatibility with
                     # `docs/data39.csv`, whose own `id` column already
                     # carries this number). BR1.7 exclusions above still
-                    # drop the row entirely — non-contiguous codes in the
-                    # output CSV are an accepted trade-off (the column
-                    # name stays `id`; the meaning is now stable across
-                    # exports instead of sequential within one). The
-                    # `None` guard one block above guarantees a value
-                    # here, so `row_id` is always a positive int.
-                    vehicle_code=product.vehicle_code,
+                    # drop the row entirely — non-contiguous codes in
+                    # the output CSV are an accepted trade-off (the
+                    # column name stays `id`; the meaning is now stable
+                    # across exports instead of sequential within
+                    # one). The numeric-validation guard a few blocks
+                    # above guarantees an int here.
+                    vehicle_code=vehicle_code_raw,
                     org_code=org_code,
                     price_cents=product.price_cents,
                     description=product.description,

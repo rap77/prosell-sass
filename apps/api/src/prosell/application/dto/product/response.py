@@ -36,12 +36,11 @@ class ProductResponse(BaseModel):
     org_code: str | None = None
     org_color: str | None = None
     category_id: UUID
-    # Durable, globally-unique legacy product id (`vehicle_code`).
-    # Surfaces in the `id` column of the client-format catalog CSV (see
-    # `Product.vehicle_code`). Nullable for backward compat with
-    # pre-existing rows. BIGINT on the wire, 12-digit cap per the
-    # product decision.
-    vehicle_code: int | None = None
+    # Note: the legacy `vehicle_code` field no longer lives at the top
+    # level of this DTO — it moved into `attributes["vehicle_code"]`
+    # after migration `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`.
+    # Consumers that want the value should read it from `attributes`
+    # directly; vehicle categories are the only ones that carry it.
     title: str
     slug: str | None = None
     description: str | None = None
@@ -110,7 +109,6 @@ class ProductResponse(BaseModel):
             org_code=org_code,
             org_color=org_color,
             category_id=product.category_id,
-            vehicle_code=product.vehicle_code,
             title=product.title,
             slug=product.slug,
             description=product.description,

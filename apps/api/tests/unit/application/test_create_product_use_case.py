@@ -84,12 +84,17 @@ async def test_create_product_category_not_found():
 
 
 def _category() -> Category:
+    # `vehicle_code` lives inside the vehicle category's
+    # `attribute_schema` (post-`20260927_0001_*`); the use case's
+    # allocator / collision check only fires when the category
+    # declares the key. This fixture is a vehicle-category stand-in
+    # so the vehicle_code tests exercise the real path.
     return Category(
         id=uuid4(),
         name="Test Category",
         slug="test-category",
         tenant_id=uuid4(),
-        attribute_schema={},
+        attribute_schema={"vehicle_code": {"type": "number", "required": True}},
         is_active=True,
     )
 
@@ -114,9 +119,12 @@ def _product_repo_returning(category: Category) -> tuple[AsyncMock, AsyncMock]:
 
 @pytest.mark.asyncio
 async def test_create_product_allocates_vehicle_code_when_omitted() -> None:
-    """When the request omits `vehicle_code`, the use case asks the
-    `VehicleCodeAllocator` for the next MAX + 1 (or 1 if no row has one)
-    and persists that on the new entity."""
+    """When the request omits `attributes["vehicle_code"]`, the use case
+    asks the `VehicleCodeAllocator` for the next MAX + 1 (or 1 if no row
+    has one) and stuffs the result into `attributes["vehicle_code"]` as
+    text. The use case still works against a regular repo + allocator
+    pair — the new path only changes WHERE the value lands.
+    """
     category = _category()
     tenant_id = uuid4()
     product_repo, category_repo = _product_repo_returning(category)
@@ -136,14 +144,20 @@ async def test_create_product_allocates_vehicle_code_when_omitted() -> None:
 
     allocator.allocate_next.assert_awaited_once()
     created_entity = product_repo.create.await_args.args[0]
-    assert created_entity.vehicle_code == 42
+    # Stored as JSONB native int (post-`20260927_0001`) so the
+    # category's `attribute_schema` validator accepts the value as
+    # `isinstance(value, (int, float))`. The partial functional
+    # unique index on `attributes->>'vehicle_code'` extracts the int
+    # as text for the uniqueness comparison.
+    assert created_entity.attributes["vehicle_code"] == 42
 
 
 @pytest.mark.asyncio
 async def test_create_product_allocates_when_first_ever_product() -> None:
     """First product on a fresh DB: `VehicleCodeAllocator.allocate_next()`
-    returns 1 (the seed case `COALESCE(max, 0) + 1`), and the new product
-    carries `vehicle_code=1`."""
+    returns 1 (the seed case `COALESCE(max, 0) + 1`), and the new
+    product's `attributes["vehicle_code"]` is the int `1`.
+    """
     category = _category()
     tenant_id = uuid4()
     product_repo, category_repo = _product_repo_returning(category)
@@ -162,15 +176,16 @@ async def test_create_product_allocates_when_first_ever_product() -> None:
     await use_case.execute(request)
 
     created_entity = product_repo.create.await_args.args[0]
-    assert created_entity.vehicle_code == 1
+    assert created_entity.attributes["vehicle_code"] == 1
 
 
 @pytest.mark.asyncio
 async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
-    """Caller supplied an explicit `vehicle_code` already used by another
-    product — the use case must raise `DuplicateVehicleCodeError` BEFORE
-    the INSERT runs, surfacing the same `code` that the allocator's
-    `reserve()` rejected."""
+    """Caller supplied an explicit `attributes["vehicle_code"]` already
+    used by another product — the use case must raise
+    `DuplicateVehicleCodeError` BEFORE the INSERT runs, surfacing the
+    same `code` that the allocator's `reserve()` rejected.
+    """
     category = _category()
     tenant_id = uuid4()
     product_repo, category_repo = _product_repo_returning(category)
@@ -189,7 +204,7 @@ async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
         tenant_id=tenant_id,
         organization_id=tenant_id,
         category_id=category.id,
-        vehicle_code=17,  # another product already has it
+        attributes={"vehicle_code": 17},  # another product already has it
     )
 
     with pytest.raises(DuplicateVehicleCodeError) as exc_info:
@@ -205,9 +220,12 @@ async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
 
 @pytest.mark.asyncio
 async def test_create_product_persists_explicit_vehicle_code() -> None:
-    """Caller supplied an explicit, valid `vehicle_code` — the use case
-    validates it via `reserve()` (which passes), then persists the
-    entity with that exact value (the allocator is not consulted)."""
+    """Caller supplied an explicit, valid
+    `attributes["vehicle_code"]` — the use case validates it via
+    `reserve()` (which passes), then persists the value as a JSONB
+    native int (matching the category's `attribute_schema` validator,
+    which accepts `isinstance(value, (int, float))`).
+    """
     category = _category()
     tenant_id = uuid4()
     product_repo, category_repo = _product_repo_returning(category)
@@ -222,7 +240,7 @@ async def test_create_product_persists_explicit_vehicle_code() -> None:
         tenant_id=tenant_id,
         organization_id=tenant_id,
         category_id=category.id,
-        vehicle_code=1234,
+        attributes={"vehicle_code": 1234},
     )
 
     await use_case.execute(request)
@@ -230,24 +248,37 @@ async def test_create_product_persists_explicit_vehicle_code() -> None:
     allocator.reserve.assert_awaited_once_with(1234)
     allocator.allocate_next.assert_not_awaited()
     created_entity = product_repo.create.await_args.args[0]
-    assert created_entity.vehicle_code == 1234
+    # Stored as JSONB native int (post-`20260927_0001`) so the
+    # `attribute_schema` validator passes.
+    assert created_entity.attributes["vehicle_code"] == 1234
 
 
 @pytest.mark.asyncio
-async def test_create_product_without_allocator_persists_no_vehicle_code() -> None:
-    """Backwards-compatible behavior for tests/builds that predate the
-    feature: when the use case is constructed without a
-    `VehicleCodeAllocator` AND the caller didn't supply a `vehicle_code`,
-    the entity persists with `vehicle_code=None` (the nullable column
-    accepts it cleanly — same as the pre-feature shape)."""
-    category = _category()
+async def test_create_product_non_vehicle_category_skips_vehicle_code() -> None:
+    """Non-vehicle categories' `attribute_schema` doesn't declare a
+    `vehicle_code` key, so the use case skips the allocation /
+    reservation block entirely. The caller can still pass
+    `attributes["vehicle_code"]` if they want, but the use case won't
+    auto-populate it and won't validate it against the allocator.
+
+    Mirrors the pre-feature behavior for non-vehicle categories: no
+    allocator call, no reservation, no error."""
+    # Non-vehicle category: `vehicle_code` is NOT in `attribute_schema`.
+    category = Category(
+        id=uuid4(),
+        name="Real Estate",
+        slug="real-estate",
+        tenant_id=uuid4(),
+        attribute_schema={"bedrooms": {"type": "number"}},
+        is_active=True,
+    )
     tenant_id = uuid4()
     product_repo, category_repo = _product_repo_returning(category)
-    # NB: no allocator passed in.
-    use_case = CreateProductUseCase(product_repo, category_repo)
+    allocator = AsyncMock()
+    use_case = CreateProductUseCase(product_repo, category_repo, allocator)
 
     request = CreateProductRequest(
-        title="Legacy Test Shape",
+        title="Non-vehicle product",
         price_cents=10000,
         tenant_id=tenant_id,
         organization_id=tenant_id,
@@ -255,15 +286,19 @@ async def test_create_product_without_allocator_persists_no_vehicle_code() -> No
     )
 
     await use_case.execute(request)
+    # Allocator was never called — non-vehicle category bypasses
+    # the entire vehicle_code block.
+    allocator.allocate_next.assert_not_awaited()
+    allocator.reserve.assert_not_awaited()
     created_entity = product_repo.create.await_args.args[0]
-    assert created_entity.vehicle_code is None
+    assert "vehicle_code" not in (created_entity.attributes or {})
 
 
 @pytest.mark.asyncio
-async def test_create_product_response_includes_vehicle_code() -> None:
-    """The DTO response carries the persisted `vehicle_code` so the
-    frontend form reflects the actual stored value (relevant when the
-    allocator picked it implicitly)."""
+async def test_create_product_response_carries_vehicle_code_in_attributes() -> None:
+    """The DTO response carries the persisted vehicle_code inside
+    `attributes` so the frontend form reflects the actual stored value
+    (relevant when the allocator picked it implicitly)."""
     category = _category()
     tenant_id = uuid4()
     product_repo, category_repo = _product_repo_returning(category)
@@ -280,4 +315,7 @@ async def test_create_product_response_includes_vehicle_code() -> None:
     )
 
     response = await use_case.execute(request)
-    assert response.vehicle_code == 7777
+    # Stored as JSONB native int (post-`20260927_0001`); the
+    # category's `attribute_schema` validator accepts the value as
+    # `isinstance(value, (int, float))`.
+    assert response.attributes["vehicle_code"] == 7777

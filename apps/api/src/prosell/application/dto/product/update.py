@@ -18,13 +18,13 @@ class UpdateProductRequest(BaseModel):
     condition: ProductCondition | None = None
     attributes: dict[str, object] | None = None
     image_urls: list[str] | None = None
-    # `vehicle_code` — PATCH semantics (None = unchanged). When the
-    # seller supplies a new value the use case validates it isn't
-    # already used by another product (excluding self) and raises
-    # `DuplicateVehicleCodeError` on collision. Allocating a new code on
-    # update is intentionally NOT supported — the seller picked this
-    # exact value, no allocation path runs.
-    vehicle_code: int | None = Field(default=None, ge=1)
+    # Note: the legacy `vehicle_code` field no longer lives at the top
+    # level — it moved into `attributes["vehicle_code"]` after migration
+    # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`. PATCH
+    # semantics for the field flow through `attributes` (a partial
+    # `attributes` map merges into the existing one — see
+    # `Product.update_attributes`). The use case validates collision
+    # against `attributes->>'vehicle_code'` before persisting.
     # First-class pointer to the cover image. Single source of truth
     # for "which image is the cover" (replaces the old implicit
     # "first entry of image_urls" convention). Must reference an

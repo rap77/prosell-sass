@@ -444,13 +444,18 @@ class AbstractProductRepository(ABC):
         if no product has one yet.
 
         Tenant-agnostic on purpose: `vehicle_code` is a globally-unique
-        legacy product id (the partial unique index
-        `ix_products_vehicle_code_unique` is global), so the allocator
-        must look across every tenant. Backs
-        `VehicleCodeAllocator.allocate_next()`.
+        legacy product id scoped to vehicle categories only, persisted
+        inside `attributes->>'vehicle_code'` (a JSONB text field). The
+        uniqueness invariant is enforced by the functional partial index
+        `ix_products_attrs_vehicle_code_unique`. The allocator backs
+        `VehicleCodeAllocator.peek_next()` and walks across every tenant
+        because the value must remain globally unique for the client
+        CSV's ``id`` column to round-trip.
 
         Returns:
-            Largest persisted `vehicle_code`, or `None` if no row has one.
+            Largest persisted `vehicle_code` cast to int, or `None` if
+            no row has one. Non-numeric values (defensive — the index
+            is text-typed) are ignored.
         """
         pass
 
@@ -458,9 +463,13 @@ class AbstractProductRepository(ABC):
     async def allocate_next_vehicle_code(self) -> int:
         """Atomically reserve the next globally unique vehicle code.
 
-        The persistence implementation must use a database-native allocation
-        primitive so concurrent product creations cannot receive the same
-        value.
+        Calls ``nextval('products_vehicle_code_seq')`` for race-free
+        allocation across concurrent product creations. The caller is
+        responsible for storing the returned value as text under
+        ``attributes["vehicle_code"]`` on the product row. The sequence
+        remains after the JSONB move (migration
+        ``20260927_0001_move_vehicle_code_to_attributes_jsonb.py``) — only
+        the column the value lands in changed.
         """
         pass
 
@@ -471,9 +480,14 @@ class AbstractProductRepository(ABC):
         """
         Return whether any product currently uses `code` as its `vehicle_code`.
 
-        Optional `exclude_product_id` lets `UpdateProductUseCase` reuse the
-        same uniqueness check without false-positives on the row being
-        updated.
+        Backs `VehicleCodeAllocator.reserve()` for fail-fast collision
+        detection. Looks up against `attributes->>'vehicle_code'` (cast
+        to bigint so callers can pass an int and the index does the
+        numeric comparison via ``~ '^[0-9]+$'`` predicate).
+
+        Optional `exclude_product_id` lets `UpdateProductUseCase` reuse
+        the same uniqueness check without false-positives on the row
+        being updated.
 
         Args:
             code: The `vehicle_code` value to test for collision.

@@ -4,6 +4,15 @@ Plan 1 deferred update-composition because adding an inline category DB
 call to the PATCH router broke unit tests that mock only the product repo.
 This use case (taking product_repo + category_repo) is the clean home: it
 mirrors :class:`CreateProductUseCase`, and the router delegates to it.
+
+Note on `vehicle_code` (post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`):
+    The legacy id no longer lives at the top level of the product — it's
+    stored as text inside ``attributes["vehicle_code"]``. The PATCH path
+    validates uniqueness against the JSONB functional unique index when
+    the caller supplied a value in ``request.attributes["vehicle_code"]``
+    that differs from the current one (an exclude-self uniqueness check).
+    Allocating a new code on update is intentionally NOT supported — the
+    seller typed this exact value in the form, no allocator runs.
 """
 
 from uuid import UUID
@@ -66,27 +75,19 @@ class UpdateProductUseCase:
                 organization_id (defense in depth — the router should also
                 reject this with 403).
             DuplicateVehicleCodeError: If the caller supplied a new
-                `vehicle_code` already used by another product.
+                `attributes["vehicle_code"]` already used by another
+                product.
             ValueError: If cover_image_key is not in the product's image list
         """
         product = await self.product_repository.get_by_id(product_id, tenant_id)
         if not product:
             raise ProductNotFoundError(str(product_id))
 
-        # `vehicle_code` — handled BEFORE the PATCH-style field cascade
-        # so the cross-row uniqueness check (excluding self) can run
-        # against the live product state, not after we already mutated
-        # the entity. When `vehicle_code` is set to its current value
-        # (no-op PATCH) we skip the check; when it's set to a NEW value
-        # we check it doesn't collide with any other row.
-        if (
-            request.vehicle_code is not None
-            and request.vehicle_code != product.vehicle_code
-            and await self.product_repository.vehicle_code_exists(
-                request.vehicle_code, exclude_product_id=product.id
-            )
-        ):
-            raise DuplicateVehicleCodeError(request.vehicle_code)
+        # Capture the pre-PATCH `vehicle_code` so we can detect a change
+        # against the merged-attributes view. Stored as text in JSONB;
+        # we treat absent vs. absent as no-op, and any actual change as
+        # one that needs collision checking.
+        pre_patch_vehicle_code = (product.attributes or {}).get("vehicle_code")
 
         # Defense in depth: the relaxed DTO regex (post-fix, commits
         # 072bfa10 + parent) accepts legacy phone-cam-style keys for
@@ -121,9 +122,50 @@ class UpdateProductUseCase:
         if request.condition is not None:
             product.condition = request.condition
         if request.attributes is not None:
-            product.attributes = request.attributes
+            # Merge semantics: PATCH keeps keys the caller did not send.
+            # Fully-replacing attributes would silently drop every other
+            # category field on the product, so always merge.
+            product.attributes = {**(product.attributes or {}), **request.attributes}
         if request.image_urls is not None:
             product.image_urls = request.image_urls
+
+        # `vehicle_code` collision check against the JSONB functional
+        # unique index — only fires when the merged view's value
+        # actually changed (a no-op PATCH on the same code skips the
+        # round-trip). When the value DID change, canonicalize the
+        # stored form to text so the JSONB-side representation matches
+        # what the index/serializer expect (a value arriving as int
+        # from the wire would otherwise persist as a JSONB number —
+        # `attributes->>'vehicle_code'` would still work, but consumers
+        # reading the entity see a type mismatch with the rest of the
+        # system).
+        post_patch_vehicle_code = (product.attributes or {}).get("vehicle_code")
+
+        # Compare on int semantics, not raw value: a no-op PATCH where
+        # the wire sends `{"vehicle_code": 5}` against a stored "5"
+        # string must be treated as unchanged. Comparing the raw types
+        # would always trigger a redundant uniqueness check.
+        def _to_int_or_none(value: object) -> int | None:
+            if value is None or value == "":
+                return None
+            try:
+                return int(str(value))
+            except (TypeError, ValueError):
+                return None
+
+        pre_int = _to_int_or_none(pre_patch_vehicle_code)
+        post_int = _to_int_or_none(post_patch_vehicle_code)
+        if post_int is not None and post_int != pre_int:
+            assert post_int is not None  # for type checker
+            if await self.product_repository.vehicle_code_exists(
+                post_int, exclude_product_id=product.id
+            ):
+                raise DuplicateVehicleCodeError(post_int)
+            # Store as JSONB native int (not text) so the category's
+            # `attribute_schema` validator (which checks
+            # `isinstance(value, (int, float))` for "number" type) is
+            # consistent with the create path.
+            product.attributes["vehicle_code"] = post_int
 
         # Tenant cascade: changing organization_id transfers ownership of the
         # product to another organization. Only ProSell (ORG_ADMIN_VIEW_ALL)
@@ -175,12 +217,6 @@ class UpdateProductUseCase:
             product.location_state = request.location_state
         if request.location_zip is not None:
             product.location_zip = request.location_zip
-        # `vehicle_code` — PATCH semantics (None = unchanged). Uniqueness
-        # was already validated above (excluding self) so applying it here
-        # is a straight assignment. The use case never allocates a new
-        # code on update — the seller typed this exact value in the form.
-        if request.vehicle_code is not None:
-            product.vehicle_code = request.vehicle_code
 
         # Recompose the title from the category's presentation template when
         # it declares one; otherwise keep the current title (the request's

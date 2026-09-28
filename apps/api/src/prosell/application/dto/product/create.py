@@ -114,12 +114,13 @@ class CreateProductRequest(BaseModel):
     tenant_id: UUID | None = None
     organization_id: UUID | None = None
     category_id: UUID
-    # Optional — the durable, globally-unique legacy product id (see
-    # `Product.vehicle_code` for the full contract). When omitted, the
-    # use case's `VehicleCodeAllocator` picks the next MAX + 1; when
-    # supplied, the use case validates it isn't already used by another
-    # product (raises `DuplicateVehicleCodeError` on collision).
-    vehicle_code: int | None = Field(default=None, ge=1)
+    # Note: the legacy `vehicle_code` field no longer lives at the top
+    # level — it moved into `attributes["vehicle_code"]` after migration
+    # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`. For
+    # vehicle categories the category's `attribute_schema` defines the
+    # field's type/constraints; the use case's allocator populates a
+    # value into `attributes["vehicle_code"]` when the caller's
+    # `attributes` payload omits one. See `CreateProductUseCase.execute`.
     slug: str | None = None
     description: str | None = None
     currency: str = Field(default="USD", min_length=3, max_length=3)

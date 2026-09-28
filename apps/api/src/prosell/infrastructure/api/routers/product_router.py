@@ -112,7 +112,6 @@ from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import (
-    DuplicateVehicleCodeError,
     EmptyCatalogExportError,
     ExportLimitExceededError,
     ProductInvalidStatusTransitionError,
@@ -133,7 +132,6 @@ from prosell.domain.services.csv_product_parser import (
     CSVProductParser,
 )
 from prosell.domain.services.storage_keys import extract_storage_key_from_value
-from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_cdn_invalidator,
@@ -498,25 +496,28 @@ async def create_product(
     # ponytail: admins upload to target org's tenant, not their own
     validate_image_urls_for_tenant(request.image_urls, target_org_id)
 
-    # Execute use case
+    # Execute use case. `vehicle_code` lives inside `attributes` now
+    # (post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`);
+    # the use case's allocator still runs (the create path auto-fills
+    # `attributes["vehicle_code"]` if the caller omitted it) and the
+    # JSONB functional unique index is the final collision gate. The
+    # router wires a `VehicleCodeAllocator` over the same repo so the
+    # allocator's `nextval` / `vehicle_code_exists` calls share the
+    # use case's session and transaction.
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
-    # `vehicle_code` allocator — same session as the rest of the
-    # request so the MAX(vehicle_code) read and the subsequent INSERT
-    # share a transaction and the partial unique index is the only
-    # collision gate (see `vehicle_code_allocator.py` docstring).
-    vehicle_code_allocator = VehicleCodeAllocator(product_repo)
-    use_case = CreateProductUseCase(product_repo, category_repo, vehicle_code_allocator)
+    from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
+
+    use_case = CreateProductUseCase(
+        product_repo,
+        category_repo,
+        VehicleCodeAllocator(product_repo),
+    )
 
     try:
         return await use_case.execute(request)
     except CategoryNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DuplicateVehicleCodeError as e:
-        # 409 (Conflict) signals the caller-supplied `vehicle_code` is
-        # already in use by another product. The frontend surfaces this
-        # under the form's `vehicle_code` input as a field-level error.
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
@@ -883,46 +884,20 @@ async def export_catalog_client_format(
 
 
 class NextVehicleCodeResponse(BaseModel):
-    """Response payload for the next vehicle-code endpoint."""
+    """Response payload for the next vehicle-code endpoint.
+
+    Kept as a model definition so the type stays available for any
+    consumer that imported it during the brief window when
+    `GET /next-vehicle-code` was public. The route itself was removed
+    in the same commit that moved `vehicle_code` from a top-level
+    column into the JSONB `attributes` column — there is no
+    per-vehicle-code request payload to pre-fill, so the form now
+    reads/writes the field through the dynamic schema like every
+    other category attribute. See migration
+    `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`.
+    """
 
     vehicle_code: int
-
-
-@router.get("/next-vehicle-code", response_model=NextVehicleCodeResponse)
-async def get_next_vehicle_code(
-    current_user: CurrentUser,
-    db: DbSession,
-) -> NextVehicleCodeResponse:
-    """Return the next likely `vehicle_code` as a NON-MUTATING preview.
-
-    Backed by `VehicleCodeAllocator.peek_next` (MAX + 1, no sequence
-    consumed) rather than `allocate_next` (which would burn a `nextval`
-    slot every time the create form's pre-fetch fires, even if the user
-    abandons the form). The actual durability path on POST still uses
-    `allocate_next` — duplicates across concurrent inserts are caught
-    by the partial unique index and surfaced to the form as a 409.
-
-    Used by the product create form to pre-fill the editable `vehicle_code`
-    field with the platform-wide next value (the super_admin's view of the
-    catalog is cross-tenant — see `Product.vehicle_code`). Tenant-scoped
-    callers see the SAME next value as super_admins because `vehicle_code`
-    is globally unique by design, not per-tenant.
-
-    No body, no query params. Response is `{"vehicle_code": <int>}`.
-    """
-    # Auth-only — any authenticated user (including tenant-scoped
-    # sellers) can ask for the next code so the form's editable
-    # default is always populated, no matter the role. The user still
-    # must be authenticated (this route lives behind the standard
-    # auth dependency); the explicit `current_user` parameter
-    # documents that fact for future readers.
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-
-    product_repo = SqlAlchemyProductRepository(db)
-    allocator = VehicleCodeAllocator(product_repo)
-    next_code = await allocator.peek_next()
-    return NextVehicleCodeResponse(vehicle_code=next_code)
 
 
 @router.get("", response_model=ProductListResponse)
@@ -1557,11 +1532,6 @@ async def update_product(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
-    except DuplicateVehicleCodeError as e:
-        # PATCH picked a `vehicle_code` already held by another product.
-        # The frontend shows it as a field-level error on the
-        # `vehicle_code` input.
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 

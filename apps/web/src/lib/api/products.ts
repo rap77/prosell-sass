@@ -62,12 +62,13 @@ const productSchema = z.object({
   org_code: z.string().nullish(),
   org_color: z.string().nullish(),
   category_id: z.string(),
-  // Durable, globally-unique legacy product id (BIGINT). Optional on the
-  // wire because legacy products predate the column. Field-level error
-  // path is fed by the form's `useCreateProduct` / `useUpdateProduct`
-  // `onError` handler when the server returns 409
-  // `DuplicateVehicleCodeError`.
-  vehicle_code: z.number().nullish(),
+  // Note: the durable, globally-unique legacy product id (vehicle_code)
+  // no longer lives at the top level of the wire payload — it moved into
+  // the `attributes` JSONB column under the `vehicle_code` key (see
+  // backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb).
+  // Vehicle categories' attribute_schema defines the field's type and
+  // constraints; consumers that need the value should read it from
+  // `attributes["vehicle_code"]` directly.
   title: z.string(),
   slug: z.string().nullish(),
   description: z.string().nullish(),
@@ -234,45 +235,38 @@ export function useCreateProduct(): UseMutationResult<
 /**
  * Pre-fetch the next available `vehicle_code` for the product create form.
  *
- * The backend's `VehicleCodeAllocator` returns `MAX(vehicle_code) + 1`
- * (or `1` if no row has one yet). The form uses this as the editable
- * default for the `vehicle_code` input — the seller can override it
- * before save, and the value lands in the catalog CSV's `id` column as
- * a durable, globally-unique legacy product id.
+ * DEPRECATED (no-op): `vehicle_code` moved out of the top-level Product
+ * column and into the `attributes` JSONB (backend migration
+ * 20260927_0001_move_vehicle_code_to_attributes_jsonb). The field is
+ * now driven by the vehicle category's `attribute_schema` and rendered
+ * alongside the rest of the `identificacion` group. Allocation is
+ * owned by the use case's allocator, not exposed to the form.
  *
- * Cache key `["products", "next-vehicle-code"]` is separate from the
- * product list so an invalidation on create/update doesn't affect the
- * pre-fetched default. `staleTime: 30s` keeps the number from racing
- * while the user fills the form (a slow concurrent insert could bump
- * MAX, but the field is editable — the worst case is a duplicate error
- * surfaced by `useCreateProduct`'s `onError`). Pass `{ enabled: false }`
- * when the caller does not need a create-form default.
+ * This stub still returns a properly-typed `UseQueryResult` (with
+ * `enabled: false` so the network request is never fired) so any stale
+ * caller in the codebase continues to compile and behave as a
+ * permanently-idle query. The companion test pins the never-throws
+ * behavior so the next migration owner can remove the export safely
+ * once all callers are gone.
  */
 export interface NextVehicleCodeOptions {
   enabled?: boolean;
 }
 
 export function useNextVehicleCode(
-  options: NextVehicleCodeOptions = {},
+  _options: NextVehicleCodeOptions = {},
 ): UseQueryResult<{ vehicle_code: number }, Error> {
   return useQuery({
-    queryKey: ["products", "next-vehicle-code"],
+    queryKey: ["products", "next-vehicle-code", "deprecated"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/products/next-vehicle-code", {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          extractErrorMessage(body, "Failed to fetch next vehicle code"),
-        );
-      }
-      return z
-        .object({ vehicle_code: z.number().int().positive() })
-        .parse(await res.json());
+      throw new Error(
+        "useNextVehicleCode is deprecated: vehicle_code moved into " +
+          "attributes JSONB (migration 20260927_0001). Drive the field " +
+          "through the category's attribute_schema instead.",
+      );
     },
-    staleTime: 30 * 1000,
-    enabled: options.enabled ?? true,
+    enabled: false,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 

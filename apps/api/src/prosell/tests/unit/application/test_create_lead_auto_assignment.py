@@ -331,9 +331,23 @@ class StubProductRepository(AbstractProductRepository):
         return None
 
     async def allocate_next_vehicle_code(self) -> int:
-        """Return a deterministic code for this in-memory test double."""
-        codes = [product.vehicle_code for product in self.products.values()]
-        return max((code for code in codes if code is not None), default=0) + 1
+        """Return a deterministic code for this in-memory test double.
+
+        Reads the JSONB-side `attributes["vehicle_code"]` value off
+        each tracked product (text), casts to int for the math, and
+        returns max + 1. Tests that predate the JSONB move still expect
+        an int — only the storage shape changed.
+        """
+        codes: list[int] = []
+        for product in self.products.values():
+            raw = (product.attributes or {}).get("vehicle_code")
+            if raw is None or raw == "":
+                continue
+            try:
+                codes.append(int(str(raw)))
+            except (TypeError, ValueError):
+                continue
+        return max(codes, default=0) + 1
 
     async def vehicle_code_exists(
         self, code: int, *, exclude_product_id: UUID | None = None

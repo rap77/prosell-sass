@@ -49,7 +49,12 @@ def _product_response() -> ProductResponse:
         organization_id=ORG_ID,
         org_code="ORG-1",
         category_id=CATEGORY_ID,
-        vehicle_code=42,
+        # Note: the durable, globally-unique legacy product id
+        # (vehicle_code) used to be a top-level field here; it moved
+        # into `attributes["vehicle_code"]` after migration
+        # 20260927_0001. The mutable-defaults isolation assertion below
+        # still holds because `attributes` defaults to a fresh dict per
+        # instance via `Field(default_factory=dict)`.
         title="2017 Toyota Camry SE",
         slug="2017-toyota-camry-se",
         description="Well-kept one-owner car.",

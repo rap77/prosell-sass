@@ -55,7 +55,6 @@ import {
 import { useFBAccounts } from "@/lib/api/fb-accounts";
 import {
   useCreateProduct,
-  useNextVehicleCode,
   useUpdateProduct,
   useProduct,
   useProductImageUrls,
@@ -98,66 +97,16 @@ export interface UnifiedProductFormProps {
   enableWizard?: boolean;
 }
 
-// Canonical contract for the `vehicle_code` form field (GGA finding #3):
-// the value held in React Hook Form is ALWAYS either a positive integer
-// (`>= 1`) or `null` — never the empty string, `NaN`, `0`, or undefined.
-// `buildProductPayload` mirrors this shape in the wire payload so the
-// schema and the payload agree byte-for-byte.
-//
-// `coerceVehicleCodeForSubmit` is the single transform that turns the
-// raw RHF value (which can arrive as a number, an empty string from the
-// controlled `<Input type="number">`, or a string of digits from older
-// pre-fill paths) into the canonical `number | null` payload shape.
-// Tests pin every branch; the schema validates the same shape.
-//
-// `.nullish()` (not just `.nullable()`) so an RHF defaultValues that
-// omits the field or the empty pre-fill state (`undefined`) does not
-// trip the schema before the user's value lands.
-//
-// The project pins Zod 3.25, whose constraint error key is `message`
-// (the `invalid_type_error` shape is Zod 4 only), so every constraint
-// uses `{ message: ... }` consistently.
-export const VEHICLE_CODE_SCHEMA = z
-  .number({ message: "vehicle_code must be a number" })
-  .int({ message: "vehicle_code must be an integer" })
-  .positive({ message: "vehicle_code must be >= 1" })
-  .nullish();
-
-export function coerceVehicleCodeForSubmit(raw: unknown): number | null {
-  // Empty / missing: backend treats null and "absent" identically
-  // (allocates on create, preserves on PATCH), so we surface null.
-  if (raw == null) return null;
-  if (typeof raw === "number") {
-    // Strict: floats like 42.0 (which are already integers in IEEE-754
-    // but a developer might not intend as such) still need the integer
-    // guard. We reject anything that isn't a clean `>= 1` int — the
-    // backend's Pydantic `Field(ge=1)` mirrors this exactly.
-    if (!Number.isInteger(raw) || raw < 1) return null;
-    return raw;
-  }
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (trimmed === "") return null;
-    const parsed = Number(trimmed);
-    if (!Number.isInteger(parsed) || parsed < 1) return null;
-    return parsed;
-  }
-  return null;
-}
-
-// Fixed fields schema (price, description, vehicle_code)
+// Fixed fields schema (price, description). Vehicle_code no longer lives
+// at the top level of the form — it moved into `attributes["vehicle_code"]`
+// (backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb)
+// and is now driven by the vehicle category's `attribute_schema`. The
+// dynamic `SchemaFormSection` renders the input inside the
+// "identificacion" group, alongside VIN/make/model/year.
 export const FIXED_FIELDS_SCHEMA = z.object({
   // The app currently pins Zod 3.25, whose constraint error key is `message`.
   price: z.coerce.number().min(0, { message: "Price must be positive" }),
   description: z.string().max(5000).optional(),
-  // `vehicle_code` — canonical contract is `positive integer | null`.
-  // The `<Input>`'s `onChange` normalizes every raw string to a number
-  // or `null` via `coerceVehicleCodeForSubmit`, so this schema only has
-  // to validate the normalized shape — no `union` with `string()`, no
-  // empty-string escape hatch. `.nullable()` (not `.nullish()`) so the
-  // form's payload contract and the schema agree: undefined never
-  // crosses this boundary because RHF holds `null` when cleared.
-  vehicle_code: VEHICLE_CODE_SCHEMA,
 });
 
 // Loose variant for buildProductPayload's category-attribute extraction below
@@ -169,7 +118,6 @@ export const FIXED_FIELDS_SCHEMA_LOOSE = z
     // The app currently pins Zod 3.25, whose constraint error key is `message`.
     price: z.coerce.number().min(0, { message: "Price must be positive" }),
     description: z.string().max(5000).optional(),
-    vehicle_code: VEHICLE_CODE_SCHEMA,
   })
   .passthrough();
 
@@ -271,11 +219,6 @@ export function UnifiedProductForm({
     null,
   );
   const initializedOwnershipProductId = useRef<string | null>(null);
-  // Tracks whether the create form has been submitted at least once.
-  // Stops the `defaultNextVehicleCode` seeder from re-overwriting the
-  // seller's manual override on later re-fetches (the hook is stable
-  // for ~30s; the seller can finish in less).
-  const createProductWasAttempted = useRef<boolean>(false);
   const { data: organizations = [] } = useOrganizations();
   const { data: brokers = [], isLoading: isLoadingBrokers } =
     useOrganizationBrokers(selectedOrgId ?? undefined);
@@ -344,20 +287,10 @@ export function UnifiedProductForm({
   const seedImages = useUploadStore((s) => s.seedImages);
   const setCoverImage = useUploadStore((s) => s.setCoverImage);
 
-  // Field-level error state for `vehicle_code` (set when the server
-  // returns 409 `DuplicateVehicleCodeError`). Cleared on each new
-  // submit attempt so stale errors don't linger.
-  const [vehicleCodeError, setVehicleCodeError] = useState<string | null>(null);
   // Edit mode: fetch existing product
   const { data: existingProduct, isLoading: isLoadingProduct } = useProduct(
     mode === "edit" ? productId : undefined,
   );
-  // Create mode: pre-fetch the next available vehicle_code so the
-  // editable default isn't blank while the form loads.
-  const { data: nextVehicleCodeData } = useNextVehicleCode({
-    enabled: mode === "create",
-  });
-  const defaultNextVehicleCode = nextVehicleCodeData?.vehicle_code;
   const { data: existingImageData } = useProductImageUrls(
     mode === "edit" ? productId : undefined,
   );
@@ -378,11 +311,6 @@ export function UnifiedProductForm({
   const defaultValues = {
     price: 0,
     description: "",
-    // Canonical contract (GGA finding #3): pre-fill the field with
-    // `null` (not `undefined`, not `""`) so the Zod schema's nullable
-    // branch validates a brand-new form mount without forcing the
-    // schema to opt in to `undefined`.
-    vehicle_code: null,
     ...getSchemaDefaults(category.attribute_schema),
   };
 
@@ -413,36 +341,17 @@ export function UnifiedProductForm({
       reset({
         price: existingProduct.price_cents / 100,
         description: existingProduct.description ?? "",
-        // `vehicle_code` is editable on the form but the persisted
-        // value pre-fills it (a no-op PATCH if the seller doesn't
-        // change it). NOT folded into `...attrs` because vehicle_code
-        // is a first-class Product field, not an attribute.
-        //
-        // Canonical contract (GGA finding #3): pre-fill as a positive
-        // integer when the persisted product has one, or `null` when
-        // it does NOT (legacy rows before `vehicle_code` was added).
-        // Defaulting to `""` would break the schema (the schema's
-        // canonical shape is `number | null`).
-        vehicle_code: existingProduct.vehicle_code ?? null,
+        // `attributes` is the single source of truth for category-driven
+        // fields including the legacy `vehicle_code` (now stored under
+        // `attributes["vehicle_code"]` per migration
+        // 20260927_0001_move_vehicle_code_to_attributes_jsonb). The
+        // schema-driven `SchemaFormSection` renders the field inside
+        // the "identificacion" group via the category's
+        // `attribute_groups` ordering.
         ...attrs,
       });
     }
   }, [mode, existingProduct, reset]);
-
-  // Create mode: once the next `vehicle_code` arrives from the
-  // allocator, seed the form's editable default. Only fires once
-  // (the seller may then overwrite it freely). `setValue` is the
-  // React Hook Form API for imperatively updating a field after
-  // mount, without re-running the full reset effect.
-  useEffect(() => {
-    if (
-      mode === "create" &&
-      defaultNextVehicleCode !== undefined &&
-      !createProductWasAttempted.current
-    ) {
-      setValue("vehicle_code", defaultNextVehicleCode);
-    }
-  }, [mode, defaultNextVehicleCode, setValue]);
 
   // Reset state when mode changes to non-edit
   useEffect(() => {
@@ -613,7 +522,7 @@ export function UnifiedProductForm({
     coverKey: string | null,
     thumbnailKey?: string,
   ) => {
-    const { price, description, vehicle_code, ...formAttributes } =
+    const { price, description, ...formAttributes } =
       FIXED_FIELDS_SCHEMA_LOOSE.parse(data);
 
     // ponytail: simple heuristic — vin = vehicle, operation = real estate, else generic
@@ -630,15 +539,6 @@ export function UnifiedProductForm({
       existingProduct?.title ||
       category.name;
 
-    // `vehicle_code` — canonical contract (GGA finding #3 schema/payload
-    // agreement): the payload ALWAYS carries `vehicle_code`, either as
-    // a positive integer (the user picked a value) or as `null` (let the
-    // server allocate on create / preserve on PATCH). The schema, the
-    // controller's onChange, and the submit handler all flow through
-    // `coerceVehicleCodeForSubmit` so there is exactly one place where
-    // shape normalization happens.
-    const vehicleCodeValue = coerceVehicleCodeForSubmit(vehicle_code);
-
     return {
       title,
       price_cents: Math.round(price * 100),
@@ -653,10 +553,6 @@ export function UnifiedProductForm({
       ...(thumbnailKey ? { thumbnail_image_key: thumbnailKey } : {}),
       // ponytail: FB account assignments only sent when dirty
       ...(fbAccountsDirty ? { fb_account_ids: selectedFbAccounts } : {}),
-      // `vehicle_code` — ALWAYS present (GGA finding #3): positive
-      // integer when set, `null` when the user cleared the input.
-      // Backend's Pydantic schema treats null and absent identically.
-      vehicle_code: vehicleCodeValue,
     };
   };
 
@@ -755,14 +651,6 @@ export function UnifiedProductForm({
 
   const onSubmit = async (data: Record<string, unknown>) => {
     logger.debug("UnifiedProductForm onSubmit", data);
-    // Clear any stale field-level `vehicle_code` error from a previous
-    // submit attempt — the server's response (200 or 409) decides
-    // whether to set it again.
-    setVehicleCodeError(null);
-    // Lock the allocator-seeded default after the first attempt so a
-    // late re-fetch from `useNextVehicleCode` doesn't overwrite the
-    // seller's manual override on retry.
-    createProductWasAttempted.current = true;
 
     try {
       await handleImagesUpload();
@@ -783,20 +671,12 @@ export function UnifiedProductForm({
     } catch (error) {
       setIsUploadingImages(false);
       logger.error("UnifiedProductForm error", error);
-      // Surface a duplicate-vehicle_code server response as a
-      // field-level error under the `Código del vehículo` input —
-      // the toast by the mutation hook is generic, the field-level
-      // message names the offending value and points at the right
-      // input. The mutation's `extractErrorMessage` already turns
-      // a 409 `detail` into the message verbatim.
-      const message = error instanceof Error ? error.message : "";
-      if (
-        message.toLowerCase().includes("vehicle_code") &&
-        message.toLowerCase().includes("already")
-      ) {
-        setVehicleCodeError(message);
-      }
-      // Toast already shown by mutation hooks
+      // Toast already shown by mutation hooks. A duplicate
+      // `vehicle_code` from the JSONB uniqueness constraint surfaces
+      // here as a generic 409 — the dynamic attribute form already
+      // shows field-level validation via React Hook Form when the
+      // server's response error path lands, so no bespoke UI
+      // plumbing is needed here.
     }
   };
 
@@ -821,10 +701,6 @@ export function UnifiedProductForm({
 
   const formContent = (
     <form
-      /* eslint-disable react-hooks/refs -- onSubmit is a useCallback
-         event handler; ref access happens inside the callback, never
-         during render. The rule's static analysis can't trace the
-         useCallback boundary. */
       onSubmit={handleSubmit(onSubmit)}
       className="flex flex-col gap-8 max-w-4xl"
     >
@@ -892,53 +768,13 @@ export function UnifiedProductForm({
 
       {/* vehicle_code — durable, globally-unique legacy product id (the
           value that ends up in the client-format CSV's `id` column).
-          Editable: defaults to the allocator's next MAX+1 in create
-          mode, the persisted value in edit mode, and the seller can
-          override either before save. Empty on submit means "let the
-          server allocate" (only effective in create mode — the edit
-          path treats empty as "leave unchanged"). Field-level error
-          is shown when the server returns 409 on duplicate. */}
-      <section className="flex flex-col gap-4 scroll-mt-20">
-        <h2 className="text-lg font-semibold" data-label="Código del vehículo">
-          Código del vehículo
-        </h2>
-        <Controller
-          name="vehicle_code"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div className="flex flex-col gap-2 max-w-xs">
-              <Label htmlFor="vehicle_code">Código del vehículo</Label>
-              <Input
-                id="vehicle_code"
-                type="number"
-                step="1"
-                min={1}
-                inputMode="numeric"
-                value={field.value != null ? String(field.value) : ""}
-                onChange={(e) => {
-                  // Canonical contract (GGA finding #3): the value held in
-                  // RHF is ALWAYS a positive integer or null. Empty input,
-                  // junk characters, and `<= 0` all collapse to `null` via
-                  // the same coercion the schema and the payload use.
-                  field.onChange(coerceVehicleCodeForSubmit(e.target.value));
-                }}
-                disabled={isDisabled}
-                aria-invalid={Boolean(fieldState.error || vehicleCodeError)}
-                aria-describedby={
-                  fieldState.error || vehicleCodeError
-                    ? "vehicle_code_error"
-                    : undefined
-                }
-              />
-              {(fieldState.error || vehicleCodeError) && (
-                <p id="vehicle_code_error" className="text-sm text-destructive">
-                  {vehicleCodeError ?? fieldState.error?.message}
-                </p>
-              )}
-            </div>
-          )}
-        />
-      </section>
+          Post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`
+          the field lives inside `attributes["vehicle_code"]` and is
+          driven by the vehicle category's `attribute_schema`. The
+          `SchemaFormSection` block below renders the input alongside
+          VIN/make/model/year inside the "identificacion" group, so we
+          do NOT keep a dedicated fixed section here — doing so would
+          split the same logical field across two UI blocks. */}
 
       {/* Dynamic sections from attribute_groups */}
       {sortedGroups.map((group, idx) => (

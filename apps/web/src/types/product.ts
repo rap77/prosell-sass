@@ -20,13 +20,13 @@ export interface Product {
   /** Organization tag color (hex). Derived from products.organization_id JOIN organizations. */
   org_color?: string | null;
   category_id: string;
-  /**
-   * Durable, globally-unique legacy product id (`vehicle_code`). Surfaces
-   * in the `id` column of the client-format catalog CSV. Nullable for
-   * backward compat with pre-existing products. Persisted as BIGINT
-   * on the backend; surfaced as a JSON number on the wire.
-   */
-  vehicle_code?: number | null;
+  // Note: the durable, globally-unique legacy product id (vehicle_code)
+  // no longer lives at the top level of the product payload — it
+  // moved into the `attributes` JSONB under the `vehicle_code` key
+  // (backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb).
+  // Vehicle categories' attribute_schema defines the field's type and
+  // constraints; readers should pull it from `attributes.vehicle_code`
+  // when needed.
 
   // Basic info
   title: string;
@@ -117,13 +117,12 @@ export interface CreateProductRequest {
   organization_id?: string;
   category_id: string;
   /**
-   * Optional durable, globally-unique legacy product id (BIGINT on the
-   * backend). When omitted the backend's `VehicleCodeAllocator` picks
-   * the next MAX + 1. When supplied, the backend rejects (HTTP 409 +
-   * `DuplicateVehicleCodeError`) if another product already holds it.
-   * See `useNextVehicleCode()` for the form's editable default.
+   * Note: the legacy `vehicle_code` field is no longer a top-level
+   * property of the create request. It moved into the `attributes`
+   * JSONB under the `vehicle_code` key for vehicle categories; the
+   * category's `attribute_schema` defines its type/constraints. The
+   * backend's allocator populates a value when the caller omits it.
    */
-  vehicle_code?: number | null;
   slug?: string;
   description?: string;
   currency?: string;
@@ -170,13 +169,12 @@ export interface UpdateProductRequest {
   location_city?: string;
   location_state?: string;
   location_zip?: string;
-  /**
-   * `vehicle_code` — PATCH semantics (omitted = unchanged). When
-   * supplied, the backend validates uniqueness excluding self and
-   * returns 409 on collision (handled as a field-level error on the
-   * form).
-   */
-  vehicle_code?: number | null;
+  // Note: the legacy `vehicle_code` field is no longer a top-level
+  // property of the update request. Updates flow through `attributes`
+  // (a partial map merges into the existing one — see
+  // `Product.update_attributes`); collision check on the new
+  // `attributes["vehicle_code"]` value runs against the JSONB
+  // functional unique index.
 }
 
 /**

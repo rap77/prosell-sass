@@ -31,7 +31,9 @@ _VEHICLES_VERTICAL_SLUG = "vehiculos-y-transporte"
 # Module-level counter so multiple `_make_product(...)` calls in the same
 # test produce monotonically increasing `vehicle_code` values by default —
 # mirrors the platform's real allocator (MAX + 1) at the test scale. Tests
-# that need a specific code pass `vehicle_code=...` explicitly.
+# that need a specific code pass `vehicle_code=...` explicitly. Post
+# `20260927_0001_move_vehicle_code_to_attributes_jsonb` the value lives
+# inside `attributes["vehicle_code"]` (text), not on a top-level field.
 _vehicle_code_seq = itertools.count(start=1)
 
 
@@ -46,6 +48,25 @@ def _make_product(
     created_at: datetime | None = None,
     vehicle_code: int | None = None,
 ) -> Product:
+    # Resolve the code BEFORE building the product so the attributes
+    # dict is a single literal. The caller passes a specific int when
+    # they need a deterministic value; otherwise we draw from a
+    # monotonic counter so multiple products in the same test get
+    # distinct codes. Stored as text in `attributes` to match the
+    # JSONB-side representation (functional unique index over
+    # `attributes->>'vehicle_code'`).
+    code_to_store: str = (
+        str(vehicle_code) if vehicle_code is not None else str(next(_vehicle_code_seq))
+    )
+    attrs: dict[str, object] = {
+        "year": 2020,
+        "make": "Ford",
+        "model": "Explorer",
+        "mileage": 70000,
+        "exterior_color": exterior_color,
+        "vehicle_code": code_to_store,
+    }
+
     product = Product(
         id=uuid4(),
         tenant_id=tenant_id,
@@ -55,20 +76,14 @@ def _make_product(
         price_cents=1780000,
         status=ProductStatus.PUBLISHED,
         description="Great vehicle",
-        # Each test product carries a `vehicle_code` so the use case's
-        # defense-in-depth `if product.vehicle_code is None: continue`
-        # guard does not skip them. Tests that explicitly want to test
-        # the `None` branch pass `vehicle_code=None`. The default pulls
-        # from a module-level counter so multiple products in the same
-        # test get distinct, monotonically increasing codes.
-        vehicle_code=vehicle_code if vehicle_code is not None else next(_vehicle_code_seq),
-        attributes={
-            "year": 2020,
-            "make": "Ford",
-            "model": "Explorer",
-            "mileage": 70000,
-            "exterior_color": exterior_color,
-        },
+        # Each test product carries a `vehicle_code` (in `attributes`)
+        # so the use case's defense-in-depth `if attributes has no
+        # vehicle_code: continue` guard does not skip them. Tests that
+        # explicitly want to test the `None` branch build a Product
+        # directly without going through `_make_product`. The default
+        # pulls from a module-level counter so multiple products in the
+        # same test get distinct, monotonically increasing codes.
+        attributes=attrs,
         image_urls=image_urls or [],
         location_city=location_city,
         location_state=location_state,

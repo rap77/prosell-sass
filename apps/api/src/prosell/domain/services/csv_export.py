@@ -197,16 +197,17 @@ def build_client_format_row(
     """Build one row of the client-format CSV (u1-catalog-export-api).
 
     `vehicle_code` is the durable, globally-unique legacy product id
-    (`Product.vehicle_code`) that ends up in the CSV's `id` column.
-    Replaces the previous positional 1-based row_id, so the same
-    product exports with the same `id` value across every re-export —
-    the value lives in the partial unique index
-    `ix_products_vehicle_code_unique` and is the number the downstream
-    tool already carries in `docs/data39.csv`'s `id` column (byte-for-
-    byte CSV compatibility preserved). The column name on the wire
+    (`Product.attributes["vehicle_code"]`) that ends up in the CSV's
+    `id` column. Replaces the previous positional 1-based row_id, so
+    the same product exports with the same `id` value across every
+    re-export. Post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`
+    the value lives in the JSONB `attributes` column (under the
+    `vehicle_code` key) and uniqueness is enforced by the functional
+    partial index `ix_products_attrs_vehicle_code_unique` over
+    `(attributes->>'vehicle_code')`. The column name on the wire
     stays `id` — only the meaning changed (stable, not per-export
     sequential). Non-contiguous codes are an accepted trade-off because
-    BR1.7 exclusions still drop the row entirely (no renumbering), so
+    BR1.7 exclusions still drop the row entirely (no renumerating), so
     the export's `id` values can have gaps when a category fails to
     translate.
 

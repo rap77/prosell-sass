@@ -1,9 +1,11 @@
 """Test UpdateProductUseCase.
 
-Covers the `vehicle_code` PATCH branch (allow-change + uniqueness
-excluding self). The broader update surface (cover/thumbnail/images/
-title recomposition, broker shares, etc.) has its own dedicated test
-files; this one focuses on the new feature.
+Covers the `vehicle_code` PATCH branch via the `attributes` JSONB
+path (post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`).
+The broader update surface (cover/thumbnail/images/title recomposition,
+broker shares, etc.) has its own dedicated test files; this one focuses
+on the JSONB-side flow: allow-change, uniqueness excluding self, and
+PATCH semantics where absent means "leave the JSONB value untouched".
 """
 
 from unittest.mock import AsyncMock
@@ -34,8 +36,12 @@ def _existing_product(
     tenant_id: UUID,
     category_id: UUID,
     *,
-    vehicle_code: int | None = 5,
+    vehicle_code: str | None = "5",
 ) -> Product:
+    # vehicle_code lives in `attributes` as text since the JSONB move.
+    attrs: dict[str, object] = {}
+    if vehicle_code is not None:
+        attrs["vehicle_code"] = vehicle_code
     return Product(
         id=uuid4(),
         title="Existing",
@@ -44,7 +50,7 @@ def _existing_product(
         organization_id=tenant_id,
         category_id=category_id,
         status=ProductStatus.DRAFT,
-        vehicle_code=vehicle_code,
+        attributes=attrs,
     )
 
 
@@ -75,25 +81,31 @@ def _build_repos(
 
 @pytest.mark.asyncio
 async def test_update_product_allows_changing_vehicle_code() -> None:
-    """PATCH sets `vehicle_code` to a new valid value — the entity carries
-    the new code into `repo.update()`."""
+    """PATCH sets `attributes["vehicle_code"]` to a new value — the
+    uniqueness check (excluding self) runs, and the entity carries the
+    new code into `repo.update()`.
+    """
     tenant_id = uuid4()
     category_id = uuid4()
     category = _category()
     category.tenant_id = tenant_id
     category.id = category_id
-    existing = _existing_product(tenant_id, category_id, vehicle_code=5)
+    existing = _existing_product(tenant_id, category_id, vehicle_code="5")
     product_repo, category_repo, ownership_repo = _build_repos(existing, category)
     use_case = UpdateProductUseCase(product_repo, category_repo, ownership_repo)
 
-    request = UpdateProductRequest(vehicle_code=42)
+    request = UpdateProductRequest(attributes={"vehicle_code": 42})
     await use_case.execute(existing.id, tenant_id, request)
 
     # Uniqueness check ran with `exclude_product_id=existing.id` (the row
-    # being updated, so its current value of 5 isn't a false-positive).
+    # being updated, so its current value of "5" isn't a false-positive).
     product_repo.vehicle_code_exists.assert_awaited_once_with(42, exclude_product_id=existing.id)
     updated_entity: Product = product_repo._captured["entity"]  # type: ignore[attr-defined]
-    assert updated_entity.vehicle_code == 42
+    # Stored as JSONB native int (post-`20260927_0001`) so the
+    # category's `attribute_schema` validator accepts the value as
+    # `isinstance(value, (int, float))`. The functional unique index
+    # still extracts the text form for uniqueness comparison.
+    assert updated_entity.attributes["vehicle_code"] == 42
 
 
 @pytest.mark.asyncio
@@ -106,12 +118,12 @@ async def test_update_product_rejects_duplicate_vehicle_code() -> None:
     category = _category()
     category.tenant_id = tenant_id
     category.id = category_id
-    existing = _existing_product(tenant_id, category_id, vehicle_code=5)
+    existing = _existing_product(tenant_id, category_id, vehicle_code="5")
     product_repo, category_repo, ownership_repo = _build_repos(existing, category)
     product_repo.vehicle_code_exists = AsyncMock(return_value=True)
     use_case = UpdateProductUseCase(product_repo, category_repo, ownership_repo)
 
-    request = UpdateProductRequest(vehicle_code=99)
+    request = UpdateProductRequest(attributes={"vehicle_code": 99})
     with pytest.raises(DuplicateVehicleCodeError) as exc_info:
         await use_case.execute(existing.id, tenant_id, request)
     assert exc_info.value.vehicle_code == 99
@@ -120,19 +132,21 @@ async def test_update_product_rejects_duplicate_vehicle_code() -> None:
 
 @pytest.mark.asyncio
 async def test_update_product_no_op_when_vehicle_code_unchanged() -> None:
-    """PATCH sends `vehicle_code=5` and the product already has `5` — the
-    uniqueness check is SKIPPED (no point verifying a value the row
-    already holds) and the update proceeds normally."""
+    """PATCH sets `attributes["vehicle_code"]` to the same value the
+    product already holds — the uniqueness check is SKIPPED (no point
+    verifying a value the row already holds) and the update proceeds
+    normally.
+    """
     tenant_id = uuid4()
     category_id = uuid4()
     category = _category()
     category.tenant_id = tenant_id
     category.id = category_id
-    existing = _existing_product(tenant_id, category_id, vehicle_code=5)
+    existing = _existing_product(tenant_id, category_id, vehicle_code="5")
     product_repo, category_repo, ownership_repo = _build_repos(existing, category)
     use_case = UpdateProductUseCase(product_repo, category_repo, ownership_repo)
 
-    request = UpdateProductRequest(vehicle_code=5)
+    request = UpdateProductRequest(attributes={"vehicle_code": 5})
     await use_case.execute(existing.id, tenant_id, request)
 
     product_repo.vehicle_code_exists.assert_not_awaited()
@@ -140,39 +154,42 @@ async def test_update_product_no_op_when_vehicle_code_unchanged() -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_product_none_vehicle_code_is_unchanged() -> None:
-    """PATCH omits `vehicle_code` (None) — the entity's current value
-    is preserved (PATCH semantics, no destructive clear)."""
+async def test_update_product_no_attributes_means_unchanged() -> None:
+    """PATCH omits `attributes` (None) — the entity's current
+    `attributes` dict is preserved (PATCH semantics, no destructive
+    clear)."""
     tenant_id = uuid4()
     category_id = uuid4()
     category = _category()
     category.tenant_id = tenant_id
     category.id = category_id
-    existing = _existing_product(tenant_id, category_id, vehicle_code=5)
+    existing = _existing_product(tenant_id, category_id, vehicle_code="5")
     product_repo, category_repo, ownership_repo = _build_repos(existing, category)
     use_case = UpdateProductUseCase(product_repo, category_repo, ownership_repo)
 
-    request = UpdateProductRequest()  # no vehicle_code
+    request = UpdateProductRequest()  # no attributes
     await use_case.execute(existing.id, tenant_id, request)
 
     updated_entity: Product = product_repo._captured["entity"]  # type: ignore[attr-defined]
-    assert updated_entity.vehicle_code == 5  # unchanged
+    assert updated_entity.attributes["vehicle_code"] == "5"  # unchanged
     product_repo.vehicle_code_exists.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_update_product_response_carries_vehicle_code() -> None:
-    """`ProductResponse.from_entity` includes `vehicle_code` so the
-    frontend PATCH response reflects the actual stored value."""
+async def test_update_product_response_carries_vehicle_code_in_attributes() -> None:
+    """`ProductResponse.from_entity` carries `vehicle_code` inside
+    `attributes` so the frontend PATCH response reflects the actual
+    stored value.
+    """
     tenant_id = uuid4()
     category_id = uuid4()
     category = _category()
     category.tenant_id = tenant_id
     category.id = category_id
-    existing = _existing_product(tenant_id, category_id, vehicle_code=5)
+    existing = _existing_product(tenant_id, category_id, vehicle_code="5")
     product_repo, category_repo, ownership_repo = _build_repos(existing, category)
     use_case = UpdateProductUseCase(product_repo, category_repo, ownership_repo)
 
-    request = UpdateProductRequest(vehicle_code=42)
+    request = UpdateProductRequest(attributes={"vehicle_code": 42})
     response = await use_case.execute(existing.id, tenant_id, request)
-    assert response.vehicle_code == 42
+    assert response.attributes["vehicle_code"] == 42

@@ -72,7 +72,13 @@ class TestBulkUploadVehiclesUseCase:
         # First call returns None (create), second call returns existing (update)
         product_repository.get_by_vin.side_effect = [
             None,  # First VIN doesn't exist
-            Mock(spec=Product, id=uuid4()),  # Second VIN exists
+            # Second VIN exists — pre-load an empty `attributes` dict so
+            # the use case's merge-into-attributes path works against a
+            # real dict, not a Mock attribute lookup. Post the JSONB
+            # move (20260927_0001), the use case mutates
+            # `existing.attributes` directly instead of a top-level
+            # `vehicle_code` field.
+            Mock(spec=Product, id=uuid4(), attributes={}),
         ]
 
         created_products = []
