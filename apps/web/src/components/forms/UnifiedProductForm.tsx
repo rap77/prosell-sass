@@ -21,7 +21,7 @@ import {
   User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -195,6 +195,7 @@ export function UnifiedProductForm({
   onCancel,
   enableWizard = true,
 }: UnifiedProductFormProps) {
+  const formId = useId();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
@@ -320,7 +321,7 @@ export function UnifiedProductForm({
     handleSubmit,
     setValue,
     reset,
-    formState: { isSubmitting, errors },
+    formState: { isDirty, isSubmitting, errors },
   } = useForm<Record<string, unknown>>({
     resolver: zodResolver(combinedSchema),
     defaultValues,
@@ -503,7 +504,14 @@ export function UnifiedProductForm({
   // Block submit if org required but not selected, or brokers invalid
   const orgMissing = isOrgRequired && !selectedOrgId;
   const isSubmitDisabled =
-    isDisabled || orgMissing || (brokersDirty && !brokersIsValid);
+    isDisabled ||
+    orgMissing ||
+    (brokersDirty && !brokersIsValid) ||
+    (mode === "edit" &&
+      !isDirty &&
+      !orgDirty &&
+      !brokersDirty &&
+      !fbAccountsDirty);
 
   // Submit handler
   // ponytail: pass selectedOrgId so images are uploaded to the target org's bucket
@@ -698,11 +706,29 @@ export function UnifiedProductForm({
   ) : (
     idleLabel
   );
+  const formActions = (
+    <>
+      <Button type="submit" form={formId} disabled={isSubmitDisabled}>
+        {submitButtonContent}
+      </Button>
+      {onCancel && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isDisabled}
+        >
+          Cancelar
+        </Button>
+      )}
+    </>
+  );
 
   const formContent = (
     <form
+      id={formId}
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-8 max-w-4xl"
+      className="flex max-w-4xl flex-col gap-8 pb-28 md:pb-24"
     >
       {/* Images */}
       <section className="flex flex-col gap-4 scroll-mt-20">
@@ -1295,28 +1321,18 @@ export function UnifiedProductForm({
         </section>
       )}
 
-      {/* Actions */}
-      <div className="flex gap-4">
-        <Button type="submit" disabled={isSubmitDisabled}>
-          {submitButtonContent}
-        </Button>
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isDisabled}
-          >
-            Cancelar
-          </Button>
-        )}
-      </div>
+      {!enableWizard && <div className="flex gap-4">{formActions}</div>}
     </form>
   );
 
   // ponytail: optional wizard wrapper - improves mobile UX without touching form logic
   return enableWizard ? (
-    <WizardContainer>{formContent}</WizardContainer>
+    <WizardContainer
+      actions={formActions}
+      showActionsOnEveryMobileStep={mode === "edit"}
+    >
+      {formContent}
+    </WizardContainer>
   ) : (
     formContent
   );

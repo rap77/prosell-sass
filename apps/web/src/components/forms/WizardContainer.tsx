@@ -2,8 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, List, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 // GGA TypeScript const-types
 const WIZARD_VARIANT = {
@@ -16,6 +22,10 @@ type WizardVariant = (typeof WIZARD_VARIANT)[keyof typeof WIZARD_VARIANT];
 
 interface WizardContainerProps {
   children: ReactElement;
+  /** Form actions rendered in the persistent wizard action bar. */
+  actions?: ReactNode;
+  /** Keep edit actions available on every mobile wizard step. */
+  showActionsOnEveryMobileStep?: boolean;
   /**
    * Auto-detect viewport or force a variant
    * ponytail: simple auto-detect via window.innerWidth
@@ -39,6 +49,8 @@ interface WizardContainerProps {
  */
 export function WizardContainer({
   children,
+  actions,
+  showActionsOnEveryMobileStep = false,
   variant = "auto",
 }: WizardContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,8 +58,6 @@ export function WizardContainer({
   const [sections, setSections] = useState<HTMLElement[]>([]);
   // ponytail: state only for auto mode, derive isMobile to avoid setState in effect
   const [isAutoAndMobile, setIsAutoAndMobile] = useState(false);
-  // FAB menu state (mobile only)
-  const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Auto mode: listen to viewport resize
   useEffect(() => {
@@ -138,7 +148,6 @@ export function WizardContainer({
 
   const handleJumpToSection = (index: number) => {
     setCurrentStep(index);
-    setIsNavOpen(false);
     // Scroll to section
     sections[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -150,69 +159,46 @@ export function WizardContainer({
     return (
       heading?.getAttribute("data-label") ||
       heading?.textContent ||
-      `Step ${idx + 1}`
+      `Paso ${idx + 1}`
     );
   });
 
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === sections.length - 1;
+  const shouldShowMobileActions = showActionsOnEveryMobileStep || isLastStep;
 
   // Desktop: sidebar layout
   if (!isMobile && sections.length > 0) {
     return (
-      <div ref={containerRef} className="relative flex gap-6">
-        {/* Sidebar navigation */}
-        <nav
-          aria-label="Secciones"
-          className="sticky top-4 z-10 h-fit w-48 shrink-0 rounded-lg border bg-muted/30 p-3"
+      <div ref={containerRef} className="relative">
+        <div
+          data-testid="wizard-desktop-action-bar"
+          className="sticky top-4 z-[60] mb-4 hidden rounded-lg border bg-background p-3 shadow-lg md:block"
         >
-          <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-            Secciones
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Paso {currentStep + 1} de {sections.length}
+            </p>
+            <div className="flex flex-wrap gap-2">{actions}</div>
           </div>
-          <div className="flex flex-col gap-1">
-            {sectionTitles.map((title, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleJumpToSection(index)}
-                className={cn(
-                  "cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors",
-                  currentStep === index
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {title}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Form content */}
-        <div className="min-w-0 flex-1">
-          {children}
-          {/* Lets trailing sections align with the top of the scroll container. */}
-          <div aria-hidden="true" className="h-[calc(100vh-8rem)]" />
         </div>
-      </div>
-    );
-  }
-
-  // Mobile layout
-  return (
-    <div ref={containerRef} className="relative">
-      {/* Mobile: FAB navigation */}
-      {isMobile && sections.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-[9999]">
-          {isNavOpen && (
-            <div className="mb-2 flex flex-col gap-1 rounded-lg border bg-background p-2 shadow-lg">
+        <div className="flex gap-6">
+          {/* Sidebar navigation */}
+          <nav
+            aria-label="Secciones"
+            className="sticky top-4 z-10 h-fit w-48 shrink-0 rounded-lg border bg-muted/30 p-3"
+          >
+            <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+              Secciones
+            </div>
+            <div className="flex flex-col gap-1">
               {sectionTitles.map((title, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => handleJumpToSection(index)}
                   className={cn(
-                    "rounded px-3 py-1.5 text-left text-sm transition-colors",
+                    "cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors",
                     currentStep === index
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -222,56 +208,61 @@ export function WizardContainer({
                 </button>
               ))}
             </div>
-          )}
-          <button
-            type="button"
-            onClick={() => setIsNavOpen((prev) => !prev)}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
-            aria-label={isNavOpen ? "Cerrar navegación" : "Ir a sección"}
-          >
-            {isNavOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <List className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-      )}
+          </nav>
 
-      {/* Mobile: Progress indicator */}
-      {isMobile && sections.length > 0 && (
-        <div className="mb-4 flex items-center justify-between border-b pb-4">
-          <div className="text-sm font-medium">
-            Step {currentStep + 1} of {sections.length}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {sectionTitles[currentStep]}
+          {/* Form content */}
+          <div className="min-w-0 flex-1">
+            {children}
+            {/* Lets trailing sections align with the top of the scroll container. */}
+            <div aria-hidden="true" className="h-[calc(100vh-8rem)]" />
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
+  // Mobile layout
+  return (
+    <div ref={containerRef} className="relative">
       {/* Original form (unmodified) */}
       {children}
 
-      {/* Mobile: Navigation buttons */}
+      {/* Mobile: persistent sequential navigation above the seller bottom nav. */}
       {isMobile && sections.length > 0 && (
-        <div className="mt-6 flex justify-between border-t pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={isFirstStep}
-          >
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Previous
-          </Button>
+        <div
+          data-testid="wizard-mobile-action-bar"
+          className="fixed inset-x-0 z-[60] border-t bg-background p-3 shadow-lg md:hidden"
+          style={{ bottom: "calc(4rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto grid max-w-4xl gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium" aria-live="polite">
+                Paso {currentStep + 1} de {sections.length}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {sectionTitles[currentStep]}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={isFirstStep}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
 
-          {!isLastStep && (
-            <Button type="button" onClick={handleNext}>
-              Next
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
+              {!isLastStep && (
+                <Button type="button" onClick={handleNext}>
+                  Siguiente
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+              {shouldShowMobileActions && actions}
+            </div>
+          </div>
         </div>
       )}
     </div>

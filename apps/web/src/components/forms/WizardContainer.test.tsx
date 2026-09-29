@@ -47,4 +47,116 @@ describe("WizardContainer desktop navigation", () => {
       priceSection,
     );
   });
+
+  it("keeps localized progress and save actions in a sticky top bar on desktop", async () => {
+    render(
+      <WizardContainer
+        variant="desktop"
+        actions={
+          <>
+            <button type="submit">Guardar cambios</button>
+            <button type="button">Cancelar</button>
+          </>
+        }
+      >
+        <form>
+          <section>
+            <h2 data-label="Detalles">Detalles</h2>
+          </section>
+          <section>
+            <h2 data-label="Precio">Precio</h2>
+          </section>
+        </form>
+      </WizardContainer>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Paso 1 de 2")).toBeVisible();
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Guardar cambios" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeVisible();
+    expect(screen.getByTestId("wizard-desktop-action-bar")).toHaveClass(
+      "sticky",
+    );
+  });
+});
+
+describe("WizardContainer mobile navigation", () => {
+  it("keeps save and sequential navigation available on the first edit step", async () => {
+    const user = userEvent.setup();
+    render(
+      <WizardContainer
+        variant="mobile"
+        showActionsOnEveryMobileStep
+        actions={<button type="submit">Guardar cambios</button>}
+      >
+        <form>
+          <section>
+            <h2 data-label="Detalles">Detalles</h2>
+          </section>
+          <section>
+            <h2 data-label="Precio">Precio</h2>
+          </section>
+        </form>
+      </WizardContainer>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Paso 1 de 2")).toBeVisible();
+    });
+
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Guardar cambios" }),
+    ).toBeVisible();
+    expect(screen.getByTestId("wizard-mobile-action-bar")).toHaveClass("fixed");
+
+    await user.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(screen.getByText("Paso 2 de 2")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Siguiente" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Guardar cambios" }),
+    ).toBeVisible();
+  });
+
+  it("keeps create save final-step-only while navigation remains available", async () => {
+    const user = userEvent.setup();
+    render(
+      <WizardContainer
+        variant="mobile"
+        actions={<button type="submit">Crear producto</button>}
+      >
+        <form>
+          <section>
+            <h2 data-label="Detalles">Detalles</h2>
+          </section>
+          <section>
+            <h2 data-label="Precio">Precio</h2>
+          </section>
+        </form>
+      </WizardContainer>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Paso 1 de 2")).toBeVisible();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: "Crear producto" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(
+      screen.getByRole("button", { name: "Crear producto" }),
+    ).toBeVisible();
+  });
 });

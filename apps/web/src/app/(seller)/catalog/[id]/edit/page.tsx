@@ -152,6 +152,7 @@ export default function EditProductPage() {
           router.push("/catalog");
           router.refresh();
         }}
+        onCancel={() => router.push("/catalog")}
       />
     </div>
   );
