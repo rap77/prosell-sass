@@ -131,7 +131,7 @@ async def create_organization(
 )
 async def list_organizations(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
     skip: int = 0,
     limit: int = 100,
 ) -> OrganizationListResponse:
@@ -158,7 +158,7 @@ async def list_organizations(
 )
 async def get_my_organization(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Get the organization associated with the authenticated user's tenant."""
     if not current_user.tenant_id:
@@ -182,7 +182,7 @@ async def get_my_organization(
 async def complete_org_setup(
     request: CompleteSetupRequest,
     current_user: Annotated[User, Depends(require_role(RoleType.MANAGER))],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Mark the current organization's onboarding wizard as complete or skip.
 
@@ -211,7 +211,7 @@ async def complete_org_setup(
 async def get_organization(
     org_id: UUID,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Get organization by ID (with tenant isolation)."""
     if not current_user.tenant_id:
@@ -236,7 +236,7 @@ async def update_organization(
     org_id: UUID,
     request: UpdateOrganizationRequest,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Update organization basic info, logo, banner, or settings."""
     if not current_user.tenant_id:
@@ -272,7 +272,7 @@ async def get_upload_url(
     org_id: UUID,
     request: UploadUrlRequest,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
     spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
 ) -> UploadUrlResponse:
     """
@@ -327,7 +327,7 @@ async def get_upload_url(
 async def verify_organization(
     org_id: UUID,
     current_user: Annotated[User, Depends(require_role(RoleType.SUPER_ADMIN))],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Approve organization verification (SUPER_ADMIN only)."""
     use_case = VerifyOrganizationUseCase(org_repository=org_repo)
@@ -353,7 +353,7 @@ async def verify_organization(
 async def reject_organization(
     org_id: UUID,
     current_user: Annotated[User, Depends(require_role(RoleType.SUPER_ADMIN))],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Reject organization verification (SUPER_ADMIN only)."""
     use_case = RejectOrganizationUseCase(org_repository=org_repo)
@@ -379,7 +379,7 @@ async def reject_organization(
 async def suspend_organization(
     org_id: UUID,
     current_user: Annotated[User, Depends(require_role(RoleType.SUPER_ADMIN))],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Suspend organization (SUPER_ADMIN only)."""
     if not current_user.tenant_id:

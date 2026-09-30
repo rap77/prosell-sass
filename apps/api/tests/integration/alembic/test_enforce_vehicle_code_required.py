@@ -23,15 +23,18 @@ wrapper.
 """
 
 import importlib.util
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 import sqlalchemy as sa
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import NullPool
+from tests.integration._constants import TEST_DB_URL
 
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
@@ -54,6 +57,30 @@ def migration() -> Any:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_trigger_state() -> AsyncIterator[None]:
+    """Drop any leftover trigger/function from a previous test in this
+    shared DB. Prevents accumulator-style pollution across runs.
+
+    Uses a fresh engine with ``NullPool`` and commits its own transaction
+    so the drops run outside the ``db_session`` transaction context —
+    running them through ``db_session`` itself would terminate the
+    ``session.begin()`` transaction the conftest fixture is holding,
+    breaking every subsequent ORM call in the test.
+    """
+    engine = create_async_engine(TEST_DB_URL, echo=False, poolclass=NullPool)
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(
+                sa.text("DROP TRIGGER IF EXISTS prosell_enforce_vehicle_code_trigger ON products")
+            )
+            await conn.execute(sa.text("DROP FUNCTION IF EXISTS prosell_enforce_vehicle_code()"))
+            await conn.commit()
+    finally:
+        await engine.dispose()
+    yield
 
 
 async def _run(db_session: AsyncSession, fn: Callable[[sa.engine.Connection], None]) -> None:
