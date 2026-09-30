@@ -60,7 +60,6 @@ from prosell.application.dto.product.batch_cover_urls import (
     BatchProductCoverUrlsRequest,
     BatchProductCoverUrlsResponse,
 )
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.batch_approve_products import (
     BatchApproveProductsUseCase,
@@ -121,6 +120,7 @@ from prosell.domain.exceptions.product_exceptions import (
 )
 from prosell.domain.ports.i_cdn_invalidator import ICdnInvalidator
 from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.services.csv_export import (
     build_export_headers,
     build_export_row,

@@ -20,12 +20,12 @@ or DB writes — those stay at the caller.
 
 import logging
 
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.ports.i_cdn_invalidator import (
     CdnInvalidationError,
     ICdnInvalidator,
 )
 from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 
 logger = logging.getLogger(__name__)
 

@@ -56,7 +56,6 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
 from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
 from prosell.application.use_cases.organization.invite_organization_owner import (
@@ -80,6 +79,7 @@ from prosell.domain.ports.i_facebook_marketplace_service import (
     IFacebookMarketplaceOAuthService,
 )
 from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.repositories import (
     AbstractOAuthRepository,
     AbstractRoleRepository,

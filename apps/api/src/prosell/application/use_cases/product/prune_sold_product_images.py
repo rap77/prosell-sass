@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 
 

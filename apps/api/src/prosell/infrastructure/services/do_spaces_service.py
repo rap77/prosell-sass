@@ -9,12 +9,12 @@ import boto3
 from botocore.client import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
-from prosell.application.ports.ido_spaces import (
+from prosell.core.config import settings
+from prosell.domain.ports.ido_spaces import (
     IDOSpacesService,
     StorageReadError,
     StorageUploadError,
 )
-from prosell.core.config import settings
 
 logger = logging.getLogger(__name__)
 

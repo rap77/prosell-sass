@@ -15,7 +15,6 @@ from prosell.application.dto.org import (
     UploadUrlResponse,
 )
 from prosell.application.dto.org.complete_setup import CompleteSetupRequest
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.org import (
     CompleteSetupUseCase,
     CreateOrganizationUseCase,
@@ -36,6 +35,11 @@ from prosell.domain.exceptions.org_exceptions import (
     OrganizationVerificationException,
     OrgDomainException,
 )
+from prosell.domain.ports.ido_spaces import IDOSpacesService
+from prosell.domain.repositories.organization_repository import (
+    AbstractOrganizationRepository,
+)
+from prosell.domain.repositories.wallet_repository import AbstractWalletRepository
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
@@ -64,14 +68,14 @@ router = APIRouter()
 
 def get_org_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyOrganizationRepository:
+) -> AbstractOrganizationRepository:
     """Get organization repository instance."""
     return SqlAlchemyOrganizationRepository(session)
 
 
 def get_wallet_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyWalletRepository:
+) -> AbstractWalletRepository:
     """Get wallet repository instance."""
     return SqlAlchemyWalletRepository(session)
 
@@ -90,8 +94,8 @@ def get_wallet_repository(
 async def create_organization(
     request: CreateOrganizationRequest,
     current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
-    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
-    wallet_repo: Annotated[SqlAlchemyWalletRepository, Depends(get_wallet_repository)],
+    org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
+    wallet_repo: Annotated[AbstractWalletRepository, Depends(get_wallet_repository)],
 ) -> OrganizationResponse:
     """
     Create a new organization (MASTER/SUPER_ADMIN only).

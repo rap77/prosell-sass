@@ -10,7 +10,6 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from prosell.application.ports.ido_spaces import StorageReadError
 from prosell.application.use_cases.product.export_catalog_client_format import (
     EXPORT_MAX_PRODUCTS,
     ExportCatalogClientFormatUseCase,
@@ -19,10 +18,10 @@ from prosell.domain.entities.category import Category
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.product_exceptions import (
-    DuplicateVehicleCodeError,
     EmptyCatalogExportError,
     ExportLimitExceededError,
 )
+from prosell.domain.ports.ido_spaces import StorageReadError
 from prosell.domain.services.csv_export import CLIENT_FORMAT_COLUMNS
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -733,19 +732,17 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         organization_repository.get_by_ids.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_cross_product_vehicle_code_collision_skips_row_with_warning(
+    async def test_product_without_vehicle_code_is_excluded_with_warning(
         self,
     ) -> None:
-        # GGA architecture fix — the infrastructure impl now translates
-        # the DB-level `IntegrityError` from the partial unique index
-        # into the domain-level `DuplicateVehicleCodeError` at the
-        # Clean Architecture boundary. The application layer must
-        # catch the domain exception (NOT `sqlalchemy.exc.IntegrityError`)
-        # and drop the colliding row with a warning (graceful
-        # degradation — same outcome as the legacy BR1.7-style
-        # exclusion, but logged).
+        # Post-migration invariant: the DB trigger installed by
+        # `20260929_0001_enforce_vehicle_code_required` guarantees
+        # every published vehicle-category product carries
+        # `vehicle_code`. The export no longer allocates codes — if
+        # somehow a row slips through (legacy data created before the
+        # trigger was deployed), the export logs a warning and skips
+        # the row, never crashes.
         tenant_id = uuid4()
-        # Product without `vehicle_code` triggers the backfill path.
         product = Product(
             id=uuid4(),
             tenant_id=tenant_id,
@@ -758,17 +755,7 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
             attributes={"year": 2020, "make": "Ford", "model": "Explorer"},
             image_urls=[],
         )
-        use_case, product_repository, _, _ = _make_use_case(
-            tenant_id=tenant_id, product_count=1, products=[product]
-        )
-        # `base_code = MAX(...) + 1 = 1` — make `get_max_vehicle_code`
-        # deterministic instead of the default `MagicMock`.
-        product_repository.get_max_vehicle_code.return_value = 0
-        # Cross-product collision — another product already holds the
-        # candidate code.
-        product_repository.update_vehicle_code_if_absent.side_effect = DuplicateVehicleCodeError(
-            1001
-        )
+        use_case, _, _, _ = _make_use_case(tenant_id=tenant_id, product_count=1, products=[product])
 
         result = await use_case.execute(
             organization_id=tenant_id,
@@ -777,116 +764,28 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
             facebook_groups_fallback="",
         )
 
-        # Colliding row excluded: no CSV row, no image folder.
+        # Row without `vehicle_code` is skipped: no CSV row, no image folder.
         assert result.product_count == 0
         with zipfile.ZipFile(BytesIO(result.zip_bytes)) as archive:
             names = archive.namelist()
             assert names == ["catalogo.csv"]
-        product_repository.update_vehicle_code_if_absent.assert_awaited_once_with(product.id, 1)
 
     @pytest.mark.asyncio
-    async def test_lost_race_refresh_uses_tenant_scoped_lookup_in_single_org_mode(
-        self,
-    ) -> None:
-        # GGA multi-tenancy fix — when the loser's branch re-reads the
-        # product's attributes via `get_by_id`, single-org exports use
-        # `tenant_id=product.organization_id` (tenant-scoped lookup) —
-        # NOT `tenant_id=None`, which would silently cross the tenant
-        # boundary. `all_organizations=True` is the cross-tenant path
-        # and stays `None`.
-        tenant_id = uuid4()
-        product = Product(
-            id=uuid4(),
-            tenant_id=tenant_id,
-            organization_id=tenant_id,
-            category_id=uuid4(),
-            title="2020 Ford Explorer",
-            price_cents=1780000,
-            status=ProductStatus.PUBLISHED,
-            description="Great vehicle",
-            attributes={"year": 2020, "make": "Ford", "model": "Explorer"},
-            image_urls=[],
-        )
-        # Loser of the same-row race — `won_race=False` triggers the
-        # re-read branch.
-        use_case, product_repository, _, _ = _make_use_case(
-            tenant_id=tenant_id, product_count=1, products=[product]
-        )
-        product_repository.update_vehicle_code_if_absent.return_value = False
-        # Refresh observes a freshly-persisted usable numeric code, so
-        # the row is included (proves the re-read flow runs end-to-end).
-        refreshed_product = Product(
-            id=product.id,
-            tenant_id=tenant_id,
-            organization_id=tenant_id,
-            category_id=product.category_id,
-            title=product.title,
-            price_cents=product.price_cents,
-            status=ProductStatus.PUBLISHED,
-            description=product.description,
-            attributes={**product.attributes, "vehicle_code": "2002"},
-            image_urls=[],
-        )
-        product_repository.get_by_id.return_value = refreshed_product
+    async def test_use_case_never_allocates_vehicle_code(self) -> None:
+        # Source-level invariant — the export path must not import
+        # `update_vehicle_code_if_absent` or `get_max_vehicle_code`.
+        # Those primitives belong to the create path and the
+        # backfill migration; the export trusts the DB invariant.
+        import inspect
 
-        await use_case.execute(
-            organization_id=tenant_id,
-            all_organizations=False,
-            base_folder="",
-            facebook_groups_fallback="",
-        )
+        from prosell.application.use_cases.product import export_catalog_client_format as module
 
-        # Single-org export — re-fetch is tenant-scoped, not cross-tenant.
-        product_repository.get_by_id.assert_awaited_once_with(
-            product.id, tenant_id=product.organization_id
+        source = inspect.getsource(module)
+        assert "update_vehicle_code_if_absent" not in source, (
+            "ExportCatalogClientFormatUseCase must not call the runtime "
+            "backfill primitive; the DB trigger guarantees vehicle_code."
         )
-
-    @pytest.mark.asyncio
-    async def test_lost_race_refresh_uses_cross_tenant_lookup_in_all_orgs_mode(
-        self,
-    ) -> None:
-        # Companion to the single-org test above — `all_organizations=True`
-        # IS the cross-tenant path the caller explicitly authorized, so
-        # the re-fetch there uses `tenant_id=None`. Locking in this
-        # distinction so the GGA fix doesn't accidentally narrow the
-        # cross-org re-fetch too.
-        org_a_id = uuid4()
-        org_b_id = uuid4()
-        product = Product(
-            id=uuid4(),
-            tenant_id=org_a_id,
-            organization_id=org_b_id,  # cross-org scenario
-            category_id=uuid4(),
-            title="2020 Ford Explorer",
-            price_cents=1780000,
-            status=ProductStatus.PUBLISHED,
-            description="Great vehicle",
-            attributes={"year": 2020, "make": "Ford", "model": "Explorer"},
-            image_urls=[],
+        assert "get_max_vehicle_code" not in source, (
+            "ExportCatalogClientFormatUseCase must not seed a base code "
+            "for runtime backfill; that scaffold is gone."
         )
-        use_case, product_repository, _, _ = _make_use_case(
-            tenant_id=org_a_id, product_count=1, products=[product]
-        )
-        product_repository.update_vehicle_code_if_absent.return_value = False
-        refreshed_product = Product(
-            id=product.id,
-            tenant_id=org_a_id,
-            organization_id=org_b_id,
-            category_id=product.category_id,
-            title=product.title,
-            price_cents=product.price_cents,
-            status=ProductStatus.PUBLISHED,
-            description=product.description,
-            attributes={**product.attributes, "vehicle_code": "2002"},
-            image_urls=[],
-        )
-        product_repository.get_by_id.return_value = refreshed_product
-
-        await use_case.execute(
-            organization_id=None,
-            all_organizations=True,
-            base_folder="",
-            facebook_groups_fallback="",
-        )
-
-        product_repository.get_by_id.assert_awaited_once_with(product.id, tenant_id=None)

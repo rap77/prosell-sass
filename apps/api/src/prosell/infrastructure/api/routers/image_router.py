@@ -16,8 +16,8 @@ from prosell.application.dto.image import (
     ImageUploadUrlRequest,
     ImageUploadUrlResponse,
 )
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.repositories.organization_repository import (
     AbstractOrganizationRepository,
 )

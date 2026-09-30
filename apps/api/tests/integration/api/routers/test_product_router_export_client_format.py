@@ -616,24 +616,26 @@ class TestExportClientFormatRequiredParams:
         assert response.status_code == 422
 
 
-def _make_product_without_vehicle_code(
+def _make_product_with_vehicle_code(
     *,
     tenant_id: UUID,
     organization_id: UUID,
     category_id: UUID,
+    vehicle_code: int,
     vin: str | None = None,
     image_urls: list[str] | None = None,
+    title: str = "2021 Honda Civic",
 ) -> ProductModel:
-    """A published product whose `attributes` deliberately omits the
-    `vehicle_code` key — the exact pre-fix shape that used to produce a
-    header-only client CSV. The backfill path must persist a code for
-    this row and emit both the CSV row AND the image folder."""
+    """A published product with `vehicle_code` already present in
+    `attributes` — the steady state enforced by the DB trigger from
+    migration `20260929_0001_enforce_vehicle_code_required`."""
     attributes: dict[str, object] = {
         "year": 2021,
         "make": "Honda",
         "model": "Civic",
         "mileage": 30000,
         "exterior_color": "Negro",
+        "vehicle_code": str(vehicle_code),
     }
     if vin is not None:
         attributes["vin"] = vin
@@ -642,8 +644,8 @@ def _make_product_without_vehicle_code(
         tenant_id=tenant_id,
         organization_id=organization_id,
         category_id=category_id,
-        title="2021 Honda Civic",
-        slug=f"2021-honda-civic-{uuid4().hex[:6]}",
+        title=title,
+        slug=f"{title.lower().replace(' ', '-')}-{uuid4().hex[:6]}",
         description="Reliable compact",
         price_cents=1850000,
         currency="USD",
@@ -656,29 +658,46 @@ def _make_product_without_vehicle_code(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("setup_override")
-class TestExportClientFormatVehicleCodeBackfill:
-    """`export-vehicle-code-backfill` fix: a published product with no
-    `vehicle_code` in `attributes` used to be dropped by the BR1.7-style
-    guard (silent header-only CSV + missing images). The export now
-    backfills a fresh code via the atomic
-    `update_vehicle_code_if_absent` UPDATE and persists it durably in
-    the JSONB column so the partial unique index
-    `ix_products_attrs_vehicle_code_unique` enforces integrity across
-    re-exports.
+# Class rename: `TestExportClientFormatVehicleCodeBackfill` ->
+# `TestExportClientFormatVehicleCodeRequired`. The original class encoded
+# the runtime backfill fix (case: product lacks vehicle_code -> use case
+# backfills via update_vehicle_code_if_absent before exporting). After
+# the enforce-vehicle_code-required migration installs the DB trigger,
+# that runtime path is unreachable — the invariant "every published
+# vehicle-category product has vehicle_code" is enforced at the DB level,
+# and the use case trusts it. Renaming the class documents the new
+# semantic so future readers see "required" (DB invariant) instead of
+# "backfill" (runtime repair) and don't reintroduce the removed branch.
+class TestExportClientFormatVehicleCodeRequired:
+    """`export-vehicle-code-required` invariant (the enforce-vehicle_code-
+    required migration): a published product in a vehicle category is
+    GUARANTEED by the DB trigger to carry `vehicle_code` before the
+    export ever reads it. The runtime backfill path
+    (`update_vehicle_code_if_absent`) is gone — the use case trusts the
+    DB invariant. This class documents the new contract.
     """
 
-    async def test_product_without_vehicle_code_is_included_with_persisted_code(
+    async def test_product_with_persisted_vehicle_code_is_included_in_csv(
         self, shared_session: AsyncSession
     ) -> None:
-        """(a) Backfill — one published product lacking `vehicle_code`
-        yields a CSV row AND an image folder, and the code is
-        durably persisted in `attributes->>'vehicle_code'`."""
+        """(a) DB-guaranteed `vehicle_code` on a vehicle-category product
+        yields a CSV row AND an image folder, with the CSV `id` column
+        carrying exactly the persisted code.
+
+        The DB trigger installed by migration
+        `20260929_0001_enforce_vehicle_code_required` enforces
+        `vehicle_code` presence at INSERT time for vehicle-category
+        products, so the product is created with the code in
+        `attributes["vehicle_code"]` from the start (the runtime
+        backfill path that used to assign a code here was removed).
+        """
         org = await _create_org(shared_session)
         category = await _create_category(shared_session, org.tenant_id)
-        product = _make_product_without_vehicle_code(
+        product = _make_product_with_vehicle_code(
             tenant_id=org.tenant_id,
             organization_id=org.id,
             category_id=category.id,
+            vehicle_code=1001,
             vin="VINNOCODE00000001",
             image_urls=["orgs/tenant/vehicles/backfill-photo.jpg"],
         )
@@ -698,39 +717,29 @@ class TestExportClientFormatVehicleCodeBackfill:
 
         # Row included and contains the distinguishing VIN
         assert "VINNOCODE00000001" in csv_content
-        # Image folder emitted alongside the row (would be missing
-        # under the old silent-skip behavior) — the ZIP layout is
-        # `{org_segment}/{vehicle_folder}/<filename>`, so we look for
-        # the file by basename instead of guessing the prefix.
+        # Image folder emitted alongside the row.
         assert any(name.endswith("backfill-photo.jpg") for name in namelist)
-        # Sanity: the CSV id column carries a positive integer we
-        # backfilled (the test asserts >= 1, not a specific value,
-        # because the global counter may have advanced across tests
-        # in the same session).
+        # The CSV `id` column carries exactly the persisted code —
+        # deterministic across runs, since the trigger guarantees the
+        # value at INSERT time.
         id_column = csv_content.splitlines()[1].split(";")[0]
-        assert int(id_column) >= 1
-
-        # Code is durably persisted on the row, so a subsequent
-        # `get_max_vehicle_code()` would see it.
-        await shared_session.refresh(product)
-        persisted_code = (product.attributes or {}).get("vehicle_code")
-        assert persisted_code is not None
-        assert int(str(persisted_code).strip()) >= 1
+        assert id_column == "1001"
 
     async def test_export_is_stable_across_two_consecutive_calls(
         self, shared_session: AsyncSession
     ) -> None:
         """(b) Stability — calling the export twice in a row yields the
-        SAME `id` (vehicle_code) for the backfilled product and the
-        SAME folder/file structure. The first call backfills and
-        persists; the second call reads the persisted value and emits
-        it again without re-allocating."""
+        SAME `id` (vehicle_code) for the product and the SAME folder/file
+        structure. The code is durable in `attributes["vehicle_code"]`
+        from INSERT time (DB trigger), so both exports read the same
+        value and emit it."""
         org = await _create_org(shared_session)
         category = await _create_category(shared_session, org.tenant_id)
-        product = _make_product_without_vehicle_code(
+        product = _make_product_with_vehicle_code(
             tenant_id=org.tenant_id,
             organization_id=org.id,
             category_id=category.id,
+            vehicle_code=2002,
             vin="VINSTABLE00000001",
             image_urls=["orgs/tenant/vehicles/stable-photo.jpg"],
         )
@@ -755,71 +764,49 @@ class TestExportClientFormatVehicleCodeBackfill:
         csv_first, namelist_first = await _export_once()
         csv_second, namelist_second = await _export_once()
 
-        # Both exports must include the backfilled product, with the
-        # SAME `id` column (CSV column index 0 in the 24-column
-        # client format — see `CLIENT_FORMAT_COLUMNS`).
+        # Both exports must include the product, with the SAME `id`
+        # column (CSV column index 0 in the 24-column client format —
+        # see `CLIENT_FORMAT_COLUMNS`).
         for csv_content, label in ((csv_first, "first"), (csv_second, "second")):
             rows = csv_content.splitlines()[1:]
             assert len(rows) == 1, f"{label} export must contain exactly one row, got {len(rows)}"
             columns = rows[0].split(";")
-            assert columns[0]  # `id` (vehicle_code) is non-empty
-            assert int(columns[0]) >= 1
+            assert columns[0] == "2002"  # the persisted vehicle_code
             assert columns[-1] == "VINSTABLE00000001"
 
-        # Same product, same `id` across both exports — proves the
-        # backfill was durable and the second export reuses it instead
-        # of allocating a fresh one.
+        # Same product, same `id` across both exports.
         id_first = csv_first.splitlines()[1].split(";")[0]
         id_second = csv_second.splitlines()[1].split(";")[0]
         assert id_first == id_second
-        # Same folder/image structure too (the ZIP is byte-stable for
-        # everything except the filename which contains a date suffix
-        # the router builds — we only inspect body content here).
+        # Same folder/image structure too.
         assert namelist_first == namelist_second
 
-    async def test_concurrent_backfill_serializes_safely(
+    async def test_export_includes_two_products_with_distinct_vehicle_codes(
         self, shared_session: AsyncSession
     ) -> None:
-        """(c) Concurrency — sequential proof.
+        """(c) Multi-row steady state — two products with distinct
+        `vehicle_code` values land in the CSV with their exact codes.
 
-        The atomic `UPDATE ... WHERE attributes->>'vehicle_code' IS NULL`
-        predicate serializes concurrent writers targeting the SAME
-        product: exactly one observes `rowcount == 1`; every other
-        observes `rowcount == 0` and re-reads the persisted value.
-        This test exercises the loser's re-read branch in isolation by
-        running two `update_vehicle_code_if_absent` calls against the
-        same row and asserting both are safe (no exception, final
-        value is one of the two offered codes).
-
-        Documented limitation: true cross-process concurrency on a
-        single row is hard to simulate in pytest without forking the
-        process — the WHERE-clause atomicity guarantee is a PostgreSQL
-        semantic, not an application-level invariant, and the rest of
-        the export suite already covers the steady-state codepath. We
-        additionally seed two products so the test also exercises the
-        cross-product (multi-row) backfill path that the export loop
-        takes per-iteration.
-        """
-        from prosell.infrastructure.repositories.product_repository_impl import (
-            SqlAlchemyProductRepository,
-        )
-
+        This replaces the legacy "concurrent backfill" test: with the
+        DB trigger enforcing `vehicle_code` at INSERT time, the
+        runtime backfill path is gone, so there is no concurrency
+        scenario to exercise for `vehicle_code` allocation. The export
+        simply trusts the DB invariant and emits each row with the
+        persisted code."""
         org = await _create_org(shared_session)
         category = await _create_category(shared_session, org.tenant_id)
-        # Seed TWO products lacking vehicle_code, both targeted at the
-        # same export. The use case's per-product loop will try to
-        # backfill each one in turn; cross-product collisions are not
-        # expected because `base_code + i` is unique per i.
-        product_a = _make_product_without_vehicle_code(
+        product_a = _make_product_with_vehicle_code(
             tenant_id=org.tenant_id,
             organization_id=org.id,
             category_id=category.id,
+            vehicle_code=1001,
             vin="VINCONCURRENT0001A",
         )
-        product_b = _make_product_without_vehicle_code(
+        product_b = _make_product_with_vehicle_code(
             tenant_id=org.tenant_id,
             organization_id=org.id,
             category_id=category.id,
+            vehicle_code=1002,
             vin="VINCONCURRENT0001B",
         )
         shared_session.add(product_a)
@@ -827,28 +814,6 @@ class TestExportClientFormatVehicleCodeBackfill:
         await shared_session.flush()
         _authenticate_as(_auth_user(org))
 
-        # Same-row concurrency: two backfill attempts against
-        # `product_a`. The second MUST observe `rowcount == 0` and
-        # silently no-op (loser's branch) — the WHERE-clause guard
-        # makes the second write a no-op rather than a collision.
-        repo = SqlAlchemyProductRepository(shared_session)
-        first_won = await repo.update_vehicle_code_if_absent(product_a.id, 1001)
-        second_won = await repo.update_vehicle_code_if_absent(product_a.id, 2002)
-
-        assert first_won is True
-        assert second_won is False  # WHERE clause blocked the second writer
-
-        await shared_session.refresh(product_a)
-        persisted_a = int(str((product_a.attributes or {})["vehicle_code"]))
-        # The persisted value is the WINNER's offer (1001), not the
-        # loser's (2002) — proves the loser's UPDATE was a no-op, not
-        # an overwrite.
-        assert persisted_a == 1001
-
-        # Multi-row backfill through the actual export: both seeded
-        # products need to land in the CSV. `product_b` is still NULL
-        # at this point, so the export backfills it; `product_a`
-        # already carries 1001 and rides through unchanged.
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
                 "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
@@ -856,21 +821,22 @@ class TestExportClientFormatVehicleCodeBackfill:
         assert response.status_code == 200
         with zipfile.ZipFile(BytesIO(response.content)) as archive:
             csv_content = archive.read("catalogo.csv").decode("utf-8")
+
         assert "VINCONCURRENT0001A" in csv_content
         assert "VINCONCURRENT0001B" in csv_content
 
-        # Both rows are durably persisted after the export
-        await shared_session.refresh(product_a)
-        await shared_session.refresh(product_b)
-        assert int(str((product_a.attributes or {})["vehicle_code"])) == 1001
-        assert (product_b.attributes or {}).get("vehicle_code") is not None
+        # Each CSV `id` column carries the EXACT persisted code.
+        rows = csv_content.splitlines()[1:]
+        ids_by_vin = {row.split(";")[-1]: row.split(";")[0] for row in rows}
+        assert ids_by_vin["VINCONCURRENT0001A"] == "1001"
+        assert ids_by_vin["VINCONCURRENT0001B"] == "1002"
 
-        # Sanity: the status filter still excludes non-published
-        # products even if they lack a vehicle_code (defense in depth).
-        draft = _make_product_without_vehicle_code(
+        # Sanity: a draft product is still excluded from the export.
+        draft = _make_product_with_vehicle_code(
             tenant_id=org.tenant_id,
             organization_id=org.id,
             category_id=category.id,
+            vehicle_code=1003,
             vin="VINDRAFT000000001",
         )
         draft.status = ProductStatus.DRAFT.value
@@ -884,3 +850,160 @@ class TestExportClientFormatVehicleCodeBackfill:
         with zipfile.ZipFile(BytesIO(response.content)) as archive:
             csv_content = archive.read("catalogo.csv").decode("utf-8")
         assert "VINDRAFT000000001" not in csv_content
+
+    async def test_export_includes_products_after_db_guarantees_vehicle_code(
+        self,
+        shared_session: AsyncSession,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Post-migration contract: the DB trigger guarantees
+        ``attributes["vehicle_code"]`` is present on every published
+        vehicle-category product, so the use case no longer needs any
+        runtime backfill scaffolding. We prove BOTH halves of that
+        contract here:
+
+        1. The export emits the row with the EXACT ``vehicle_code`` we
+           persisted on the product (not a freshly-allocated one), in
+           the ``id`` column of the client-format CSV.
+        2. NEITHER of the two backfill-scaffolding repository calls is
+           made during the export —
+
+             a. ``get_max_vehicle_code()`` (read once before the loop
+                to seed the per-export allocation base; only meaningful
+                when a backfill is going to happen), AND
+             b. ``update_vehicle_code_if_absent(product_id, code)``
+                (the actual atomic backfill primitive),
+
+           both belong entirely to the runtime backfill path. With the
+           DB trigger guaranteeing the invariant, both calls are dead
+           code and must be removed.
+
+        The use case invokes both through the
+        ``SqlAlchemyProductRepository`` class (the router constructs a
+        fresh instance per request), so we monkeypatch the unbound
+        methods on the class itself and assert neither was reached.
+
+        Why the spy covers TWO methods, not one
+        ---------------------------------------
+        ``update_vehicle_code_if_absent`` is conditionally called (the
+        use case short-circuits with ``needs_backfill = vehicle_code_raw
+        is None or ... == ''``), so a spy on that alone would pass for
+        a row that already carries a code — the very row this test
+        pins. ``get_max_vehicle_code()``, by contrast, is called
+        UNCONDITIONALLY once per export (the export always seeds the
+        allocation base, even when no product ends up needing it). So
+        spying on it gives us the actual signal that the backfill
+        scaffolding still exists in the use case — currently true, so
+        the test fails today; after the backfill branch is removed,
+        both calls vanish and the test passes.
+
+        The test currently fails because the use case still calls
+        ``get_max_vehicle_code()`` unconditionally on every export.
+        After the backfill branch is removed from the use case, neither
+        spy is invoked and both assertions pass.
+        """
+        from prosell.infrastructure.repositories.product_repository_impl import (
+            SqlAlchemyProductRepository,
+        )
+
+        org = await _create_org(shared_session)
+        category = await _create_category(shared_session, org.tenant_id)
+        # Use a known, distinctive code so we can assert it appears in
+        # the CSV verbatim — `_make_product` would have produced a
+        # monotonically-increasing value, but the CSV `id` column is
+        # whatever the row carries in `attributes["vehicle_code"]`.
+        pinned_code = "424242"
+        product = _make_product(
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
+            category_id=category.id,
+            vin="VINDBGUARANTEED0001",
+        )
+        product.attributes["vehicle_code"] = pinned_code
+        shared_session.add(product)
+        await shared_session.flush()
+        _authenticate_as(_auth_user(org))
+
+        # Spy on BOTH backfill-scaffolding repository methods. Each
+        # spy records the call (so the assertion can name the offender)
+        # but never executes the real implementation (so the test
+        # cannot silently rely on the real method's no-op semantics).
+        backfill_calls: list[tuple[object, object]] = []
+        max_calls: list[None] = []
+
+        async def _spy_update_vehicle_code_if_absent(
+            self: object,  # noqa: ARG001
+            product_id: object,
+            code: object,
+        ) -> bool:
+            backfill_calls.append((product_id, code))
+            # Return False — the use case treats a False return as
+            # "row already had a code, nothing changed", which is
+            # exactly the post-trigger steady state we want to test.
+            return False
+
+        async def _spy_get_max_vehicle_code(self: object) -> int | None:  # noqa: ARG001
+            max_calls.append(None)
+            # Return a sentinel that exercises the use case's "empty
+            # table" branch (`base_code = (max or 0) + 1 = 1`) without
+            # touching the real DB MAX aggregate.
+            return None
+
+        monkeypatch.setattr(
+            SqlAlchemyProductRepository,
+            "update_vehicle_code_if_absent",
+            _spy_update_vehicle_code_if_absent,
+        )
+        monkeypatch.setattr(
+            SqlAlchemyProductRepository,
+            "get_max_vehicle_code",
+            _spy_get_max_vehicle_code,
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip",
+                params=_REQUIRED_EXPORT_PARAMS,
+            )
+
+        assert response.status_code == 200
+        with zipfile.ZipFile(BytesIO(response.content)) as archive:
+            csv_content = archive.read("catalogo.csv").decode("utf-8")
+
+        # (1) The row landed in the CSV with the exact vehicle_code we
+        # pinned, in the `id` column (CSV column index 0 in the 24-
+        # column client format — see `CLIENT_FORMAT_COLUMNS`).
+        rows = csv_content.splitlines()[1:]
+        assert len(rows) == 1, f"Expected exactly one row (the pinned product), got {len(rows)}"
+        columns = rows[0].split(";")
+        assert columns[0] == pinned_code, (
+            f"CSV id column must be the persisted vehicle_code "
+            f"({pinned_code!r}), got {columns[0]!r}"
+        )
+        # The distinguishing VIN is still in the last column — proves
+        # we are looking at OUR product, not a sibling row.
+        assert columns[-1] == "VINDBGUARANTEED0001"
+
+        # (2a) The per-row backfill primitive was NEVER called.
+        assert backfill_calls == [], (
+            "Use case must NOT call `update_vehicle_code_if_absent` "
+            "anymore — the DB trigger installed by the enforce-"
+            "vehicle_code_required migration guarantees vehicle_code "
+            f"on every vehicle-category product. Calls observed: {backfill_calls!r}"
+        )
+
+        # (2b) The pre-loop MAX read that seeded the backfill allocation
+        # was NEVER called. This is the assertion that fails today:
+        # the use case still does
+        #     base_vehicle_code = await self._product_repository.get_max_vehicle_code()
+        # unconditionally on every export (line ~248 of the use case),
+        # even when no product in the export needs backfilling. After
+        # the migration, the entire backfill branch — including the MAX
+        # read — must be removed.
+        assert max_calls == [], (
+            "Use case must NOT call `get_max_vehicle_code()` anymore — "
+            "the read exists only to seed the per-export base code for "
+            "runtime backfill, and that scaffolding is unreachable once "
+            "the DB trigger guarantees vehicle_code on every product. "
+            f"Calls observed: {len(max_calls)} call(s) during this export."
+        )

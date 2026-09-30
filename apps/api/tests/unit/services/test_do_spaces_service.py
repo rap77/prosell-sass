@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.exceptions import ClientError
 
-from prosell.application.ports.ido_spaces import StorageReadError
+from prosell.domain.ports.ido_spaces import StorageReadError
 from prosell.infrastructure.services.do_spaces_service import (
     DOSpacesService,
     generate_banner_path,

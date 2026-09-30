@@ -15,9 +15,9 @@ from sqlalchemy import and_, exists, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.core.config import settings
 from prosell.domain.entities.user import User
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.services.storage_keys import extract_storage_key_from_value
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (

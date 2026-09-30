@@ -19,9 +19,9 @@ from typing import cast
 from uuid import UUID
 
 from prosell.application.dto.product.create import CreateProductRequest
-from prosell.application.ports.ido_spaces import IDOSpacesService, StorageUploadError
 from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.product_exceptions import DuplicateVehicleCodeError
+from prosell.domain.ports.ido_spaces import IDOSpacesService, StorageUploadError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository

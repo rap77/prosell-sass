@@ -4,17 +4,11 @@ u1-catalog-export-api: assembles a single ZIP (BR1.5) containing the
 client-format CSV (24 columns, ';' separator, BR1.3/BR1.4) at its root
 plus one folder per vehicle with its available images (BR2.1-BR2.4).
 
-Mostly read-only — no new product is created and no other field is
-modified, but the export IS allowed to backfill a durable
-`attributes["vehicle_code"]` on a published product that lacks one
-(legacy pre-migration rows, bulk-imported products that bypassed
-`VehicleCodeAllocator`). Without that backfill, the legacy guard would
-silently drop those products and the CSV would land header-only. The
-backfill is atomic per row (`UPDATE ... WHERE ... IS NULL OR ... = ''`)
-so concurrent exports cannot collide; the partial unique index
-`ix_products_attrs_vehicle_code_unique` keeps the value globally unique.
-See Domain Design ADR-002 (`entities.md`) for the "no persisted entity
-is created or modified" rule this export narrowly excepts to honour.
+Pure read-only. `attributes["vehicle_code"]` is guaranteed present and
+numeric on every vehicle-category product by the database trigger
+installed in migration `20260929_0001_enforce_vehicle_code_required` —
+the create path allocates the value, the export only reads it. See
+Domain Design ADR-002 (`entities.md`).
 """
 
 import asyncio
@@ -28,13 +22,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from uuid import UUID
 
-from prosell.application.ports.ido_spaces import IDOSpacesService, StorageReadError
 from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.product_exceptions import (
-    DuplicateVehicleCodeError,
     EmptyCatalogExportError,
     ExportLimitExceededError,
 )
+from prosell.domain.ports.ido_spaces import IDOSpacesService, StorageReadError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
@@ -226,28 +219,6 @@ class ExportCatalogClientFormatUseCase:
         # that share a category.
         vertical_slug_by_leaf_category_id: dict[UUID, str | None] = {}
 
-        # One MAX read for the entire export — every product whose
-        # `attributes["vehicle_code"]` is NULL/empty/non-numeric gets a
-        # fresh code of `base_code + backfill_offset` allocated by the
-        # per-product loop below, so the export never silently drops a
-        # published vehicle whose code has yet to be assigned. We read
-        # MAX BEFORE the loop so a single SQL aggregate covers every
-        # backfill in this run; if a concurrent transaction lands a
-        # higher code between the read and the per-row UPDATE, the
-        # partial unique index `ix_products_attrs_vehicle_code_unique`
-        # surfaces it as a `DuplicateVehicleCodeError` (translated
-        # from the DB-level exception at the infrastructure boundary)
-        # that we drop with a warning (graceful degradation — same
-        # outcome as the legacy BR1.7-style exclusion, but logged).
-        #
-        # `base_code` is `MAX(...) + 1`, not `MAX(...)` itself — the
-        # first allocation must skip past the highest already-used
-        # code (and an empty DB starts at 1, not 0, matching
-        # `VehicleCodeAllocator.peek_next()` and the partial unique
-        # index that rejects 0 alongside NULL).
-        base_vehicle_code = await self._product_repository.get_max_vehicle_code()
-        base_code = (base_vehicle_code or 0) + 1
-
         rows: list[list[str]] = []
         # Per-INCLUDED-product metadata needed to place images in the
         # right ZIP folder, kept parallel to `included_products` by
@@ -257,94 +228,32 @@ class ExportCatalogClientFormatUseCase:
         image_urls_by_product: list[list[str]] = []
         included_products: list[Product] = []
 
-        # Index of the next backfill candidate within this export —
-        # `base_code + backfill_offset` is the code we offer to a
-        # product missing one. We deliberately do NOT advance
-        # `products`'s own index by the backfill counter, so the
-        # parallel `included_products` / `folder_names` /
-        # `image_urls_by_product` arrays stay aligned with the per-
-        # product iteration order (skip vs include both decrement
-        # `i`).
-        backfill_offset = 0
-
         for product in products:
-            # Default: read whatever the row already carries (the
-            # steady state — every properly created vehicle product has
-            # a numeric code in `attributes["vehicle_code"]`).
+            # `vehicle_code` is guaranteed present and numeric on every
+            # vehicle-category product by the database trigger installed
+            # in migration `20260929_0001_enforce_vehicle_code_required`
+            # — the export does not allocate codes, that is the create
+            # path's responsibility. We read whatever the row already
+            # carries.
             vehicle_code_raw = (product.attributes or {}).get("vehicle_code")
-            needs_backfill = vehicle_code_raw is None or str(vehicle_code_raw).strip() == ""
-
-            if needs_backfill:
-                # The row lacks a usable vehicle_code. Compute the next
-                # candidate code from the per-export base (`MAX(...) +
-                # backfill_offset`), then atomically try to write it
-                # ONLY IF the row is still NULL — `jsonb_set` plus the
-                # `WHERE attributes->>'vehicle_code' IS NULL` predicate
-                # give us a single-statement conditional UPDATE.
-                offered_code = base_code + backfill_offset
-                backfill_offset += 1
-                try:
-                    won_race = await self._product_repository.update_vehicle_code_if_absent(
-                        product.id, offered_code
-                    )
-                except DuplicateVehicleCodeError:
-                    # Cross-product code collision surfaced by the
-                    # partial unique index — another product already
-                    # holds `offered_code`. Skip the row with a warning
-                    # (graceful degradation, matches the pre-fix
-                    # exclusion behavior for the same visible symptom).
-                    # The infrastructure impl translates the underlying
-                    # unique-violation into this domain exception at the
-                    # Clean Architecture boundary — the application
-                    # layer only sees domain exceptions.
-                    logger.warning(
-                        "catalog_export.vehicle_code_backfill_skipped product_id=%s "
-                        "offered_code=%s reason=unique_index_collision",
-                        product.id,
-                        offered_code,
-                    )
-                    continue
-
-                if not won_race:
-                    # Another writer already backfilled this product
-                    # between our `get_all` read and our UPDATE. Re-read
-                    # this product's attributes (same single-row query
-                    # the create path uses, no full re-fetch) and use
-                    # the freshly persisted value if it's now a usable
-                    # numeric code; otherwise fall through to the
-                    # existing defensive exclusion below.
-                    #
-                    # Multi-tenancy: in single-org mode the product is
-                    # owned by `product.organization_id` (= the caller's
-                    # tenant); re-fetch under that tenant filter so we
-                    # never silently cross a tenant boundary. The
-                    # `all_organizations=True` path stays `None` — it's
-                    # the cross-tenant lookup the caller explicitly
-                    # authorized.
-                    refresh_tenant_id = None if all_organizations else product.organization_id
-                    refreshed = await self._product_repository.get_by_id(
-                        product.id, tenant_id=refresh_tenant_id
-                    )
-                    vehicle_code_raw = (
-                        (refreshed.attributes or {}).get("vehicle_code")
-                        if refreshed is not None
-                        else None
-                    )
-                else:
-                    vehicle_code_raw = offered_code
-
-            # Defensive: the JSONB functional index restricts itself
-            # to numeric values (the regex guard in
-            # product_repository_impl). A non-numeric legacy entry
-            # (whitespace, accidental text, etc.) — or a refresh that
-            # still left the row empty after a lost race — must NOT
-            # crash the export; we drop the row as a BR1.7-style
-            # exclusion, matching the original comment below.
             if vehicle_code_raw is None or str(vehicle_code_raw).strip() == "":
+                # BR1.7-style exclusion: the row was created before the
+                # trigger landed and somehow escaped the backfill. Skip
+                # with a warning so the empty CSV symptom stays debuggable
+                # — never crash the export over a single legacy row.
+                logger.warning(
+                    "catalog_export.vehicle_code_missing product_id=%s",
+                    product.id,
+                )
                 continue
             try:
                 vehicle_code_int = int(str(vehicle_code_raw).strip())
             except (TypeError, ValueError):
+                logger.warning(
+                    "catalog_export.vehicle_code_non_numeric product_id=%s value=%r",
+                    product.id,
+                    vehicle_code_raw,
+                )
                 continue
             if vehicle_code_int <= 0:
                 continue

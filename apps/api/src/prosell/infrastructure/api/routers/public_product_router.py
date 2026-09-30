@@ -13,8 +13,8 @@ from prosell.application.dto.product import (
     ProductImageUrlsResponse,
     PublicProductResponse,
 )
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.organization import Organization
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.repositories.organization_repository import (
     AbstractOrganizationRepository,
 )

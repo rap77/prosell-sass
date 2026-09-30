@@ -8,10 +8,10 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
 from prosell.application.use_cases.product.list_products import ListProductsUseCase
 from prosell.domain.entities.user import User
+from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.services.facebook_vehicle_value_catalog import get_options, reconcile
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
