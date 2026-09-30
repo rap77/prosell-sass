@@ -361,6 +361,13 @@ class StubProductRepository(AbstractProductRepository):
         del codes
         return set()
 
+    async def update_vehicle_code_if_absent(self, product_id: UUID, code: int) -> bool:
+        # Stub never exercises the export backfill path; mirror
+        # `vehicle_code_exists` and return False (no-op). Added to
+        # satisfy the abstract method added by the export backfill fix.
+        del product_id, code
+        return False
+
     async def get_all(
         self,
         tenant_id: UUID | None,

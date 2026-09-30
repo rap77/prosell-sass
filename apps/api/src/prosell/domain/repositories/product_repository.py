@@ -521,3 +521,50 @@ class AbstractProductRepository(ABC):
             none of them are, or if `codes` is empty.
         """
         pass
+
+    @abstractmethod
+    async def update_vehicle_code_if_absent(self, product_id: UUID, code: int) -> bool:
+        """
+        Atomically set ``attributes->>'vehicle_code'`` = ``code`` (text)
+        ONLY IF that JSONB key is currently NULL or an empty string.
+
+        Backs the catalog export backfill path (`u1-catalog-export-api`,
+        intent `export-vehicle-code-backfill`) — a published product
+        whose `attributes["vehicle_code"]` is NULL or `''` would otherwise
+        be dropped from the export by the BR1.7-style guard, leaving the
+        client CSV header-only. This method is the single-row race-safe
+        guard: two concurrent writers cannot both win, because the
+        `WHERE attributes->>'vehicle_code' IS NULL OR attributes->>'vehicle_code' = ''`
+        predicate matches at most one of them per row.
+
+        The stored value is text-formatted (matches the JSONB-side
+        representation; the regex guard on
+        `ix_products_attrs_vehicle_code_unique` accepts both numeric and
+        legacy mixed values, but numeric strings are the steady state).
+
+        Cross-product collisions on the partial unique index
+        `ix_products_attrs_vehicle_code_unique` are NOT covered here —
+        the infrastructure impl translates the underlying unique-violation
+        into the domain-level `DuplicateVehicleCodeError` so this domain
+        contract never references persistence-layer exception types. The
+        caller is expected to handle the domain exception (e.g. skip the
+        row, log a warning, retry with a different code).
+
+        Args:
+            product_id: UUID of the product row to update.
+            code: The `vehicle_code` (int) to write as text into
+                `attributes["vehicle_code"]`.
+
+        Returns:
+            True iff this caller's UPDATE affected a row — i.e., this
+            caller won the race and is responsible for the backfill.
+            False if the WHERE clause matched no rows, meaning another
+            writer already backfilled this product (or the product
+            was deleted between the caller's read and write).
+
+        Raises:
+            DuplicateVehicleCodeError: If the UPDATE collides with the
+                partial unique index — another product already holds the
+                same `code` value.
+        """
+        pass

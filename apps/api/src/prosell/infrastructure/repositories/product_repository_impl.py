@@ -5,11 +5,15 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.product_audit_log import ProductAuditLog
-from prosell.domain.exceptions.product_exceptions import ProductVersionConflictError
+from prosell.domain.exceptions.product_exceptions import (
+    DuplicateVehicleCodeError,
+    ProductVersionConflictError,
+)
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
@@ -828,6 +832,91 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             {"codes_text": [str(c) for c in codes_list]},
         )
         return {row for row in result.scalars().all() if row is not None}
+
+    async def update_vehicle_code_if_absent(self, product_id: UUID, code: int) -> bool:
+        """Atomic conditional backfill — see the abstract method docstring.
+
+        `jsonb_set(..., '{vehicle_code}', to_jsonb(:code_text), true)`
+        writes the value as a JSON text token (matching the JSONB-side
+        representation used by the partial unique index and the
+        `~ '^[0-9]+$'` regex guard in `get_max_vehicle_code`). The
+        `create_if_missing=true` flag is defensive — `attributes` is
+        `NOT NULL DEFAULT '{}'`, so the key never already exists.
+
+        The single-statement `UPDATE ... WHERE id = ... AND
+        (attributes->>'vehicle_code' IS NULL OR attributes->>'vehicle_code' = '')`
+        makes the whole write row-atomic: PostgreSQL guarantees that
+        among concurrent writers targeting the same `id`, exactly one
+        observes `result.rowcount == 1` and every other observes
+        `rowcount == 0`. The use case that calls this treats `False` as
+        "another writer already backfilled this product — re-read its
+        attributes". The empty-string branch treats legacy rows written
+        by older paths as missing too, so a NULL-or-empty
+        `attributes["vehicle_code"]` always backfills cleanly.
+
+        After a winning UPDATE we re-SELECT the row with
+        `populate_existing=True` so the session's identity-map entry
+        for that `id` reflects the post-UPDATE attributes JSONB. The
+        export loop relies on this when its "another writer already
+        backfilled it" branch re-reads
+        `product.attributes["vehicle_code"]` via `get_by_id` in the
+        same session (e.g. integration-test setups that reuse a single
+        AsyncSession across consecutive requests).
+
+        Cross-product uniqueness is enforced by the partial unique
+        index `ix_products_attrs_vehicle_code_unique`. A collision on
+        `code` (because some other product already holds that value)
+        surfaces as a `sqlalchemy.exc.IntegrityError` from
+        `session.execute()` and is translated here to the domain-level
+        `DuplicateVehicleCodeError` — application/domain code never
+        imports `sqlalchemy.exc` (Clean Architecture boundary).
+        """
+        stmt = text(
+            """
+            UPDATE products
+            SET attributes = jsonb_set(
+                attributes,
+                '{vehicle_code}',
+                to_jsonb(CAST(:code_text AS TEXT)),
+                true
+            )
+            WHERE id = CAST(:product_id AS UUID)
+              AND (
+                attributes->>'vehicle_code' IS NULL
+                OR attributes->>'vehicle_code' = ''
+              )
+            """
+        )
+        try:
+            result = await self.session.execute(
+                stmt,
+                {"code_text": str(code), "product_id": str(product_id)},
+            )
+        except IntegrityError as exc:
+            # Partial unique index collision on
+            # `ix_products_attrs_vehicle_code_unique` — another product
+            # already holds `code`. Translate to the domain-level
+            # exception so the application layer never has to import
+            # `sqlalchemy.exc`.
+            raise DuplicateVehicleCodeError(code) from exc
+        # ponytail: `rowcount` exists at runtime on the UPDATE result
+        # returned by `text(...)`, pyright doesn't see it on the wider
+        # `Result[Any]` type.
+        won = int(result.rowcount or 0) > 0  # type: ignore[attr-defined]
+        if won:
+            # Refresh the cached ProductModel for this row in-place so
+            # the caller's subsequent `get_by_id` (identity-map hit)
+            # observes the freshly-persisted attributes JSONB instead
+            # of the stale pre-update copy. `populate_existing=True`
+            # is the standard SQLAlchemy idiom for "refetch into an
+            # already-tracked instance"; the row is still in the
+            # identity map because `get_all` ran in the same session.
+            await self.session.execute(
+                select(ProductModel)
+                .where(ProductModel.id == product_id)
+                .execution_options(populate_existing=True)
+            )
+        return won
 
     def _audit_log_to_entity(self, model: ProductAuditLogModel) -> ProductAuditLog:
         """Convert ORM model to domain entity."""

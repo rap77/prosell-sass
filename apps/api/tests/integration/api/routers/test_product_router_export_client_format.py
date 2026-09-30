@@ -614,3 +614,273 @@ class TestExportClientFormatRequiredParams:
             )
 
         assert response.status_code == 422
+
+
+def _make_product_without_vehicle_code(
+    *,
+    tenant_id: UUID,
+    organization_id: UUID,
+    category_id: UUID,
+    vin: str | None = None,
+    image_urls: list[str] | None = None,
+) -> ProductModel:
+    """A published product whose `attributes` deliberately omits the
+    `vehicle_code` key — the exact pre-fix shape that used to produce a
+    header-only client CSV. The backfill path must persist a code for
+    this row and emit both the CSV row AND the image folder."""
+    attributes: dict[str, object] = {
+        "year": 2021,
+        "make": "Honda",
+        "model": "Civic",
+        "mileage": 30000,
+        "exterior_color": "Negro",
+    }
+    if vin is not None:
+        attributes["vin"] = vin
+    return ProductModel(
+        id=uuid4(),
+        tenant_id=tenant_id,
+        organization_id=organization_id,
+        category_id=category_id,
+        title="2021 Honda Civic",
+        slug=f"2021-honda-civic-{uuid4().hex[:6]}",
+        description="Reliable compact",
+        price_cents=1850000,
+        currency="USD",
+        status=ProductStatus.PUBLISHED.value,
+        image_urls=image_urls or [],
+        condition="used",
+        attributes=attributes,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("setup_override")
+class TestExportClientFormatVehicleCodeBackfill:
+    """`export-vehicle-code-backfill` fix: a published product with no
+    `vehicle_code` in `attributes` used to be dropped by the BR1.7-style
+    guard (silent header-only CSV + missing images). The export now
+    backfills a fresh code via the atomic
+    `update_vehicle_code_if_absent` UPDATE and persists it durably in
+    the JSONB column so the partial unique index
+    `ix_products_attrs_vehicle_code_unique` enforces integrity across
+    re-exports.
+    """
+
+    async def test_product_without_vehicle_code_is_included_with_persisted_code(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """(a) Backfill — one published product lacking `vehicle_code`
+        yields a CSV row AND an image folder, and the code is
+        durably persisted in `attributes->>'vehicle_code'`."""
+        org = await _create_org(shared_session)
+        category = await _create_category(shared_session, org.tenant_id)
+        product = _make_product_without_vehicle_code(
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
+            category_id=category.id,
+            vin="VINNOCODE00000001",
+            image_urls=["orgs/tenant/vehicles/backfill-photo.jpg"],
+        )
+        shared_session.add(product)
+        await shared_session.flush()
+        _authenticate_as(_auth_user(org))
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
+
+        assert response.status_code == 200
+        with zipfile.ZipFile(BytesIO(response.content)) as archive:
+            csv_content = archive.read("catalogo.csv").decode("utf-8")
+            namelist = archive.namelist()
+
+        # Row included and contains the distinguishing VIN
+        assert "VINNOCODE00000001" in csv_content
+        # Image folder emitted alongside the row (would be missing
+        # under the old silent-skip behavior) — the ZIP layout is
+        # `{org_segment}/{vehicle_folder}/<filename>`, so we look for
+        # the file by basename instead of guessing the prefix.
+        assert any(name.endswith("backfill-photo.jpg") for name in namelist)
+        # Sanity: the CSV id column carries a positive integer we
+        # backfilled (the test asserts >= 1, not a specific value,
+        # because the global counter may have advanced across tests
+        # in the same session).
+        id_column = csv_content.splitlines()[1].split(";")[0]
+        assert int(id_column) >= 1
+
+        # Code is durably persisted on the row, so a subsequent
+        # `get_max_vehicle_code()` would see it.
+        await shared_session.refresh(product)
+        persisted_code = (product.attributes or {}).get("vehicle_code")
+        assert persisted_code is not None
+        assert int(str(persisted_code).strip()) >= 1
+
+    async def test_export_is_stable_across_two_consecutive_calls(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """(b) Stability — calling the export twice in a row yields the
+        SAME `id` (vehicle_code) for the backfilled product and the
+        SAME folder/file structure. The first call backfills and
+        persists; the second call reads the persisted value and emits
+        it again without re-allocating."""
+        org = await _create_org(shared_session)
+        category = await _create_category(shared_session, org.tenant_id)
+        product = _make_product_without_vehicle_code(
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
+            category_id=category.id,
+            vin="VINSTABLE00000001",
+            image_urls=["orgs/tenant/vehicles/stable-photo.jpg"],
+        )
+        shared_session.add(product)
+        await shared_session.flush()
+        _authenticate_as(_auth_user(org))
+
+        async def _export_once() -> tuple[str, list[str]]:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get(
+                    "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+                )
+            assert response.status_code == 200
+            with zipfile.ZipFile(BytesIO(response.content)) as archive:
+                return (
+                    archive.read("catalogo.csv").decode("utf-8"),
+                    sorted(archive.namelist()),
+                )
+
+        csv_first, namelist_first = await _export_once()
+        csv_second, namelist_second = await _export_once()
+
+        # Both exports must include the backfilled product, with the
+        # SAME `id` column (CSV column index 0 in the 24-column
+        # client format — see `CLIENT_FORMAT_COLUMNS`).
+        for csv_content, label in ((csv_first, "first"), (csv_second, "second")):
+            rows = csv_content.splitlines()[1:]
+            assert len(rows) == 1, f"{label} export must contain exactly one row, got {len(rows)}"
+            columns = rows[0].split(";")
+            assert columns[0]  # `id` (vehicle_code) is non-empty
+            assert int(columns[0]) >= 1
+            assert columns[-1] == "VINSTABLE00000001"
+
+        # Same product, same `id` across both exports — proves the
+        # backfill was durable and the second export reuses it instead
+        # of allocating a fresh one.
+        id_first = csv_first.splitlines()[1].split(";")[0]
+        id_second = csv_second.splitlines()[1].split(";")[0]
+        assert id_first == id_second
+        # Same folder/image structure too (the ZIP is byte-stable for
+        # everything except the filename which contains a date suffix
+        # the router builds — we only inspect body content here).
+        assert namelist_first == namelist_second
+
+    async def test_concurrent_backfill_serializes_safely(
+        self, shared_session: AsyncSession
+    ) -> None:
+        """(c) Concurrency — sequential proof.
+
+        The atomic `UPDATE ... WHERE attributes->>'vehicle_code' IS NULL`
+        predicate serializes concurrent writers targeting the SAME
+        product: exactly one observes `rowcount == 1`; every other
+        observes `rowcount == 0` and re-reads the persisted value.
+        This test exercises the loser's re-read branch in isolation by
+        running two `update_vehicle_code_if_absent` calls against the
+        same row and asserting both are safe (no exception, final
+        value is one of the two offered codes).
+
+        Documented limitation: true cross-process concurrency on a
+        single row is hard to simulate in pytest without forking the
+        process — the WHERE-clause atomicity guarantee is a PostgreSQL
+        semantic, not an application-level invariant, and the rest of
+        the export suite already covers the steady-state codepath. We
+        additionally seed two products so the test also exercises the
+        cross-product (multi-row) backfill path that the export loop
+        takes per-iteration.
+        """
+        from prosell.infrastructure.repositories.product_repository_impl import (
+            SqlAlchemyProductRepository,
+        )
+
+        org = await _create_org(shared_session)
+        category = await _create_category(shared_session, org.tenant_id)
+        # Seed TWO products lacking vehicle_code, both targeted at the
+        # same export. The use case's per-product loop will try to
+        # backfill each one in turn; cross-product collisions are not
+        # expected because `base_code + i` is unique per i.
+        product_a = _make_product_without_vehicle_code(
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
+            category_id=category.id,
+            vin="VINCONCURRENT0001A",
+        )
+        product_b = _make_product_without_vehicle_code(
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
+            category_id=category.id,
+            vin="VINCONCURRENT0001B",
+        )
+        shared_session.add(product_a)
+        shared_session.add(product_b)
+        await shared_session.flush()
+        _authenticate_as(_auth_user(org))
+
+        # Same-row concurrency: two backfill attempts against
+        # `product_a`. The second MUST observe `rowcount == 0` and
+        # silently no-op (loser's branch) — the WHERE-clause guard
+        # makes the second write a no-op rather than a collision.
+        repo = SqlAlchemyProductRepository(shared_session)
+        first_won = await repo.update_vehicle_code_if_absent(product_a.id, 1001)
+        second_won = await repo.update_vehicle_code_if_absent(product_a.id, 2002)
+
+        assert first_won is True
+        assert second_won is False  # WHERE clause blocked the second writer
+
+        await shared_session.refresh(product_a)
+        persisted_a = int(str((product_a.attributes or {})["vehicle_code"]))
+        # The persisted value is the WINNER's offer (1001), not the
+        # loser's (2002) — proves the loser's UPDATE was a no-op, not
+        # an overwrite.
+        assert persisted_a == 1001
+
+        # Multi-row backfill through the actual export: both seeded
+        # products need to land in the CSV. `product_b` is still NULL
+        # at this point, so the export backfills it; `product_a`
+        # already carries 1001 and rides through unchanged.
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
+        assert response.status_code == 200
+        with zipfile.ZipFile(BytesIO(response.content)) as archive:
+            csv_content = archive.read("catalogo.csv").decode("utf-8")
+        assert "VINCONCURRENT0001A" in csv_content
+        assert "VINCONCURRENT0001B" in csv_content
+
+        # Both rows are durably persisted after the export
+        await shared_session.refresh(product_a)
+        await shared_session.refresh(product_b)
+        assert int(str((product_a.attributes or {})["vehicle_code"])) == 1001
+        assert (product_b.attributes or {}).get("vehicle_code") is not None
+
+        # Sanity: the status filter still excludes non-published
+        # products even if they lack a vehicle_code (defense in depth).
+        draft = _make_product_without_vehicle_code(
+            tenant_id=org.tenant_id,
+            organization_id=org.id,
+            category_id=category.id,
+            vin="VINDRAFT000000001",
+        )
+        draft.status = ProductStatus.DRAFT.value
+        shared_session.add(draft)
+        await shared_session.flush()
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/products/export-client-format.zip", params=_REQUIRED_EXPORT_PARAMS
+            )
+        assert response.status_code == 200
+        with zipfile.ZipFile(BytesIO(response.content)) as archive:
+            csv_content = archive.read("catalogo.csv").decode("utf-8")
+        assert "VINDRAFT000000001" not in csv_content
