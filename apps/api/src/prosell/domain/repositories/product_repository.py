@@ -63,6 +63,7 @@ class AbstractProductRepository(ABC):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -85,7 +86,13 @@ class AbstractProductRepository(ABC):
             tenant_id: Tenant UUID. None lifts tenant isolation entirely —
                 callers MUST only pass None for a user holding
                 Permission.ORG_ADMIN_VIEW_ALL.
-            organization_id: Filter by organization
+            organization_id: Filter by a single organization
+            organization_ids: Filter by a SET of organizations (`IN` clause)
+                — mutually exclusive with `organization_id`; when non-empty,
+                takes precedence and `organization_id` is ignored. Callers
+                MUST only pass this for a user holding
+                Permission.ORG_ADMIN_VIEW_ALL whenever it names any
+                organization other than the caller's own.
             category_id: Filter by category
             status: Filter by status
             condition: Filter by condition
@@ -242,6 +249,7 @@ class AbstractProductRepository(ABC):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -258,7 +266,9 @@ class AbstractProductRepository(ABC):
 
         Args:
             tenant_id: Tenant UUID. None lifts tenant isolation (admin bypass).
-            organization_id: Filter by organization
+            organization_id: Filter by a single organization
+            organization_ids: Filter by a SET of organizations — see
+                `get_all()` for the precedence/permission contract.
             category_id: Filter by category
             status: Filter by status
             condition: Filter by condition

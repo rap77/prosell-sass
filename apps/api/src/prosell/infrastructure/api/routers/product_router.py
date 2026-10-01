@@ -278,6 +278,7 @@ def _check_org_scope_permission(
     organization_id: UUID | None,
     *,
     all_organizations: bool = False,
+    organization_ids: list[UUID] | None = None,
 ) -> tuple[UUID, bool]:
     """Validate organization-scoping authorization shared by every product list
     endpoint that accepts `organization_id`.
@@ -296,6 +297,13 @@ def _check_org_scope_permission(
     underlying permission as the point cross-org case, checked here
     regardless of `organization_id` (which is ignored by the caller when
     `all_organizations=True`, so its own value never bypasses this).
+
+    `organization_ids` (multi-select catalog filter/export) requires the
+    SAME permission as a single cross-org `organization_id`, checked
+    per-entry: any id other than the caller's own tenant_id requires
+    `ORG_ADMIN_VIEW_ALL`, same as the singular case — a caller without the
+    permission can only ever "multi-select" a list containing just their
+    own organization.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
@@ -310,6 +318,15 @@ def _check_org_scope_permission(
         organization_id is not None
         and not can_view_all_orgs
         and organization_id != current_user.tenant_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot filter products by another organization's organization_id",
+        )
+    if (
+        organization_ids
+        and not can_view_all_orgs
+        and any(org_id != current_user.tenant_id for org_id in organization_ids)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -782,6 +799,7 @@ async def export_catalog_client_format(
     facebook_groups_fallback: str,
     organization_id: UUID | None = None,
     all_organizations: bool = False,
+    organization_ids: list[UUID] | None = Query(default=None),
 ) -> StreamingResponse:
     """Export the catalog in the client CSV+ZIP format (u1-catalog-export-api,
     u1-cross-org-export-api).
@@ -811,12 +829,24 @@ async def export_catalog_client_format(
     mode (BR2.4), and the download filename is `catalogo_TODAS_*.zip`
     (BR2.8) instead of the per-organization pattern below.
 
+    `organization_ids` (catalog multi-select filter/export) exports the
+    SET of organizations named — same `ORG_ADMIN_VIEW_ALL` gate per-entry
+    as a single `organization_id`, checked by `_check_org_scope_permission`.
+    Ignored when `all_organizations` is set (broadest mode wins); takes
+    precedence over a plain `organization_id` otherwise. Download filename
+    is `catalogo_MULTIPLE_*.zip`, same reasoning as the all-orgs case
+    (no single organization code to embed).
+
     Distinct from, and does not replace, the generic `GET /export.csv`
     endpoint above (FR1.1).
     """
     owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(
-        current_user, organization_id, all_organizations=all_organizations
+        current_user,
+        organization_id,
+        all_organizations=all_organizations,
+        organization_ids=organization_ids,
     )
+    multi_org_scope = not all_organizations and bool(organization_ids)
     # Unlike list_products (which defaults an admin's omitted organization_id
     # to a global browse, see _check_org_scope_permission's docstring), export
     # always defaults to the caller's own org when organization_id is omitted
@@ -837,8 +867,9 @@ async def export_catalog_client_format(
 
     try:
         result = await use_case.execute(
-            organization_id=None if all_organizations else effective_tenant_id,
+            organization_id=None if (all_organizations or multi_org_scope) else effective_tenant_id,
             all_organizations=all_organizations,
+            organization_ids=organization_ids if multi_org_scope else None,
             base_folder=base_folder,
             facebook_groups_fallback=facebook_groups_fallback,
         )
@@ -862,6 +893,14 @@ async def export_catalog_client_format(
             owner_tenant_id,
             result.organization_count,
         )
+    elif multi_org_scope:
+        logger.info(
+            "Cross-org catalog export (MULTIPLE_ORGS): scope=MULTIPLE_ORGS user=%s own_org=%s "
+            "organization_count=%s",
+            current_user.id,
+            owner_tenant_id,
+            result.organization_count,
+        )
     elif effective_tenant_id != owner_tenant_id:
         logger.info(
             f"Cross-org catalog export: user={current_user.id} "
@@ -872,6 +911,10 @@ async def export_catalog_client_format(
         # BR2.8 — fixed pattern, no per-organization segment (a single
         # organization_code would be ambiguous across 2+ organizations).
         filename = f"catalogo_TODAS_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
+    elif multi_org_scope:
+        # Same reasoning as the all-orgs case — a set of organizations has
+        # no single code to embed in the filename.
+        filename = f"catalogo_MULTIPLE_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
     else:
         org_segment = result.organization_code or str(effective_tenant_id)
         filename = f"catalogo_{org_segment}_{datetime.now(UTC).strftime('%Y%m%d')}.zip"
@@ -906,6 +949,7 @@ async def list_products(
     current_user: CurrentUser,
     db: DbSession,
     organization_id: UUID | None = None,
+    organization_ids: list[UUID] | None = Query(default=None),
     category_id: UUID | None = None,
     product_status: ProductStatus | None = Query(default=None, alias="status"),
     condition: str | None = None,
@@ -921,7 +965,12 @@ async def list_products(
     """
     List products with optional filters.
 
-    - **organization_id**: Filter by organization
+    - **organization_id**: Filter by a single organization
+    - **organization_ids**: Filter by a SET of organizations (repeat the
+      param, e.g. `?organization_ids=<uuid1>&organization_ids=<uuid2>`) —
+      mutually exclusive with `organization_id` (takes precedence when
+      non-empty). Requires `ORG_ADMIN_VIEW_ALL` for any id other than the
+      caller's own organization, same as `organization_id`.
     - **category_id**: Filter by category
     - **status**: Filter by status (draft, pending, published, etc.)
     - **condition**: Filter by condition (new, used, etc.)
@@ -942,7 +991,9 @@ async def list_products(
       category's `attribute_schema`; non-filterable or unknown keys
       are rejected with 422. Range keys accept `<name>_min`/`<name>_max`.
     """
-    tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
+    tenant_id, can_view_all_orgs = _check_org_scope_permission(
+        current_user, organization_id, organization_ids=organization_ids
+    )
 
     effective_tenant = None if can_view_all_orgs else tenant_id
 
@@ -1003,6 +1054,7 @@ async def list_products(
     result = await use_case.execute(
         tenant_id=effective_tenant,
         organization_id=organization_id,
+        organization_ids=organization_ids,
         category_id=category_id,
         status=product_status.value if product_status else None,
         condition=condition,

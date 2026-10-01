@@ -487,7 +487,7 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert result.organization_count is None
         # The product-scope filter is the single caller org, never lifted.
         product_repository.count.assert_called_once_with(
-            tenant_id=tenant_id, status=ProductStatus.PUBLISHED
+            tenant_id=tenant_id, organization_ids=None, status=ProductStatus.PUBLISHED
         )
         product_repository.get_all.assert_called_once()
         assert product_repository.get_all.call_args.kwargs["tenant_id"] == tenant_id
@@ -505,7 +505,7 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         tenant_id = uuid4()
         use_case, *_ = _make_use_case(tenant_id=tenant_id, product_count=0, products=[])
 
-        with pytest.raises(ValueError, match="organization_id is required"):
+        with pytest.raises(ValueError, match="organization_id or organization_ids is required"):
             await use_case.execute(
                 organization_id=None,
                 all_organizations=False,
@@ -545,7 +545,7 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert result.organization_code is None
         # Product-scope filter is lifted entirely for "all organizations".
         product_repository.count.assert_called_once_with(
-            tenant_id=None, status=ProductStatus.PUBLISHED
+            tenant_id=None, organization_ids=None, status=ProductStatus.PUBLISHED
         )
         assert product_repository.get_all.call_args.kwargs["tenant_id"] is None
 
@@ -562,6 +562,73 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert rows_by_cod_dealer == {"AA", "BB"}
         organization_repository.get_by_ids.assert_called_once()
         assert set(organization_repository.get_by_ids.call_args.args[0]) == {org_a_id, org_b_id}
+
+    @pytest.mark.asyncio
+    async def test_organization_ids_mode_scopes_to_the_selected_set(self) -> None:
+        # Catalog multi-select filter/export: a non-empty `organization_ids`
+        # lifts tenant isolation (like `all_organizations`) but scopes via
+        # the repository's `organization_ids` IN-filter instead of "every
+        # organization on the platform" — distinct, ambiguous org_code (None)
+        # but a real organization_count, same shape as all_organizations.
+        org_a_id = uuid4()
+        org_b_id = uuid4()
+        product_a = _make_product(org_a_id, exterior_color="Rojo")
+        product_b = _make_product(org_b_id, exterior_color="Azul")
+
+        use_case, product_repository, organization_repository, _ = _make_use_case(
+            tenant_id=org_a_id,
+            product_count=2,
+            products=[product_a, product_b],
+            organizations=[
+                Organization(id=org_a_id, name="Org A", tenant_id=org_a_id, code="AA"),
+                Organization(id=org_b_id, name="Org B", tenant_id=org_b_id, code="BB"),
+            ],
+        )
+
+        result = await use_case.execute(
+            organization_id=None,
+            all_organizations=False,
+            organization_ids=[org_a_id, org_b_id],
+            base_folder="base/",
+            facebook_groups_fallback="",
+        )
+
+        assert result.product_count == 2
+        assert result.organization_count == 2
+        assert result.organization_code is None
+        product_repository.count.assert_called_once_with(
+            tenant_id=None, organization_ids=[org_a_id, org_b_id], status=ProductStatus.PUBLISHED
+        )
+        assert product_repository.get_all.call_args.kwargs["tenant_id"] is None
+        assert product_repository.get_all.call_args.kwargs["organization_ids"] == [
+            org_a_id,
+            org_b_id,
+        ]
+        organization_repository.get_by_ids.assert_called_once()
+        assert set(organization_repository.get_by_ids.call_args.args[0]) == {org_a_id, org_b_id}
+
+    @pytest.mark.asyncio
+    async def test_all_organizations_wins_over_organization_ids_when_both_set(self) -> None:
+        # Broadest mode wins: `all_organizations=True` ignores a concurrently
+        # supplied `organization_ids` entirely — mirrors the existing
+        # `all_organizations` vs `organization_id` precedence.
+        tenant_id = uuid4()
+        product = _make_product(tenant_id)
+        use_case, product_repository, _, _ = _make_use_case(
+            tenant_id=tenant_id, product_count=1, products=[product]
+        )
+
+        await use_case.execute(
+            organization_id=None,
+            all_organizations=True,
+            organization_ids=[uuid4()],
+            base_folder="base/",
+            facebook_groups_fallback="",
+        )
+
+        product_repository.count.assert_called_once_with(
+            tenant_id=None, organization_ids=None, status=ProductStatus.PUBLISHED
+        )
 
     @pytest.mark.asyncio
     async def test_product_without_category_translation_is_excluded(self) -> None:

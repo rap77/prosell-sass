@@ -372,6 +372,7 @@ class StubProductRepository(AbstractProductRepository):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -389,6 +390,7 @@ class StubProductRepository(AbstractProductRepository):
     ) -> list[Product]:
         del (
             organization_id,
+            organization_ids,
             category_id,
             status,
             condition,
@@ -474,6 +476,7 @@ class StubProductRepository(AbstractProductRepository):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -486,6 +489,7 @@ class StubProductRepository(AbstractProductRepository):
         has_images: bool | None = None,
     ) -> int:
         del (
+            organization_ids,
             category_id,
             status,
             condition,

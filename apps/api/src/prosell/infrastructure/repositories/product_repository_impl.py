@@ -125,6 +125,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         stmt: Select,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -146,7 +147,12 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         if tenant_id is not None:
             stmt = stmt.where(ProductModel.tenant_id == tenant_id)
 
-        if organization_id is not None:
+        if organization_ids:
+            # Mutually exclusive with `organization_id` — a non-empty set
+            # takes precedence (same "the broader param wins" pattern as
+            # `all_organizations` over `organization_id` elsewhere).
+            stmt = stmt.where(ProductModel.organization_id.in_(organization_ids))
+        elif organization_id is not None:
             stmt = stmt.where(ProductModel.organization_id == organization_id)
 
         if category_id is not None:
@@ -220,6 +226,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -240,6 +247,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             select(ProductModel),
             tenant_id=tenant_id,
             organization_id=organization_id,
+            organization_ids=organization_ids,
             category_id=category_id,
             status=status,
             condition=condition,
@@ -442,6 +450,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
         condition: ProductCondition | None = None,
@@ -462,6 +471,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             select(func.count(ProductModel.id)),
             tenant_id=tenant_id,
             organization_id=organization_id,
+            organization_ids=organization_ids,
             category_id=category_id,
             status=status,
             condition=condition,

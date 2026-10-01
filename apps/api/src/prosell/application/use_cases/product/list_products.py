@@ -30,6 +30,7 @@ class ListProductsUseCase:
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
         category_id: UUID | None = None,
         status: str | None = None,
         condition: str | None = None,
@@ -48,7 +49,10 @@ class ListProductsUseCase:
 
         Args:
             tenant_id: Tenant UUID
-            organization_id: Filter by organization
+            organization_id: Filter by a single organization
+            organization_ids: Filter by a SET of organizations — see
+                `AbstractProductRepository.get_all()` for the
+                precedence/permission contract.
             category_id: Filter by category
             status: Filter by status (string)
             condition: Filter by condition (string)
@@ -74,6 +78,7 @@ class ListProductsUseCase:
         products = await self.product_repository.get_all(
             tenant_id=tenant_id,
             organization_id=organization_id,
+            organization_ids=organization_ids,
             category_id=category_id,
             status=status_enum,
             condition=condition_enum,
@@ -93,6 +98,7 @@ class ListProductsUseCase:
         total = await self.product_repository.count(
             tenant_id=tenant_id,
             organization_id=organization_id,
+            organization_ids=organization_ids,
             category_id=category_id,
             status=status_enum,
             condition=condition_enum,

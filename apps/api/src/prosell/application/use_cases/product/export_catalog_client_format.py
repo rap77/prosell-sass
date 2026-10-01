@@ -100,17 +100,19 @@ class ExportCatalogClientFormatResult:
     content, which already embeds the sanitized code in every folder
     name via `build_vehicle_zip_folder_name()`. It is `None` for a
     single-organization export whose organization has no code AND for
-    every `all_organizations=True` export (u1-cross-org-export-api) —
-    ambiguous across 2+ organizations, so the router's own filename for
-    that mode never depends on it (BR2.8: fixed `catalogo_TODAS_*`
-    pattern instead).
+    every `all_organizations=True` or multi-organization (`organization_ids`)
+    export (u1-cross-org-export-api) — ambiguous across 2+ organizations,
+    so the router's own filename for those modes never depends on it
+    (BR2.8: fixed `catalogo_TODAS_*` pattern for all-orgs; a similar
+    generic pattern for multi-org).
 
-    `organization_count` is `None` for a single-organization export
-    (the concept doesn't apply) and the count of DISTINCT organizations
+    `organization_count` is `None` for a single-organization export (the
+    concept doesn't apply) and the count of DISTINCT organizations
     actually represented in the export for `all_organizations=True`
-    (BR2.5/FR6.1) — surfaced so the router's own cross-org audit log
-    (`product_router.py`, "Cross-org catalog export: ...") can report it
-    without re-deriving it from the ZIP.
+    (BR2.5/FR6.1) or a non-empty `organization_ids` — surfaced so the
+    router's own cross-org audit log (`product_router.py`, "Cross-org
+    catalog export: ...") can report it without re-deriving it from the
+    ZIP.
     """
 
     zip_bytes: bytes
@@ -147,15 +149,18 @@ class ExportCatalogClientFormatUseCase:
         all_organizations: bool,
         base_folder: str,
         facebook_groups_fallback: str,
+        organization_ids: list[UUID] | None = None,
     ) -> ExportCatalogClientFormatResult:
         """Build the export ZIP for the resolved catalog scope.
 
         `organization_id` is the effective tenant ALREADY RESOLVED and
         authorized by the router (u1-cross-org-export-api) — this use
-        case makes no authorization decision of its own. When
-        `all_organizations` is `True`, `organization_id` is ignored and
-        the catalog scope is every `published` product on the platform
-        (BR2.2); otherwise `organization_id` is the single effective
+        case makes no authorization decision of its own. Three mutually
+        exclusive modes, broadest wins when more than one is supplied:
+        `all_organizations=True` scopes to every `published` product on
+        the platform (BR2.2); else a non-empty `organization_ids`
+        (catalog multi-select filter/export) scopes to that SET of
+        organizations; else `organization_id` is the single effective
         tenant (the caller's own organization or an already-authorized
         cross-org target).
 
@@ -164,34 +169,47 @@ class ExportCatalogClientFormatUseCase:
                 (BR4.1).
             ExportLimitExceededError: More than `EXPORT_MAX_PRODUCTS`
                 `published` products in scope — a GLOBAL cap across all
-                organizations when `all_organizations=True` (BR2.4/BR3.1).
+                organizations in scope when `all_organizations=True` or
+                `organization_ids` is set (BR2.4/BR3.1).
         """
-        if not all_organizations and organization_id is None:
+        if not all_organizations and not organization_ids and organization_id is None:
             # Defense in depth: the router always resolves a concrete
-            # `organization_id` before calling execute() when
-            # `all_organizations` is False (never omitted, per BR2.2/FR1.4).
-            # Fail closed here too, so a future caller can't silently widen
-            # the scope to every tenant by omitting both.
-            raise ValueError("organization_id is required when all_organizations is False")
+            # `organization_id` (or `organization_ids`) before calling
+            # execute() when `all_organizations` is False (never omitted,
+            # per BR2.2/FR1.4). Fail closed here too, so a future caller
+            # can't silently widen the scope to every tenant by omitting
+            # all three.
+            raise ValueError(
+                "organization_id or organization_ids is required when all_organizations is False"
+            )
 
         started_at = time.monotonic()
 
-        tenant_filter = None if all_organizations else organization_id
+        multi_org_scope = not all_organizations and bool(organization_ids)
+        tenant_filter = None if (all_organizations or multi_org_scope) else organization_id
+        org_ids_filter = organization_ids if multi_org_scope else None
+
+        scope_label = (
+            "ALL_ORGS" if all_organizations else "MULTIPLE_ORGS" if multi_org_scope else "SINGLE"
+        )
 
         count = await self._product_repository.count(
             tenant_id=tenant_filter,
+            organization_ids=org_ids_filter,
             status=ProductStatus.PUBLISHED,
         )
         if count == 0:
             raise EmptyCatalogExportError(
-                tenant_id="ALL_ORGS" if all_organizations else str(organization_id)
+                tenant_id=(
+                    scope_label if (all_organizations or multi_org_scope) else str(organization_id)
+                )
             )
         if count > EXPORT_MAX_PRODUCTS:
             logger.warning(
                 "catalog_export.limit_exceeded scope=%s organization_id=%s attempted_count=%s "
                 "limit=%s",
-                "ALL_ORGS" if all_organizations else "SINGLE",
-                None if all_organizations else organization_id,
+                scope_label,
+                None if (all_organizations or multi_org_scope) else organization_id,
                 count,
                 EXPORT_MAX_PRODUCTS,
             )
@@ -199,6 +217,7 @@ class ExportCatalogClientFormatUseCase:
 
         products = await self._product_repository.get_all(
             tenant_id=tenant_filter,
+            organization_ids=org_ids_filter,
             status=ProductStatus.PUBLISHED,
             skip=0,
             limit=EXPORT_MAX_PRODUCTS,
@@ -383,6 +402,14 @@ class ExportCatalogClientFormatUseCase:
                 len(distinct_org_ids),
                 duration_ms,
             )
+        elif multi_org_scope:
+            logger.info(
+                "catalog_export.completed_multiple_orgs scope=MULTIPLE_ORGS product_count=%s "
+                "organization_count=%s duration_ms=%s",
+                len(included_products),
+                len(distinct_org_ids),
+                duration_ms,
+            )
         else:
             logger.info(
                 "catalog_export.completed organization_id=%s product_count=%s duration_ms=%s",
@@ -392,14 +419,16 @@ class ExportCatalogClientFormatUseCase:
             )
 
         organization_code = None
-        if not all_organizations and organization_id is not None:
+        if not all_organizations and not multi_org_scope and organization_id is not None:
             organization_code = org_code_by_id.get(organization_id)
 
         return ExportCatalogClientFormatResult(
             zip_bytes=zip_bytes,
             product_count=len(included_products),
             organization_code=organization_code,
-            organization_count=len(distinct_org_ids) if all_organizations else None,
+            organization_count=(
+                len(distinct_org_ids) if (all_organizations or multi_org_scope) else None
+            ),
         )
 
     async def _resolve_vertical_slug(
