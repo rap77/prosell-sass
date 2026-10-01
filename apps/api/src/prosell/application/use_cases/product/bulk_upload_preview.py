@@ -1,12 +1,9 @@
 """Bulk upload preview use case — dry-run analysis of CSV before import."""
 
 import csv
-import io
 import logging
-import zipfile
 from dataclasses import dataclass
 from io import StringIO
-from pathlib import Path
 from typing import cast
 from uuid import UUID, uuid4
 
@@ -67,7 +64,6 @@ class BulkUploadPreviewUseCase:
         """
         self._organization_repository = organization_repository
         self._product_repository = product_repository
-        self._required_fields = {"VIN", "price", "title"}
 
     async def execute(
         self,
@@ -178,6 +174,7 @@ class BulkUploadPreviewUseCase:
 
         # Map images from ZIP if provided
         images_count = 0
+        folder_matched_paths: set[str] = set()
         if zip_bytes and csv_rows_for_image_mapping:
             mapper = CSVImageMapper()
             # ponytail: use dummy UUIDs for preview (no actual tenant/org needed)
@@ -185,13 +182,14 @@ class BulkUploadPreviewUseCase:
                 zip_bytes, csv_rows_for_image_mapping, uuid4(), uuid4()
             )
             images_count = mapping_result.total_images
+            folder_matched_paths = {m.csv_path for m in mapping_result.mapped}
 
         # ponytail: image-filename validation — only when a ZIP was
         # actually uploaded. CSV-only previews skip this entirely (per
         # the spec); the existing ZIP-folder-prefix matching done above
         # stays unchanged so legacy CSV formats continue to work.
         if zip_bytes:
-            self._apply_image_filename_validations(rows, zip_bytes)
+            self._apply_image_filename_validations(rows, folder_matched_paths)
 
         # Recount after the two post-loop validations: both can flip
         # `importable=False` on rows that were previously green, which
@@ -396,43 +394,33 @@ class BulkUploadPreviewUseCase:
     def _apply_image_filename_validations(
         self,
         rows: list[PreviewRowResponse],
-        zip_bytes: bytes,
+        folder_matched_paths: set[str],
     ) -> None:
-        """Flag rows whose CSV `path` column references a missing ZIP entry.
+        """Flag rows whose CSV `path` matches no folder in the ZIP.
 
-        Walks the ZIP entry names once (NEVER reads entry bodies — the
-        preview is a dry-run and the runtime path is what actually
-        uploads bytes), collects every entry's basename into a set,
-        and compares each row's `path` basename against the set.
-
-        A row whose basename is not in the set gets
-        `importable=False` and the missing-image error appended to
-        `errors[]`. Rows whose `path` is empty (or sanitized away to
-        `None`) are skipped — no error, since there's nothing to look
-        up. Rows whose `path` references a folder prefix (existing
-        client CSVs use that shape for `CSVImageMapper` to match
-        against folder names) will fail this check by design: the
-        basename of a folder path like `IMG/Vehiculos/MF/2020-EXPLORER`
-        is `2020-EXPLORER`, which won't be in the ZIP's basename set.
-        The legacy folder-prefix matching done by `CSVImageMapper`
-        still runs separately, so existing flows are not broken —
-        this check just surfaces the case where the user's `path`
-        doesn't name a file that exists in the upload.
+        This project's only supported CSV convention is: `path` names a
+        vehicle FOLDER holding one or more images, all of which get
+        associated with that row's VIN (e.g.
+        `IMG/Vehiculos/AF/2004-FORD-F150-216K-ROJO-AF`). A plain-filename
+        `path` isn't a convention any client actually sends, so there is
+        a single source of truth here: `folder_matched_paths`, the set
+        of `csv_path` values that `CSVImageMapper.map_images` already
+        resolved to at least one ZIP entry — computed once by the
+        caller against the same ZIP. A row whose `path` isn't in that
+        set gets `importable=False` and the missing-image error
+        appended to `errors[]`, which is exactly what the real import
+        (`BulkUploadVehiclesUseCase`, which relies solely on
+        `CSVImageMapper`) will do against the same ZIP. Rows whose
+        `path` is empty (or sanitized away to `None`) are skipped — no
+        error, since there's nothing to look up.
 
         Args:
             rows: Preview rows, mutated in place (same contract as
                 `_apply_vehicle_code_validations`).
-            zip_bytes: Raw ZIP bytes from the upload. Caller guarantees
-                `zip_bytes is not None` — this method is only entered
-                from the branch that already checked.
+            folder_matched_paths: `csv_path` values that
+                `CSVImageMapper.map_images` already resolved against
+                this ZIP (empty when no rows carried a `path`).
         """
-        zip_filenames = self._collect_zip_basenames(zip_bytes)
-        if not zip_filenames:
-            # Empty ZIP or unreadable archive — nothing to validate
-            # against. Fail-open: leave rows untouched so the user can
-            # still see what the analyzer caught pre-upload.
-            return
-
         # Walk every preview row carrying at least one image reference
         # (`images_found` is populated from `mapped.image_path`, which is
         # the raw `path` column after `_sanitize_path` rejects `..`
@@ -444,42 +432,11 @@ class BulkUploadPreviewUseCase:
         for preview_row in rows:
             if not preview_row.images_found:
                 continue
-            # `images_found` carries whatever `mapped.image_path` was,
-            # which is the sanitized raw `path`. The basename check
-            # uses THAT value (already stripped of `..` and empty).
             candidate = preview_row.images_found[0]
-            basename = Path(candidate).name
-            if not basename or basename in zip_filenames:
+            if candidate in folder_matched_paths:
                 continue
             preview_row.errors.append(
                 f"image '{candidate}' not found in upload — referenced by "
                 f"'path' column but no file in the ZIP matches"
             )
             preview_row.importable = False
-
-    @staticmethod
-    def _collect_zip_basenames(zip_bytes: bytes) -> set[str]:
-        """Return the set of every ZIP entry's basename, or empty on error.
-
-        Reads entry NAMES only — never decompresses bodies — so this is
-        safe for the multi-hundred-MB client uploads. Defensively wraps
-        `BadZipFile` / `LargeZipFile` so a malformed upload produces an
-        empty set instead of crashing the whole preview; the runtime
-        path will fail more loudly on the same bytes.
-        """
-        names: set[str] = set()
-        try:
-            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-                for entry in zf.infolist():
-                    if entry.is_dir():
-                        continue
-                    base = Path(entry.filename).name
-                    if base:
-                        names.add(base)
-        except (zipfile.BadZipFile, OSError, ValueError) as e:
-            # BadZipFile: not a ZIP at all.
-            # OSError: corrupt central directory / truncated file.
-            # ValueError: oversized filename, etc.
-            logger.warning("Preview ZIP basename collection failed: %s", e)
-            return set()
-        return names

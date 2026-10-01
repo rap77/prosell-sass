@@ -164,16 +164,19 @@ async def test_preview_does_not_flag_empty_csv_id() -> None:
 
 
 @pytest.mark.asyncio
-async def test_preview_accepts_row_path_present_in_zip() -> None:
-    """Row with `path` referencing a filename that IS in the ZIP →
-    no image-validation error."""
+async def test_preview_accepts_row_path_matching_a_zip_folder() -> None:
+    """Row with `path` naming a vehicle FOLDER that IS in the ZIP, with
+    one or more images under it → no image-validation error. This is
+    the project's only supported convention — a client CSV's `path`
+    always names a folder holding the vehicle's images, never a single
+    file path directly."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
     product_repository = AsyncMock()
     product_repository.vehicle_codes_exist.return_value = set()
     use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
-    csv_content = "id;title;price;path;VIN\n1;DJ;25000;photo1.jpg;1FMSK7DH7LGA77418\n"
-    zip_bytes = _make_zip_with_files(["org/vehicle/photo1.jpg"])
+    csv_content = "id;title;price;path;VIN\n1;DJ;25000;org/vehicle;1FMSK7DH7LGA77418\n"
+    zip_bytes = _make_zip_with_files(["org/vehicle/photo1.jpg", "org/vehicle/photo2.jpg"])
 
     result = await use_case.execute(csv_content, zip_bytes=zip_bytes, tenant_id=uuid4())
 
@@ -181,27 +184,29 @@ async def test_preview_accepts_row_path_present_in_zip() -> None:
     # image-found check passes; row stays importable as far as this
     # validator is concerned. Other validators (org code etc.) are
     # irrelevant for this assertion.
-    assert not any("image 'photo1.jpg' not found in upload" in e for e in row.errors), row.errors
+    assert not any("image 'org/vehicle' not found in upload" in e for e in row.errors), row.errors
 
 
 @pytest.mark.asyncio
 async def test_preview_flags_row_path_missing_from_zip() -> None:
-    """Row with `path` referencing a filename NOT in the ZIP → error
-    and `importable=False`. The error must name the missing path so
-    the user knows which row to fix."""
+    """Row with `path` naming a folder that has no match anywhere in
+    the ZIP → error and `importable=False`. The error must name the
+    missing path so the user knows which row to fix."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
     product_repository = AsyncMock()
     product_repository.vehicle_codes_exist.return_value = set()
     use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
-    csv_content = "id;title;price;path;VIN\n1;DJ;25000;missing.jpg;1FMSK7DH7LGA77418\n"
+    csv_content = "id;title;price;path;VIN\n1;DJ;25000;org/missing-vehicle;1FMSK7DH7LGA77418\n"
     zip_bytes = _make_zip_with_files(["org/vehicle/other_photo.jpg"])
 
     result = await use_case.execute(csv_content, zip_bytes=zip_bytes, tenant_id=uuid4())
 
     row = result.rows[0]
     assert row.importable is False
-    assert any("image 'missing.jpg' not found in upload" in e for e in row.errors), row.errors
+    assert any("image 'org/missing-vehicle' not found in upload" in e for e in row.errors), (
+        row.errors
+    )
     assert any(
         "referenced by 'path' column but no file in the ZIP matches" in e for e in row.errors
     ), row.errors
@@ -248,3 +253,53 @@ async def test_preview_skips_image_validation_when_no_zip_uploaded() -> None:
         assert not any("not found in upload" in e for e in row.errors), row.errors
     # No DB collision either — the new zip-walker isn't entered.
     product_repository.vehicle_codes_exist.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_preview_accepts_folder_prefix_path_matched_by_csv_image_mapper() -> None:
+    """Row with a legacy client `path` naming a vehicle FOLDER (no file
+    extension, e.g. `IMG/Vehiculos/AF/2004-FORD-F150-216K-ROJO-AF`) must
+    NOT be flagged as missing when `CSVImageMapper`'s folder-prefix
+    matcher resolves it against files nested under that folder name in
+    the ZIP — even though the folder's basename never equals any
+    individual filename in the ZIP. Regression for a real production
+    false-positive: the basename-only check used to flag these rows as
+    errors unconditionally, by design, blocking an otherwise-importable
+    client upload."""
+    organization_repository = AsyncMock()
+    organization_repository.get_by_codes.return_value = []
+    product_repository = AsyncMock()
+    product_repository.vehicle_codes_exist.return_value = set()
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
+    folder_path = (
+        "/Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/AF/2004-FORD-F150-216K-ROJO-AF"
+    )
+    csv_content = f"id;title;price;path;VIN\n1;AF;25000;{folder_path};1FTPX12554NB18918\n"
+    zip_bytes = _make_zip_with_files([f"{folder_path}/photo1.jpg", f"{folder_path}/photo2.jpg"])
+
+    result = await use_case.execute(csv_content, zip_bytes=zip_bytes, tenant_id=uuid4())
+
+    row = result.rows[0]
+    assert row.importable is True
+    assert not any("not found in upload" in e for e in row.errors), row.errors
+
+
+@pytest.mark.asyncio
+async def test_preview_still_flags_folder_prefix_path_with_no_matching_folder() -> None:
+    """Row with a folder-shaped `path` that genuinely has no matching
+    folder anywhere in the ZIP still gets flagged — the OR-combination
+    fix must not turn the check into a no-op for real missing images."""
+    organization_repository = AsyncMock()
+    organization_repository.get_by_codes.return_value = []
+    product_repository = AsyncMock()
+    product_repository.vehicle_codes_exist.return_value = set()
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
+    folder_path = "IMG/Vehiculos/AF/2004-FORD-F150-216K-ROJO-AF"
+    csv_content = f"id;title;price;path;VIN\n1;AF;25000;{folder_path};1FTPX12554NB18918\n"
+    zip_bytes = _make_zip_with_files(["IMG/Vehiculos/AF/OTHER-VEHICLE/photo1.jpg"])
+
+    result = await use_case.execute(csv_content, zip_bytes=zip_bytes, tenant_id=uuid4())
+
+    row = result.rows[0]
+    assert row.importable is False
+    assert any(f"image '{folder_path}' not found in upload" in e for e in row.errors), row.errors
