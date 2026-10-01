@@ -145,15 +145,13 @@ class MappedCSVRow:
     facebook_groups: list[str] | None = None
     label: str | None = None
     publicado: bool = False
-    # `csv_id` — the value of the CSV's `id` column (the same column that
-    # the export writes the durable `Product.vehicle_code` into). On
-    # import, the bulk-upload path threads this into the persisted
-    # product's `vehicle_code` so a re-export round-trips the same
-    # identifier. Distinct from `row_number` (the CSV row's line
-    # counter for error reporting — NEVER confuse the two: `row_number`
-    # is for error messages, `csv_id` is for the legacy product id
-    # that becomes `Product.vehicle_code`). `None` when the CSV has no
-    # `id` column or the column is empty for that row.
+    # `csv_id` — the value of the CSV's `id` column, kept for display
+    # only (surfaced in the preview as "ID CSV"). It plays NO role in
+    # the persisted product's `vehicle_code` — that is always sourced
+    # from the internal allocator (`VehicleCodeAllocator`), never from
+    # this value. Distinct from `row_number` (the CSV row's line
+    # counter for error reporting — NEVER confuse the two). `None` when
+    # the CSV has no `id` column or the column is empty for that row.
     csv_id: int | None = None
 
 
@@ -399,13 +397,10 @@ class CSVFieldMapper:
                 row.get("label", "").strip(), MAX_SHORT_TEXT_LENGTH, "label", row_number
             ),
             publicado=CSVFieldMapper.parse_publicado(row.get("publicado")),
-            # The CSV's `id` column carries the legacy product id that
-            # the export writes `Product.vehicle_code` into — importing
-            # the same value lets a re-export round-trip the same
-            # identifier. Empty / non-numeric / missing values parse to
-            # `None`, in which case the bulk-upload use case falls back
-            # to the allocator (or skips the column for the product, per
-            # the caller's choice).
+            # The CSV's `id` column is the client's own legacy reference —
+            # display-only (preview's "ID CSV" column). It is never
+            # written into `Product.vehicle_code`; the bulk-upload use
+            # case always sources that from the internal allocator.
             csv_id=CSVFieldMapper._parse_optional_int(row.get("id")),
         )
 

@@ -97,7 +97,6 @@ class TestBulkUploadPersistsImageUrls:
         # Mock product repo, capturing every create/update call
         product_repo = AsyncMock()
         product_repo.get_by_vin.return_value = None  # New product (create path)
-        product_repo.vehicle_code_exists.return_value = False
         captured: list[Product] = []
 
         async def capture(entity: Product) -> Product:
@@ -122,6 +121,7 @@ class TestBulkUploadPersistsImageUrls:
             category_repository=category_repo,
             organization_repository=organization_repo,
             do_spaces_service=do_spaces_service,
+            vehicle_code_allocator=AsyncMock(),
             csv_image_mapper=mocked_mapper,
         )
         result = await use_case.execute(

@@ -12,7 +12,6 @@ from prosell.application.dto.product.bulk_upload import (
     PreviewSummaryResponse,
 )
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
-from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper
 
@@ -49,21 +48,14 @@ class BulkUploadPreviewUseCase:
     def __init__(
         self,
         organization_repository: AbstractOrganizationRepository,
-        product_repository: AbstractProductRepository,
     ) -> None:
         """Initialize the preview use case.
 
         Args:
             organization_repository: Used to resolve CSV org codes
                 against existing organizations, scoped to the caller's tenant.
-            product_repository: Used to check `vehicle_code` collisions
-                against persisted products during the preview's
-                dry-run analysis. Injected (not constructed inside) so
-                tests can swap an `AsyncMock` and the router can share
-                the same session-bound repo as the rest of the request.
         """
         self._organization_repository = organization_repository
-        self._product_repository = product_repository
 
     async def execute(
         self,
@@ -93,9 +85,6 @@ class BulkUploadPreviewUseCase:
         error_count = 0
         detected_org_codes: set[str] = set()
         csv_rows_for_image_mapping: list[dict[str, str]] = []
-        #: `csv_id` (int) → row numbers that share that id — both for
-        #: within-CSV duplicate detection and for batched DB lookup.
-        csv_id_to_rows: dict[int, list[int]] = {}
 
         csv_file = StringIO(csv_content)
         reader = csv.DictReader(csv_file, delimiter=";")
@@ -118,22 +107,6 @@ class BulkUploadPreviewUseCase:
                 if preview_row.title and preview_row.title.strip():
                     detected_org_codes.add(preview_row.title.strip())
 
-                # ponytail: collect csv_id (the legacy id the export writes
-                # into `vehicle_code`) for the duplicate + DB-collision
-                # validation below. Parsed from the raw row so we capture
-                # it even when `_analyze_row` rejects the row for other
-                # reasons (the error-stamped row keeps its csv_id).
-                csv_id_raw = row_dict.get("id", "")
-                if csv_id_raw is not None:
-                    csv_id_stripped = csv_id_raw.strip()
-                    if csv_id_stripped:
-                        try:
-                            csv_id_int = int(csv_id_stripped)
-                        except ValueError:
-                            csv_id_int = None
-                        if csv_id_int is not None:
-                            csv_id_to_rows.setdefault(csv_id_int, []).append(idx)
-
             except (ValueError, KeyError, TypeError) as e:
                 # ValueError: csv_field_mapper raises on bad VIN/price/missing required
                 # KeyError: row_dict missing expected column
@@ -152,23 +125,6 @@ class BulkUploadPreviewUseCase:
                         errors=[str(e)],
                     )
                 )
-                # Same duplicate/collision bookkeeping for the error-stamped
-                # row — we still want to flag a duplicated code even when
-                # the row itself fails parsing for an unrelated reason.
-                if error_csv_id:
-                    try:
-                        csv_id_int = int(error_csv_id)
-                    except ValueError:
-                        csv_id_int = None
-                    if csv_id_int is not None:
-                        csv_id_to_rows.setdefault(csv_id_int, []).append(idx)
-
-        # ponytail: vehicle_code collisions — single batched DB lookup for
-        # every distinct csv_id, then per-row error stamping for both
-        # within-CSV duplicates and DB collisions. Done BEFORE the ZIP
-        # validation so the order of error messages in `errors[]` is
-        # deterministic: code issues first, image issues after.
-        await self._apply_vehicle_code_validations(rows, csv_id_to_rows)
 
         total = len(rows)
 
@@ -320,77 +276,6 @@ class BulkUploadPreviewUseCase:
             errors=errors,
         )
 
-    async def _apply_vehicle_code_validations(
-        self,
-        rows: list[PreviewRowResponse],
-        csv_id_to_rows: dict[int, list[int]],
-    ) -> None:
-        """Flag rows whose `csv_id` (→ `vehicle_code`) is unusable.
-
-        Two distinct failures, both surfaced as `errors[]` entries on the
-        offending `PreviewRowResponse` and `importable=False`:
-
-        1. **Within-CSV duplicate** — the same `csv_id` appears on two or
-           more rows. The error message lists the OTHER row numbers (not
-           the current one), so the user can locate the conflict in the
-           file without rereading the whole CSV.
-        2. **DB collision** — the `csv_id` is already persisted on some
-           other product. Single batched lookup against
-           `vehicle_codes_exist(codes)` regardless of how many distinct
-           codes are in the CSV — important because the client's data
-           can have thousands of rows.
-
-        Args:
-            rows: The preview rows already produced by `_analyze_row`.
-                Mutated in place: `importable=False` flipped on rows
-                that fail validation, and the new error strings
-                appended to `errors[]`.
-            csv_id_to_rows: Mapping built during the per-row analysis
-                loop, `csv_id` → list of row numbers (1-indexed) that
-                carry that id. Empty means the CSV had no parseable
-                ids and the method is a no-op.
-        """
-        if not csv_id_to_rows:
-            return
-
-        # Build a quick row_number -> row lookup for O(1) stamping.
-        row_by_number = {r.row_number: r for r in rows}
-
-        # 1. Within-CSV duplicates — pure local check, no DB.
-        for csv_id, row_numbers in csv_id_to_rows.items():
-            if len(row_numbers) < 2:
-                continue
-            # Sort so the "other rows" list is deterministic; exclude
-            # the current row when stamping so the message points the
-            # user at the OTHER occurrences, not back at itself.
-            sorted_rows = sorted(row_numbers)
-            for current in sorted_rows:
-                other_rows = [r for r in sorted_rows if r != current]
-                other_str = ", ".join(str(r) for r in other_rows)
-                target = row_by_number.get(current)
-                if target is None:
-                    continue
-                target.errors.append(
-                    f"vehicle_code '{csv_id}' is duplicated in this CSV "
-                    f"(also on row(s) {other_str})"
-                )
-                target.importable = False
-
-        # 2. DB collisions — single batched lookup for every distinct
-        # code. Empty input short-circuits inside the repo.
-        existing_codes = await self._product_repository.vehicle_codes_exist(csv_id_to_rows.keys())
-        for csv_id, row_numbers in csv_id_to_rows.items():
-            if csv_id not in existing_codes:
-                continue
-            for row_number in row_numbers:
-                target = row_by_number.get(row_number)
-                if target is None:
-                    continue
-                target.errors.append(
-                    f"vehicle_code '{csv_id}' already exists in the platform — must be unique"
-                )
-                target.importable = False
-
     def _apply_image_filename_validations(
         self,
         rows: list[PreviewRowResponse],
@@ -415,8 +300,7 @@ class BulkUploadPreviewUseCase:
         error, since there's nothing to look up.
 
         Args:
-            rows: Preview rows, mutated in place (same contract as
-                `_apply_vehicle_code_validations`).
+            rows: Preview rows, mutated in place.
             folder_matched_paths: `csv_path` values that
                 `CSVImageMapper.map_images` already resolved against
                 this ZIP (empty when no rows carried a `path`).

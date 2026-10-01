@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
 from sqlalchemy.ext.asyncio import create_async_engine
 from tests.integration._constants import TEST_DB_URL
 
@@ -37,14 +38,36 @@ MANUAL_ENUMS = [
 async def main() -> None:
     engine = create_async_engine(TEST_DB_URL)
     async with engine.begin() as conn:
-        # Create ENUMs that have create_type=False in models
+        # Wipe any prior run's tables FIRST. This script always means
+        # "rebuild from scratch," never incremental — and it de-risks the
+        # ENUM drop below: Postgres refuses DROP TYPE while a column still
+        # uses it, so a bare `drop()` (no CASCADE) would fail on a second
+        # run against an already-populated schema if we dropped the enum
+        # before its dependent table.
+        await conn.run_sync(Base.metadata.drop_all)
+
+        # Create ENUMs that have create_type=False in models. Both DROP and
+        # CREATE go through SQLAlchemy's own PostgreSQL ENUM DDL construct
+        # (handles identifier/label quoting internally) instead of
+        # hand-rolled SQL — GGA finding, fixed. `MANUAL_ENUMS` is a
+        # hardcoded, developer-controlled constant (never external input),
+        # but the project standard rejects string-interpolated DDL
+        # regardless of actual exploitability.
         for enum_name, values in MANUAL_ENUMS:
-            values_sql = ", ".join(f"'{v}'" for v in values)
-            await conn.execute(text(f"DROP TYPE IF EXISTS {enum_name} CASCADE"))
-            await conn.execute(text(f"CREATE TYPE {enum_name} AS ENUM ({values_sql})"))
+            pg_enum = PG_ENUM(*values, name=enum_name)
+            await conn.run_sync(lambda sync_conn, e=pg_enum: e.drop(sync_conn, checkfirst=True))
+            await conn.run_sync(lambda sync_conn, e=pg_enum: e.create(sync_conn, checkfirst=False))
         await conn.run_sync(Base.metadata.create_all)
+        # `products_vehicle_code_seq` is a raw Postgres sequence created by
+        # Alembic migration `20260926_0001` — it has no SQLAlchemy model, so
+        # `create_all` never creates it. `VehicleCodeAllocator.allocate_next()`
+        # (used by product creation and bulk vehicle upload) depends on it
+        # existing. Same defensive `IF NOT EXISTS` the migration itself uses.
+        await conn.execute(
+            text("CREATE SEQUENCE IF NOT EXISTS products_vehicle_code_seq AS BIGINT")
+        )
     await engine.dispose()
-    print(f"Created {len(MANUAL_ENUMS)} ENUMs + {len(Base.metadata.tables)} tables")
+    print(f"Created {len(MANUAL_ENUMS)} ENUMs + {len(Base.metadata.tables)} tables + 1 sequence")
 
 
 if __name__ == "__main__":

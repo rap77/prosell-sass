@@ -37,7 +37,6 @@ class TestBulkUploadVehiclesUseCase:
         organization_id fallback — when the caller supplies one, unresolved
         per-row codes fall back to it instead (see the per-row loop)."""
         product_repository = AsyncMock()
-        product_repository.vehicle_code_exists.return_value = False
         organization_repository = AsyncMock()
         organization_repository.get_by_codes.return_value = []
         use_case = BulkUploadVehiclesUseCase(
@@ -45,6 +44,7 @@ class TestBulkUploadVehiclesUseCase:
             category_repository=AsyncMock(),
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=AsyncMock(),
         )
 
         with pytest.raises(ValueError, match="Unknown organization codes: DJ, RM"):
@@ -68,7 +68,6 @@ class TestBulkUploadVehiclesUseCase:
 
         # Mock product repository
         product_repository = AsyncMock()
-        product_repository.vehicle_code_exists.return_value = False
         # First call returns None (create), second call returns existing (update)
         product_repository.get_by_vin.side_effect = [
             None,  # First VIN doesn't exist
@@ -106,11 +105,14 @@ class TestBulkUploadVehiclesUseCase:
             Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ"),
             Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="RM"),
         ]
+        vehicle_code_allocator = AsyncMock()
+        vehicle_code_allocator.allocate_next.return_value = 101
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=vehicle_code_allocator,
         )
 
         # Act
@@ -137,6 +139,12 @@ class TestBulkUploadVehiclesUseCase:
         assert result.results[1].status == "updated"
         assert result.results[1].vin == "2T1BURHE0LC123456"
 
+        # The created product's `vehicle_code` comes from the allocator —
+        # NEVER from the CSV's `id` column (which is "1" for this row).
+        assert created_products[0].attributes["vehicle_code"] == "101"
+        # The updated (existing-VIN) row never touches the allocator at all.
+        vehicle_code_allocator.allocate_next.assert_awaited_once()
+
     @pytest.mark.asyncio
     async def test_use_case_handles_missing_vin(self):
         """Test that rows without VIN are marked as failed."""
@@ -154,7 +162,6 @@ class TestBulkUploadVehiclesUseCase:
         category_id = uuid4()
 
         product_repository = AsyncMock()
-        product_repository.vehicle_code_exists.return_value = False
         category_repository = AsyncMock()
 
         organization_repository = AsyncMock()
@@ -166,6 +173,7 @@ class TestBulkUploadVehiclesUseCase:
             category_repository=category_repository,
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=AsyncMock(),
         )
 
         # Act
@@ -183,27 +191,38 @@ class TestBulkUploadVehiclesUseCase:
         assert "VIN is required" in result.results[0].errors[0]
 
     @pytest.mark.asyncio
-    async def test_use_case_marks_duplicate_vehicle_code_as_row_failure(self):
-        """A persisted CSV id collision must not abort subsequent import rows."""
+    async def test_use_case_ignores_csv_id_duplicates_and_allocates_internal_codes(self):
+        """The CSV's `id` column no longer determines `vehicle_code` — two
+        rows sharing the same `id` both import successfully, each getting
+        its own internally-allocated `vehicle_code` from the sequence."""
         tenant_id = uuid4()
         organization_id = uuid4()
         category_id = uuid4()
         csv_content = (
-            "id;title;price;VIN\n42;DJ;25000;1FMSK7DH7LGA77418\n43;DJ;25000;2T1BURHE0LC123456\n"
+            "id;title;price;VIN\n42;DJ;25000;1FMSK7DH7LGA77418\n42;DJ;25000;2T1BURHE0LC123456\n"
         )
 
         product_repository = AsyncMock()
         product_repository.get_by_vin.side_effect = [None, None]
-        product_repository.vehicle_code_exists.side_effect = [True, False]
+        created_products = []
+
+        async def mock_create(product):
+            created_products.append(product)
+            return product
+
+        product_repository.create.side_effect = mock_create
         organization_repository = AsyncMock()
         organization_repository.get_by_codes.return_value = [
             Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
         ]
+        vehicle_code_allocator = AsyncMock()
+        vehicle_code_allocator.allocate_next.side_effect = [201, 202]
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=AsyncMock(),
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=vehicle_code_allocator,
         )
 
         result = await use_case.execute(
@@ -213,12 +232,50 @@ class TestBulkUploadVehiclesUseCase:
             category_id=category_id,
         )
 
-        assert result.imported_count == 1
-        assert result.failed_count == 1
-        assert result.results[0].status == "failed"
-        assert result.results[0].errors == ["vehicle_code 42 is already used by another product"]
-        assert result.results[1].status == "imported"
-        product_repository.create.assert_awaited_once()
+        assert result.imported_count == 2
+        assert result.failed_count == 0
+        assert created_products[0].attributes["vehicle_code"] == "201"
+        assert created_products[1].attributes["vehicle_code"] == "202"
+        assert vehicle_code_allocator.allocate_next.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_use_case_does_not_reallocate_vehicle_code_on_update(self):
+        """Updating an existing VIN match must never call the allocator or
+        touch its persisted `vehicle_code` — the merge into `attributes`
+        preserves whatever code the product already has, regardless of
+        what the CSV's `id` column says for that row."""
+        tenant_id = uuid4()
+        organization_id = uuid4()
+        category_id = uuid4()
+        csv_content = "id;title;price;VIN\n999;DJ;25000;1FMSK7DH7LGA77418\n"
+
+        existing = Mock(spec=Product, id=uuid4(), attributes={"vehicle_code": "7"})
+        product_repository = AsyncMock()
+        product_repository.get_by_vin.return_value = existing
+
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
+        vehicle_code_allocator = AsyncMock()
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=vehicle_code_allocator,
+        )
+
+        result = await use_case.execute(
+            csv_content=csv_content,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+        )
+
+        assert result.updated_count == 1
+        vehicle_code_allocator.allocate_next.assert_not_awaited()
+        assert existing.attributes["vehicle_code"] == "7"
 
     @pytest.mark.asyncio
     async def test_use_case_preserves_existing_images_when_import_has_no_zip(self):
@@ -239,7 +296,6 @@ class TestBulkUploadVehiclesUseCase:
 
         product_repository = AsyncMock()
         product_repository.get_by_vin.return_value = existing
-        product_repository.vehicle_code_exists.return_value = False
         organization_repository = AsyncMock()
         organization_repository.get_by_codes.return_value = [
             Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
@@ -249,6 +305,7 @@ class TestBulkUploadVehiclesUseCase:
             category_repository=AsyncMock(),
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=AsyncMock(),
         )
 
         result = await use_case.execute(
@@ -272,7 +329,6 @@ class TestBulkUploadVehiclesUseCase:
 
         product_repository = AsyncMock()
         product_repository.get_by_vin.return_value = None
-        product_repository.vehicle_code_exists.return_value = False
         created_products = []
 
         async def mock_create(product):
@@ -291,11 +347,14 @@ class TestBulkUploadVehiclesUseCase:
             Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ"),
             Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="RM"),
         ]
+        vehicle_code_allocator = AsyncMock()
+        vehicle_code_allocator.allocate_next.side_effect = [301, 302]
         use_case = BulkUploadVehiclesUseCase(
             product_repository=product_repository,
             category_repository=category_repository,
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=vehicle_code_allocator,
         )
 
         # Act
@@ -351,7 +410,6 @@ class TestBulkUploadVehiclesUseCase:
 
         product_repository = AsyncMock()
         product_repository.get_by_vin.return_value = None
-        product_repository.vehicle_code_exists.return_value = False
         created_products = []
 
         async def mock_create(product):
@@ -379,6 +437,7 @@ class TestBulkUploadVehiclesUseCase:
             category_repository=category_repository,
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=AsyncMock(),
         )
 
         result = await use_case.execute(
@@ -422,6 +481,7 @@ class TestBulkUploadVehiclesUseCase:
             category_repository=AsyncMock(),
             organization_repository=organization_repository,
             do_spaces_service=AsyncMock(),
+            vehicle_code_allocator=AsyncMock(),
         )
 
         with pytest.raises(ValueError, match="Unknown organization codes: DJ, RM"):
@@ -478,7 +538,6 @@ class TestBulkUploadVehiclesUseCase:
         # No existing product → create branch (also exercises the
         # pre-write guard so we don't persist an orphan row).
         product_repository.get_by_vin.return_value = None
-        product_repository.vehicle_code_exists.return_value = False
 
         category_repository = AsyncMock()
         category_repository.get_by_id.return_value = Mock(id=category_id, tenant_id=tenant_id)
@@ -495,6 +554,7 @@ class TestBulkUploadVehiclesUseCase:
             category_repository=category_repository,
             organization_repository=organization_repository,
             do_spaces_service=do_spaces_service,
+            vehicle_code_allocator=AsyncMock(),
         )
 
         result = await use_case.execute(

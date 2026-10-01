@@ -20,13 +20,13 @@ from uuid import UUID
 
 from prosell.application.dto.product.create import CreateProductRequest
 from prosell.domain.entities.product import Product
-from prosell.domain.exceptions.product_exceptions import DuplicateVehicleCodeError
 from prosell.domain.ports.ido_spaces import IDOSpacesService, StorageUploadError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper, ImageMappingResult
+from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,7 @@ class BulkUploadVehiclesUseCase:
         category_repository: AbstractCategoryRepository,
         organization_repository: AbstractOrganizationRepository,
         do_spaces_service: IDOSpacesService,
+        vehicle_code_allocator: VehicleCodeAllocator,
         csv_image_mapper: CSVImageMapper | None = None,
     ) -> None:
         """
@@ -89,12 +90,18 @@ class BulkUploadVehiclesUseCase:
             category_repository: Category repository for validation
             organization_repository: Organization repository for code resolution
             do_spaces_service: DO Spaces service for image upload
+            vehicle_code_allocator: Assigns the next internal `vehicle_code`
+                for every brand-new row — required (not optional) because
+                this use case only ever creates vehicle-category products,
+                and the DB trigger `prosell_enforce_vehicle_code_trigger`
+                rejects an INSERT with no code.
             csv_image_mapper: Image mapper for ZIP-based image association
         """
         self.product_repository = product_repository
         self.category_repository = category_repository
         self.organization_repository = organization_repository
         self.do_spaces_service = do_spaces_service
+        self.vehicle_code_allocator = vehicle_code_allocator
         self.csv_image_mapper = csv_image_mapper or CSVImageMapper()
 
     async def execute(
@@ -206,7 +213,7 @@ class BulkUploadVehiclesUseCase:
                 else:
                     failed_count += 1
 
-            except (DuplicateVehicleCodeError, ValueError, KeyError) as e:
+            except (ValueError, KeyError) as e:
                 logger.error("Row %d failed: %s", mapped_row.row_number, e)
                 failed_count += 1
                 results.append(
@@ -352,19 +359,26 @@ class BulkUploadVehiclesUseCase:
             title_parts.append(mapped_row.model)
         title = " ".join(title_parts) if title_parts else f"Vehicle {vin}"
 
-        # Build CreateProductRequest. `vehicle_code` is sourced from the
-        # CSV's `id` column when present — this is the value the export
-        # writes back into the same `id` column, so a re-export
-        # round-trips the same identifier. The value lives inside
-        # `attributes["vehicle_code"]` (post-`20260927_0001`); we
-        # populate it as text to match the JSONB storage shape, and the
-        # use case's allocator + reserve() handle the allocation vs.
-        # explicit-code branches. We duplicate the collision check here
-        # at the write path so runtime imports that bypass preview fail
-        # fast with `DuplicateVehicleCodeError`.
+        # Check if product with this VIN already exists (upsert). Resolved
+        # BEFORE building `attributes` so we know whether to allocate a new
+        # `vehicle_code` (brand-new row) or leave the existing one untouched
+        # (update).
+        existing = await self.product_repository.get_by_vin(vin, tenant_id)
+
+        # `vehicle_code` is ALWAYS sourced from the internal allocator —
+        # NEVER from the CSV's `id` column. The client's own `id` is
+        # informational only (surfaced in the preview as "ID CSV") and
+        # plays no role in the product's durable identifier, so two rows
+        # sharing the same CSV `id` can never collide here. A brand-new
+        # row gets the next atomically-allocated code (`nextval`-backed,
+        # so concurrent imports never collide); an existing row (matched
+        # by VIN) keeps whatever code it already has — we simply never set
+        # the key for it, and the update path's attributes merge preserves
+        # it untouched.
         bulk_attributes = dict(attributes)
-        if mapped_row.csv_id is not None:
-            bulk_attributes["vehicle_code"] = str(mapped_row.csv_id)
+        if existing is None:
+            vehicle_code = await self.vehicle_code_allocator.allocate_next()
+            bulk_attributes["vehicle_code"] = str(vehicle_code)
         request = CreateProductRequest(
             title=title,
             price_cents=mapped_row.price_cents,
@@ -377,18 +391,6 @@ class BulkUploadVehiclesUseCase:
             location_city=mapped_row.location_city,
             location_state=mapped_row.location_state,
         )
-
-        # Check if product with this VIN already exists (upsert)
-        existing = await self.product_repository.get_by_vin(vin, tenant_id)
-
-        # Runtime imports may bypass preview, so retain the same duplicate
-        # validation at the write path. Existing VIN matches may keep their
-        # own code but cannot claim a code held by a different product.
-        if mapped_row.csv_id is not None and await self.product_repository.vehicle_code_exists(
-            mapped_row.csv_id,
-            exclude_product_id=existing.id if existing else None,
-        ):
-            raise DuplicateVehicleCodeError(mapped_row.csv_id)
 
         product_id: UUID
         status: str

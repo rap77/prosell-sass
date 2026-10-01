@@ -2510,7 +2510,6 @@ async def bulk_upload_preview(
     can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     use_case = BulkUploadPreviewUseCase(
         SqlAlchemyOrganizationRepository(db),
-        SqlAlchemyProductRepository(db),
     )
     try:
         result = await use_case.execute(
@@ -2609,6 +2608,8 @@ async def bulk_upload_with_images(
         zip_bytes = await images_zip.read()
 
     # Execute use case
+    from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
+
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
     org_repo = SqlAlchemyOrganizationRepository(db)
@@ -2617,6 +2618,7 @@ async def bulk_upload_with_images(
         category_repository=category_repo,
         organization_repository=org_repo,
         do_spaces_service=spaces,
+        vehicle_code_allocator=VehicleCodeAllocator(product_repo),
     )
 
     try:
