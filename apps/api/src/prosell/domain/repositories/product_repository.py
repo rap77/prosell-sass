@@ -448,50 +448,51 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_max_vehicle_code(self) -> int | None:
+    async def get_max_internal_code(self) -> int | None:
         """
-        Return the largest `vehicle_code` currently persisted, or `None`
+        Return the largest `internal_code` currently persisted, or `None`
         if no product has one yet.
 
-        Tenant-agnostic on purpose: `vehicle_code` is a globally-unique
-        legacy product id scoped to vehicle categories only, persisted
-        inside `attributes->>'vehicle_code'` (a JSONB text field). The
+        Tenant-agnostic on purpose: `internal_code` is a globally-unique
+        durable product id scoped to vehicle categories only, persisted
+        inside `attributes->>'internal_code'` (a JSONB text field). The
         uniqueness invariant is enforced by the functional partial index
-        `ix_products_attrs_vehicle_code_unique`. The allocator backs
-        `VehicleCodeAllocator.peek_next()` and walks across every tenant
-        because the value must remain globally unique for the client
-        CSV's ``id`` column to round-trip.
+        `ix_products_attrs_internal_code_unique`. The allocator backs
+        `InternalCodeAllocator.peek_next()` and walks across every tenant
+        because the value must remain globally unique across the whole
+        platform — it is exported into the client CSV's ``id`` column
+        (never imported back from one; see `bulk_upload_vehicles.py`).
 
         Returns:
-            Largest persisted `vehicle_code` cast to int, or `None` if
+            Largest persisted `internal_code` cast to int, or `None` if
             no row has one. Non-numeric values (defensive — the index
             is text-typed) are ignored.
         """
         pass
 
     @abstractmethod
-    async def allocate_next_vehicle_code(self) -> int:
-        """Atomically reserve the next globally unique vehicle code.
+    async def allocate_next_internal_code(self) -> int:
+        """Atomically reserve the next globally unique internal code.
 
-        Calls ``nextval('products_vehicle_code_seq')`` for race-free
+        Calls ``nextval('products_internal_code_seq')`` for race-free
         allocation across concurrent product creations. The caller is
         responsible for storing the returned value as text under
-        ``attributes["vehicle_code"]`` on the product row. The sequence
-        remains after the JSONB move (migration
-        ``20260927_0001_move_vehicle_code_to_attributes_jsonb.py``) — only
-        the column the value lands in changed.
+        ``attributes["internal_code"]`` on the product row. The sequence
+        was renamed from `products_vehicle_code_seq` in migration
+        ``20261002_0001_rename_vehicle_code_to_internal_code.py`` —
+        same sequence object, new name.
         """
         pass
 
     @abstractmethod
-    async def vehicle_code_exists(
+    async def internal_code_exists(
         self, code: int, *, exclude_product_id: UUID | None = None
     ) -> bool:
         """
-        Return whether any product currently uses `code` as its `vehicle_code`.
+        Return whether any product currently uses `code` as its `internal_code`.
 
-        Backs `VehicleCodeAllocator.reserve()` for fail-fast collision
-        detection. Looks up against `attributes->>'vehicle_code'` (cast
+        Backs `InternalCodeAllocator.reserve()` for fail-fast collision
+        detection. Looks up against `attributes->>'internal_code'` (cast
         to bigint so callers can pass an int and the index does the
         numeric comparison via ``~ '^[0-9]+$'`` predicate).
 
@@ -500,7 +501,7 @@ class AbstractProductRepository(ABC):
         being updated.
 
         Args:
-            code: The `vehicle_code` value to test for collision.
+            code: The `internal_code` value to test for collision.
             exclude_product_id: Optional product id to ignore (used when
                 validating a PATCH — the row being updated already has
                 that value, so it shouldn't count as a collision with
@@ -512,19 +513,18 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+    async def internal_codes_exist(self, codes: Iterable[int]) -> set[int]:
         """
-        Return the subset of `codes` that are currently in use as `vehicle_code`.
+        Return the subset of `codes` that are currently in use as `internal_code`.
 
-        Bulk variant of `vehicle_code_exists` — `BulkUploadPreviewUseCase`
-        walks every distinct `csv_id` in the CSV once and needs a single
-        round-trip to flag the rows whose codes already collide with a
-        persisted product. Iterating `vehicle_code_exists` per row works
-        for small CSVs but blows up on the multi-thousand-row client file
-        the client uploads today.
+        Bulk variant of `internal_code_exists` — for callers that need to
+        flag many candidate codes against persisted products in a single
+        round-trip rather than iterating `internal_code_exists` per code
+        (which works for small batches but blows up on a multi-thousand-row
+        candidate set).
 
         Args:
-            codes: Iterable of candidate `vehicle_code` values to test.
+            codes: Iterable of candidate `internal_code` values to test.
 
         Returns:
             Set of codes from `codes` that are already in use. Empty if
@@ -533,37 +533,37 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def update_vehicle_code_if_absent(self, product_id: UUID, code: int) -> bool:
+    async def update_internal_code_if_absent(self, product_id: UUID, code: int) -> bool:
         """
-        Atomically set ``attributes->>'vehicle_code'`` = ``code`` (text)
+        Atomically set ``attributes->>'internal_code'`` = ``code`` (text)
         ONLY IF that JSONB key is currently NULL or an empty string.
 
         Backs the catalog export backfill path (`u1-catalog-export-api`,
         intent `export-vehicle-code-backfill`) — a published product
-        whose `attributes["vehicle_code"]` is NULL or `''` would otherwise
+        whose `attributes["internal_code"]` is NULL or `''` would otherwise
         be dropped from the export by the BR1.7-style guard, leaving the
         client CSV header-only. This method is the single-row race-safe
         guard: two concurrent writers cannot both win, because the
-        `WHERE attributes->>'vehicle_code' IS NULL OR attributes->>'vehicle_code' = ''`
+        `WHERE attributes->>'internal_code' IS NULL OR attributes->>'internal_code' = ''`
         predicate matches at most one of them per row.
 
         The stored value is text-formatted (matches the JSONB-side
         representation; the regex guard on
-        `ix_products_attrs_vehicle_code_unique` accepts both numeric and
+        `ix_products_attrs_internal_code_unique` accepts both numeric and
         legacy mixed values, but numeric strings are the steady state).
 
         Cross-product collisions on the partial unique index
-        `ix_products_attrs_vehicle_code_unique` are NOT covered here —
+        `ix_products_attrs_internal_code_unique` are NOT covered here —
         the infrastructure impl translates the underlying unique-violation
-        into the domain-level `DuplicateVehicleCodeError` so this domain
+        into the domain-level `DuplicateInternalCodeError` so this domain
         contract never references persistence-layer exception types. The
         caller is expected to handle the domain exception (e.g. skip the
         row, log a warning, retry with a different code).
 
         Args:
             product_id: UUID of the product row to update.
-            code: The `vehicle_code` (int) to write as text into
-                `attributes["vehicle_code"]`.
+            code: The `internal_code` (int) to write as text into
+                `attributes["internal_code"]`.
 
         Returns:
             True iff this caller's UPDATE affected a row — i.e., this
@@ -573,7 +573,7 @@ class AbstractProductRepository(ABC):
             was deleted between the caller's read and write).
 
         Raises:
-            DuplicateVehicleCodeError: If the UPDATE collides with the
+            DuplicateInternalCodeError: If the UPDATE collides with the
                 partial unique index — another product already holds the
                 same `code` value.
         """

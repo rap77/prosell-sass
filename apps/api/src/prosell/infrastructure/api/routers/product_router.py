@@ -513,22 +513,24 @@ async def create_product(
     # ponytail: admins upload to target org's tenant, not their own
     validate_image_urls_for_tenant(request.image_urls, target_org_id)
 
-    # Execute use case. `vehicle_code` lives inside `attributes` now
-    # (post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`);
-    # the use case's allocator still runs (the create path auto-fills
-    # `attributes["vehicle_code"]` if the caller omitted it) and the
+    # Execute use case. `internal_code` lives inside `attributes` now
+    # (post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`,
+    # renamed from `vehicle_code` in
+    # `20261002_0001_rename_vehicle_code_to_internal_code.py`); the use
+    # case's allocator still runs (the create path auto-fills
+    # `attributes["internal_code"]` if the caller omitted it) and the
     # JSONB functional unique index is the final collision gate. The
-    # router wires a `VehicleCodeAllocator` over the same repo so the
-    # allocator's `nextval` / `vehicle_code_exists` calls share the
+    # router wires an `InternalCodeAllocator` over the same repo so the
+    # allocator's `nextval` / `internal_code_exists` calls share the
     # use case's session and transaction.
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
-    from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
+    from prosell.domain.services.internal_code_allocator import InternalCodeAllocator
 
     use_case = CreateProductUseCase(
         product_repo,
         category_repo,
-        VehicleCodeAllocator(product_repo),
+        InternalCodeAllocator(product_repo),
     )
 
     try:
@@ -924,23 +926,6 @@ async def export_catalog_client_format(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-
-
-class NextVehicleCodeResponse(BaseModel):
-    """Response payload for the next vehicle-code endpoint.
-
-    Kept as a model definition so the type stays available for any
-    consumer that imported it during the brief window when
-    `GET /next-vehicle-code` was public. The route itself was removed
-    in the same commit that moved `vehicle_code` from a top-level
-    column into the JSONB `attributes` column — there is no
-    per-vehicle-code request payload to pre-fill, so the form now
-    reads/writes the field through the dynamic schema like every
-    other category attribute. See migration
-    `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`.
-    """
-
-    vehicle_code: int
 
 
 @router.get("", response_model=ProductListResponse)
@@ -2660,7 +2645,7 @@ async def bulk_upload_with_images(
         zip_bytes = await images_zip.read()
 
     # Execute use case
-    from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
+    from prosell.domain.services.internal_code_allocator import InternalCodeAllocator
 
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
@@ -2670,7 +2655,7 @@ async def bulk_upload_with_images(
         category_repository=category_repo,
         organization_repository=org_repo,
         do_spaces_service=spaces,
-        vehicle_code_allocator=VehicleCodeAllocator(product_repo),
+        internal_code_allocator=InternalCodeAllocator(product_repo),
     )
 
     try:

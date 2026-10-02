@@ -19,12 +19,14 @@ class UpdateProductRequest(BaseModel):
     attributes: dict[str, object] | None = None
     image_urls: list[str] | None = None
     # Note: the legacy `vehicle_code` field no longer lives at the top
-    # level — it moved into `attributes["vehicle_code"]` after migration
-    # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`. PATCH
+    # level — it moved into `attributes["internal_code"]` after migration
+    # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py` (renamed
+    # from `vehicle_code` in
+    # `20261002_0001_rename_vehicle_code_to_internal_code.py`). PATCH
     # semantics for the field flow through `attributes` (a partial
     # `attributes` map merges into the existing one — see
     # `Product.update_attributes`). The use case validates collision
-    # against `attributes->>'vehicle_code'` before persisting.
+    # against `attributes->>'internal_code'` before persisting.
     # First-class pointer to the cover image. Single source of truth
     # for "which image is the cover" (replaces the old implicit
     # "first entry of image_urls" convention). Must reference an

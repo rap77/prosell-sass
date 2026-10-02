@@ -121,7 +121,7 @@ class TestBulkUploadPersistsImageUrls:
             category_repository=category_repo,
             organization_repository=organization_repo,
             do_spaces_service=do_spaces_service,
-            vehicle_code_allocator=AsyncMock(),
+            internal_code_allocator=AsyncMock(),
             csv_image_mapper=mocked_mapper,
         )
         result = await use_case.execute(

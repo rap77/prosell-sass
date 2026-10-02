@@ -37,8 +37,10 @@ class ProductResponse(BaseModel):
     org_color: str | None = None
     category_id: UUID
     # Note: the legacy `vehicle_code` field no longer lives at the top
-    # level of this DTO — it moved into `attributes["vehicle_code"]`
-    # after migration `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`.
+    # level of this DTO — it moved into `attributes["internal_code"]`
+    # after migration `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`
+    # (renamed from `vehicle_code` in
+    # `20261002_0001_rename_vehicle_code_to_internal_code.py`).
     # Consumers that want the value should read it from `attributes`
     # directly; vehicle categories are the only ones that carry it.
     title: str

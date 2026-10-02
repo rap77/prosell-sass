@@ -5,27 +5,27 @@ from uuid import UUID
 from prosell.application.dto.product import CreateProductRequest, ProductResponse
 from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
-from prosell.domain.exceptions.product_exceptions import DuplicateVehicleCodeError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.services.internal_code_allocator import InternalCodeAllocator
 from prosell.domain.services.storage_key_sanitizer import sanitize_storage_key
 from prosell.domain.services.template_composer import resolve_title
-from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
 
 
 class CreateProductUseCase:
     """Create a new product with category validation.
 
-    ``vehicle_code`` resolution flow (post-`20260927_0001`):
+    ``internal_code`` resolution flow (post-`20260927_0001`,
+    renamed from `vehicle_code` in `20261002_0001`):
         The legacy id is no longer a top-level field — it lives inside
-        ``attributes["vehicle_code"]``. The use case has three branches:
-          * caller supplied it under `attributes["vehicle_code"]` —
+        ``attributes["internal_code"]``. The use case has three branches:
+          * caller supplied it under `attributes["internal_code"]` —
             validate uniqueness via the allocator's `reserve()` (which
             looks up the JSONB functional unique index) and pass
             through;
           * caller did not supply it AND an allocator is wired — pick
             the next code via `nextval` and stuff it into
-            `attributes["vehicle_code"]` (text);
+            `attributes["internal_code"]` (text);
           * allocator not wired (legacy test fixtures) — leave
             attributes alone, row simply has no code.
     """
@@ -34,7 +34,7 @@ class CreateProductUseCase:
         self,
         product_repository: AbstractProductRepository,
         category_repository: AbstractCategoryRepository,
-        vehicle_code_allocator: VehicleCodeAllocator | None = None,
+        internal_code_allocator: InternalCodeAllocator | None = None,
     ) -> None:
         self.product_repository = product_repository
         self.category_repository = category_repository
@@ -42,10 +42,10 @@ class CreateProductUseCase:
         # that build `CreateProductUseCase(product_repo, category_repo)`
         # without an allocator. When omitted, callers must always
         # supply an explicit value in
-        # `attributes["vehicle_code"]` — the use case never allocates
+        # `attributes["internal_code"]` — the use case never allocates
         # implicitly (avoids silently picking the wrong code in tests
         # that predate the feature).
-        self._vehicle_code_allocator = vehicle_code_allocator
+        self._internal_code_allocator = internal_code_allocator
 
     async def execute(self, request: CreateProductRequest) -> ProductResponse:
         """
@@ -59,8 +59,8 @@ class CreateProductUseCase:
 
         Raises:
             CategoryNotFoundError: If category does not exist
-            DuplicateVehicleCodeError: If the caller supplied an explicit
-                `attributes["vehicle_code"]` already used by another
+            DuplicateInternalCodeError: If the caller supplied an explicit
+                `attributes["internal_code"]` already used by another
                 product.
             ValueError: If validation fails
         """
@@ -83,42 +83,50 @@ class CreateProductUseCase:
         if isinstance(vin_str, str) and len(vin_str) >= 6 and "stock_number" not in attrs:
             attrs["stock_number"] = vin_str[-6:].upper()
 
-        # 1d. Resolve `vehicle_code` ONLY for vehicle categories — the
+        # 1d. Resolve `internal_code` ONLY for vehicle categories — the
         # field is a vehicle-only concern (see migration
-        # 20260927_0001_move_vehicle_code_to_attributes_jsonb). For
-        # non-vehicle categories the category's `attribute_schema`
-        # doesn't declare `vehicle_code`, so this entire block is a
-        # no-op (no allocation, no validation, no insert). For vehicle
-        # categories the schema declares it as required, so we
-        # allocate/reserve before `category.validate_attributes` runs
-        # — the validator would otherwise reject a create that
-        # hadn't populated `attributes["vehicle_code"]` yet.
-        category_declares_vehicle_code = (
+        # 20260927_0001_move_vehicle_code_to_attributes_jsonb, renamed
+        # from `vehicle_code` in 20261002_0001). For non-vehicle
+        # categories the category's `attribute_schema` doesn't declare
+        # `internal_code`, so this entire block is a no-op (no
+        # allocation, no validation, no insert). For vehicle categories
+        # the schema declares it as required, so we allocate/reserve
+        # before `category.validate_attributes` runs — the validator
+        # would otherwise reject a create that hadn't populated
+        # `attributes["internal_code"]` yet.
+        category_declares_internal_code = (
             isinstance(category.attribute_schema, dict)
-            and "vehicle_code" in category.attribute_schema
+            and "internal_code" in category.attribute_schema
         )
-        if category_declares_vehicle_code:
-            existing_code_raw = attrs.get("vehicle_code")
-            if existing_code_raw is not None and self._vehicle_code_allocator is not None:
+        if category_declares_internal_code:
+            existing_code_raw = attrs.get("internal_code")
+            if existing_code_raw is not None and self._internal_code_allocator is not None:
                 try:
                     existing_code_int = int(str(existing_code_raw))
                 except (TypeError, ValueError) as exc:
-                    raise DuplicateVehicleCodeError(0) from exc
-                await self._vehicle_code_allocator.reserve(existing_code_int)
+                    # A non-numeric value is a validation failure, not a
+                    # collision — raising DuplicateInternalCodeError(0)
+                    # here would misreport it as "code 0 already in use"
+                    # (GGA finding).
+                    raise ValueError(
+                        f"attributes['internal_code'] must be a valid integer, "
+                        f"got {existing_code_raw!r}"
+                    ) from exc
+                await self._internal_code_allocator.reserve(existing_code_int)
                 # Store as JSONB native int (not text) so the category's
                 # `attribute_schema` validator — which checks
                 # `isinstance(value, (int, float))` for "number" type —
                 # passes. The partial functional unique index on
-                # `attributes->>'vehicle_code'` extracts the int as
+                # `attributes->>'internal_code'` extracts the int as
                 # text for the comparison, so the uniqueness invariant
                 # still holds.
-                attrs["vehicle_code"] = existing_code_int
-            elif "vehicle_code" not in attrs and self._vehicle_code_allocator is not None:
-                allocated = await self._vehicle_code_allocator.allocate_next()
-                attrs["vehicle_code"] = allocated
+                attrs["internal_code"] = existing_code_int
+            elif "internal_code" not in attrs and self._internal_code_allocator is not None:
+                allocated = await self._internal_code_allocator.allocate_next()
+                attrs["internal_code"] = allocated
 
         # 1b. Validate attributes against category schema — runs AFTER
-        # vehicle_code resolution so the persisted value is the one we
+        # internal_code resolution so the persisted value is the one we
         # validated. (Raises ValueError on type/required mismatch.)
         category.validate_attributes(attrs)
 
@@ -150,20 +158,20 @@ class CreateProductUseCase:
             else None
         )
 
-        # 2d. Resolve `vehicle_code` inside `attributes`:
+        # 2d. Resolve `internal_code` inside `attributes`:
         #   * caller already put one in attrs — coerce to int (so we can
         #     pass to the allocator's reserve() which expects an int) and
-        #     validate uniqueness against `attributes->>'vehicle_code'`
-        #     on any other row, raising `DuplicateVehicleCodeError` if a
+        #     validate uniqueness against `attributes->>'internal_code'`
+        #     on any other row, raising `DuplicateInternalCodeError` if a
         #     collision is found;
         #   * caller did not supply one AND an allocator is wired —
         #     allocate via `nextval` (atomic) and stuff the result into
-        #     `attributes["vehicle_code"]` as text, matching the JSONB
+        #     `attributes["internal_code"]` as text, matching the JSONB
         #     storage shape;
         #   * allocator not wired (legacy test fixtures) — leave
-        #     `attributes["vehicle_code"]` unset, row has no code.
+        #     `attributes["internal_code"]` unset, row has no code.
         # (Allocation / reservation ran earlier — see the `1d. Resolve
-        # vehicle_code` block before the schema validation pass. The
+        # internal_code` block before the schema validation pass. The
         # attrs dict already carries the canonical text value at this
         # point.)
 
@@ -192,13 +200,7 @@ class CreateProductUseCase:
 
         return ProductResponse.from_entity(product)
 
-    # The legacy `_reserve_vehicle_code_or_raise` helper that wrapped
+    # The legacy `_reserve_internal_code_or_raise` helper that wrapped
     # `reserve()` plus a None check is no longer needed: the resolution
     # happens inline above, and the allocator itself handles the
     # collision check.
-
-    # Keep DuplicateVehicleCodeError exported for callers that did
-    # `from prosell.application.use_cases.product.create_product import
-    # DuplicateVehicleCodeError` (not currently a real import path, but
-    # forward-compat for any future inline check).
-    _DuplicateVehicleCodeError = DuplicateVehicleCodeError

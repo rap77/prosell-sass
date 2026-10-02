@@ -20,12 +20,14 @@ export interface Product {
   /** Organization tag color (hex). Derived from products.organization_id JOIN organizations. */
   org_color?: string | null;
   category_id: string;
-  // Note: the durable, globally-unique legacy product id (vehicle_code)
-  // no longer lives at the top level of the product payload — it
-  // moved into the `attributes` JSONB under the `vehicle_code` key
-  // (backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb).
-  // Vehicle categories' attribute_schema defines the field's type and
-  // constraints; readers should pull it from `attributes.vehicle_code`
+  // Note: the durable, globally-unique legacy product id (internal_code,
+  // renamed from vehicle_code in backend migration
+  // 20261002_0001_rename_vehicle_code_to_internal_code) no longer lives
+  // at the top level of the product payload — it moved into the
+  // `attributes` JSONB under the `internal_code` key (backend migration
+  // 20260927_0001_move_vehicle_code_to_attributes_jsonb). Vehicle
+  // categories' attribute_schema defines the field's type and
+  // constraints; readers should pull it from `attributes.internal_code`
   // when needed.
 
   // Basic info
@@ -119,9 +121,12 @@ export interface CreateProductRequest {
   /**
    * Note: the legacy `vehicle_code` field is no longer a top-level
    * property of the create request. It moved into the `attributes`
-   * JSONB under the `vehicle_code` key for vehicle categories; the
-   * category's `attribute_schema` defines its type/constraints. The
-   * backend's allocator populates a value when the caller omits it.
+   * JSONB under the `internal_code` key (renamed from `vehicle_code`
+   * in backend migration
+   * 20261002_0001_rename_vehicle_code_to_internal_code) for vehicle
+   * categories; the category's `attribute_schema` defines its
+   * type/constraints. The backend's allocator populates a value when
+   * the caller omits it.
    */
   slug?: string;
   description?: string;
@@ -173,8 +178,10 @@ export interface UpdateProductRequest {
   // property of the update request. Updates flow through `attributes`
   // (a partial map merges into the existing one — see
   // `Product.update_attributes`); collision check on the new
-  // `attributes["vehicle_code"]` value runs against the JSONB
-  // functional unique index.
+  // `attributes["internal_code"]` value (renamed from `vehicle_code`
+  // in backend migration
+  // 20261002_0001_rename_vehicle_code_to_internal_code) runs against
+  // the JSONB functional unique index.
 }
 
 /**

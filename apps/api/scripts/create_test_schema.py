@@ -58,13 +58,15 @@ async def main() -> None:
             await conn.run_sync(lambda sync_conn, e=pg_enum: e.drop(sync_conn, checkfirst=True))
             await conn.run_sync(lambda sync_conn, e=pg_enum: e.create(sync_conn, checkfirst=False))
         await conn.run_sync(Base.metadata.create_all)
-        # `products_vehicle_code_seq` is a raw Postgres sequence created by
-        # Alembic migration `20260926_0001` — it has no SQLAlchemy model, so
-        # `create_all` never creates it. `VehicleCodeAllocator.allocate_next()`
-        # (used by product creation and bulk vehicle upload) depends on it
-        # existing. Same defensive `IF NOT EXISTS` the migration itself uses.
+        # `products_internal_code_seq` is a raw Postgres sequence created by
+        # Alembic migration `20260926_0001` (as `products_vehicle_code_seq`,
+        # renamed in `20261002_0001_rename_vehicle_code_to_internal_code`) —
+        # it has no SQLAlchemy model, so `create_all` never creates it.
+        # `InternalCodeAllocator.allocate_next()` (used by product creation
+        # and bulk vehicle upload) depends on it existing. Same defensive
+        # `IF NOT EXISTS` the migration itself uses.
         await conn.execute(
-            text("CREATE SEQUENCE IF NOT EXISTS products_vehicle_code_seq AS BIGINT")
+            text("CREATE SEQUENCE IF NOT EXISTS products_internal_code_seq AS BIGINT")
         )
     await engine.dispose()
     print(f"Created {len(MANUAL_ENUMS)} ENUMs + {len(Base.metadata.tables)} tables + 1 sequence")

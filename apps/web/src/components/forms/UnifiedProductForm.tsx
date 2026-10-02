@@ -97,8 +97,10 @@ export interface UnifiedProductFormProps {
   enableWizard?: boolean;
 }
 
-// Fixed fields schema (price, description). Vehicle_code no longer lives
-// at the top level of the form — it moved into `attributes["vehicle_code"]`
+// Fixed fields schema (price, description). internal_code (renamed from
+// vehicle_code in backend migration
+// 20261002_0001_rename_vehicle_code_to_internal_code) no longer lives
+// at the top level of the form — it moved into `attributes["internal_code"]`
 // (backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb)
 // and is now driven by the vehicle category's `attribute_schema`. The
 // dynamic `SchemaFormSection` renders the input inside the
@@ -344,8 +346,10 @@ export function UnifiedProductForm({
         description: existingProduct.description ?? "",
         // `attributes` is the single source of truth for category-driven
         // fields including the legacy `vehicle_code` (now stored under
-        // `attributes["vehicle_code"]` per migration
-        // 20260927_0001_move_vehicle_code_to_attributes_jsonb). The
+        // `attributes["internal_code"]` per migration
+        // 20260927_0001_move_vehicle_code_to_attributes_jsonb, renamed
+        // from `vehicle_code` in
+        // 20261002_0001_rename_vehicle_code_to_internal_code). The
         // schema-driven `SchemaFormSection` renders the field inside
         // the "identificacion" group via the category's
         // `attribute_groups` ordering.
@@ -680,7 +684,7 @@ export function UnifiedProductForm({
       setIsUploadingImages(false);
       logger.error("UnifiedProductForm error", error);
       // Toast already shown by mutation hooks. A duplicate
-      // `vehicle_code` from the JSONB uniqueness constraint surfaces
+      // `internal_code` from the JSONB uniqueness constraint surfaces
       // here as a generic 409 — the dynamic attribute form already
       // shows field-level validation via React Hook Form when the
       // server's response error path lands, so no bespoke UI
@@ -792,10 +796,12 @@ export function UnifiedProductForm({
         </section>
       )}
 
-      {/* vehicle_code — durable, globally-unique legacy product id (the
+      {/* internal_code — durable, globally-unique legacy product id (the
           value that ends up in the client-format CSV's `id` column).
           Post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`
-          the field lives inside `attributes["vehicle_code"]` and is
+          (renamed from `vehicle_code` in
+          `20261002_0001_rename_vehicle_code_to_internal_code.py`) the
+          field lives inside `attributes["internal_code"]` and is
           driven by the vehicle category's `attribute_schema`. The
           `SchemaFormSection` block below renders the input alongside
           VIN/make/model/year inside the "identificacion" group, so we

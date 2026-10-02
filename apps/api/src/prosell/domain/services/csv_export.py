@@ -176,7 +176,7 @@ def _sanitize_formula_injection(value: str) -> str:
 
 def build_client_format_row(
     *,
-    vehicle_code: int | None,
+    internal_code: int | None,
     org_code: object | None,
     price_cents: int,
     description: str | None,
@@ -196,22 +196,24 @@ def build_client_format_row(
 ) -> list[str]:
     """Build one row of the client-format CSV (u1-catalog-export-api).
 
-    `vehicle_code` is the durable, globally-unique legacy product id
-    (`Product.attributes["vehicle_code"]`) that ends up in the CSV's
+    `internal_code` is the durable, globally-unique legacy product id
+    (`Product.attributes["internal_code"]`) that ends up in the CSV's
     `id` column. Replaces the previous positional 1-based row_id, so
     the same product exports with the same `id` value across every
     re-export. Post-`20260927_0001_move_vehicle_code_to_attributes_jsonb.py`
-    the value lives in the JSONB `attributes` column (under the
-    `vehicle_code` key) and uniqueness is enforced by the functional
-    partial index `ix_products_attrs_vehicle_code_unique` over
-    `(attributes->>'vehicle_code')`. The column name on the wire
+    (renamed from `vehicle_code` in
+    `20261002_0001_rename_vehicle_code_to_internal_code.py`) the value
+    lives in the JSONB `attributes` column (under the `internal_code`
+    key) and uniqueness is enforced by the functional partial index
+    `ix_products_attrs_internal_code_unique` over
+    `(attributes->>'internal_code')`. The column name on the wire
     stays `id` — only the meaning changed (stable, not per-export
     sequential). Non-contiguous codes are an accepted trade-off because
     BR1.7 exclusions still drop the row entirely (no renumerating), so
     the export's `id` values can have gaps when a category fails to
     translate.
 
-    `vehicle_code=None` is defensively tolerated: the caller's expected
+    `internal_code=None` is defensively tolerated: the caller's expected
     path is to skip such rows upstream (the use case does), so this
     branch only fires if a future caller forgets. Renders an empty
     string in the `id` column rather than a literal "0" (which would
@@ -268,7 +270,7 @@ def build_client_format_row(
     location = f"{location_city or ''} {location_state or ''}".strip()
 
     values: dict[str, object | None] = {
-        "id": vehicle_code,
+        "id": internal_code,
         "cod_dealer": org_code,
         "price": f"{price_cents / 100:.2f}",
         "description": description,

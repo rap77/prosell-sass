@@ -56,7 +56,7 @@ from prosell.domain.exceptions.org_exceptions import (
     WalletNotFoundException,
 )
 from prosell.domain.exceptions.product_exceptions import (
-    DuplicateVehicleCodeError,
+    DuplicateInternalCodeError,
     InvalidVINError,
     ProductAlreadyExistsError,
     ProductError,
@@ -101,7 +101,7 @@ __all__ = [
     "ProductNotEditableError",
     "VehicleAlreadyExistsError",
     "InvalidVINError",
-    "DuplicateVehicleCodeError",
+    "DuplicateInternalCodeError",
     # User exceptions
     "EmailAlreadyExistsException",
     "UserNotFoundException",

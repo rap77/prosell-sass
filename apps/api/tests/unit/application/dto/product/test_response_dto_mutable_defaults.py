@@ -50,8 +50,9 @@ def _product_response() -> ProductResponse:
         org_code="ORG-1",
         category_id=CATEGORY_ID,
         # Note: the durable, globally-unique legacy product id
-        # (vehicle_code) used to be a top-level field here; it moved
-        # into `attributes["vehicle_code"]` after migration
+        # (internal_code, renamed from vehicle_code in migration
+        # 20261002_0001) used to be a top-level field here; it moved
+        # into `attributes["internal_code"]` after migration
         # 20260927_0001. The mutable-defaults isolation assertion below
         # still holds because `attributes` defaults to a fresh dict per
         # instance via `Field(default_factory=dict)`.

@@ -115,11 +115,13 @@ class CreateProductRequest(BaseModel):
     organization_id: UUID | None = None
     category_id: UUID
     # Note: the legacy `vehicle_code` field no longer lives at the top
-    # level — it moved into `attributes["vehicle_code"]` after migration
-    # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`. For
+    # level — it moved into `attributes["internal_code"]` after migration
+    # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py` (renamed
+    # from `vehicle_code` in
+    # `20261002_0001_rename_vehicle_code_to_internal_code.py`). For
     # vehicle categories the category's `attribute_schema` defines the
     # field's type/constraints; the use case's allocator populates a
-    # value into `attributes["vehicle_code"]` when the caller's
+    # value into `attributes["internal_code"]` when the caller's
     # `attributes` payload omits one. See `CreateProductUseCase.execute`.
     slug: str | None = None
     description: str | None = None

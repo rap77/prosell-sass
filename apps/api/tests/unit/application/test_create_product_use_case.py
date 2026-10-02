@@ -10,7 +10,7 @@ from prosell.application.use_cases.product.create_product import CreateProductUs
 from prosell.domain.entities.category import Category
 from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
-from prosell.domain.exceptions.product_exceptions import DuplicateVehicleCodeError
+from prosell.domain.exceptions.product_exceptions import DuplicateInternalCodeError
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -80,21 +80,21 @@ async def test_create_product_category_not_found():
         await use_case.execute(request)
 
 
-# ── vehicle_code allocator wiring ─────────────────────────────────────────
+# ── internal_code allocator wiring ─────────────────────────────────────────
 
 
 def _category() -> Category:
-    # `vehicle_code` lives inside the vehicle category's
+    # `internal_code` lives inside the vehicle category's
     # `attribute_schema` (post-`20260927_0001_*`); the use case's
     # allocator / collision check only fires when the category
     # declares the key. This fixture is a vehicle-category stand-in
-    # so the vehicle_code tests exercise the real path.
+    # so the internal_code tests exercise the real path.
     return Category(
         id=uuid4(),
         name="Test Category",
         slug="test-category",
         tenant_id=uuid4(),
-        attribute_schema={"vehicle_code": {"type": "number", "required": True}},
+        attribute_schema={"internal_code": {"type": "number", "required": True}},
         is_active=True,
     )
 
@@ -112,16 +112,16 @@ def _product_repo_returning(category: Category) -> tuple[AsyncMock, AsyncMock]:
         return entity
 
     product_repo.create = AsyncMock(side_effect=_capture_create)
-    product_repo.get_max_vehicle_code = AsyncMock(return_value=None)
-    product_repo.vehicle_code_exists = AsyncMock(return_value=False)
+    product_repo.get_max_internal_code = AsyncMock(return_value=None)
+    product_repo.internal_code_exists = AsyncMock(return_value=False)
     return product_repo, category_repo
 
 
 @pytest.mark.asyncio
-async def test_create_product_allocates_vehicle_code_when_omitted() -> None:
-    """When the request omits `attributes["vehicle_code"]`, the use case
-    asks the `VehicleCodeAllocator` for the next MAX + 1 (or 1 if no row
-    has one) and stuffs the result into `attributes["vehicle_code"]` as
+async def test_create_product_allocates_internal_code_when_omitted() -> None:
+    """When the request omits `attributes["internal_code"]`, the use case
+    asks the `InternalCodeAllocator` for the next MAX + 1 (or 1 if no row
+    has one) and stuffs the result into `attributes["internal_code"]` as
     text. The use case still works against a regular repo + allocator
     pair — the new path only changes WHERE the value lands.
     """
@@ -147,16 +147,16 @@ async def test_create_product_allocates_vehicle_code_when_omitted() -> None:
     # Stored as JSONB native int (post-`20260927_0001`) so the
     # category's `attribute_schema` validator accepts the value as
     # `isinstance(value, (int, float))`. The partial functional
-    # unique index on `attributes->>'vehicle_code'` extracts the int
+    # unique index on `attributes->>'internal_code'` extracts the int
     # as text for the uniqueness comparison.
-    assert created_entity.attributes["vehicle_code"] == 42
+    assert created_entity.attributes["internal_code"] == 42
 
 
 @pytest.mark.asyncio
 async def test_create_product_allocates_when_first_ever_product() -> None:
-    """First product on a fresh DB: `VehicleCodeAllocator.allocate_next()`
+    """First product on a fresh DB: `InternalCodeAllocator.allocate_next()`
     returns 1 (the seed case `COALESCE(max, 0) + 1`), and the new
-    product's `attributes["vehicle_code"]` is the int `1`.
+    product's `attributes["internal_code"]` is the int `1`.
     """
     category = _category()
     tenant_id = uuid4()
@@ -176,14 +176,14 @@ async def test_create_product_allocates_when_first_ever_product() -> None:
     await use_case.execute(request)
 
     created_entity = product_repo.create.await_args.args[0]
-    assert created_entity.attributes["vehicle_code"] == 1
+    assert created_entity.attributes["internal_code"] == 1
 
 
 @pytest.mark.asyncio
-async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
-    """Caller supplied an explicit `attributes["vehicle_code"]` already
+async def test_create_product_rejects_explicit_duplicate_internal_code() -> None:
+    """Caller supplied an explicit `attributes["internal_code"]` already
     used by another product — the use case must raise
-    `DuplicateVehicleCodeError` BEFORE the INSERT runs, surfacing the
+    `DuplicateInternalCodeError` BEFORE the INSERT runs, surfacing the
     same `code` that the allocator's `reserve()` rejected.
     """
     category = _category()
@@ -192,7 +192,7 @@ async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
     allocator = AsyncMock()
 
     async def _reserve_rejects(code: int) -> None:
-        raise DuplicateVehicleCodeError(code)
+        raise DuplicateInternalCodeError(code)
 
     allocator.allocate_next = AsyncMock(return_value=99)
     allocator.reserve = AsyncMock(side_effect=_reserve_rejects)
@@ -204,12 +204,12 @@ async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
         tenant_id=tenant_id,
         organization_id=tenant_id,
         category_id=category.id,
-        attributes={"vehicle_code": 17},  # another product already has it
+        attributes={"internal_code": 17},  # another product already has it
     )
 
-    with pytest.raises(DuplicateVehicleCodeError) as exc_info:
+    with pytest.raises(DuplicateInternalCodeError) as exc_info:
         await use_case.execute(request)
-    assert exc_info.value.vehicle_code == 17
+    assert exc_info.value.internal_code == 17
     # Repo.create must NOT have been called when the allocator rejects.
     product_repo.create.assert_not_awaited()
     # Allocate_next must NOT have been called when an explicit code was
@@ -219,9 +219,9 @@ async def test_create_product_rejects_explicit_duplicate_vehicle_code() -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_product_persists_explicit_vehicle_code() -> None:
+async def test_create_product_persists_explicit_internal_code() -> None:
     """Caller supplied an explicit, valid
-    `attributes["vehicle_code"]` — the use case validates it via
+    `attributes["internal_code"]` — the use case validates it via
     `reserve()` (which passes), then persists the value as a JSONB
     native int (matching the category's `attribute_schema` validator,
     which accepts `isinstance(value, (int, float))`).
@@ -240,7 +240,7 @@ async def test_create_product_persists_explicit_vehicle_code() -> None:
         tenant_id=tenant_id,
         organization_id=tenant_id,
         category_id=category.id,
-        attributes={"vehicle_code": 1234},
+        attributes={"internal_code": 1234},
     )
 
     await use_case.execute(request)
@@ -250,20 +250,20 @@ async def test_create_product_persists_explicit_vehicle_code() -> None:
     created_entity = product_repo.create.await_args.args[0]
     # Stored as JSONB native int (post-`20260927_0001`) so the
     # `attribute_schema` validator passes.
-    assert created_entity.attributes["vehicle_code"] == 1234
+    assert created_entity.attributes["internal_code"] == 1234
 
 
 @pytest.mark.asyncio
-async def test_create_product_non_vehicle_category_skips_vehicle_code() -> None:
+async def test_create_product_non_vehicle_category_skips_internal_code() -> None:
     """Non-vehicle categories' `attribute_schema` doesn't declare a
-    `vehicle_code` key, so the use case skips the allocation /
+    `internal_code` key, so the use case skips the allocation /
     reservation block entirely. The caller can still pass
-    `attributes["vehicle_code"]` if they want, but the use case won't
+    `attributes["internal_code"]` if they want, but the use case won't
     auto-populate it and won't validate it against the allocator.
 
     Mirrors the pre-feature behavior for non-vehicle categories: no
     allocator call, no reservation, no error."""
-    # Non-vehicle category: `vehicle_code` is NOT in `attribute_schema`.
+    # Non-vehicle category: `internal_code` is NOT in `attribute_schema`.
     category = Category(
         id=uuid4(),
         name="Real Estate",
@@ -287,16 +287,16 @@ async def test_create_product_non_vehicle_category_skips_vehicle_code() -> None:
 
     await use_case.execute(request)
     # Allocator was never called — non-vehicle category bypasses
-    # the entire vehicle_code block.
+    # the entire internal_code block.
     allocator.allocate_next.assert_not_awaited()
     allocator.reserve.assert_not_awaited()
     created_entity = product_repo.create.await_args.args[0]
-    assert "vehicle_code" not in (created_entity.attributes or {})
+    assert "internal_code" not in (created_entity.attributes or {})
 
 
 @pytest.mark.asyncio
-async def test_create_product_response_carries_vehicle_code_in_attributes() -> None:
-    """The DTO response carries the persisted vehicle_code inside
+async def test_create_product_response_carries_internal_code_in_attributes() -> None:
+    """The DTO response carries the persisted internal_code inside
     `attributes` so the frontend form reflects the actual stored value
     (relevant when the allocator picked it implicitly)."""
     category = _category()
@@ -318,4 +318,4 @@ async def test_create_product_response_carries_vehicle_code_in_attributes() -> N
     # Stored as JSONB native int (post-`20260927_0001`); the
     # category's `attribute_schema` validator accepts the value as
     # `isinstance(value, (int, float))`.
-    assert response.attributes["vehicle_code"] == 7777
+    assert response.attributes["internal_code"] == 7777

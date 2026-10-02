@@ -324,23 +324,23 @@ class StubProductRepository(AbstractProductRepository):
         del tenant_id, category_id, keys
         return {}
 
-    async def get_max_vehicle_code(self) -> int | None:
+    async def get_max_internal_code(self) -> int | None:
         # Stub returns `None` (no products tracked have a code yet) —
         # the lead-auto-assignment tests never exercise the
-        # `VehicleCodeAllocator` path.
+        # `InternalCodeAllocator` path.
         return None
 
-    async def allocate_next_vehicle_code(self) -> int:
+    async def allocate_next_internal_code(self) -> int:
         """Return a deterministic code for this in-memory test double.
 
-        Reads the JSONB-side `attributes["vehicle_code"]` value off
+        Reads the JSONB-side `attributes["internal_code"]` value off
         each tracked product (text), casts to int for the math, and
         returns max + 1. Tests that predate the JSONB move still expect
         an int — only the storage shape changed.
         """
         codes: list[int] = []
         for product in self.products.values():
-            raw = (product.attributes or {}).get("vehicle_code")
+            raw = (product.attributes or {}).get("internal_code")
             if raw is None or raw == "":
                 continue
             try:
@@ -349,21 +349,21 @@ class StubProductRepository(AbstractProductRepository):
                 continue
         return max(codes, default=0) + 1
 
-    async def vehicle_code_exists(
+    async def internal_code_exists(
         self, code: int, *, exclude_product_id: UUID | None = None
     ) -> bool:
         del code, exclude_product_id
         return False
 
-    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
+    async def internal_codes_exist(self, codes: Iterable[int]) -> set[int]:
         # Stub returns the empty set — the lead-auto-assignment tests
         # never exercise the preview's batched collision lookup.
         del codes
         return set()
 
-    async def update_vehicle_code_if_absent(self, product_id: UUID, code: int) -> bool:
+    async def update_internal_code_if_absent(self, product_id: UUID, code: int) -> bool:
         # Stub never exercises the export backfill path; mirror
-        # `vehicle_code_exists` and return False (no-op). Added to
+        # `internal_code_exists` and return False (no-op). Added to
         # satisfy the abstract method added by the export backfill fix.
         del product_id, code
         return False

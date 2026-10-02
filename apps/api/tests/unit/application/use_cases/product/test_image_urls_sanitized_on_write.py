@@ -241,10 +241,10 @@ class TestCreateProductSanitizesImageUrls:
                 {
                     "presentation": None,
                     "tenant_id": tenant_id,
-                    # No `vehicle_code` key — the test exercises a
+                    # No `internal_code` key — the test exercises a
                     # non-vehicle category path post-`20260927_0001_*`,
-                    # so the use case must not allocate nor validate a
-                    # `vehicle_code`. Empty schema keeps the category
+                    # so the use case must not allocate nor validate an
+                    # `internal_code`. Empty schema keeps the category
                     # outside the vehicle-only allocation branch.
                     "attribute_schema": {},
                     "validate_attributes": lambda _self, _attrs: None,

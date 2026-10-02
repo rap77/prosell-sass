@@ -49,7 +49,7 @@ async def test_preview_scopes_org_code_lookup_to_the_caller_tenant() -> None:
 
 
 # ============================================================================
-# `csv_id` — display-only, never validated against `vehicle_code`
+# `csv_id` — display-only, never validated against `internal_code`
 # ============================================================================
 
 
@@ -57,7 +57,7 @@ async def test_preview_scopes_org_code_lookup_to_the_caller_tenant() -> None:
 async def test_preview_captures_csv_id_for_display_without_validating_it() -> None:
     """`csv_id` is informational only (shown in the preview as "ID CSV") —
     duplicate or already-persisted CSV ids are never flagged as errors,
-    since `vehicle_code` is always sourced from the internal allocator at
+    since `internal_code` is always sourced from the internal allocator at
     import time, never from the CSV's `id` column."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []

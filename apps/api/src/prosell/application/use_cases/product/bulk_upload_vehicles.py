@@ -26,7 +26,7 @@ from prosell.domain.repositories.organization_repository import AbstractOrganiza
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper, ImageMappingResult
-from prosell.domain.services.vehicle_code_allocator import VehicleCodeAllocator
+from prosell.domain.services.internal_code_allocator import InternalCodeAllocator
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class BulkUploadVehiclesUseCase:
         category_repository: AbstractCategoryRepository,
         organization_repository: AbstractOrganizationRepository,
         do_spaces_service: IDOSpacesService,
-        vehicle_code_allocator: VehicleCodeAllocator,
+        internal_code_allocator: InternalCodeAllocator,
         csv_image_mapper: CSVImageMapper | None = None,
     ) -> None:
         """
@@ -90,10 +90,10 @@ class BulkUploadVehiclesUseCase:
             category_repository: Category repository for validation
             organization_repository: Organization repository for code resolution
             do_spaces_service: DO Spaces service for image upload
-            vehicle_code_allocator: Assigns the next internal `vehicle_code`
+            internal_code_allocator: Assigns the next internal `internal_code`
                 for every brand-new row — required (not optional) because
                 this use case only ever creates vehicle-category products,
-                and the DB trigger `prosell_enforce_vehicle_code_trigger`
+                and the DB trigger `prosell_enforce_internal_code_trigger`
                 rejects an INSERT with no code.
             csv_image_mapper: Image mapper for ZIP-based image association
         """
@@ -101,7 +101,7 @@ class BulkUploadVehiclesUseCase:
         self.category_repository = category_repository
         self.organization_repository = organization_repository
         self.do_spaces_service = do_spaces_service
-        self.vehicle_code_allocator = vehicle_code_allocator
+        self.internal_code_allocator = internal_code_allocator
         self.csv_image_mapper = csv_image_mapper or CSVImageMapper()
 
     async def execute(
@@ -361,11 +361,11 @@ class BulkUploadVehiclesUseCase:
 
         # Check if product with this VIN already exists (upsert). Resolved
         # BEFORE building `attributes` so we know whether to allocate a new
-        # `vehicle_code` (brand-new row) or leave the existing one untouched
+        # `internal_code` (brand-new row) or leave the existing one untouched
         # (update).
         existing = await self.product_repository.get_by_vin(vin, tenant_id)
 
-        # `vehicle_code` is ALWAYS sourced from the internal allocator —
+        # `internal_code` is ALWAYS sourced from the internal allocator —
         # NEVER from the CSV's `id` column. The client's own `id` is
         # informational only (surfaced in the preview as "ID CSV") and
         # plays no role in the product's durable identifier, so two rows
@@ -377,8 +377,8 @@ class BulkUploadVehiclesUseCase:
         # it untouched.
         bulk_attributes = dict(attributes)
         if existing is None:
-            vehicle_code = await self.vehicle_code_allocator.allocate_next()
-            bulk_attributes["vehicle_code"] = str(vehicle_code)
+            internal_code = await self.internal_code_allocator.allocate_next()
+            bulk_attributes["internal_code"] = str(internal_code)
         request = CreateProductRequest(
             title=title,
             price_cents=mapped_row.price_cents,
@@ -442,8 +442,8 @@ class BulkUploadVehiclesUseCase:
             product_id = existing.id
             status = "updated"
 
-            # Update fields. `vehicle_code` lives inside
-            # `attributes["vehicle_code"]` since the JSONB move; we
+            # Update fields. `internal_code` lives inside
+            # `attributes["internal_code"]` since the JSONB move; we
             # merge it into the existing attributes so other category
             # fields are preserved. When the CSV has no `id` column for
             # this row we leave the existing value untouched (a no-op

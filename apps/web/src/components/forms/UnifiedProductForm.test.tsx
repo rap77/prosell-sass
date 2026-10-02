@@ -307,13 +307,14 @@ describe("UnifiedProductForm Facebook Marketplace indicator", () => {
   });
 });
 
-// ── vehicle_code (post-20260927_0001 JSONB move) ─────────────────────────
+// ── internal_code (post-20260927_0001 JSONB move) ─────────────────────────
 //
 // The legacy id is no longer a top-level form field — it moved into
-// `attributes["vehicle_code"]` (backend migration
-// 20260927_0001_move_vehicle_code_to_attributes_jsonb) and is driven
-// by the vehicle category's `attribute_schema`. The dynamic
-// `SchemaFormSection` renders the input inside the "identificacion"
+// `attributes["internal_code"]` (backend migration
+// 20260927_0001_move_vehicle_code_to_attributes_jsonb, renamed from
+// `vehicle_code` in 20261002_0001_rename_vehicle_code_to_internal_code)
+// and is driven by the vehicle category's `attribute_schema`. The
+// dynamic `SchemaFormSection` renders the input inside the "identificacion"
 // group, alongside VIN / make / model / year, so the previous
 // dedicated section + `coerceVehicleCodeForSubmit` helper +
 // `VEHICLE_CODE_SCHEMA` block were all removed from `UnifiedProductForm.tsx`

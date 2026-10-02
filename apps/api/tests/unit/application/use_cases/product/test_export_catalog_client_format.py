@@ -29,12 +29,14 @@ from prosell.domain.value_objects.product_status import ProductStatus
 _VEHICLES_VERTICAL_SLUG = "vehiculos-y-transporte"
 
 # Module-level counter so multiple `_make_product(...)` calls in the same
-# test produce monotonically increasing `vehicle_code` values by default —
+# test produce monotonically increasing `internal_code` values by default —
 # mirrors the platform's real allocator (MAX + 1) at the test scale. Tests
-# that need a specific code pass `vehicle_code=...` explicitly. Post
-# `20260927_0001_move_vehicle_code_to_attributes_jsonb` the value lives
-# inside `attributes["vehicle_code"]` (text), not on a top-level field.
-_vehicle_code_seq = itertools.count(start=1)
+# that need a specific code pass `internal_code=...` explicitly. Post
+# `20260927_0001_move_vehicle_code_to_attributes_jsonb` (renamed from
+# `vehicle_code` in `20261002_0001_rename_vehicle_code_to_internal_code`)
+# the value lives
+# inside `attributes["internal_code"]` (text), not on a top-level field.
+_internal_code_seq = itertools.count(start=1)
 
 
 def _make_product(
@@ -46,7 +48,7 @@ def _make_product(
     location_city: str | None = None,
     location_state: str | None = None,
     created_at: datetime | None = None,
-    vehicle_code: int | None = None,
+    internal_code: int | None = None,
 ) -> Product:
     # Resolve the code BEFORE building the product so the attributes
     # dict is a single literal. The caller passes a specific int when
@@ -54,9 +56,9 @@ def _make_product(
     # monotonic counter so multiple products in the same test get
     # distinct codes. Stored as text in `attributes` to match the
     # JSONB-side representation (functional unique index over
-    # `attributes->>'vehicle_code'`).
+    # `attributes->>'internal_code'`).
     code_to_store: str = (
-        str(vehicle_code) if vehicle_code is not None else str(next(_vehicle_code_seq))
+        str(internal_code) if internal_code is not None else str(next(_internal_code_seq))
     )
     attrs: dict[str, object] = {
         "year": 2020,
@@ -64,7 +66,7 @@ def _make_product(
         "model": "Explorer",
         "mileage": 70000,
         "exterior_color": exterior_color,
-        "vehicle_code": code_to_store,
+        "internal_code": code_to_store,
     }
 
     product = Product(
@@ -76,9 +78,9 @@ def _make_product(
         price_cents=1780000,
         status=ProductStatus.PUBLISHED,
         description="Great vehicle",
-        # Each test product carries a `vehicle_code` (in `attributes`)
+        # Each test product carries a `internal_code` (in `attributes`)
         # so the use case's defense-in-depth `if attributes has no
-        # vehicle_code: continue` guard does not skip them. Tests that
+        # internal_code: continue` guard does not skip them. Tests that
         # explicitly want to test the `None` branch build a Product
         # directly without going through `_make_product`. The default
         # pulls from a module-level counter so multiple products in the
@@ -664,8 +666,8 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert len(csv_lines) == 1  # header only — the excluded product has no row
 
     @pytest.mark.asyncio
-    async def test_csv_id_column_carries_durable_vehicle_code(self) -> None:
-        # `id` is now the product's durable, globally-unique `vehicle_code`
+    async def test_csv_id_column_carries_durable_internal_code(self) -> None:
+        # `id` is now the product's durable, globally-unique `internal_code`
         # (NOT a positional 1-based row counter) — so the same product
         # exports with the SAME `id` value across every re-export.
         # BR1.7-excluded products in the middle STILL drop the row
@@ -675,9 +677,9 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         # byte-for-byte compatible — only the meaning changed.
         tenant_id = uuid4()
         untranslated_category_id = uuid4()
-        included_a = _make_product(tenant_id, vehicle_code=14)
-        excluded = _make_product(tenant_id, vehicle_code=15, category_id=untranslated_category_id)
-        included_b = _make_product(tenant_id, vehicle_code=16)
+        included_a = _make_product(tenant_id, internal_code=14)
+        excluded = _make_product(tenant_id, internal_code=15, category_id=untranslated_category_id)
+        included_b = _make_product(tenant_id, internal_code=16)
         category_repository = _make_category_repository(
             {untranslated_category_id: "otra-vertical-sin-traduccion"}
         )
@@ -799,13 +801,15 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         organization_repository.get_by_ids.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_product_without_vehicle_code_is_excluded_with_warning(
+    async def test_product_without_internal_code_is_excluded_with_warning(
         self,
     ) -> None:
         # Post-migration invariant: the DB trigger installed by
-        # `20260929_0001_enforce_vehicle_code_required` guarantees
+        # `20260929_0001_enforce_vehicle_code_required` (renamed from
+        # `vehicle_code` in `20261002_0001_rename_vehicle_code_to_internal_code`)
+        # guarantees
         # every published vehicle-category product carries
-        # `vehicle_code`. The export no longer allocates codes — if
+        # `internal_code`. The export no longer allocates codes — if
         # somehow a row slips through (legacy data created before the
         # trigger was deployed), the export logs a warning and skips
         # the row, never crashes.
@@ -831,16 +835,16 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
             facebook_groups_fallback="",
         )
 
-        # Row without `vehicle_code` is skipped: no CSV row, no image folder.
+        # Row without `internal_code` is skipped: no CSV row, no image folder.
         assert result.product_count == 0
         with zipfile.ZipFile(BytesIO(result.zip_bytes)) as archive:
             names = archive.namelist()
             assert names == ["catalogo.csv"]
 
     @pytest.mark.asyncio
-    async def test_use_case_never_allocates_vehicle_code(self) -> None:
+    async def test_use_case_never_allocates_internal_code(self) -> None:
         # Source-level invariant — the export path must not import
-        # `update_vehicle_code_if_absent` or `get_max_vehicle_code`.
+        # `update_internal_code_if_absent` or `get_max_internal_code`.
         # Those primitives belong to the create path and the
         # backfill migration; the export trusts the DB invariant.
         import inspect
@@ -848,11 +852,11 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         from prosell.application.use_cases.product import export_catalog_client_format as module
 
         source = inspect.getsource(module)
-        assert "update_vehicle_code_if_absent" not in source, (
+        assert "update_internal_code_if_absent" not in source, (
             "ExportCatalogClientFormatUseCase must not call the runtime "
-            "backfill primitive; the DB trigger guarantees vehicle_code."
+            "backfill primitive; the DB trigger guarantees internal_code."
         )
-        assert "get_max_vehicle_code" not in source, (
+        assert "get_max_internal_code" not in source, (
             "ExportCatalogClientFormatUseCase must not seed a base code "
             "for runtime backfill; that scaffold is gone."
         )

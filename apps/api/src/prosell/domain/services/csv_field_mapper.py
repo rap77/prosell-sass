@@ -147,8 +147,8 @@ class MappedCSVRow:
     publicado: bool = False
     # `csv_id` — the value of the CSV's `id` column, kept for display
     # only (surfaced in the preview as "ID CSV"). It plays NO role in
-    # the persisted product's `vehicle_code` — that is always sourced
-    # from the internal allocator (`VehicleCodeAllocator`), never from
+    # the persisted product's `internal_code` — that is always sourced
+    # from the internal allocator (`InternalCodeAllocator`), never from
     # this value. Distinct from `row_number` (the CSV row's line
     # counter for error reporting — NEVER confuse the two). `None` when
     # the CSV has no `id` column or the column is empty for that row.
@@ -399,8 +399,9 @@ class CSVFieldMapper:
             publicado=CSVFieldMapper.parse_publicado(row.get("publicado")),
             # The CSV's `id` column is the client's own legacy reference —
             # display-only (preview's "ID CSV" column). It is never
-            # written into `Product.vehicle_code`; the bulk-upload use
-            # case always sources that from the internal allocator.
+            # written into `Product.attributes["internal_code"]`; the
+            # bulk-upload use case always sources that from the internal
+            # allocator.
             csv_id=CSVFieldMapper._parse_optional_int(row.get("id")),
         )
 
@@ -412,7 +413,7 @@ class CSVFieldMapper:
         absent, blank, or carries a non-numeric value we want `None`,
         not a `ValueError` that aborts the whole row's parsing.
         Strict integer parsing — leading/trailing whitespace is stripped
-        but no leading `+`/`-` is accepted (negative vehicle codes are
+        but no leading `+`/`-` is accepted (negative internal codes are
         nonsense and would slip past the BIGINT range check).
         """
         if value is None:

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.product_audit_log import ProductAuditLog
 from prosell.domain.exceptions.product_exceptions import (
-    DuplicateVehicleCodeError,
+    DuplicateInternalCodeError,
     ProductVersionConflictError,
 )
 from prosell.domain.repositories.product_repository import AbstractProductRepository
@@ -69,12 +69,13 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             archived_at=product.archived_at,
             archived_from_status=product.archived_from_status,
             version=product.version,
-            # Note: `vehicle_code` no longer lives on the product model —
-            # it persists inside `attributes["vehicle_code"]` (JSONB)
-            # since migration 20260927_0001. The column-to-entity map
-            # below is identical to the JSONB-write path; we just rely
-            # on the model's `attributes` JSONB field to round-trip the
-            # value.
+            # Note: `internal_code` no longer lives on the product model —
+            # it persists inside `attributes["internal_code"]` (JSONB)
+            # since migration 20260927_0001 (moved to JSONB) and
+            # 20261002_0001 (renamed from `vehicle_code`). The
+            # column-to-entity map below is identical to the JSONB-write
+            # path; we just rely on the model's `attributes` JSONB field
+            # to round-trip the value.
             created_at=product.created_at,
             updated_at=product.updated_at,
         )
@@ -408,7 +409,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
         model.archived_from_status = product.archived_from_status
-        # Note: `vehicle_code` round-trips through the JSONB
+        # Note: `internal_code` round-trips through the JSONB
         # `model.attributes` column; no dedicated column to update.
         model.version += 1
 
@@ -724,54 +725,55 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         """Convert ORM model to domain entity."""
         return Product.model_validate(model, from_attributes=True)
 
-    async def get_max_vehicle_code(self) -> int | None:
-        """Return the largest `vehicle_code` currently persisted, or `None`.
+    async def get_max_internal_code(self) -> int | None:
+        """Return the largest `internal_code` currently persisted, or `None`.
 
-        Tenant-agnostic: `vehicle_code` is a globally-unique legacy
-        product id scoped to vehicle categories; it now lives at
-        `attributes->>'vehicle_code'` (JSONB text). The regex filter
+        Tenant-agnostic: `internal_code` is a globally-unique durable
+        product id scoped to vehicle categories; it lives at
+        `attributes->>'internal_code'` (JSONB text). The regex filter
         `~ '^[0-9]+$'` keeps non-numeric legacy values from breaking the
-        cast; the partial index `ix_products_attrs_vehicle_code_unique`
+        cast; the partial index `ix_products_attrs_internal_code_unique`
         backs the lookup so the query stays O(1) regardless of table size.
         """
-        # `attributes->>'vehicle_code' ~ '^[0-9]+$'` restricts to numeric
+        # `attributes->>'internal_code' ~ '^[0-9]+$'` restricts to numeric
         # strings (the index is text-typed to coexist with legacy data);
         # the cast `::bigint` then runs only over rows we know are
         # numeric. MAX is a single scalar aggregate.
         result = await self.session.execute(
             text(
                 """
-                SELECT MAX((attributes->>'vehicle_code')::bigint)
+                SELECT MAX((attributes->>'internal_code')::bigint)
                 FROM products
-                WHERE attributes->>'vehicle_code' ~ '^[0-9]+$'
+                WHERE attributes->>'internal_code' ~ '^[0-9]+$'
                 """
             )
         )
         return result.scalar_one_or_none()
 
-    async def allocate_next_vehicle_code(self) -> int:
-        """Allocate a globally unique vehicle code from PostgreSQL sequence.
+    async def allocate_next_internal_code(self) -> int:
+        """Allocate a globally unique internal code from PostgreSQL sequence.
 
         ``nextval`` is atomic across concurrent transactions and does not
-        depend on a stale ``MAX(attributes->>'vehicle_code')`` read.
+        depend on a stale ``MAX(attributes->>'internal_code')`` read.
         PostgreSQL sequences may have gaps after rollbacks, which is
-        correct: vehicle codes require uniqueness and durability, not
-        contiguity. The sequence survives the JSONB move intact; only the
-        column the value lands in changed.
+        correct: internal codes require uniqueness and durability, not
+        contiguity. The sequence survives both the JSONB move and the
+        `vehicle_code` -> `internal_code` rename intact; only the name
+        the value lands under changed.
         """
-        result = await self.session.execute(text("SELECT nextval('products_vehicle_code_seq')"))
-        vehicle_code = result.scalar_one()
-        if not isinstance(vehicle_code, int):
-            raise RuntimeError("products_vehicle_code_seq returned a non-integer value")
-        return vehicle_code
+        result = await self.session.execute(text("SELECT nextval('products_internal_code_seq')"))
+        internal_code = result.scalar_one()
+        if not isinstance(internal_code, int):
+            raise RuntimeError("products_internal_code_seq returned a non-integer value")
+        return internal_code
 
-    async def vehicle_code_exists(
+    async def internal_code_exists(
         self, code: int, *, exclude_product_id: UUID | None = None
     ) -> bool:
-        """Return whether any product uses `code` as its `vehicle_code`.
+        """Return whether any product uses `code` as its `internal_code`.
 
-        Looks up against `attributes->>'vehicle_code'` (JSONB text) cast
-        to bigint, with the same regex guard as `get_max_vehicle_code`.
+        Looks up against `attributes->>'internal_code'` (JSONB text) cast
+        to bigint, with the same regex guard as `get_max_internal_code`.
         Hits the partial functional index — single indexed lookup
         regardless of table size. `exclude_product_id` lets
         `UpdateProductUseCase` reuse this check without flagging the
@@ -796,8 +798,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             """
             SELECT 1
             FROM products
-            WHERE attributes->>'vehicle_code' ~ '^[0-9]+$'
-              AND (attributes->>'vehicle_code')::bigint = :code
+            WHERE attributes->>'internal_code' ~ '^[0-9]+$'
+              AND (attributes->>'internal_code')::bigint = :code
               AND id != CAST(:exclude_id AS UUID)
             LIMIT 1
             """
@@ -811,13 +813,13 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         )
         return result.scalar_one_or_none() is not None
 
-    async def vehicle_codes_exist(self, codes: Iterable[int]) -> set[int]:
-        """Return the subset of `codes` currently in use as `vehicle_code`.
+    async def internal_codes_exist(self, codes: Iterable[int]) -> set[int]:
+        """Return the subset of `codes` currently in use as `internal_code`.
 
-        Single query: `attributes->>'vehicle_code' = ANY(:codes_text)`,
+        Single query: `attributes->>'internal_code' = ANY(:codes_text)`,
         filtered through the regex guard so only numeric candidates are
         cast and compared. Hits the partial functional index
-        `ix_products_attrs_vehicle_code_unique` so the DB scan stays
+        `ix_products_attrs_internal_code_unique` so the DB scan stays
         bounded by the size of the result. Empty input short-circuits to
         an empty set without touching the DB.
         """
@@ -831,10 +833,10 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         # index.
         stmt = text(
             """
-            SELECT DISTINCT (attributes->>'vehicle_code')::bigint AS code
+            SELECT DISTINCT (attributes->>'internal_code')::bigint AS code
             FROM products
-            WHERE attributes->>'vehicle_code' = ANY(:codes_text)
-              AND attributes->>'vehicle_code' ~ '^[0-9]+$'
+            WHERE attributes->>'internal_code' = ANY(:codes_text)
+              AND attributes->>'internal_code' ~ '^[0-9]+$'
             """
         )
         result = await self.session.execute(
@@ -843,18 +845,18 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         )
         return {row for row in result.scalars().all() if row is not None}
 
-    async def update_vehicle_code_if_absent(self, product_id: UUID, code: int) -> bool:
+    async def update_internal_code_if_absent(self, product_id: UUID, code: int) -> bool:
         """Atomic conditional backfill — see the abstract method docstring.
 
-        `jsonb_set(..., '{vehicle_code}', to_jsonb(:code_text), true)`
+        `jsonb_set(..., '{internal_code}', to_jsonb(:code_text), true)`
         writes the value as a JSON text token (matching the JSONB-side
         representation used by the partial unique index and the
-        `~ '^[0-9]+$'` regex guard in `get_max_vehicle_code`). The
+        `~ '^[0-9]+$'` regex guard in `get_max_internal_code`). The
         `create_if_missing=true` flag is defensive — `attributes` is
         `NOT NULL DEFAULT '{}'`, so the key never already exists.
 
         The single-statement `UPDATE ... WHERE id = ... AND
-        (attributes->>'vehicle_code' IS NULL OR attributes->>'vehicle_code' = '')`
+        (attributes->>'internal_code' IS NULL OR attributes->>'internal_code' = '')`
         makes the whole write row-atomic: PostgreSQL guarantees that
         among concurrent writers targeting the same `id`, exactly one
         observes `result.rowcount == 1` and every other observes
@@ -862,23 +864,23 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         "another writer already backfilled this product — re-read its
         attributes". The empty-string branch treats legacy rows written
         by older paths as missing too, so a NULL-or-empty
-        `attributes["vehicle_code"]` always backfills cleanly.
+        `attributes["internal_code"]` always backfills cleanly.
 
         After a winning UPDATE we re-SELECT the row with
         `populate_existing=True` so the session's identity-map entry
         for that `id` reflects the post-UPDATE attributes JSONB. The
         export loop relies on this when its "another writer already
         backfilled it" branch re-reads
-        `product.attributes["vehicle_code"]` via `get_by_id` in the
+        `product.attributes["internal_code"]` via `get_by_id` in the
         same session (e.g. integration-test setups that reuse a single
         AsyncSession across consecutive requests).
 
         Cross-product uniqueness is enforced by the partial unique
-        index `ix_products_attrs_vehicle_code_unique`. A collision on
+        index `ix_products_attrs_internal_code_unique`. A collision on
         `code` (because some other product already holds that value)
         surfaces as a `sqlalchemy.exc.IntegrityError` from
         `session.execute()` and is translated here to the domain-level
-        `DuplicateVehicleCodeError` — application/domain code never
+        `DuplicateInternalCodeError` — application/domain code never
         imports `sqlalchemy.exc` (Clean Architecture boundary).
         """
         stmt = text(
@@ -886,14 +888,14 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             UPDATE products
             SET attributes = jsonb_set(
                 attributes,
-                '{vehicle_code}',
+                '{internal_code}',
                 to_jsonb(CAST(:code_text AS TEXT)),
                 true
             )
             WHERE id = CAST(:product_id AS UUID)
               AND (
-                attributes->>'vehicle_code' IS NULL
-                OR attributes->>'vehicle_code' = ''
+                attributes->>'internal_code' IS NULL
+                OR attributes->>'internal_code' = ''
               )
             """
         )
@@ -904,11 +906,11 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             )
         except IntegrityError as exc:
             # Partial unique index collision on
-            # `ix_products_attrs_vehicle_code_unique` — another product
+            # `ix_products_attrs_internal_code_unique` — another product
             # already holds `code`. Translate to the domain-level
             # exception so the application layer never has to import
             # `sqlalchemy.exc`.
-            raise DuplicateVehicleCodeError(code) from exc
+            raise DuplicateInternalCodeError(code) from exc
         # ponytail: `rowcount` exists at runtime on the UPDATE result
         # returned by `text(...)`, pyright doesn't see it on the wider
         # `Result[Any]` type.

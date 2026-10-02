@@ -29,13 +29,15 @@ class Product(DomainModel):
     # Note: vehicle categories used to expose a `vehicle_code` legacy
     # product id as a first-class field on this entity. The field was
     # promoted to live inside `attributes` (under the
-    # ``attributes["vehicle_code"]`` key) because it's only ever set
-    # for vehicle categories — promoting it to a top-level Product
-    # column paid table-wide storage/IO cost for a value that's NULL
-    # on the majority of products. The DB-level uniqueness invariant
-    # survives via a functional unique index on the JSONB path; the
-    # application-level allocator still calls ``nextval`` for atomic
-    # allocation and writes the result into `attributes`. See migration
+    # ``attributes["internal_code"]`` key, renamed from `vehicle_code`
+    # in `20261002_0001_rename_vehicle_code_to_internal_code.py`)
+    # because it's only ever set for vehicle categories — promoting it
+    # to a top-level Product column paid table-wide storage/IO cost for
+    # a value that's NULL on the majority of products. The DB-level
+    # uniqueness invariant survives via a functional unique index on
+    # the JSONB path; the application-level allocator still calls
+    # ``nextval`` for atomic allocation and writes the result into
+    # `attributes`. See migration
     # `20260927_0001_move_vehicle_code_to_attributes_jsonb.py`.
 
     # Basic info
@@ -147,10 +149,10 @@ class Product(DomainModel):
             description: Optional product description
             currency: ISO currency code (default "USD")
             attributes: Category-specific attributes (optional). For vehicle
-                categories, ``attributes["vehicle_code"]`` is the durable
-                catalog id — populated either by the caller (re-import from a
-                client CSV) or by ``VehicleCodeAllocator.allocate_next()`` if
-                omitted.
+                categories, ``attributes["internal_code"]`` is the durable
+                catalog id — populated either by the caller (an explicit
+                code typed in the admin form) or by
+                ``InternalCodeAllocator.allocate_next()`` if omitted.
             image_urls: Ordered gallery image URLs (optional)
             cover_image_key: Storage key of the cover image (optional)
             thumbnail_image_key: Storage key of the thumbnail derivative (optional)

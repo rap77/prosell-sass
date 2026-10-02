@@ -4,11 +4,13 @@ u1-catalog-export-api: assembles a single ZIP (BR1.5) containing the
 client-format CSV (24 columns, ';' separator, BR1.3/BR1.4) at its root
 plus one folder per vehicle with its available images (BR2.1-BR2.4).
 
-Pure read-only. `attributes["vehicle_code"]` is guaranteed present and
+Pure read-only. `attributes["internal_code"]` is guaranteed present and
 numeric on every vehicle-category product by the database trigger
-installed in migration `20260929_0001_enforce_vehicle_code_required` —
-the create path allocates the value, the export only reads it. See
-Domain Design ADR-002 (`entities.md`).
+installed in migration `20260929_0001_enforce_vehicle_code_required`
+(trigger renamed to `prosell_enforce_internal_code_trigger` in
+`20261002_0001_rename_vehicle_code_to_internal_code.py`) — the create
+path allocates the value, the export only reads it. See Domain Design
+ADR-002 (`entities.md`).
 """
 
 import asyncio
@@ -248,35 +250,35 @@ class ExportCatalogClientFormatUseCase:
         included_products: list[Product] = []
 
         for product in products:
-            # `vehicle_code` is guaranteed present and numeric on every
+            # `internal_code` is guaranteed present and numeric on every
             # vehicle-category product by the database trigger installed
             # in migration `20260929_0001_enforce_vehicle_code_required`
             # — the export does not allocate codes, that is the create
             # path's responsibility. We read whatever the row already
             # carries.
-            vehicle_code_raw = (product.attributes or {}).get("vehicle_code")
-            if vehicle_code_raw is None or str(vehicle_code_raw).strip() == "":
+            internal_code_raw = (product.attributes or {}).get("internal_code")
+            if internal_code_raw is None or str(internal_code_raw).strip() == "":
                 # BR1.7-style exclusion: the row was created before the
                 # trigger landed and somehow escaped the backfill. Skip
                 # with a warning so the empty CSV symptom stays debuggable
                 # — never crash the export over a single legacy row.
                 logger.warning(
-                    "catalog_export.vehicle_code_missing product_id=%s",
+                    "catalog_export.internal_code_missing product_id=%s",
                     product.id,
                 )
                 continue
             try:
-                vehicle_code_int = int(str(vehicle_code_raw).strip())
+                internal_code_int = int(str(internal_code_raw).strip())
             except (TypeError, ValueError):
                 logger.warning(
-                    "catalog_export.vehicle_code_non_numeric product_id=%s value=%r",
+                    "catalog_export.internal_code_non_numeric product_id=%s value=%r",
                     product.id,
-                    vehicle_code_raw,
+                    internal_code_raw,
                 )
                 continue
-            if vehicle_code_int <= 0:
+            if internal_code_int <= 0:
                 continue
-            vehicle_code_raw = vehicle_code_int
+            internal_code_raw = internal_code_int
             vertical_slug = await self._resolve_vertical_slug(
                 product.category_id, vertical_slug_by_leaf_category_id
             )
@@ -326,12 +328,12 @@ class ExportCatalogClientFormatUseCase:
             rows.append(
                 build_client_format_row(
                     # Durable, globally-unique legacy product id
-                    # (`attributes["vehicle_code"]`). Replaces the
+                    # (`attributes["internal_code"]`). Replaces the
                     # previous 1-based positional row_id so the same
                     # product exports with the SAME `id` value across
                     # every re-export — the value lives in the partial
                     # functional unique index
-                    # `ix_products_attrs_vehicle_code_unique` and
+                    # `ix_products_attrs_internal_code_unique` and
                     # surfaces as the `id` column of the client-format
                     # CSV (byte-for-byte compatibility with
                     # `docs/data39.csv`, whose own `id` column already
@@ -342,7 +344,7 @@ class ExportCatalogClientFormatUseCase:
                     # across exports instead of sequential within
                     # one). The numeric-validation guard a few blocks
                     # above guarantees an int here.
-                    vehicle_code=vehicle_code_raw,
+                    internal_code=internal_code_raw,
                     org_code=org_code,
                     price_cents=product.price_cents,
                     description=product.description,

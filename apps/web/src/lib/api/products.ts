@@ -62,13 +62,15 @@ const productSchema = z.object({
   org_code: z.string().nullish(),
   org_color: z.string().nullish(),
   category_id: z.string(),
-  // Note: the durable, globally-unique legacy product id (vehicle_code)
-  // no longer lives at the top level of the wire payload — it moved into
-  // the `attributes` JSONB column under the `vehicle_code` key (see
+  // Note: the durable, globally-unique legacy product id (internal_code,
+  // renamed from vehicle_code in backend migration
+  // 20261002_0001_rename_vehicle_code_to_internal_code) no longer lives
+  // at the top level of the wire payload — it moved into the
+  // `attributes` JSONB column under the `internal_code` key (see
   // backend migration 20260927_0001_move_vehicle_code_to_attributes_jsonb).
   // Vehicle categories' attribute_schema defines the field's type and
   // constraints; consumers that need the value should read it from
-  // `attributes["vehicle_code"]` directly.
+  // `attributes["internal_code"]` directly.
   title: z.string(),
   slug: z.string().nullish(),
   description: z.string().nullish(),
@@ -229,44 +231,6 @@ export function useCreateProduct(): UseMutationResult<
     onError: (err) => {
       toast.error(err.message || "Failed to create product");
     },
-  });
-}
-
-/**
- * Pre-fetch the next available `vehicle_code` for the product create form.
- *
- * DEPRECATED (no-op): `vehicle_code` moved out of the top-level Product
- * column and into the `attributes` JSONB (backend migration
- * 20260927_0001_move_vehicle_code_to_attributes_jsonb). The field is
- * now driven by the vehicle category's `attribute_schema` and rendered
- * alongside the rest of the `identificacion` group. Allocation is
- * owned by the use case's allocator, not exposed to the form.
- *
- * This stub still returns a properly-typed `UseQueryResult` (with
- * `enabled: false` so the network request is never fired) so any stale
- * caller in the codebase continues to compile and behave as a
- * permanently-idle query. The companion test pins the never-throws
- * behavior so the next migration owner can remove the export safely
- * once all callers are gone.
- */
-export interface NextVehicleCodeOptions {
-  enabled?: boolean;
-}
-
-export function useNextVehicleCode(
-  _options: NextVehicleCodeOptions = {},
-): UseQueryResult<{ vehicle_code: number }, Error> {
-  return useQuery({
-    queryKey: ["products", "next-vehicle-code", "deprecated"],
-    queryFn: async () => {
-      throw new Error(
-        "useNextVehicleCode is deprecated: vehicle_code moved into " +
-          "attributes JSONB (migration 20260927_0001). Drive the field " +
-          "through the category's attribute_schema instead.",
-      );
-    },
-    enabled: false,
-    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 

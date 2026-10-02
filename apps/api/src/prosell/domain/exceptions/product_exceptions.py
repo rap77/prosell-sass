@@ -119,18 +119,18 @@ class ProductRestoreTargetMissingError(ProductError):
         )
 
 
-class DuplicateVehicleCodeError(ProductError):
-    """Raised when a caller supplies a `vehicle_code` already used by another product.
+class DuplicateInternalCodeError(ProductError):
+    """Raised when a caller supplies an `internal_code` already used by another product.
 
-    `vehicle_code` is globally unique across the platform (the partial unique
-    index `ix_products_vehicle_code_unique` enforces this at the DB level).
-    Surfaced explicitly from the use case so the API layer can map it to
-    a 422 with a field-level message instead of a generic 500 from a DB
-    constraint violation. Created on product creation when the caller
-    supplies an explicit `vehicle_code`, or on update when the caller
-    changes it to a value already held by another product.
+    `internal_code` is globally unique across the platform (the functional
+    unique index `ix_products_attrs_internal_code_unique` enforces this at
+    the DB level). Surfaced explicitly from the use case so the API layer
+    can map it to a 422 with a field-level message instead of a generic
+    500 from a DB constraint violation. Created on product creation when
+    the caller supplies an explicit `internal_code`, or on update when the
+    caller changes it to a value already held by another product.
     """
 
-    def __init__(self, vehicle_code: int) -> None:
-        self.vehicle_code = vehicle_code
-        super().__init__(f"vehicle_code {vehicle_code} is already used by another product")
+    def __init__(self, internal_code: int) -> None:
+        self.internal_code = internal_code
+        super().__init__(f"internal_code {internal_code} is already used by another product")
