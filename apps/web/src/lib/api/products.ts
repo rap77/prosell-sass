@@ -1230,6 +1230,14 @@ export interface ProductFilters {
    * (existing backend behavior for `GET /api/v1/products`).
    */
   organization_id?: string;
+  /**
+   * Filters by a SET of organizations (catalog multi-select filter) —
+   * mutually exclusive with `organization_id`; when non-empty, takes
+   * precedence over it (same "broader mode wins" rule the backend
+   * applies). Requires ORG_ADMIN_VIEW_ALL for any id other than the
+   * caller's own, enforced server-side.
+   */
+  organization_ids?: string[];
   /** Catalog header toggle — true keeps only products on marketplace. */
   published_to_marketplace?: boolean;
   /** Catalog header toggle — true keeps only products with images. */
@@ -1255,8 +1263,16 @@ export function useInfiniteProducts(
   if (filters?.search) queryParams.append("search", filters.search);
   if (filters?.category_id)
     queryParams.append("category_id", filters.category_id);
-  if (filters?.organization_id)
+  if (filters?.organization_ids && filters.organization_ids.length > 0) {
+    // Mutually exclusive with `organization_id` — a non-empty set takes
+    // precedence, matching the backend's own precedence rule, so we
+    // never send both.
+    for (const orgId of filters.organization_ids) {
+      queryParams.append("organization_ids", orgId);
+    }
+  } else if (filters?.organization_id) {
     queryParams.append("organization_id", filters.organization_id);
+  }
   // The boolean toggles only go on the wire when the user has actually
   // picked a value — `undefined` (omitted) must NOT be serialized as the
   // string "undefined", it must simply be absent so the backend skips the
@@ -1628,10 +1644,14 @@ export async function exportCatalogCsv(categoryId: string): Promise<void> {
  *   super_admin/org-admin "viewing as" another organization exports that
  *   organization's catalog instead of their own (`ORG_ADMIN_VIEW_ALL`,
  *   see `260910-export-cross-org`). Ignored server-side when
- *   `allOrganizations` is `true`.
+ *   `allOrganizations` is `true` or `organizationIds` is non-empty.
  * - `allOrganizations` (optional, default `false`): when `true`, appended
  *   as `all_organizations=true` — exports every organization's published
  *   catalog in one response (requires `ORG_ADMIN_VIEW_ALL`/`super_admin`).
+ * - `organizationIds` (optional, catalog multi-select filter/export):
+ *   appended as repeated `organization_ids` params — exports exactly that
+ *   SET of organizations. Mutually exclusive with `organizationId`, takes
+ *   precedence when non-empty; ignored when `allOrganizations` is `true`.
  * - `baseFolder`/`facebookGroupsFallback` (required): always sent as
  *   `base_folder`/`facebook_groups_fallback` — confirmed by the caller via
  *   `window.prompt()` popups (FR8/FR9), required on every export.
@@ -1643,12 +1663,17 @@ export async function exportCatalogCsv(categoryId: string): Promise<void> {
 export async function exportCatalogClientFormat(params: {
   organizationId?: string;
   allOrganizations?: boolean;
+  organizationIds?: string[];
   baseFolder: string;
   facebookGroupsFallback: string;
 }): Promise<Response> {
   const queryParams = new URLSearchParams();
   if (params.allOrganizations) {
     queryParams.append("all_organizations", "true");
+  } else if (params.organizationIds && params.organizationIds.length > 0) {
+    for (const orgId of params.organizationIds) {
+      queryParams.append("organization_ids", orgId);
+    }
   } else if (params.organizationId) {
     queryParams.append("organization_id", params.organizationId);
   }

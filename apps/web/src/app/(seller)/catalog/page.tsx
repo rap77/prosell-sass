@@ -40,6 +40,7 @@ import { CommandPalette } from "@/components/layout/CommandPalette";
 import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
 import { CatalogErrorBoundary } from "@/components/catalog/CatalogErrorBoundary";
+import { OrganizationMultiSelectFilter } from "@/components/catalog/OrganizationMultiSelectFilter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +66,7 @@ import { useOrganization, useOrganizations } from "@/lib/api/organizations";
 import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { useOrganizationStore } from "@/stores/organizationStore";
+import { useAuth } from "@/hooks/useAuth";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
@@ -76,7 +78,7 @@ import type {
   CategoryPresentation,
   AttributeSchemaEntry,
 } from "@/types/category";
-import type { ElementType } from "react";
+import type { ElementType, ReactNode } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,18 +100,25 @@ type ViewMode = (typeof VIEW_MODE)[keyof typeof VIEW_MODE];
 // Q2). "all-orgs" (u2-cross-org-export-ui, FR2/FR5.1) occurs when
 // `viewingOrgId === "ALL_ORGS"` — `count` is the number of organizations
 // with published catalog (`product_count > 0`), same criterion as the
-// picker's own filter.
+// picker's own filter. "multi-org" occurs when the catalog's own
+// multi-select filter has a non-empty selection — takes priority over
+// `viewingOrgId` entirely (same precedence `apiFilters` already applies).
 type ExportOrganization =
   | { kind: "own" }
   | { kind: "loading" }
   | { kind: "cross-org"; name: string }
-  | { kind: "all-orgs"; count: number };
+  | { kind: "all-orgs"; count: number }
+  | { kind: "multi-org"; names: string[] };
 
 function resolveExportOrganization(
   viewingOrgId: string | "ALL_ORGS" | null,
   viewingOrganizationName: string | undefined,
   allOrganizationsCount: number,
+  selectedOrganizationNames: string[],
 ): ExportOrganization {
+  if (selectedOrganizationNames.length > 0) {
+    return { kind: "multi-org", names: selectedOrganizationNames };
+  }
   if (viewingOrgId === "ALL_ORGS") {
     return { kind: "all-orgs", count: allOrganizationsCount };
   }
@@ -118,6 +127,59 @@ function resolveExportOrganization(
     return { kind: "cross-org", name: viewingOrganizationName };
   }
   return { kind: "loading" };
+}
+
+// Badge content for the export summary banner — early-return per
+// `ExportOrganization` kind instead of a nested ternary chain (GGA
+// finding). Returns `null` for "own", which the only caller already
+// guards against rendering at all.
+function exportOrgBadgeContent(organization: ExportOrganization): ReactNode {
+  if (organization.kind === "loading") {
+    return (
+      <span
+        data-testid="export-summary-org-badge-skeleton"
+        className="inline-block h-[14px] w-24 rounded bg-ps-cyan/25 animate-pulse"
+      />
+    );
+  }
+  if (organization.kind === "all-orgs") {
+    return (
+      <span data-testid="export-summary-all-orgs-count">
+        Exportando catálogo de TODAS las organizaciones ({organization.count} en
+        total)
+      </span>
+    );
+  }
+  if (organization.kind === "multi-org") {
+    return (
+      <span data-testid="export-summary-multi-org-names">
+        Exportando catálogo de {organization.names.length} organizaciones:{" "}
+        {organization.names.join(", ")}
+      </span>
+    );
+  }
+  if (organization.kind === "cross-org") {
+    return <span>Exportando catálogo de: {organization.name}</span>;
+  }
+  return null;
+}
+
+// Body message for the export summary banner — early-return per state
+// instead of a nested ternary chain (GGA finding).
+function exportSummaryMessage(
+  organization: ExportOrganization,
+  isExporting: boolean,
+): string {
+  if (isExporting) {
+    return "Exportando catálogo, no cierres esta pestaña...";
+  }
+  if (organization.kind === "all-orgs") {
+    return "Se exportará el catálogo completo de productos publicados de todas las organizaciones de la plataforma.";
+  }
+  if (organization.kind === "multi-org") {
+    return "Se exportará el catálogo completo de productos publicados de las organizaciones seleccionadas.";
+  }
+  return "Se exportará el catálogo completo de productos publicados de tu organización.";
 }
 
 // u1-export-org-confirmation — AC2.1.1/AC2.1.2: the empty-catalog (404)
@@ -135,6 +197,9 @@ function emptyCatalogExportMessage(organization: ExportOrganization): string {
   }
   if (organization.kind === "all-orgs") {
     return "Ninguna organización tiene catálogo publicado para exportar.";
+  }
+  if (organization.kind === "multi-org") {
+    return "Ninguna de las organizaciones seleccionadas tiene catálogo publicado para exportar.";
   }
   return "No hay productos publicados para exportar.";
 }
@@ -241,19 +306,7 @@ function ExportSummaryBanner({
           className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full bg-ps-cyan/10 text-ps-cyan text-[12px] font-semibold"
         >
           <Building2 size={13} strokeWidth={2.5} />
-          {organization.kind === "loading" ? (
-            <span
-              data-testid="export-summary-org-badge-skeleton"
-              className="inline-block h-[14px] w-24 rounded bg-ps-cyan/25 animate-pulse"
-            />
-          ) : isAllOrgs ? (
-            <span data-testid="export-summary-all-orgs-count">
-              Exportando catálogo de TODAS las organizaciones (
-              {organization.count} en total)
-            </span>
-          ) : (
-            <span>Exportando catálogo de: {organization.name}</span>
-          )}
+          {exportOrgBadgeContent(organization)}
         </div>
       )}
       {isAllOrgs && (
@@ -270,11 +323,7 @@ function ExportSummaryBanner({
       )}
       <div className="flex items-center justify-between gap-4">
         <p className="m-0 text-[13px] text-ps-text-primary">
-          {isExporting
-            ? "Exportando catálogo, no cierres esta pestaña..."
-            : isAllOrgs
-              ? "Se exportará el catálogo completo de productos publicados de todas las organizaciones de la plataforma."
-              : "Se exportará el catálogo completo de productos publicados de tu organización."}
+          {exportSummaryMessage(organization, isExporting)}
         </p>
         {isExporting ? (
           // FR8/refined-mockups Q2: while the real export request is in
@@ -368,6 +417,14 @@ export default function CatalogPage() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [isExportingClientFormat, setIsExportingClientFormat] = useState(false);
   const [showExportSummary, setShowExportSummary] = useState(false);
+  // Catalog-only multi-organization filter (checkboxes) — deliberately
+  // separate from `organizationStore.viewingOrgId` (the header's global
+  // "view as" picker, also used by the admin review-queue screen). Local
+  // to this page: resets on navigation away, same as every other catalog
+  // filter that isn't persisted in the URL. When non-empty, it REPLACES
+  // the single-organization filter derived from `viewingOrgId` below.
+  const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
+  const { isAdmin } = useAuth();
 
   // Vertical contracts: presentation + attribute_schema per category.
   // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
@@ -394,10 +451,14 @@ export default function CatalogPage() {
   const allOrganizationsCount = organizationsForExportCount.filter(
     (organization) => (organization.product_count ?? 0) > 0,
   ).length;
+  const selectedOrganizationNames = organizationsForExportCount
+    .filter((organization) => selectedOrgIds.includes(organization.id))
+    .map((organization) => organization.name);
   const exportOrganization = resolveExportOrganization(
     viewingOrgId,
     viewingOrganization?.name,
     allOrganizationsCount,
+    selectedOrganizationNames,
   );
   const { data: verticalsData } = useOrgVerticals(organizationId);
   // Leaf-only dropdown: walk every vertical's category tree, collect leaves
@@ -428,21 +489,18 @@ export default function CatalogPage() {
   // "no filter on this dimension".
   const publishedRaw = searchParams.get("published");
   const hasImagesRaw = searchParams.get("has_images");
-  const publishedToMarketplace =
-    publishedRaw === "true"
-      ? true
-      : publishedRaw === "false"
-        ? false
-        : undefined;
-  // 3-state toggle: `?has_images=true` → true, `?has_images=false` →
-  // false, missing → undefined. The literal `true` / `false` / `undefined`
-  // pass through to the API's nullable boolean filter unchanged.
-  function parseHasImagesToggle(raw: string | null): boolean | undefined {
+  // 3-state toggle: `?published=true` / `?has_images=true` → true,
+  // `?...=false` → false, missing → undefined. The literal
+  // `true` / `false` / `undefined` pass through to the API's nullable
+  // boolean filters unchanged. One parser for both — they're the same
+  // tri-state shape (QuickFilters), no reason to duplicate the logic.
+  function parseTriStateToggle(raw: string | null): boolean | undefined {
     if (raw === "true") return true;
     if (raw === "false") return false;
     return undefined;
   }
-  const hasImages = parseHasImagesToggle(hasImagesRaw);
+  const publishedToMarketplace = parseTriStateToggle(publishedRaw);
+  const hasImages = parseTriStateToggle(hasImagesRaw);
 
   // ponytail: view mode lives in the URL (not local state) so it survives
   // navigating to a product's detail page and back — a plain useState
@@ -492,10 +550,15 @@ export default function CatalogPage() {
     status,
     category_id: selectedCategoryId ?? undefined,
     attributes,
+    // The catalog's own multi-select filter REPLACES the viewingOrgId-
+    // derived single org when active (non-empty) — the API client gives
+    // `organization_ids` precedence either way, but omitting
+    // `organization_id` here too keeps this call site's intent explicit.
     organization_id:
-      viewingOrgId === "ALL_ORGS"
+      selectedOrgIds.length > 0 || viewingOrgId === "ALL_ORGS"
         ? undefined
         : (viewingOrgId ?? organizationId ?? undefined),
+    organization_ids: selectedOrgIds.length > 0 ? selectedOrgIds : undefined,
     published_to_marketplace: publishedToMarketplace,
     has_images: hasImages,
   };
@@ -668,13 +731,18 @@ export default function CatalogPage() {
         // cross-org target (whether its name has resolved yet or not —
         // same criterion "today" applied before "all-orgs" existed, since
         // both "cross-org" and "loading" share the same underlying
-        // viewingOrgId). Never sent for "own" or "all-orgs".
+        // viewingOrgId). Never sent for "own", "all-orgs", or "multi-org".
         organizationId:
           exportOrganization.kind === "cross-org" ||
           exportOrganization.kind === "loading"
             ? (viewingOrgId ?? undefined)
             : undefined,
-        allOrganizations: viewingOrgId === "ALL_ORGS",
+        // The catalog's own multi-select filter REPLACES viewingOrgId
+        // entirely when active — `allOrganizations` must not win over an
+        // explicit multi-select pick even if "ALL_ORGS" is also set.
+        allOrganizations:
+          selectedOrgIds.length === 0 && viewingOrgId === "ALL_ORGS",
+        organizationIds: selectedOrgIds.length > 0 ? selectedOrgIds : undefined,
         baseFolder,
         facebookGroupsFallback,
       });
@@ -905,8 +973,18 @@ export default function CatalogPage() {
             {/* QuickFilters row — sits below the search/CTAs and stays
                 right-aligned on desktop, wrapping naturally on mobile.
                 Only renders once products are loaded so the status
-                dropdown can derive its options from real data. */}
-            <div className="flex justify-end mb-3">
+                dropdown can derive its options from real data. The
+                multi-organization filter is admin-only (ORG_ADMIN_VIEW_ALL
+                server-side; `isAdmin` is the client-side mirror, same gate
+                `OrganizationPicker` already uses). */}
+            <div className="flex justify-end items-center gap-2 mb-3">
+              {isAdmin && (
+                <OrganizationMultiSelectFilter
+                  organizations={organizationsForExportCount}
+                  selectedIds={selectedOrgIds}
+                  onChange={setSelectedOrgIds}
+                />
+              )}
               <QuickFilters products={allProducts} statusOrder={STATUS_ORDER} />
             </div>
 

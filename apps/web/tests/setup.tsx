@@ -24,6 +24,12 @@ interface DropdownMenuItemProps extends ChildrenProps {
   className?: string;
 }
 
+interface DropdownMenuCheckboxItemProps extends ChildrenProps {
+  checked?: boolean;
+  onSelect?: (event: Event) => void;
+  "data-testid"?: string;
+}
+
 interface SelectProps extends ChildrenProps {
   value?: string;
   disabled?: boolean;
@@ -133,6 +139,21 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
       className={className}
       onClick={onClick}
       role="menuitem"
+    >
+      {children}
+    </button>
+  ),
+  DropdownMenuCheckboxItem: ({
+    children,
+    checked,
+    onSelect,
+    "data-testid": dataTestId,
+  }: DropdownMenuCheckboxItemProps): JSX.Element => (
+    <button
+      data-testid={dataTestId ?? "dropdown-checkbox-item"}
+      role="menuitemcheckbox"
+      aria-checked={!!checked}
+      onClick={(event) => onSelect?.(event.nativeEvent)}
     >
       {children}
     </button>
