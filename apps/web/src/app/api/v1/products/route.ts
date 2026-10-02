@@ -22,10 +22,11 @@ async function proxyRequest(request: NextRequest) {
     // Build backend URL
     const url = new URL(`${BACKEND_URL}/api/v1/products`);
 
-    // Copy query parameters
-    request.nextUrl.searchParams.forEach((value, key) => {
-      url.searchParams.set(key, value);
-    });
+    // Copy query parameters verbatim, including repeated keys (e.g.
+    // `organization_ids` sent once per selected org by the catalog's
+    // multi-select filter) — forEach+set() previously collapsed repeats
+    // to the last value, silently dropping every org but the last one.
+    url.search = request.nextUrl.search;
 
     // Get cookies from the incoming request
     const cookieHeader = request.headers.get("cookie");
@@ -70,11 +71,9 @@ async function proxyRequest(request: NextRequest) {
     });
 
     // Forward other relevant headers
-    if (response.headers.get("Content-Type")) {
-      nextResponse.headers.set(
-        "Content-Type",
-        response.headers.get("Content-Type")!,
-      );
+    const contentType = response.headers.get("Content-Type");
+    if (contentType) {
+      nextResponse.headers.set("Content-Type", contentType);
     }
 
     return nextResponse;

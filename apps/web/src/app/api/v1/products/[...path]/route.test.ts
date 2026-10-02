@@ -104,4 +104,26 @@ describe("products proxy route", () => {
       'attachment; filename="catalogo_MF_2026-09-05.zip"',
     );
   });
+
+  // Bug: the proxy copied query params via `forEach` + `.set()`, which
+  // overwrites on every repeated key instead of accumulating — the
+  // catalog's multi-select filter sends `organization_ids` once per
+  // selected organization, so only the LAST one ever reached the
+  // backend, silently narrowing a multi-org export back down to one.
+  it("forwards every repeated organization_ids value to the backend, not just the last", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/products/export-client-format.zip?organization_ids=org-a&organization_ids=org-b&base_folder=orgs%2F&facebook_groups_fallback=General",
+      { method: "GET" },
+    );
+
+    await GET(request, {
+      params: Promise.resolve({ path: ["export-client-format.zip"] }),
+    });
+
+    const calledUrl = new URL(mockFetch.mock.calls[0][0] as string);
+    expect(calledUrl.searchParams.getAll("organization_ids")).toEqual([
+      "org-a",
+      "org-b",
+    ]);
+  });
 });

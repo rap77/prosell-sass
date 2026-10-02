@@ -448,9 +448,10 @@ export default function CatalogPage() {
   // criterion) the picker already uses; no new network request (TanStack
   // Query dedupes by queryKey).
   const { data: organizationsForExportCount = [] } = useOrganizations();
-  const allOrganizationsCount = organizationsForExportCount.filter(
+  const organizationsWithProducts = organizationsForExportCount.filter(
     (organization) => (organization.product_count ?? 0) > 0,
-  ).length;
+  );
+  const allOrganizationsCount = organizationsWithProducts.length;
   const selectedOrganizationNames = organizationsForExportCount
     .filter((organization) => selectedOrgIds.includes(organization.id))
     .map((organization) => organization.name);
@@ -980,7 +981,7 @@ export default function CatalogPage() {
             <div className="flex justify-end items-center gap-2 mb-3">
               {isAdmin && (
                 <OrganizationMultiSelectFilter
-                  organizations={organizationsForExportCount}
+                  organizations={organizationsWithProducts}
                   selectedIds={selectedOrgIds}
                   onChange={setSelectedOrgIds}
                 />

@@ -57,10 +57,11 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     const pathStr = path.map(encodeURIComponent).join("/");
     const url = new URL(`${BACKEND_URL}/api/v1/products/${pathStr}`);
 
-    // Copy query parameters
-    request.nextUrl.searchParams.forEach((value, key) => {
-      url.searchParams.set(key, value);
-    });
+    // Copy query parameters verbatim, including repeated keys (e.g.
+    // `organization_ids` sent once per selected org by the catalog's
+    // multi-select filter) — forEach+set() previously collapsed repeats
+    // to the last value, silently dropping every org but the last one.
+    url.search = request.nextUrl.search;
 
     // Get cookies from the incoming request
     const cookieHeader = request.headers.get("cookie");
