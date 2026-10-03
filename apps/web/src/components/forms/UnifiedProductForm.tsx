@@ -26,6 +26,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { WizardContainer } from "./WizardContainer";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 import {
   AlertDialog,
@@ -66,12 +67,13 @@ import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { getMileageFieldOverride } from "@/lib/utils/mileageUnit";
 import { formatDate } from "@/lib/utils/format";
-import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
+import { useUploadStore } from "@/lib/stores/uploadStore";
 import type { Broker } from "@/lib/api/schemas/organizations";
 import type { CategoryNode } from "@/types/category";
 import type { ProductAttributes } from "@/types/vehicle";
 
 import { ProductCoverPicker } from "./ProductCoverPicker";
+import { useImagesDirtyState } from "./useImagesDirtyState";
 import { buildZodSchema, getSchemaDefaults } from "./schema/buildZodSchema";
 import {
   groupFieldsByGroup,
@@ -198,6 +200,7 @@ export function UnifiedProductForm({
   enableWizard = true,
 }: UnifiedProductFormProps) {
   const formId = useId();
+  const isMobile = useIsMobile();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
@@ -287,8 +290,6 @@ export function UnifiedProductForm({
   const updateProduct = useUpdateProduct();
   const { uploadImages } = useImageUploadOptimized();
   const clearAll = useUploadStore((s) => s.clearAll);
-  const seedImages = useUploadStore((s) => s.seedImages);
-  const setCoverImage = useUploadStore((s) => s.setCoverImage);
 
   // Edit mode: fetch existing product
   const { data: existingProduct, isLoading: isLoadingProduct } = useProduct(
@@ -419,49 +420,15 @@ export function UnifiedProductForm({
     clearAll();
   }, [productId, mode, clearAll]);
 
-  // Seed images in edit mode AFTER data arrives
-  useEffect(() => {
-    // Only seed when we have actual image data (not during loading)
-    if (
-      mode === "edit" &&
-      existingImageData?.images &&
-      existingImageData.images.length > 0
-    ) {
-      logger.debug("Seeding images for edit mode", {
-        productId,
-        imageCount: existingImageData.images.length,
-        coverKey: existingImageData.cover_image_key,
-        images: existingImageData.images.map((img) => ({
-          key: img.key,
-          hasUrl: !!img.url,
-        })),
-      });
-      const entries: ImageEntry[] = existingImageData.images.map((img) => ({
-        id: crypto.randomUUID(),
-        preview: img.url,
-        storageKey: img.key,
-        // GGA: no 'as const' - ImageEntry.status accepts literal "complete"
-        status: "complete",
-      }));
-      seedImages(entries);
-
-      // ponytail: restore cover from server if it exists
-      if (existingImageData.cover_image_key) {
-        const coverEntry = entries.find(
-          (e) => e.storageKey === existingImageData.cover_image_key,
-        );
-        if (coverEntry) {
-          setCoverImage(coverEntry.id);
-        }
-      }
-    } else if (mode === "edit") {
-      logger.debug("Edit mode but no image data yet", {
-        productId,
-        hasData: !!existingImageData,
-        imageCount: existingImageData?.images?.length ?? 0,
-      });
-    }
-  }, [mode, productId, existingImageData, seedImages, setCoverImage]);
+  // Must be called AFTER the clearAll effect above — effects run in
+  // registration order, and this hook's own seeding effect needs to fire
+  // after clearAll, never before (otherwise clearAll wipes the just-seeded
+  // images on the same commit).
+  const { imagesDirty, resetImagesBaseline } = useImagesDirtyState({
+    mode,
+    productId,
+    existingImageData,
+  });
 
   // Group fields (React 19 Compiler handles memoization)
   const sortedGroups = [...category.attribute_groups].sort(
@@ -515,7 +482,8 @@ export function UnifiedProductForm({
       !isDirty &&
       !orgDirty &&
       !brokersDirty &&
-      !fbAccountsDirty);
+      !fbAccountsDirty &&
+      !imagesDirty);
 
   // Submit handler
   // ponytail: pass selectedOrgId so images are uploaded to the target org's bucket
@@ -654,6 +622,9 @@ export function UnifiedProductForm({
         setBrokersDirty(false);
       }
     }
+    // Move the baseline to the just-saved state so imagesDirty reads false
+    // again (mirrors setOrgDirty(false)/setBrokersDirty(false) above).
+    resetImagesBaseline();
 
     // ponytail: toast handled by hook (updateProduct.onSuccess)
 
@@ -811,14 +782,21 @@ export function UnifiedProductForm({
       {/* Dynamic sections from attribute_groups */}
       {sortedGroups.map((group, idx) => (
         <SchemaFormSection
-          key={group.key}
+          // `isMobile` resolves one render after mount (SSR-safe default is
+          // `false`), and `defaultOpen` only seeds the child's `useState` on
+          // ITS first render. Keying on `isMobile` forces a clean remount
+          // when it flips, so groups 4+ actually pick up the mobile default
+          // instead of staying stuck on the pre-resolution value.
+          key={`${group.key}-${isMobile}`}
           group={group}
           fieldKeys={fieldsByGroup[group.key] ?? []}
           schema={effectiveSchema}
           control={control}
           setValue={setValue}
           disabled={isDisabled}
-          defaultOpen={idx < 3}
+          // Mobile: every group starts expanded (still collapsible — just
+          // the default differs). Desktop keeps the original first-3 rule.
+          defaultOpen={isMobile || idx < 3}
         />
       ))}
 

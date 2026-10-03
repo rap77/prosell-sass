@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -10,6 +10,7 @@ import {
 import type { Broker } from "@/lib/api/schemas/organizations";
 import * as productsApi from "@/lib/api/products";
 import * as fbAccountsApi from "@/lib/api/fb-accounts";
+import { useUploadStore } from "@/lib/stores/uploadStore";
 
 // ponytail: partial mock — only override useProduct/useFBAccounts so the
 // existing Wizard tests keep exercising the real (unmocked) hooks below,
@@ -20,6 +21,7 @@ vi.mock("@/lib/api/products", async (importOriginal) => {
     ...actual,
     useProduct: vi.fn(actual.useProduct),
     useProductOwnership: vi.fn(actual.useProductOwnership),
+    useProductImageUrls: vi.fn(actual.useProductImageUrls),
   };
 });
 
@@ -304,6 +306,143 @@ describe("UnifiedProductForm Facebook Marketplace indicator", () => {
       .closest("section");
     expect(section).not.toBeNull();
     expect(section?.querySelector("input")).not.toBeInTheDocument();
+  });
+});
+
+// ── Image changes enable "Guardar Cambios" in edit mode ────────────────────
+//
+// Images live in the Zustand uploadStore, written to directly by
+// ImageDropzone/ProductCoverPicker — no callback prop reaches this form, so
+// RHF's `isDirty` never sees an add/remove/cover change. Regression test for
+// the bug where editing only the images left the submit button disabled.
+describe("UnifiedProductForm image changes (edit mode)", () => {
+  const imageProduct = {
+    id: "image-test-product",
+    title: "Test Vehicle",
+    description: "",
+    price_cents: 1_000_000,
+    currency: "ARS",
+    status: "published",
+    slug: "test-vehicle",
+    condition: "used",
+    organization_id: "org-1",
+    fb_account_ids: [],
+    published_to_marketplace: false,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    version: 1,
+    attributes: {
+      category: "vehicle",
+      year: 2020,
+      make: "Toyota",
+      model: "Corolla",
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useUploadStore.getState().clearAll();
+    // jsdom doesn't implement createObjectURL — addFile() needs it for the
+    // in-flight preview, unrelated to what this test is checking.
+    URL.createObjectURL = vi.fn(() => "blob:mock");
+    vi.mocked(fbAccountsApi.useFBAccounts).mockReturnValue({
+      data: [],
+      error: null,
+      isLoading: false,
+    } as any);
+    vi.mocked(productsApi.useProductOwnership).mockReturnValue({
+      data: { owners: [] },
+      isLoading: false,
+    } as any);
+    vi.mocked(productsApi.useProduct).mockReturnValue({
+      data: imageProduct,
+      error: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(productsApi.useProductImageUrls).mockReturnValue({
+      data: {
+        images: [
+          {
+            key: "orgs/org-1/vehicles/existing.jpg",
+            url: "https://example.com/existing.jpg",
+          },
+        ],
+        cover_image_key: "orgs/org-1/vehicles/existing.jpg",
+      },
+      error: null,
+      isLoading: false,
+    } as any);
+  });
+
+  it("disables Guardar Cambios when nothing changed", async () => {
+    render(
+      <UnifiedProductForm
+        category={mockCategory}
+        mode="edit"
+        productId={imageProduct.id}
+      />,
+      { wrapper: TestWrapper },
+    );
+
+    await waitFor(() => {
+      expect(useUploadStore.getState().images).toHaveLength(1);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Guardar Cambios" }),
+    ).toBeDisabled();
+  });
+
+  it("enables Guardar Cambios when an image is added", async () => {
+    render(
+      <UnifiedProductForm
+        category={mockCategory}
+        mode="edit"
+        productId={imageProduct.id}
+      />,
+      { wrapper: TestWrapper },
+    );
+
+    await waitFor(() => {
+      expect(useUploadStore.getState().images).toHaveLength(1);
+    });
+
+    act(() => {
+      useUploadStore
+        .getState()
+        .addFile(new File(["x"], "new.jpg", { type: "image/jpeg" }));
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Guardar Cambios" }),
+    ).not.toBeDisabled();
+  });
+
+  it("enables Guardar Cambios when the seeded image is removed", async () => {
+    render(
+      <UnifiedProductForm
+        category={mockCategory}
+        mode="edit"
+        productId={imageProduct.id}
+      />,
+      { wrapper: TestWrapper },
+    );
+
+    let seededId = "";
+    await waitFor(() => {
+      const { images } = useUploadStore.getState();
+      expect(images).toHaveLength(1);
+      seededId = images[0].id;
+    });
+
+    act(() => {
+      useUploadStore.getState().removeEntry(seededId);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Guardar Cambios" }),
+    ).not.toBeDisabled();
   });
 });
 
