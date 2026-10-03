@@ -71,6 +71,26 @@ def _attr_str(attributes: Mapping[str, object], key: str) -> str | None:
     return None if value is None else str(value)
 
 
+def _internal_code_sort_key(product: Product) -> tuple[int, int]:
+    """Sort key for the `id` column of the client-format CSV.
+
+    Returns `(0, n)` for products with a positive numeric
+    `attributes["internal_code"]` (sorted ascending by that value) and
+    `(1, 0)` for everything else (missing, blank, non-numeric, or negative).
+    The first tuple element puts products with a valid code first, the
+    second element orders them by the numeric code; the fallback for
+    invalid codes keeps Python's sort stable across runs — the BR1.7
+    guard below still drops them, so their relative order in the list
+    is irrelevant to the resulting CSV.
+    """
+    raw = (product.attributes or {}).get("internal_code")
+    try:
+        n = int(str(raw).strip()) if raw is not None else 0
+    except (TypeError, ValueError):
+        return (1, 0)
+    return (0, n) if n > 0 else (1, 0)
+
+
 def _attr_bool(attributes: Mapping[str, object], key: str) -> bool | None:
     """Read one `Product.attributes` value as `bool | None` (FR7) —
     `clean_title` is the only boolean FR7 column; anything that isn't
@@ -224,6 +244,19 @@ class ExportCatalogClientFormatUseCase:
             skip=0,
             limit=EXPORT_MAX_PRODUCTS,
         )
+
+        # Sort by `attributes["internal_code"]` ASC so the `id` column of
+        # the client-format CSV comes out monotonic (matching
+        # `docs/data39.csv` byte-for-byte and what the existing
+        # `test_csv_id_column_carries_durable_internal_code` already
+        # asserts). The repo's default `order_by="created_at", desc=True`
+        # is the WRONG ordering for this consumer — `internal_code` is
+        # monotonically allocated alongside creation, so created_at DESC
+        # flips the CSV into DESC too. We sort here (Python-side, over at
+        # most EXPORT_MAX_PRODUCTS=500 rows) instead of teaching the repo
+        # about the JSONB path, which would couple the export's contract
+        # to a column choice that is client-format-specific.
+        products = sorted(products, key=_internal_code_sort_key)
 
         # Batch-resolve every distinct organization's code in ONE round
         # trip before the per-product loop (BR2.3) — same pattern as

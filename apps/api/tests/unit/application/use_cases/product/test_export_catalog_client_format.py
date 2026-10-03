@@ -707,6 +707,42 @@ class TestExportCatalogClientFormatUseCaseCrossOrg:
         assert row_ids == ["14", "16"]
 
     @pytest.mark.asyncio
+    async def test_csv_id_column_is_ascending_regardless_of_repo_order(self) -> None:
+        # The repo's `get_all()` defaults to `order_by="created_at", desc=True`,
+        # which would put `internal_code` (allocated in creation order) into DESC.
+        # The export sorts by `internal_code` ASC before iterating, so the
+        # resulting CSV `id` column is monotonic ascending even when the
+        # upstream products come back in reverse order.
+        tenant_id = uuid4()
+        # Repo returns the products in DESC order of internal_code.
+        products_in_desc_order = [
+            _make_product(tenant_id, internal_code=900),
+            _make_product(tenant_id, internal_code=120),
+            _make_product(tenant_id, internal_code=37),
+            _make_product(tenant_id, internal_code=4),
+        ]
+        use_case, *_ = _make_use_case(
+            tenant_id=tenant_id,
+            product_count=len(products_in_desc_order),
+            products=products_in_desc_order,
+        )
+
+        result = await use_case.execute(
+            organization_id=tenant_id,
+            all_organizations=False,
+            base_folder="base/",
+            facebook_groups_fallback="",
+        )
+
+        assert result.product_count == 4
+        with zipfile.ZipFile(BytesIO(result.zip_bytes)) as archive:
+            csv_lines = archive.read("catalogo.csv").decode("utf-8").strip("\r\n").splitlines()
+        id_column = CLIENT_FORMAT_COLUMNS.index("id")
+        row_ids = [line.split(";")[id_column] for line in csv_lines[1:]]
+        # The use case must re-sort to ASC regardless of what the repo returns.
+        assert row_ids == ["4", "37", "120", "900"]
+
+    @pytest.mark.asyncio
     async def test_label_column_is_product_created_at_formatted_dd_mm_yyyy(self) -> None:
         # The `label` column of the client-format CSV carries the product's
         # load date formatted as DD/MM/YYYY with slashes — the format the
