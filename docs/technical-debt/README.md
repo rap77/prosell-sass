@@ -1,9 +1,9 @@
 # Technical Debt Tracker
 
 > **Last Updated**: 2026-10-03
-> **Total Items**: 2
+> **Total Items**: 3
 > **Resolved**: 0
-> **Pending**: 2
+> **Pending**: 3
 
 ---
 
@@ -89,16 +89,79 @@ explicit dependencies between items and a non-regression protocol per extraction
 - Work through stages in order — later stages assume earlier ones are either done or explicitly skipped
 - Check off items in the plan's own checklist as they land
 
+### 3. Backend Decomposition — Staged Mitigation Plan
+
+**Status**: ⏳ Pending
+**Priority**: Mixed (5 stages, Critical → Low, see the doc)
+**Estimate**: ~6-8 weeks of incremental work
+**Complexity**: High
+**Created**: 2026-10-03
+
+**Description**:
+Same methodology as item #2, applied to `apps/api` (Python/FastAPI, Clean Architecture). Full
+`uvx radon cc src/prosell --exclude "*/tests/*"` scan → 55 flagged functions/methods/classes across 31 files,
+investigated via 5 parallel deep-dives for real responsibilities, SOLID/DRY violations (several real
+cross-file duplications found, not just complexity noise), existing test coverage, and security implications
+(credential-handling code flagged independently of its raw complexity score). Includes an explicit
+Cross-Stack Coordination section mapping the backend files this plan touches to their exact frontend
+consumers, plus a stated recommendation to run this and item #2 as two separate parallel tracks rather than
+one merged sequential plan — see that section for why.
+
+**Impact**:
+
+- Not blocking — every stage is independently shippable, same non-regression discipline as item #2
+- Worst single function in the backend: `nhtsa_normalizer.normalize_nhtsa_value` (F=63), zero test coverage
+- 4 files/use cases found with **zero** existing test coverage despite real business-rule risk
+  (`PatchCategorySchemaUseCase`, `get_team_metrics.py`, `publish_product_task.py`/`update_listing_task.py`,
+  `category_field.py`) — staged separately (Stage 2) since they need characterization tests before any
+  refactor, not just a complexity fix
+- A real, latent security risk found (not hypothetical): two Facebook publish/update background tasks
+  stringify the full exception from the publisher adapter to classify retry-vs-block, which could leak a
+  decrypted session cookie/token into persisted error storage if the adapter's exception message ever embeds
+  one — currently untested on either task
+- A real cross-file DRY violation found with correctness implications: `bulk_upload_vehicles.py`'s
+  `_build_attributes` and `bulk_upload_preview.py`'s `_analyze_row` independently duplicate the same ~16-field
+  vehicle attribute list — same risk shape as the already-known NHTSA/Facebook catalog mismatch (hallazgo #87)
+- The originally-assumed NHTSA/Facebook dual-catalog mismatch (English backend vs. Spanish frontend) is
+  **already fixed** — investigation found a narrower, backend-only remaining issue instead (hardcoded Spanish
+  literals duplicating a canonical catalog they claim to track, never importing it)
+
+**Documentation**: [`backend-decomposition-plan.md`](./backend-decomposition-plan.md)
+
+**What's Needed**:
+
+1. Stage 1 (Critical, tested) — `update_product.py`, `create_product.py`, `bulk_upload_vehicles.py`,
+   `publish_product_task.py`/`update_listing_task.py`, `fb_sync_router.py`/`fb_credential_migration_router.py`,
+   `create_lead.py`
+2. Stage 2 (Critical, untested) — `PatchCategorySchemaUseCase`, `get_team_metrics.py`, `nhtsa_normalizer.py`,
+   `category_field.py`, write characterization tests first
+3. Stage 3 (High, cross-cutting DRY) — `InternalCodeResolver`, shared image-field sanitizer, shared
+   vehicle-attribute field table, shared image-sign helper, shared CSV validation, `Organization.apply_patch`,
+   shared publisher-selector factory — extract before their consumers
+4. Stage 4 (Medium) — 9 items, real debt but contained risk, mostly well-tested
+5. Stage 5 (Low) — polish items + explicit "leave alone" calls where touching well-tested, hard-won code
+   (`do_spaces_service.py`) carries more risk than the complexity score benefit justifies
+
+**Next Steps**:
+
+- See `backend-decomposition-plan.md` for the full staged plan, per-item decomposition, the Cross-Stack
+  Coordination table, and the non-regression protocol
+- Run this track in parallel with item #2 (frontend), not as one merged sequential plan — see that doc's
+  "Cross-Stack Coordination" section for the reasoning and the narrow set of files that actually need
+  coordination between the two
+- Check off items in the plan's own checklist as they land
+
 ---
 
 ## 📊 Summary
 
-| Item                         | Priority | Estimate   | Status     | Blocking? |
-| ---------------------------- | -------- | ---------- | ---------- | --------- |
-| OAuth External Setup         | P1       | 30 min     | ⏳ Pending | No        |
-| Component Decomposition Plan | Mixed    | ~6-8 weeks | ⏳ Pending | No        |
+| Item                              | Priority | Estimate   | Status     | Blocking? |
+| --------------------------------- | -------- | ---------- | ---------- | --------- |
+| OAuth External Setup              | P1       | 30 min     | ⏳ Pending | No        |
+| Component Decomposition Plan (FE) | Mixed    | ~6-8 weeks | ⏳ Pending | No        |
+| Backend Decomposition Plan (BE)   | Mixed    | ~6-8 weeks | ⏳ Pending | No        |
 
-**Total Time Estimate**: 30 minutes + ~6-8 weeks (incremental, not blocking)
+**Total Time Estimate**: 30 minutes + ~12-16 weeks combined (incremental, not blocking, parallel tracks)
 
 ---
 
