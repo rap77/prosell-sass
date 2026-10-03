@@ -1,9 +1,9 @@
 # Technical Debt Tracker
 
-> **Last Updated**: 2026-02-20
-> **Total Items**: 1
+> **Last Updated**: 2026-10-03
+> **Total Items**: 2
 > **Resolved**: 0
-> **Pending**: 1
+> **Pending**: 2
 
 ---
 
@@ -52,15 +52,53 @@ OAuth code is 100% implemented but requires external OAuth app creation (Google 
 - Can be done independently when needed
 - No code changes required
 
+### 2. Component Decomposition — Staged Mitigation Plan
+
+**Status**: ⏳ Pending
+**Priority**: Mixed (5 stages, Critical → Low, see the doc)
+**Estimate**: ~6-8 weeks of incremental work
+**Complexity**: High
+**Created**: 2026-10-03
+
+**Description**:
+Full-codebase `react-doctor` scan (score 55/100, 252 findings) filtered to the 3 rules that are about structural
+decomposition (`no-high-complexity-react-function`, `no-giant-component`, `only-export-components`) → 34 components
+investigated for real responsibilities, SOLID/DRY violations, and existing test coverage, staged by criticality with
+explicit dependencies between items and a non-regression protocol per extraction.
+
+**Impact**:
+
+- Not blocking — every stage is independently shippable, no feature depends on this completing
+- 3 of the 34 (CatalogPage, UnifiedProductForm, useCatalogFilterPanelState/CatalogFilterPanel) already partially
+  improved during the session that produced this plan
+- Highest single-function complexity in the codebase (41/39, `SortableRow` in `category-schema-editor.tsx`) lives here
+
+**Documentation**: [`component-decomposition-plan.md`](./component-decomposition-plan.md)
+
+**What's Needed**:
+
+1. Stage 1 (Critical, tested) — `category-schema-editor.tsx`, continue `UnifiedProductForm`, continue `CatalogPage`
+2. Stage 2 (Critical, untested) — `PublishForm`, write characterization tests first
+3. Stage 3 (High, cross-cutting DRY) — shared `formatProductPrice`/`ModalShell`/`useOrganizationFormState` extractions + their consumers
+4. Stage 4 (Medium) — 10 items, real debt but contained risk
+5. Stage 5 (Low) — polish items + confirm `ProductsPage` isn't dead code before touching it
+
+**Next Steps**:
+
+- See `component-decomposition-plan.md` for the full staged plan, per-item decomposition with named design patterns, and the non-regression protocol
+- Work through stages in order — later stages assume earlier ones are either done or explicitly skipped
+- Check off items in the plan's own checklist as they land
+
 ---
 
 ## 📊 Summary
 
-| Item                 | Priority | Estimate | Status     | Blocking? |
-| -------------------- | -------- | -------- | ---------- | --------- |
-| OAuth External Setup | P1       | 30 min   | ⏳ Pending | No        |
+| Item                         | Priority | Estimate   | Status     | Blocking? |
+| ---------------------------- | -------- | ---------- | ---------- | --------- |
+| OAuth External Setup         | P1       | 30 min     | ⏳ Pending | No        |
+| Component Decomposition Plan | Mixed    | ~6-8 weeks | ⏳ Pending | No        |
 
-**Total Time Estimate**: 30 minutes
+**Total Time Estimate**: 30 minutes + ~6-8 weeks (incremental, not blocking)
 
 ---
 
