@@ -1117,6 +1117,18 @@ class CategoryFilterValuesResponse(BaseModel):
     truncated: list[str]
 
 
+class ProductPriceRangeResponse(BaseModel):
+    """Response shape for GET /products/price-range.
+
+    Sizes a price range slider's track — `None` on both fields when no
+    product matches the (non-price) filters, so the client can hide or
+    disable the slider instead of rendering a degenerate [0, 0] range.
+    """
+
+    min_price_cents: int | None
+    max_price_cents: int | None
+
+
 @filter_values_router.get(
     "/categories/{category_id}/filter-values",
     response_model=CategoryFilterValuesResponse,
@@ -1179,6 +1191,48 @@ async def get_category_filter_values(
             capped_values[key] = vals
 
     return CategoryFilterValuesResponse(values=capped_values, truncated=truncated)
+
+
+@router.get("/price-range", response_model=ProductPriceRangeResponse)
+async def get_product_price_range(
+    current_user: CurrentUser,
+    db: DbSession,
+    organization_id: UUID | None = None,
+    organization_ids: list[UUID] | None = Query(default=None),
+    category_id: UUID | None = None,
+    product_status: ProductStatus | None = Query(default=None, alias="status"),
+    published_to_marketplace: bool | None = None,
+    has_images: bool | None = None,
+    search: str | None = None,
+) -> ProductPriceRangeResponse:
+    """
+    Min/max `price_cents` among products matching every filter below —
+    sizes a price range slider's track. Deliberately does NOT take
+    min_price/max_price: the track's bounds must reflect every OTHER
+    active filter, not whatever the slider is currently set to.
+
+    Same tenant/organization scoping as `GET /products`.
+    """
+    tenant_id, can_view_all_orgs = _check_org_scope_permission(
+        current_user, organization_id, organization_ids=organization_ids
+    )
+    effective_tenant = None if can_view_all_orgs else tenant_id
+
+    repo = SqlAlchemyProductRepository(db)
+    price_range = await repo.get_price_range(
+        tenant_id=effective_tenant,
+        organization_id=organization_id,
+        organization_ids=organization_ids,
+        category_id=category_id,
+        status=product_status,
+        published_to_marketplace=published_to_marketplace,
+        has_images=has_images,
+        search_query=search,
+    )
+    if price_range is None:
+        return ProductPriceRangeResponse(min_price_cents=None, max_price_cents=None)
+    min_cents, max_cents = price_range
+    return ProductPriceRangeResponse(min_price_cents=min_cents, max_price_cents=max_cents)
 
 
 @router.get("/featured", response_model=list[ProductResponse])

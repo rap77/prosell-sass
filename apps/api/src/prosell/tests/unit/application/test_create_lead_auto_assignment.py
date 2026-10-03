@@ -508,6 +508,37 @@ class StubProductRepository(AbstractProductRepository):
             ]
         return len(products)
 
+    async def get_price_range(
+        self,
+        tenant_id: UUID | None,
+        organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
+        category_id: UUID | None = None,
+        status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
+    ) -> tuple[int, int] | None:
+        # Stub never exercises the price-range slider path — the
+        # lead-auto-assignment tests don't touch it.
+        del (
+            tenant_id,
+            organization_id,
+            organization_ids,
+            category_id,
+            status,
+            condition,
+            is_featured,
+            search_query,
+            attribute_filters,
+            published_to_marketplace,
+            has_images,
+        )
+        return None
+
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         del product_id, tenant_id
 

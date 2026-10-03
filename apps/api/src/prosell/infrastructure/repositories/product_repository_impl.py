@@ -487,6 +487,46 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one() or 0
 
+    async def get_price_range(
+        self,
+        tenant_id: UUID | None,
+        organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
+        category_id: UUID | None = None,
+        status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
+    ) -> tuple[int, int] | None:
+        """Min/max price_cents for a price range slider's track.
+
+        Deliberately does NOT take min_price_cents/max_price_cents — the
+        track's absolute bounds must not shrink to whatever the slider is
+        currently set to, only to every OTHER active filter.
+        """
+        stmt = self._apply_product_filters(
+            select(func.min(ProductModel.price_cents), func.max(ProductModel.price_cents)),
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            organization_ids=organization_ids,
+            category_id=category_id,
+            status=status,
+            condition=condition,
+            is_featured=is_featured,
+            search_query=search_query,
+            attribute_filters=attribute_filters,
+            published_to_marketplace=published_to_marketplace,
+            has_images=has_images,
+        )
+        result = await self.session.execute(stmt)
+        min_cents, max_cents = result.one()
+        if min_cents is None or max_cents is None:
+            return None
+        return (min_cents, max_cents)
+
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""
         stmt = select(ProductModel).where(

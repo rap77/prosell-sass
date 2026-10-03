@@ -286,6 +286,47 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_price_range(
+        self,
+        tenant_id: UUID | None,
+        organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
+        category_id: UUID | None = None,
+        status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        attribute_filters: list["AttributeFilter"] | None = None,
+        published_to_marketplace: bool | None = None,
+        has_images: bool | None = None,
+    ) -> tuple[int, int] | None:
+        """
+        Min and max `price_cents` among products matching every filter
+        `get_all()` accepts EXCEPT price itself — this is what sizes a price
+        range filter's slider track, so it must not already be clamped by
+        whatever the slider is currently set to.
+
+        Args:
+            tenant_id: Tenant UUID. None lifts tenant isolation (admin bypass).
+            organization_id: Filter by a single organization
+            organization_ids: Filter by a SET of organizations — see
+                `get_all()` for the precedence/permission contract.
+            category_id: Filter by category
+            status: Filter by status
+            condition: Filter by condition
+            is_featured: Filter by featured status
+            search_query: Text search in title/description
+            attribute_filters: Dynamic filters over the JSONB `attributes` column
+            published_to_marketplace: See `get_all()`.
+            has_images: See `get_all()`.
+
+        Returns:
+            `(min_price_cents, max_price_cents)`, or `None` when no product
+            matches the filters (nothing to size a slider against).
+        """
+        pass
+
+    @abstractmethod
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """
         Increment product view count.
