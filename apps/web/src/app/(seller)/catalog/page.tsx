@@ -35,12 +35,15 @@ import { DataGridSkeleton } from "@/components/datagrid/DataGridSkeleton";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
 import { CategorySelector } from "@/components/filters/CategorySelector";
-import { QuickFilters } from "@/components/filters/QuickFilters";
+import {
+  CatalogFilterPanel,
+  type StagedCatalogFilters,
+} from "@/components/filters/CatalogFilterPanel";
+import { useCatalogFilterPanelState } from "./useCatalogFilterPanelState";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
 import { CatalogErrorBoundary } from "@/components/catalog/CatalogErrorBoundary";
-import { OrganizationMultiSelectFilter } from "@/components/catalog/OrganizationMultiSelectFilter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -535,10 +538,32 @@ export default function CatalogPage() {
     else params.set("view", mode);
     router.push(`?${params.toString()}`, { scroll: false });
   };
-  const attributes: Record<string, string> = {};
-  for (const [key, value] of Object.entries(values)) {
-    if (value) attributes[key] = value;
-  }
+  const {
+    attributes,
+    appliedFilters,
+    stagedFilters,
+    panelExpanded,
+    priceBounds,
+    isPriceBoundsLoading,
+    previewCount,
+    isPreviewCountLoading,
+    openFilterPanel,
+    closeFilterPanel,
+    clearFilterPanel,
+    updateStagedFilters,
+    applyFilterPanel,
+  } = useCatalogFilterPanelState({
+    search,
+    status,
+    selectedCategoryId,
+    attributeValues: values,
+    selectedOrgIds,
+    setSelectedOrgIds,
+    viewingOrgId,
+    organizationId,
+    publishedToMarketplace,
+    hasImages,
+  });
 
   // u2-cross-org-export-ui, FR3 — per the `consumer_contract` in
   // `contract-summary.md` Contract 1: NEVER omitted in the default case
@@ -562,6 +587,8 @@ export default function CatalogPage() {
     organization_ids: selectedOrgIds.length > 0 ? selectedOrgIds : undefined,
     published_to_marketplace: publishedToMarketplace,
     has_images: hasImages,
+    min_price: appliedFilters.priceMin ?? undefined,
+    max_price: appliedFilters.priceMax ?? undefined,
   };
 
   const {
@@ -971,22 +998,34 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            {/* QuickFilters row — sits below the search/CTAs and stays
-                right-aligned on desktop, wrapping naturally on mobile.
-                Only renders once products are loaded so the status
-                dropdown can derive its options from real data. The
-                multi-organization filter is admin-only (ORG_ADMIN_VIEW_ALL
-                server-side; `isAdmin` is the client-side mirror, same gate
-                `OrganizationPicker` already uses). */}
-            <div className="flex justify-end items-center gap-2 mb-3">
-              {isAdmin && (
-                <OrganizationMultiSelectFilter
-                  organizations={organizationsWithProducts}
-                  selectedIds={selectedOrgIds}
-                  onChange={setSelectedOrgIds}
-                />
-              )}
-              <QuickFilters products={allProducts} statusOrder={STATUS_ORDER} />
+            {/* Collapsible, staged filter panel — same component on mobile
+                and desktop. Collapsed by default (summary bar); expands
+                into Estado/Organizaciones/Aprobado/Tiene imágenes, edited
+                as a draft with a live result count, committed on Apply.
+                The multi-organization filter inside is admin-only
+                (ORG_ADMIN_VIEW_ALL server-side; `isAdmin` is the
+                client-side mirror, same gate `OrganizationPicker` already
+                uses). Search stays outside — it applies instantly, same
+                as before. */}
+            <div className="mb-3">
+              <CatalogFilterPanel
+                products={allProducts}
+                statusOrder={STATUS_ORDER}
+                organizations={organizationsWithProducts}
+                isOrgFilterVisible={isAdmin}
+                priceBounds={priceBounds}
+                isPriceBoundsLoading={isPriceBoundsLoading}
+                expanded={panelExpanded}
+                onOpen={openFilterPanel}
+                onClose={closeFilterPanel}
+                applied={appliedFilters}
+                staged={stagedFilters}
+                onStagedChange={updateStagedFilters}
+                resultCount={previewCount}
+                isResultCountLoading={isPreviewCountLoading}
+                onApply={applyFilterPanel}
+                onClear={clearFilterPanel}
+              />
             </div>
 
             {/* View mode tabs */}

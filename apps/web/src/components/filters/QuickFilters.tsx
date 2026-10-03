@@ -1,26 +1,13 @@
 /**
- * QuickFilters — header-level filters for the catalog page.
+ * Shared presentational controls for the catalog's quick filters —
+ * "Estado" dropdown and the tri-state toggle. Composed by
+ * `CatalogFilterPanel` (the collapsible/staged panel used on both mobile
+ * and desktop); neither component here talks to the URL directly — that's
+ * the panel's job, since it owns the staged-vs-applied distinction.
  *
- * Three URL-driven controls:
- *   - Status (dropdown of statuses currently present in the loaded products)
- *   - "Publicado en Marketplace" — three-state toggle (Cualquier / Sí / No)
- *   - "Tiene imágenes" — same three-state pattern
- *
- * URL params:
- *   - status         (already wired before this component existed; same shape)
- *   - published      (true / false / absent for "Todos")
- *   - has_images     (true / false / absent for "Todos")
- *
- * Status dropdown values come from the `statusOrder` (all possible
- * `VehicleStatus` values), not from the loaded products. Showing only
- * statuses present in the current page creates a UX trap: picking one
- * status hides the other options, so the seller can't switch between
- * them without first clearing the filter.
- *
- * NOTE: a fuller "only-applied" implementation would need a backend
- * facets endpoint (`GET /products/status-facets`) that returns the
- * distinct statuses present in the user's catalog regardless of the
- * current filter set. Tracked separately.
+ * Non-component logic (status parsing, the applied-statuses hook) lives in
+ * `catalogFilterLogic.ts` — kept out of this file so it only ever exports
+ * components (react-doctor `only-export-components` / Fast Refresh).
  *
  * The toggle groups are explicit buttons (not `<select>`s) because the
  * third "Todos" state is a clearer reset action when it has its own
@@ -37,57 +24,24 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import type { Product } from "@/types/product";
 import type { VehicleStatus } from "@/components/datagrid/StatusBadge";
-import {
-  mapProductStatusToVehicleStatus,
-  mapVehicleStatusToProductStatus,
-} from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { cn } from "@/lib/utils";
+import { STATUS_LABELS, type TriState } from "./catalogFilterLogic";
+import { mapVehicleStatusToProductStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 
-interface QuickFiltersProps {
-  /** Loaded products used to derive the status dropdown options. */
-  products: Product[];
-  /**
-   * Display order for the status dropdown. Same array used by the
-   * "Por estado" view in `catalog/page.tsx` so the labels and order match.
-   */
-  statusOrder: readonly VehicleStatus[];
-}
-
-const STATUS_LABELS: Record<VehicleStatus, string> = {
-  published: "Publicado",
-  reserved: "Apartado",
-  online: "Online",
-  pending: "Pendiente",
-  draft: "Borrador",
-  maintenance: "En mantenimiento",
-  expired: "Expirado",
-  failed: "Rechazado",
-  sold: "Vendido",
-};
-
-type TriState = "any" | "true" | "false";
-
-function parseTriState(raw: string | null): TriState {
-  if (raw === "true") return "true";
-  if (raw === "false") return "false";
-  return "any";
-}
-
-function TriStateToggle({
-  label,
-  value,
-  onChange,
-  testIdPrefix,
-}: {
+interface TriStateToggleProps {
   label: string;
   value: TriState;
   onChange: (next: TriState) => void;
   testIdPrefix: string;
-}) {
+}
+
+export function TriStateToggle({
+  label,
+  value,
+  onChange,
+  testIdPrefix,
+}: TriStateToggleProps) {
   const options: { state: TriState; text: string }[] = [
     { state: "any", text: "Todos" },
     { state: "true", text: "Sí" },
@@ -126,124 +80,44 @@ function TriStateToggle({
   );
 }
 
-export function QuickFilters({ products, statusOrder }: QuickFiltersProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+/** Controlled "Estado" dropdown — value is the raw `status` URL param shape. */
+interface StatusSelectProps {
+  value: string | null;
+  onChange: (next: string) => void;
+  options: VehicleStatus[];
+  testId?: string;
+}
 
-  const statusParam = searchParams.get("status");
-  const publishedParam = searchParams.get("published");
-  const hasImagesParam = searchParams.get("has_images");
-
-  // Capture the *applied* statuses (the subset present in the user's
-  // catalog) on the FIRST render where products are loaded and no status
-  // filter is active. Once captured, the list is frozen — picking a
-  // status doesn't shrink the dropdown to just that status + "Todos",
-  // so the seller can switch between applied statuses freely.
-  //
-  // The state is initialized after products load, then intentionally kept
-  // unchanged so selecting a status never collapses the options list.
-  //
-  // Edge cases handled:
-  //   - products still loading       → state stays null → falls back to
-  //                                    full `statusOrder`
-  //   - page loaded with ?status=...  → state stays null while filter is
-  //                                    active; falls back to full
-  //                                    statusOrder; state captures the
-  //                                    next time the user clears the
-  //                                    filter and products reload
-  //                                    unfiltered
-  const [appliedStatuses, setAppliedStatuses] = useState<
-    VehicleStatus[] | null
-  >(null);
-  useEffect(() => {
-    if (appliedStatuses !== null || statusParam || products.length === 0) {
-      return;
-    }
-
-    const present = new Set(
-      products.map((product) =>
-        mapProductStatusToVehicleStatus(product.status),
-      ),
-    );
-    // The source changes asynchronously from the catalog query. This one-time
-    // state capture is the observable behavior: it freezes the applied list.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above.
-    setAppliedStatuses(statusOrder.filter((status) => present.has(status)));
-  }, [appliedStatuses, products, statusOrder, statusParam]);
-
-  // First-render fallback (before products load, or while a status
-  // filter is in the URL): show the full status order. After capture,
-  // return the frozen "applied" subset.
-  const availableStatuses: VehicleStatus[] = appliedStatuses ?? [
-    ...statusOrder,
-  ];
-
-  function updateParam(key: string, next: string | null) {
-    const params = new URLSearchParams(searchParams);
-    if (next) params.set(key, next);
-    else params.delete(key);
-    router.push(`?${params.toString()}`, { scroll: false });
-  }
-
-  function setStatus(value: string) {
-    updateParam("status", value || null);
-  }
-
-  function setPublished(state: TriState) {
-    updateParam("published", state === "any" ? null : state);
-  }
-
-  function setHasImages(state: TriState) {
-    updateParam("has_images", state === "any" ? null : state);
-  }
-
+export function StatusSelect({
+  value,
+  onChange,
+  options,
+  testId = "quick-filters-status-select",
+}: StatusSelectProps) {
   return (
-    <div
-      className="flex flex-wrap items-center gap-2.5"
-      data-testid="quick-filters"
-    >
-      {/* Status dropdown */}
-      <label className="inline-flex items-center gap-2 h-9 px-2.5 rounded-lg border border-ps-border-default bg-ps-input-bg">
-        <span className="text-[12px] font-medium text-ps-text-secondary">
-          Estado
-        </span>
-        <select
-          aria-label="Estado del flujo"
-          data-testid="quick-filters-status-select"
-          value={statusParam ?? ""}
-          onChange={(e) => setStatus(e.target.value)}
-          // `color-scheme: dark` tells the browser to render the native
-          // dropdown options with a dark palette — without it the
-          // open-options popup inherits the OS light theme and the text
-          // is invisible against the project's dark background.
-          className="bg-ps-input-bg text-[13px] text-ps-text-primary outline-none cursor-pointer"
-          style={{ colorScheme: "dark" }}
-        >
-          <option value="">Todos</option>
-          {availableStatuses.map((status) => (
-            <option
-              key={status}
-              value={mapVehicleStatusToProductStatus(status)}
-            >
-              {STATUS_LABELS[status]}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <TriStateToggle
-        label="Aprobado para Marketplace"
-        value={parseTriState(publishedParam)}
-        onChange={setPublished}
-        testIdPrefix="quick-filters-published"
-      />
-
-      <TriStateToggle
-        label="Tiene imágenes"
-        value={parseTriState(hasImagesParam)}
-        onChange={setHasImages}
-        testIdPrefix="quick-filters-has-images"
-      />
-    </div>
+    <label className="inline-flex items-center gap-2 h-9 px-2.5 rounded-lg border border-ps-border-default bg-ps-input-bg">
+      <span className="text-[12px] font-medium text-ps-text-secondary">
+        Estado
+      </span>
+      <select
+        aria-label="Estado del flujo"
+        data-testid={testId}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        // `color-scheme: dark` tells the browser to render the native
+        // dropdown options with a dark palette — without it the
+        // open-options popup inherits the OS light theme and the text
+        // is invisible against the project's dark background.
+        className="bg-ps-input-bg text-[13px] text-ps-text-primary outline-none cursor-pointer"
+        style={{ colorScheme: "dark" }}
+      >
+        <option value="">Todos</option>
+        {options.map((status) => (
+          <option key={status} value={mapVehicleStatusToProductStatus(status)}>
+            {STATUS_LABELS[status]}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

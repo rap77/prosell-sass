@@ -104,6 +104,11 @@ vi.mock("@/lib/api/products", async (importOriginal) => {
     useSubmitProductsForApproval: () => ({ mutate: vi.fn(), isPending: false }),
     exportCatalogClientFormat: (...args: unknown[]) =>
       mockExportCatalogClientFormat(...args),
+    // CatalogFilterPanel's live "Ver N resultados" count and price-slider
+    // bounds — not under test here, and real useQuery needs a
+    // QueryClientProvider this suite doesn't set up.
+    useProductsCount: () => ({ data: undefined, isLoading: false }),
+    usePriceRange: () => ({ data: undefined, isLoading: false }),
   };
 });
 

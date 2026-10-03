@@ -489,6 +489,23 @@ const productAuditLogSchema = z.object({
 
 export type ProductAuditLogEntry = z.infer<typeof productAuditLogSchema>;
 
+/** Response of `GET /products/price-range` — both cents fields are nullable
+ * so the slider can hide itself when nothing matches. */
+const productPriceRangeResponseSchema = z.object({
+  min_price_cents: z.number().nullable(),
+  max_price_cents: z.number().nullable(),
+});
+
+export type ProductPriceRangeResponse = z.infer<
+  typeof productPriceRangeResponseSchema
+>;
+
+function parseProductPriceRangeResponse(
+  raw: unknown,
+): ProductPriceRangeResponse {
+  return productPriceRangeResponseSchema.parse(raw);
+}
+
 async function fetchProductAuditLogs(
   productId: string,
 ): Promise<ProductAuditLogEntry[]> {
@@ -1206,22 +1223,18 @@ export interface ProductFilters {
   published_to_marketplace?: boolean;
   /** Catalog header toggle — true keeps only products with images. */
   has_images?: boolean;
+  /** Price range filter (cents) — mirrors `GET /products`' own params. */
+  min_price?: number;
+  max_price?: number;
 }
 
 /**
- * Infinite scroll for products.
- * Note: Does NOT filter by isVehicleProduct — caller should filter if needed.
- *       Currently catalog page needs all products returned and filters via isVehicleProduct.
+ * Builds the `GET /products` query params shared by every reader of
+ * `ProductFilters` — `useInfiniteProducts` (real pages) and
+ * `useProductsCount` (count-only, `limit=1`). One mapping, so a filter
+ * added here reaches both without drift. Caller appends `limit`/`skip`.
  */
-export function useInfiniteProducts(
-  filters?: ProductFilters,
-  limit: number = 50,
-) {
-  // ponytail: mock data for UI testing without DB - set NEXT_PUBLIC_MOCK_DATA=true
-  const useMocks =
-    typeof window !== "undefined" &&
-    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
-
+function buildProductQueryParams(filters?: ProductFilters): URLSearchParams {
   const queryParams = new URLSearchParams();
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.search) queryParams.append("search", filters.search);
@@ -1250,9 +1263,98 @@ export function useInfiniteProducts(
   if (filters?.has_images !== undefined) {
     queryParams.append("has_images", String(filters.has_images));
   }
+  if (filters?.min_price !== undefined) {
+    queryParams.append("min_price", String(filters.min_price));
+  }
+  if (filters?.max_price !== undefined) {
+    queryParams.append("max_price", String(filters.max_price));
+  }
   for (const [key, value] of Object.entries(filters?.attributes ?? {})) {
     if (value) queryParams.append(`attr.${key}`, value);
   }
+  return queryParams;
+}
+
+/**
+ * NEXT_PUBLIC_MOCK_DATA mode: applies the same filter set `buildProductQueryParams`
+ * sends to the backend, but against `MOCK_PRODUCTS` in-memory. Shared by
+ * `useInfiniteProducts` and `useProductsCount` so mock mode and real mode
+ * never drift against each other.
+ */
+async function filterMockProducts(filters?: ProductFilters) {
+  const { MOCK_PRODUCTS } = await import("@/lib/mocks/products");
+  let filtered = MOCK_PRODUCTS;
+
+  // Search filter (title + description case-insensitive)
+  if (filters?.search) {
+    const term = filters.search.toLowerCase();
+    filtered = filtered.filter(
+      (p) =>
+        p.title.toLowerCase().includes(term) ||
+        p.description?.toLowerCase().includes(term),
+    );
+  }
+
+  // Status filter — mock products carry Product["status"] directly, and
+  // filters.status is also Product["status"] (the backend takes the raw
+  // literal on the wire). Mapping to VehicleStatus here breaks filtering
+  // on the workflow-only literals (paused/rejected/archived) since they
+  // collapse to display-only slots.
+  if (filters?.status) {
+    const status = filters.status;
+    filtered = filtered.filter((p) => p.status === status);
+  }
+
+  // Category filter
+  if (filters?.category_id) {
+    filtered = filtered.filter((p) => p.category_id === filters.category_id);
+  }
+
+  // published_to_marketplace — true keeps only products on the
+  // marketplace, false keeps only those that aren't.
+  if (filters?.published_to_marketplace !== undefined) {
+    const want = filters.published_to_marketplace;
+    filtered = filtered.filter((p) => p.published_to_marketplace === want);
+  }
+
+  // has_images — true keeps only products with at least one image,
+  // false keeps only products without images.
+  if (filters?.has_images !== undefined) {
+    const want = filters.has_images;
+    filtered = filtered.filter((p) =>
+      want
+        ? (p.image_urls?.length ?? 0) > 0
+        : (p.image_urls?.length ?? 0) === 0,
+    );
+  }
+
+  if (filters?.min_price !== undefined) {
+    const minPrice = filters.min_price;
+    filtered = filtered.filter((p) => p.price_cents >= minPrice);
+  }
+  if (filters?.max_price !== undefined) {
+    const maxPrice = filters.max_price;
+    filtered = filtered.filter((p) => p.price_cents <= maxPrice);
+  }
+
+  return filtered;
+}
+
+/**
+ * Infinite scroll for products.
+ * Note: Does NOT filter by isVehicleProduct — caller should filter if needed.
+ *       Currently catalog page needs all products returned and filters via isVehicleProduct.
+ */
+export function useInfiniteProducts(
+  filters?: ProductFilters,
+  limit: number = 50,
+) {
+  // ponytail: mock data for UI testing without DB - set NEXT_PUBLIC_MOCK_DATA=true
+  const useMocks =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
+
+  const queryParams = buildProductQueryParams(filters);
   queryParams.append("limit", limit.toString());
   const initialPageParam: string | null = null;
 
@@ -1261,55 +1363,7 @@ export function useInfiniteProducts(
     queryFn: async ({ pageParam }: { pageParam: string | null }) => {
       // ponytail: return mock data if enabled (avoids DB dependency for UI testing)
       if (useMocks) {
-        const { MOCK_PRODUCTS } = await import("@/lib/mocks/products");
-
-        // ponytail: apply filters to mocks (search, status, category) - minimal implementation
-        let filtered = MOCK_PRODUCTS;
-
-        // Search filter (title + description case-insensitive)
-        if (filters?.search) {
-          const term = filters.search.toLowerCase();
-          filtered = filtered.filter(
-            (p) =>
-              p.title.toLowerCase().includes(term) ||
-              p.description?.toLowerCase().includes(term),
-          );
-        }
-
-        // Status filter
-        if (filters?.status) {
-          filtered = filtered.filter((p) => {
-            const mapped = mapProductStatusToVehicleStatus(p.status);
-            return mapped === filters.status;
-          });
-        }
-
-        // Category filter
-        if (filters?.category_id) {
-          filtered = filtered.filter(
-            (p) => p.category_id === filters.category_id,
-          );
-        }
-
-        // published_to_marketplace — true keeps only products on the
-        // marketplace, false keeps only those that aren't.
-        if (filters?.published_to_marketplace !== undefined) {
-          const want = filters.published_to_marketplace;
-          filtered = filtered.filter(
-            (p) => p.published_to_marketplace === want,
-          );
-        }
-
-        // has_images — true keeps only products with at least one image,
-        // false keeps only products without images.
-        if (filters?.has_images !== undefined) {
-          const want = filters.has_images;
-          filtered = filtered.filter((p) =>
-            want
-              ? (p.image_urls?.length ?? 0) > 0
-              : (p.image_urls?.length ?? 0) === 0,
-          );
-        }
+        const filtered = await filterMockProducts(filters);
 
         // Pagination
         const skip = pageParam ? parseInt(pageParam, 10) : 0;
@@ -1353,6 +1407,135 @@ export function useInfiniteProducts(
     initialPageParam,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Count-only read against the same `GET /products` the catalog list uses
+ * (`limit=1` — the backend already computes `total` for pagination, so this
+ * is the cheapest possible request that still returns it). Used by
+ * `CatalogFilterPanel` to show "Ver N resultados" against a STAGED filter
+ * combination, before the user applies it — same live-count pattern
+ * MercadoLibre-style filter sheets use. Pass `enabled: false` while the
+ * panel is collapsed so this never fires needlessly.
+ */
+export function useProductsCount(
+  filters?: ProductFilters,
+  options?: { enabled?: boolean },
+) {
+  const useMocks =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
+
+  const queryParams = buildProductQueryParams(filters);
+  queryParams.append("limit", "1");
+
+  return useQuery({
+    queryKey: ["products", "count", filters],
+    queryFn: async () => {
+      if (useMocks) {
+        const filtered = await filterMockProducts(filters);
+        return filtered.length;
+      }
+
+      const res = await fetch(`/api/v1/products?${queryParams.toString()}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch count"));
+      }
+      const data = parseProductListResponse(await res.json());
+      return data.total;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 10 * 1000,
+  });
+}
+
+/** Scope for `usePriceRange` — every `ProductFilters` field EXCEPT price
+ * itself and `attributes` (the backend endpoint doesn't take attr.*). */
+export type PriceRangeScope = Pick<
+  ProductFilters,
+  | "organization_id"
+  | "organization_ids"
+  | "category_id"
+  | "status"
+  | "published_to_marketplace"
+  | "has_images"
+  | "search"
+>;
+
+export interface PriceRange {
+  min: number;
+  max: number;
+}
+
+/**
+ * Min/max price (cents) among products matching `scope` — sizes the price
+ * range slider's track. Reads `GET /products/price-range`, which
+ * deliberately has no `min_price`/`max_price` params of its own: the track
+ * must not shrink to wherever the slider currently sits, only to every
+ * OTHER active filter. Returns `null` when nothing matches (empty catalog
+ * under `scope`) — the caller hides/disables the slider in that case.
+ */
+export function usePriceRange(
+  scope?: PriceRangeScope,
+  options?: { enabled?: boolean },
+) {
+  const useMocks =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
+
+  const params = new URLSearchParams();
+  if (scope?.organization_ids && scope.organization_ids.length > 0) {
+    for (const orgId of scope.organization_ids) {
+      params.append("organization_ids", orgId);
+    }
+  } else if (scope?.organization_id) {
+    params.append("organization_id", scope.organization_id);
+  }
+  if (scope?.category_id) params.append("category_id", scope.category_id);
+  if (scope?.status) params.append("status", scope.status);
+  if (scope?.published_to_marketplace !== undefined) {
+    params.append(
+      "published_to_marketplace",
+      String(scope.published_to_marketplace),
+    );
+  }
+  if (scope?.has_images !== undefined) {
+    params.append("has_images", String(scope.has_images));
+  }
+  if (scope?.search) params.append("search", scope.search);
+
+  return useQuery({
+    queryKey: ["products", "price-range", scope],
+    queryFn: async (): Promise<PriceRange | null> => {
+      if (useMocks) {
+        const filtered = await filterMockProducts(scope);
+        if (filtered.length === 0) return null;
+        const prices = filtered.map((p) => p.price_cents);
+        return { min: Math.min(...prices), max: Math.max(...prices) };
+      }
+
+      const res = await fetch(
+        `/api/v1/products/price-range?${params.toString()}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          extractErrorMessage(body, "Failed to fetch price range"),
+        );
+      }
+      const data = parseProductPriceRangeResponse(await res.json());
+      if (data.min_price_cents === null || data.max_price_cents === null) {
+        return null;
+      }
+      return { min: data.min_price_cents, max: data.max_price_cents };
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 60 * 1000,
   });
 }
 
