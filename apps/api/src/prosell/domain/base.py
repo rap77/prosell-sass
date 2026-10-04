@@ -7,6 +7,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,  # type: ignore[attr-defined]
     Field,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "EmailStr",
     "Field",
     "SerializedValueObject",
+    "ValidationInfo",
     "ValueObject",
     "field_validator",
     "model_validator",

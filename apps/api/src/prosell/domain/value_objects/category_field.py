@@ -7,10 +7,17 @@ electronics have specs, compatibility).
 
 from typing import cast
 
-from pydantic import Field, ValidationInfo, field_validator
-
-from prosell.domain.base import ValueObject
+from prosell.domain.base import Field, ValidationInfo, ValueObject, field_validator
 from prosell.domain.value_objects.field_type import FieldType
+
+# Allowed validation_rules keys per FieldType — a FieldType missing from this
+# table (SELECT/MULTISELECT/CHECKBOX/DATE/IMAGE) has no key restriction at all.
+_ALLOWED_RULE_KEYS: dict[FieldType, tuple[str, ...]] = {
+    FieldType.NUMBER: ("min", "max"),
+    FieldType.DECIMAL: ("min", "max", "precision", "scale"),
+    FieldType.TEXT: ("min_length", "max_length", "pattern"),
+    FieldType.TEXTAREA: ("min_length", "max_length"),
+}
 
 
 class CategoryField(ValueObject):
@@ -64,30 +71,14 @@ class CategoryField(ValueObject):
     ) -> dict[str, object]:
         """Validate validation rules based on field type."""
         field_type = info.data.get("field_type")
+        if not isinstance(field_type, FieldType):
+            return rules
 
-        if field_type == FieldType.NUMBER:
-            # Allow min, max
+        allowed_keys = _ALLOWED_RULE_KEYS.get(field_type)
+        if allowed_keys is not None:
             for key in rules:
-                if key not in ("min", "max"):
-                    raise ValueError(f"Invalid validation rule for NUMBER: {key}")
-
-        elif field_type == FieldType.DECIMAL:
-            # Allow min, max, precision, scale
-            for key in rules:
-                if key not in ("min", "max", "precision", "scale"):
-                    raise ValueError(f"Invalid validation rule for DECIMAL: {key}")
-
-        elif field_type == FieldType.TEXT:
-            # Allow min_length, max_length, pattern
-            for key in rules:
-                if key not in ("min_length", "max_length", "pattern"):
-                    raise ValueError(f"Invalid validation rule for TEXT: {key}")
-
-        elif field_type == FieldType.TEXTAREA:
-            # Allow min_length, max_length
-            for key in rules:
-                if key not in ("min_length", "max_length"):
-                    raise ValueError(f"Invalid validation rule for TEXTAREA: {key}")
+                if key not in allowed_keys:
+                    raise ValueError(f"Invalid validation rule for {field_type.name}: {key}")
 
         return rules
 
