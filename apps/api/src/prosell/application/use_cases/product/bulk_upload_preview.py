@@ -15,16 +15,15 @@ from prosell.domain.repositories.organization_repository import AbstractOrganiza
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper
+from prosell.domain.services.vehicle_attribute_fields import (
+    VehicleAttributeValue,
+    extract_vehicle_attribute_preview_fields,
+)
 
 logger = logging.getLogger(__name__)
 
 # Columns in the client CSV that have no mapping to ProSell fields
 UNMAPPED_COLUMNS = frozenset({"id", "type", "option"})
-
-# Values carried in `mapped_fields` per the PreviewRowResponse schema:
-# strings (cod_organization, vin, locations, etc.), ints/ floats
-# (year, mileage), bools (publicado), and string lists (facebook_groups).
-MappedFieldValue = str | int | float | bool | list[str]
 
 
 @dataclass
@@ -207,8 +206,12 @@ class BulkUploadPreviewUseCase:
         # Map the row using CSVFieldMapper
         mapped: MappedCSVRow = CSVFieldMapper.map_row(row, row_number)
 
-        # Determine mapped fields (everything that has a value)
-        mapped_fields: dict[str, MappedFieldValue] = {}
+        # Determine mapped fields (everything that has a value). The ~14
+        # vehicle-attribute fields come from the shared table (Stage 3.3) —
+        # VIN/price_cents/title/location/description stay here since they're
+        # top-level DTO fields (or, for VIN, drive a required-field error),
+        # not part of `Product.attributes`.
+        mapped_fields: dict[str, VehicleAttributeValue] = {}
         missing_fields: list[str] = []
         errors: list[str] = []
 
@@ -233,37 +236,9 @@ class BulkUploadPreviewUseCase:
             mapped_fields["location_city"] = mapped.location_city
         if mapped.location_state:
             mapped_fields["location_state"] = mapped.location_state
-        if mapped.year is not None:
-            mapped_fields["attributes.year"] = mapped.year
-        if mapped.make:
-            mapped_fields["attributes.make"] = mapped.make
-        if mapped.model:
-            mapped_fields["attributes.model"] = mapped.model
-        if mapped.mileage is not None:
-            mapped_fields["attributes.mileage"] = mapped.mileage
-            mapped_fields["attributes.mileage_unit"] = mapped.mileage_unit
-        if mapped.body_style:
-            mapped_fields["attributes.body_type"] = mapped.body_style
-        if mapped.exterior_color:
-            mapped_fields["attributes.exterior_color"] = mapped.exterior_color
-        if mapped.interior_color:
-            mapped_fields["attributes.interior_color"] = mapped.interior_color
-        if mapped.clean_title is not None:
-            mapped_fields["attributes.clean_title"] = mapped.clean_title
-        if mapped.vehicle_condition:
-            mapped_fields["attributes.vehicle_condition"] = mapped.vehicle_condition
-        if mapped.fuel_type:
-            mapped_fields["attributes.fuel_type"] = mapped.fuel_type
-        if mapped.transmission:
-            mapped_fields["attributes.transmission"] = mapped.transmission
         if mapped.description:
             mapped_fields["description"] = mapped.description
-        if mapped.facebook_groups:
-            mapped_fields["attributes.facebook_groups"] = mapped.facebook_groups
-        if mapped.label:
-            mapped_fields["attributes.label"] = mapped.label
-        if mapped.publicado:
-            mapped_fields["attributes.publicado"] = mapped.publicado
+        mapped_fields.update(extract_vehicle_attribute_preview_fields(mapped))
 
         # Collect unmapped columns (CSV columns that have no ProSell mapping)
         unmapped_csv_columns = [

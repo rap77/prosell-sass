@@ -640,3 +640,122 @@ class TestBulkUploadVehiclesUseCase:
         product_repository.update.assert_not_awaited()
         # And no upload calls fired either (zero images to upload).
         do_spaces_service.upload_file.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_parse_failure_reports_real_row_number_and_never_persists(self):
+        """Regression guard for a GGA finding on this file:
+        1. _parse_csv used to compute every row's number as a literal
+           "row_number" CSV column that doesn't exist in the real format —
+           every row (and every error) reported row 1, making per-row
+           diagnostics useless on a multi-row failure.
+        2. A row that failed to parse used to be converted into a
+           synthetic MappedCSVRow(price_cents=0) and still flow into
+           _upsert_vehicle — since CreateProductRequest allows
+           price_cents=0 (ge=0, not gt=0), that row could be silently
+           imported as a $0, mostly-empty vehicle instead of failing.
+        """
+        csv_content = (
+            "id;title;price;category;type;location;year;make;model;mileage;body_style;"
+            "exterior_color;interior_color;clean_title;state;fuel_type;transmission;"
+            "option;description;path;groups;label;publicado;VIN\n"
+            "1;DJ;2500000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
+            "Gris;Negro;1;FL;Gas;Automatic;;;;1,2;01/01/25;1;1FMSK7DH7LGA77418\n"
+            # Row 3 (header=1, first data row=2): empty price -> CSVFieldMapper
+            # raises ValueError("price is required...").
+            "2;RM;;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
+            "Blanco;Gris;0;FL;Gas;Automatic;;;;1;01/02/25;0;2T1BURHE0LC123456\n"
+            "3;AB;1800000;Vehiculos;Sedan;Tampa florida;2021;Honda;Civic;10000;Sedan;"
+            "Azul;Gris;1;FL;Gas;Automatic;;;;1;01/03/25;1;19XFC2F59KE000001\n"
+        )
+        tenant_id = uuid4()
+        organization_id = uuid4()
+        category_id = uuid4()
+
+        product_repository = AsyncMock()
+        product_repository.get_by_vin.return_value = None
+
+        created_products = []
+
+        async def mock_create(product):
+            created_products.append(product)
+            return product
+
+        product_repository.create.side_effect = mock_create
+
+        category_repository = AsyncMock()
+        category_repository.get_by_id.return_value = Mock(id=category_id, tenant_id=tenant_id)
+
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ"),
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer2", code="RM"),
+            Organization(id=organization_id, tenant_id=tenant_id, name="Dealer3", code="AB"),
+        ]
+
+        allocator = AsyncMock()
+        allocator.allocate_next.return_value = 1
+
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=category_repository,
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+            internal_code_allocator=allocator,
+        )
+
+        result = await use_case.execute(
+            csv_content=csv_content,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+        )
+
+        assert result.total_rows == 3
+        assert result.failed_count == 1
+        assert result.imported_count == 2
+
+        failed = next(r for r in result.results if r.status == "failed")
+        # Row 3 in the real file (header=1, row 2 is the first good row) —
+        # not 1, which is what the old buggy row-numbering always reported.
+        assert failed.row_number == 3
+        assert failed.product_id is None
+        assert "price is required" in failed.errors[0]
+
+        # Critical: the malformed row must never have reached create/update —
+        # only the two genuinely good rows were persisted.
+        assert len(created_products) == 2
+        assert all(p.price_cents > 0 for p in created_products)
+
+        row_numbers = sorted(r.row_number for r in result.results)
+        assert row_numbers == [2, 3, 4]
+
+    @pytest.mark.asyncio
+    async def test_zip_rejects_multi_org_csv_without_a_selected_organization(self, sample_csv: str):
+        """Regression guard for a GGA finding: a multi-org CSV + ZIP with no
+        organization_id selected used to silently skip image mapping for
+        every row, with no error at all. Must now fail explicitly instead."""
+        product_repository = AsyncMock()
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=uuid4(), tenant_id=uuid4(), name="Dealer1", code="DJ"),
+            Organization(id=uuid4(), tenant_id=uuid4(), name="Dealer2", code="RM"),
+        ]
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+            internal_code_allocator=AsyncMock(),
+        )
+
+        with pytest.raises(ValueError, match="Cannot map ZIP images"):
+            await use_case.execute(
+                csv_content=sample_csv,
+                tenant_id=uuid4(),
+                organization_id=None,
+                category_id=uuid4(),
+                zip_bytes=b"fake-zip-bytes",
+            )
+
+        product_repository.create.assert_not_awaited()
+        product_repository.update.assert_not_awaited()

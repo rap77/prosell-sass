@@ -27,14 +27,10 @@ from prosell.domain.repositories.product_repository import AbstractProductReposi
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper, ImageMappingResult
 from prosell.domain.services.internal_code_allocator import InternalCodeAllocator
+from prosell.domain.services.vehicle_attribute_fields import extract_vehicle_attributes
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 logger = logging.getLogger(__name__)
-
-# Vehicle attribute values come from the CSV (year/mileage as ints/floats,
-# make/model/trim/color/etc. as strings, flags like publicado as bools,
-# and string lists like facebook_groups).
-VehicleAttributeValue = str | int | float | bool | list[str]
 
 
 @dataclass
@@ -130,8 +126,10 @@ class BulkUploadVehiclesUseCase:
         Returns:
             BulkUploadVehiclesResult with per-row results and summary
         """
-        # 1. Parse CSV rows
-        parsed_rows = self._parse_csv(csv_content)
+        # 1. Parse CSV rows. Rows that fail to parse never reach the
+        # per-row loop below as a half-built MappedCSVRow — they're
+        # reported as failed up front instead (see _parse_csv).
+        parsed_rows, parse_failures = self._parse_csv(csv_content)
 
         # 2. Resolve org codes to org_id. Scoped to the caller's tenant
         # unless can_view_all_orgs (ORG_ADMIN_VIEW_ALL) allows resolving
@@ -160,6 +158,19 @@ class BulkUploadVehiclesUseCase:
                 # CSV has exactly one organization - use it for image mapping
                 mapping_org_id = next(iter(org_code_map.values()))
 
+            # A multi-org CSV with no selected organization_id has no single
+            # destination to namespace images under — the old behavior
+            # silently skipped image mapping for every row with no error at
+            # all. Fail explicitly instead of importing vehicles with no
+            # images and no indication why.
+            if mapping_org_id is None and len(org_code_map) > 1:
+                raise ValueError(
+                    "Cannot map ZIP images: CSV has multiple organizations "
+                    "and no organization_id was selected — select a single "
+                    "organization to import images, or re-upload without "
+                    "the ZIP."
+                )
+
             if mapping_org_id is not None:
                 rows_as_dicts = [asdict(row) for row in parsed_rows]
                 image_mapping = self.csv_image_mapper.map_images(
@@ -173,12 +184,13 @@ class BulkUploadVehiclesUseCase:
                     organization_id=mapping_org_id,
                 )
 
-        # 5. Process each row (upsert by VIN)
-        results: list[VehicleImportRowResult] = []
+        # 5. Process each row (upsert by VIN). Parse failures are already
+        # known-failed — seed the results with them up front.
+        results: list[VehicleImportRowResult] = list(parse_failures)
         imported_count = 0
         updated_count = 0
         skipped_count = 0
-        failed_count = 0
+        failed_count = len(parse_failures)
 
         for mapped_row in parsed_rows:
             try:
@@ -232,7 +244,7 @@ class BulkUploadVehiclesUseCase:
                 )
 
         return BulkUploadVehiclesResult(
-            total_rows=len(parsed_rows),
+            total_rows=len(parsed_rows) + len(parse_failures),
             imported_count=imported_count,
             updated_count=updated_count,
             skipped_count=skipped_count,
@@ -240,38 +252,46 @@ class BulkUploadVehiclesUseCase:
             results=results,
         )
 
-    def _parse_csv(self, csv_content: str) -> list[MappedCSVRow]:
+    def _parse_csv(
+        self, csv_content: str
+    ) -> tuple[list[MappedCSVRow], list[VehicleImportRowResult]]:
         """
         Parse CSV content into MappedCSVRow objects.
+
+        A row that fails to parse is reported as a failed result directly —
+        never as a synthetic MappedCSVRow (e.g. price_cents=0), which would
+        otherwise flow into _upsert_vehicle like any normal row and risk
+        being imported with a $0 price and missing attributes.
 
         Args:
             csv_content: Raw CSV string (semicolon-delimited)
 
         Returns:
-            List of MappedCSVRow objects
+            (successfully mapped rows, failed-to-parse row results)
         """
         rows: list[MappedCSVRow] = []
+        failures: list[VehicleImportRowResult] = []
         csv_file = StringIO(csv_content)
         reader = csv.DictReader(csv_file, delimiter=";")
 
-        for row_dict in reader:
-            row_number = int(row_dict.get("row_number", 0)) if "row_number" in row_dict else 1
+        for row_number, row_dict in enumerate(reader, start=2):  # start=2: header is row 1
             try:
                 mapped_row = CSVFieldMapper.map_row(row_dict, row_number)
                 rows.append(mapped_row)
             except (ValueError, KeyError) as e:
                 logger.warning("Failed to parse row %d: %s", row_number, e)
-                # Create a minimal mapped row with error info
-                rows.append(
-                    MappedCSVRow(
+                failures.append(
+                    VehicleImportRowResult(
                         row_number=row_number,
                         vin=row_dict.get("VIN", "").strip(),
-                        cod_organization=row_dict.get("title", "").strip(),
-                        price_cents=0,
+                        product_id=None,
+                        images_uploaded=0,
+                        status="failed",
+                        errors=[str(e)],
                     )
                 )
 
-        return rows
+        return rows, failures
 
     async def _resolve_org_codes(
         self,
@@ -351,8 +371,16 @@ class BulkUploadVehiclesUseCase:
         if not vin:
             raise ValueError("VIN is required")
 
-        # Build attributes dict from mapped row
-        attributes = self._build_attributes(mapped_row)
+        # Build attributes dict from mapped row (shared vehicle-field table).
+        attributes = extract_vehicle_attributes(mapped_row)
+        # VIN/stock_number/cod_org stay out of the shared table — VIN is
+        # already guaranteed truthy here, stock_number is derived (not a
+        # 1:1 CSV field), and cod_org is a top-level DTO concern in the
+        # preview (shown as `title`, not `attributes.cod_org`).
+        attributes["vin"] = vin
+        attributes["stock_number"] = vin[-6:].upper()
+        if mapped_row.cod_organization:
+            attributes["cod_org"] = mapped_row.cod_organization
 
         # Build title from vehicle attributes
         title_parts = []
@@ -518,60 +546,3 @@ class BulkUploadVehiclesUseCase:
             status=status,
             errors=[],
         )
-
-    def _build_attributes(self, mapped_row: MappedCSVRow) -> dict[str, VehicleAttributeValue]:
-        """
-        Build attributes dict from MappedCSVRow.
-
-        Args:
-            mapped_row: Parsed CSV row
-
-        Returns:
-            Attributes dict for CreateProductRequest
-        """
-        attributes: dict[str, VehicleAttributeValue] = {}
-
-        # Core vehicle attributes
-        if mapped_row.year is not None:
-            attributes["year"] = mapped_row.year
-        if mapped_row.make:
-            attributes["make"] = mapped_row.make
-        if mapped_row.model:
-            attributes["model"] = mapped_row.model
-        if mapped_row.mileage is not None:
-            attributes["mileage"] = mapped_row.mileage
-            attributes["mileage_unit"] = mapped_row.mileage_unit
-        if mapped_row.body_style:
-            attributes["body_type"] = mapped_row.body_style
-        if mapped_row.exterior_color:
-            attributes["exterior_color"] = mapped_row.exterior_color
-        if mapped_row.interior_color:
-            attributes["interior_color"] = mapped_row.interior_color
-        if mapped_row.clean_title is not None:
-            attributes["clean_title"] = mapped_row.clean_title
-        if mapped_row.vehicle_condition:
-            attributes["vehicle_condition"] = mapped_row.vehicle_condition
-        if mapped_row.fuel_type:
-            attributes["fuel_type"] = mapped_row.fuel_type
-        if mapped_row.transmission:
-            attributes["transmission"] = mapped_row.transmission
-
-        # Facebook-specific attributes
-        if mapped_row.facebook_groups:
-            attributes["facebook_groups"] = mapped_row.facebook_groups
-        if mapped_row.label:
-            attributes["label"] = mapped_row.label
-        if mapped_row.publicado is not None:
-            attributes["publicado"] = mapped_row.publicado
-
-        # Always include VIN
-        if mapped_row.vin:
-            attributes["vin"] = mapped_row.vin
-            # Auto-generate stock_number from last 6 digits of VIN
-            attributes["stock_number"] = mapped_row.vin[-6:].upper()
-
-        # Include organization code from CSV
-        if mapped_row.cod_organization:
-            attributes["cod_org"] = mapped_row.cod_organization
-
-        return attributes
