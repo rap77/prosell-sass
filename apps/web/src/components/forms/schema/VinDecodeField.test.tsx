@@ -58,6 +58,35 @@ describe("mapDecodedToForm", () => {
     expect(setValue).toHaveBeenCalledWith("model", "RAV4");
   });
 
+  // Bug report (2026-10-03): trim ("Version" in the UI) is free-text (no
+  // `options`), so it fell into the Title Case branch above — mangling
+  // acronym trim values NHTSA returns correctly cased ("LE" -> "Le",
+  // "SE" -> "Se"). Uppercase instead, since trim values are overwhelmingly
+  // acronyms (LE, SE, LT) rather than genuine title-case words.
+  it("uppercases trim (Version) instead of title-casing it", () => {
+    const setValue = vi.fn();
+    const schema: Record<string, AttributeSchemaEntry> = {
+      trim: { type: "string", filter_type: "text", vin_decode_key: "trim" },
+    };
+    const decoded = { trim: "LE" } as unknown as DecodedVehicle;
+
+    mapDecodedToForm(decoded, schema, setValue, []);
+
+    expect(setValue).toHaveBeenCalledWith("trim", "LE");
+  });
+
+  it("uppercases a lowercase or mixed-case trim value too", () => {
+    const setValue = vi.fn();
+    const schema: Record<string, AttributeSchemaEntry> = {
+      trim: { type: "string", filter_type: "text", vin_decode_key: "trim" },
+    };
+    const decoded = { trim: "premium" } as unknown as DecodedVehicle;
+
+    mapDecodedToForm(decoded, schema, setValue, []);
+
+    expect(setValue).toHaveBeenCalledWith("trim", "PREMIUM");
+  });
+
   it("passes non-string values through unchanged", () => {
     const setValue = vi.fn();
     const schema: Record<string, AttributeSchemaEntry> = {

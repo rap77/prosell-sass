@@ -161,10 +161,21 @@ export function mapDecodedToForm(
       const isSelectField =
         (Array.isArray(entry.options) && entry.options.length > 0) ||
         entry.options_source !== undefined;
+      // `trim` ("Version" in the UI) is the one free-text field whose
+      // values are overwhelmingly acronyms NHTSA already returns correctly
+      // cased ("LE", "SE", "LT") — Title Case breaks them ("LE" -> "Le").
+      // Uppercase instead, autofill-only: the field stays a normal
+      // editable text input, so the user can still type lowercase by hand
+      // if they edit it afterward. Hardcoded by key (not a schema hint)
+      // because `trim` is currently the only field with this need — revisit
+      // if a second acronym-heavy free-text field shows up.
+      const isTrimField = key === "trim";
       setValue(
         key,
         typeof value === "string" && !isSelectField
-          ? toTitleCase(value)
+          ? isTrimField
+            ? value.toUpperCase()
+            : toTitleCase(value)
           : value,
       );
     }
