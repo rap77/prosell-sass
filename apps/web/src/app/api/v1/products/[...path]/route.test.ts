@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { GET, POST } from "./route";
+import { GET, POST, DELETE } from "./route";
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
@@ -125,5 +125,32 @@ describe("products proxy route", () => {
       "org-a",
       "org-b",
     ]);
+  });
+
+  // Bug: FastAPI sets Content-Type: application/json even on a 204 No
+  // Content response (e.g. DELETE /products/{id}). The proxy saw that
+  // header and called response.json() on the empty body, which throws and
+  // gets caught by the generic try/catch as a 502 "Proxy error: Failed to
+  // reach backend" — even though the backend had already deleted the
+  // product. The browser showed the error toast, but the delete had
+  // already succeeded, confirmed by the item disappearing from the grid.
+  it("passes a 204 No Content response through without parsing its body", async () => {
+    const backendResponse = new Response(null, {
+      status: 204,
+      headers: { "Content-Type": "application/json" },
+    });
+    const jsonSpy = vi.spyOn(backendResponse, "json");
+    mockFetch.mockResolvedValue(backendResponse);
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/products/prod-1",
+      { method: "DELETE" },
+    );
+
+    const response = await DELETE(request, {
+      params: Promise.resolve({ path: ["prod-1"] }),
+    });
+
+    expect(jsonSpy).not.toHaveBeenCalled();
+    expect(response.status).toBe(204);
   });
 });

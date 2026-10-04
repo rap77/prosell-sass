@@ -104,6 +104,24 @@ async function proxyRequest(request: NextRequest, path: string[]) {
 
     // Get response cookies and set them in the Next.js response
     const setCookieHeaders = response.headers.getSetCookie();
+
+    // Bug: FastAPI sets `Content-Type: application/json` even on a 204 No
+    // Content response (empty body) — e.g. DELETE /products/{id}. The branch
+    // below sees that header and calls response.json() on an empty body,
+    // which throws and gets reported as a 502 "Proxy error" even though the
+    // backend already completed the operation. Same fix already proven in
+    // categories/[...path]/route.ts — short-circuit before any body parsing.
+    if (response.status === 204) {
+      const nextResponse = new NextResponse(null, {
+        status: 204,
+        statusText: response.statusText,
+      });
+      setCookieHeaders.forEach((cookie) => {
+        nextResponse.headers.append("Set-Cookie", cookie);
+      });
+      return nextResponse;
+    }
+
     const contentType = response.headers.get("Content-Type") || "";
 
     // Bug (same class as the If-Match fix above): this proxy used to force
