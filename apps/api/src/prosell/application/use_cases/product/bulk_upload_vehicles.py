@@ -45,7 +45,7 @@ class VehicleImportRowResult:
     vin: str
     product_id: UUID | None
     images_uploaded: int
-    status: str  # "imported" | "updated" | "failed"
+    status: str  # "imported" | "updated" | "skipped" | "failed"
     errors: list[str]
 
 
@@ -56,6 +56,7 @@ class BulkUploadVehiclesResult:
     total_rows: int
     imported_count: int
     updated_count: int
+    skipped_count: int
     failed_count: int
     results: list[VehicleImportRowResult]
 
@@ -176,6 +177,7 @@ class BulkUploadVehiclesUseCase:
         results: list[VehicleImportRowResult] = []
         imported_count = 0
         updated_count = 0
+        skipped_count = 0
         failed_count = 0
 
         for mapped_row in parsed_rows:
@@ -210,6 +212,8 @@ class BulkUploadVehiclesUseCase:
                     imported_count += 1
                 elif result.status == "updated":
                     updated_count += 1
+                elif result.status == "skipped":
+                    skipped_count += 1
                 else:
                     failed_count += 1
 
@@ -231,6 +235,7 @@ class BulkUploadVehiclesUseCase:
             total_rows=len(parsed_rows),
             imported_count=imported_count,
             updated_count=updated_count,
+            skipped_count=skipped_count,
             failed_count=failed_count,
             results=results,
         )
@@ -364,6 +369,29 @@ class BulkUploadVehiclesUseCase:
         # `internal_code` (brand-new row) or leave the existing one untouched
         # (update).
         existing = await self.product_repository.get_by_vin(vin, tenant_id)
+
+        # `get_by_vin` is already scoped to `tenant_id` (== `organization_id`
+        # for a product created through this same upsert path — see the
+        # Organization.create() self-referential invariant), so a match here
+        # normally already belongs to this row's organization. The one case
+        # where it doesn't: a product whose `organization_id` was later
+        # reassigned to a DIFFERENT org via the org-admin tenant-cascade
+        # update path (PATCH /products/{id}, is_org_admin only), while its
+        # `tenant_id` stayed the one this row still resolves to. Re-importing
+        # that VIN here must never silently overwrite the other
+        # organization's data — skip the row entirely instead.
+        if existing is not None and existing.organization_id != organization_id:
+            return VehicleImportRowResult(
+                row_number=mapped_row.row_number,
+                vin=vin,
+                product_id=existing.id,
+                images_uploaded=0,
+                status="skipped",
+                errors=[
+                    "VIN already belongs to a different organization — "
+                    "row ignored to avoid overwriting that organization's data"
+                ],
+            )
 
         # `internal_code` is ALWAYS sourced from the internal allocator —
         # NEVER from the CSV's `id` column. The client's own `id` is

@@ -129,13 +129,21 @@ export function useBulkUploadVehicles() {
       queryClient.invalidateQueries({ queryKey: ["catalog"] });
 
       const total = result.imported_count + result.updated_count;
-      if (result.failed_count === 0) {
+      const skippedSuffix =
+        result.skipped_count > 0
+          ? `, ${result.skipped_count} ignorados (VIN de otra organización)`
+          : "";
+      if (result.failed_count === 0 && result.skipped_count === 0) {
         toast.success(
           `Importación completa: ${result.imported_count} nuevos, ${result.updated_count} actualizados`,
         );
+      } else if (result.failed_count === 0) {
+        toast.warning(
+          `Importación completa: ${result.imported_count} nuevos, ${result.updated_count} actualizados${skippedSuffix}`,
+        );
       } else {
         toast.warning(
-          `Importación parcial: ${total} OK, ${result.failed_count} fallaron`,
+          `Importación parcial: ${total} OK, ${result.failed_count} fallaron${skippedSuffix}`,
         );
       }
     },

@@ -2601,6 +2601,7 @@ async def bulk_upload_preview(
     can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
     use_case = BulkUploadPreviewUseCase(
         SqlAlchemyOrganizationRepository(db),
+        SqlAlchemyProductRepository(db),
     )
     try:
         result = await use_case.execute(
@@ -2728,6 +2729,7 @@ async def bulk_upload_with_images(
         total_rows=result.total_rows,
         imported_count=result.imported_count,
         updated_count=result.updated_count,
+        skipped_count=result.skipped_count,
         failed_count=result.failed_count,
         results=[
             VehicleImportRowResponse(

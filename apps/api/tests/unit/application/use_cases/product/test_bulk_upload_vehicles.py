@@ -77,7 +77,7 @@ class TestBulkUploadVehiclesUseCase:
             # move (20260927_0001), the use case mutates
             # `existing.attributes` directly instead of a top-level
             # `internal_code` field.
-            Mock(spec=Product, id=uuid4(), attributes={}),
+            Mock(spec=Product, id=uuid4(), attributes={}, organization_id=organization_id),
         ]
 
         created_products = []
@@ -249,7 +249,12 @@ class TestBulkUploadVehiclesUseCase:
         category_id = uuid4()
         csv_content = "id;title;price;VIN\n999;DJ;25000;1FMSK7DH7LGA77418\n"
 
-        existing = Mock(spec=Product, id=uuid4(), attributes={"internal_code": "7"})
+        existing = Mock(
+            spec=Product,
+            id=uuid4(),
+            attributes={"internal_code": "7"},
+            organization_id=organization_id,
+        )
         product_repository = AsyncMock()
         product_repository.get_by_vin.return_value = existing
 
@@ -276,6 +281,62 @@ class TestBulkUploadVehiclesUseCase:
         assert result.updated_count == 1
         internal_code_allocator.allocate_next.assert_not_awaited()
         assert existing.attributes["internal_code"] == "7"
+
+    @pytest.mark.asyncio
+    async def test_use_case_skips_row_when_vin_belongs_to_a_different_organization(self):
+        """A VIN that already exists under a DIFFERENT organization than
+        the one this row resolves to must be ignored entirely — never
+        created, never updated — to avoid overwriting that other
+        organization's data. Confirmed by a real, reported bug: a dealer
+        re-importing their own CSV saw an unrelated organization's vehicle
+        get silently overwritten with their own row's data."""
+        tenant_id = uuid4()
+        row_organization_id = uuid4()
+        other_organization_id = uuid4()
+        category_id = uuid4()
+        csv_content = "id;title;price;VIN\n1;DJ;25000;1FMSK7DH7LGA77418\n"
+
+        existing = Mock(
+            spec=Product,
+            id=uuid4(),
+            attributes={"internal_code": "99"},
+            organization_id=other_organization_id,
+        )
+        product_repository = AsyncMock()
+        product_repository.get_by_vin.return_value = existing
+
+        organization_repository = AsyncMock()
+        organization_repository.get_by_codes.return_value = [
+            Organization(id=row_organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+        ]
+        internal_code_allocator = AsyncMock()
+        use_case = BulkUploadVehiclesUseCase(
+            product_repository=product_repository,
+            category_repository=AsyncMock(),
+            organization_repository=organization_repository,
+            do_spaces_service=AsyncMock(),
+            internal_code_allocator=internal_code_allocator,
+        )
+
+        result = await use_case.execute(
+            csv_content=csv_content,
+            tenant_id=tenant_id,
+            organization_id=row_organization_id,
+            category_id=category_id,
+        )
+
+        assert result.imported_count == 0
+        assert result.updated_count == 0
+        assert result.skipped_count == 1
+        assert result.failed_count == 0
+        assert result.results[0].status == "skipped"
+        assert result.results[0].product_id == existing.id
+        assert "different organization" in result.results[0].errors[0]
+        product_repository.create.assert_not_awaited()
+        product_repository.update.assert_not_awaited()
+        internal_code_allocator.allocate_next.assert_not_awaited()
+        # The other organization's product was never touched in any way.
+        assert existing.attributes == {"internal_code": "99"}
 
     @pytest.mark.asyncio
     async def test_use_case_preserves_existing_images_when_import_has_no_zip(self):

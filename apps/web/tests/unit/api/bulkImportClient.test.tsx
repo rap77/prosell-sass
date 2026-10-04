@@ -263,4 +263,60 @@ describe("useBulkUploadVehicles", () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["catalog"] });
     });
   });
+
+  // Bug: a VIN belonging to a different organization is silently SKIPPED
+  // by the backend (never created, never updated) — but the success toast
+  // only ever mentioned imported/updated/failed counts, so a skip was
+  // invisible to the user even though `failed_count` stayed 0 (a skip is
+  // not a failure). The toast must say so explicitly.
+  it("accepts a skipped row and warns about it instead of claiming full success", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          total_rows: 2,
+          imported_count: 1,
+          updated_count: 0,
+          skipped_count: 1,
+          failed_count: 0,
+          results: [
+            {
+              row_number: 2,
+              vin: "1FMSK7DH7LGA77418",
+              product_id: "11111111-1111-1111-1111-111111111111",
+              images_uploaded: 0,
+              status: "imported",
+              errors: [],
+            },
+            {
+              row_number: 3,
+              vin: "2T1BURHE0LC123456",
+              product_id: "44444444-4444-4444-4444-444444444444",
+              images_uploaded: 0,
+              status: "skipped",
+              errors: ["VIN already belongs to a different organization"],
+            },
+          ],
+        }),
+    }) as unknown as typeof fetch;
+
+    const { result } = renderHook(() => useBulkUploadVehicles(), {
+      wrapper: makeWrapper(),
+    });
+
+    const response = await result.current.mutateAsync({
+      csv: makeCsvFile(),
+      organizationId: "22222222-2222-2222-2222-222222222222",
+      categoryId: "33333333-3333-3333-3333-333333333333",
+    });
+
+    expect(response.skipped_count).toBe(1);
+    expect(response.results[1].status).toBe("skipped");
+    await waitFor(() => {
+      expect(toast.warning).toHaveBeenCalledWith(
+        expect.stringContaining("1 ignorados"),
+      );
+    });
+    expect(toast.success).not.toHaveBeenCalled();
+  });
 });

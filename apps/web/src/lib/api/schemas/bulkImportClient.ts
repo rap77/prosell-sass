@@ -35,6 +35,8 @@ export const PreviewRowSchema = z.object({
   unmapped_csv_columns: z.array(z.string()),
   images_found: z.array(z.string()),
   errors: z.array(z.string()),
+  vin_exists: z.boolean().default(false),
+  vin_organization_match: z.boolean().nullable().default(null),
 });
 
 export type PreviewRow = z.infer<typeof PreviewRowSchema>;
@@ -68,7 +70,7 @@ export const VehicleImportRowSchema = z.object({
   vin: z.string(),
   product_id: z.string().nullable(),
   images_uploaded: z.number().int(),
-  status: z.enum(["imported", "updated", "failed"]),
+  status: z.enum(["imported", "updated", "skipped", "failed"]),
   errors: z.array(z.string()),
 });
 
@@ -78,6 +80,7 @@ export const BulkUploadVehiclesSchema = z.object({
   total_rows: z.number().int(),
   imported_count: z.number().int(),
   updated_count: z.number().int(),
+  skipped_count: z.number().int().default(0),
   failed_count: z.number().int(),
   results: z.array(VehicleImportRowSchema),
 });

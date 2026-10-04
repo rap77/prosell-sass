@@ -164,6 +164,102 @@ describe("BulkImportClientCSV", () => {
     expect(screen.getByText("BAD")).toBeInTheDocument();
   });
 
+  it("warns about a VIN that belongs to another organization and blocks it", async () => {
+    previewMock.mutateAsync.mockResolvedValue({
+      total_rows: 1,
+      rows: [
+        {
+          row_number: 2,
+          vin: "1FMSK7DH7LGA77418",
+          title: "DJ",
+          importable: false,
+          mapped_fields: { price_cents: 1780000 },
+          missing_fields: [],
+          unmapped_csv_columns: [],
+          images_found: [],
+          errors: [
+            "VIN already belongs to a different organization — this row will be ignored on import",
+          ],
+          vin_exists: true,
+          vin_organization_match: false,
+        },
+      ],
+      summary: {
+        importable_count: 0,
+        error_count: 1,
+        images_count: 0,
+        detected_org_codes: [],
+        missing_org_codes: [],
+      },
+    });
+    const user = userEvent.setup();
+
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
+
+    const csvInput = document.querySelector(
+      'input[accept*="text/csv"]',
+    ) as HTMLInputElement;
+    await user.upload(csvInput, new File(["vin;title\n1A;test"], "test.csv"));
+    await user.click(screen.getByText("Vista previa"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/VIN already belongs to a different organization/),
+      ).toBeInTheDocument();
+    });
+    // Blocked rows must never show the benign "will update" note.
+    expect(
+      screen.queryByText("VIN existente — se actualizará el producto"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an informational note for a VIN that already exists in the same organization", async () => {
+    previewMock.mutateAsync.mockResolvedValue({
+      total_rows: 1,
+      rows: [
+        {
+          row_number: 2,
+          vin: "1FMSK7DH7LGA77418",
+          title: "DJ",
+          importable: true,
+          mapped_fields: { price_cents: 1780000 },
+          missing_fields: [],
+          unmapped_csv_columns: [],
+          images_found: [],
+          errors: [],
+          vin_exists: true,
+          vin_organization_match: true,
+        },
+      ],
+      summary: {
+        importable_count: 1,
+        error_count: 0,
+        images_count: 0,
+        detected_org_codes: [],
+        missing_org_codes: [],
+      },
+    });
+    const user = userEvent.setup();
+
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
+
+    const csvInput = document.querySelector(
+      'input[accept*="text/csv"]',
+    ) as HTMLInputElement;
+    await user.upload(csvInput, new File(["vin;title\n1A;test"], "test.csv"));
+    await user.click(screen.getByText("Vista previa"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("VIN existente — se actualizará el producto"),
+      ).toBeInTheDocument();
+    });
+  });
+
   it("continues to the confirm step and shows organization + category selects", async () => {
     previewMock.mutateAsync.mockResolvedValue(successPreview);
     const user = userEvent.setup();

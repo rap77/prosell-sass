@@ -2,13 +2,14 @@
 
 import io
 import zipfile
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
 
 from prosell.application.use_cases.product.bulk_upload_preview import BulkUploadPreviewUseCase
 from prosell.domain.entities.organization import Organization
+from prosell.domain.entities.product import Product
 
 
 @pytest.mark.asyncio
@@ -18,7 +19,9 @@ async def test_preview_reports_csv_organization_codes_missing_from_database() ->
     organization_repository.get_by_codes.return_value = [
         Organization(id=uuid4(), tenant_id=uuid4(), name="Dealer", code="DJ")
     ]
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = (
         "id;title;price;VIN\n1;DJ;25000;1FMSK7DH7LGA77418\n2;MISSING;18000;2T1BURHE0LC123456\n"
     )
@@ -37,7 +40,9 @@ async def test_preview_scopes_org_code_lookup_to_the_caller_tenant() -> None:
     that only exists in a DIFFERENT organization is reported as missing."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = "id;title;price;VIN\n1;OTHER-TENANT-CODE;25000;1FMSK7DH7LGA77418\n"
     tenant_id = uuid4()
 
@@ -46,6 +51,96 @@ async def test_preview_scopes_org_code_lookup_to_the_caller_tenant() -> None:
     organization_repository.get_by_codes.assert_called_once_with(
         ["OTHER-TENANT-CODE"], tenant_id=tenant_id
     )
+
+
+# ============================================================================
+# VIN ownership — a VIN that already exists must say whether it belongs to
+# the row's own organization (will update) or a DIFFERENT one (real import
+# will skip it entirely, never overwriting that other organization's data).
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_preview_marks_vin_as_matching_when_it_belongs_to_the_same_organization() -> None:
+    """An existing VIN under the row's OWN organization is a legitimate
+    update — flagged for visibility, but still importable."""
+    organization_id = uuid4()
+    tenant_id = uuid4()
+    organization_repository = AsyncMock()
+    organization_repository.get_by_codes.return_value = [
+        Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+    ]
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = Mock(
+        spec=Product, id=uuid4(), organization_id=organization_id
+    )
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
+    csv_content = "id;title;price;VIN\n1;DJ;25000;1FMSK7DH7LGA77418\n"
+
+    result = await use_case.execute(csv_content, tenant_id=tenant_id)
+
+    row = result.rows[0]
+    assert row.vin_exists is True
+    assert row.vin_organization_match is True
+    assert row.importable is True
+    assert row.errors == []
+    product_repository.get_by_vin.assert_awaited_once_with("1FMSK7DH7LGA77418", organization_id)
+
+
+@pytest.mark.asyncio
+async def test_preview_flags_vin_as_not_importable_when_it_belongs_to_another_organization() -> (
+    None
+):
+    """An existing VIN under a DIFFERENT organization must be reported as
+    NOT importable, with an explicit error — the real import will skip
+    this row entirely rather than overwrite the other organization's data,
+    and the preview must never promise an import that won't happen."""
+    row_organization_id = uuid4()
+    other_organization_id = uuid4()
+    tenant_id = uuid4()
+    organization_repository = AsyncMock()
+    organization_repository.get_by_codes.return_value = [
+        Organization(id=row_organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+    ]
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = Mock(
+        spec=Product, id=uuid4(), organization_id=other_organization_id
+    )
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
+    csv_content = "id;title;price;VIN\n1;DJ;25000;1FMSK7DH7LGA77418\n"
+
+    result = await use_case.execute(csv_content, tenant_id=tenant_id)
+
+    row = result.rows[0]
+    assert row.vin_exists is True
+    assert row.vin_organization_match is False
+    assert row.importable is False
+    assert "different organization" in row.errors[0]
+    assert result.summary.error_count == 1
+    assert result.summary.importable_count == 0
+
+
+@pytest.mark.asyncio
+async def test_preview_leaves_vin_fields_untouched_when_vin_does_not_exist_yet() -> None:
+    """A brand-new VIN must not be flagged at all — `vin_exists` stays
+    False and `vin_organization_match` stays None (not applicable)."""
+    organization_id = uuid4()
+    tenant_id = uuid4()
+    organization_repository = AsyncMock()
+    organization_repository.get_by_codes.return_value = [
+        Organization(id=organization_id, tenant_id=tenant_id, name="Dealer", code="DJ")
+    ]
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
+    csv_content = "id;title;price;VIN\n1;DJ;25000;1FMSK7DH7LGA77418\n"
+
+    result = await use_case.execute(csv_content, tenant_id=tenant_id)
+
+    row = result.rows[0]
+    assert row.vin_exists is False
+    assert row.vin_organization_match is None
+    assert row.importable is True
 
 
 # ============================================================================
@@ -61,7 +156,9 @@ async def test_preview_captures_csv_id_for_display_without_validating_it() -> No
     import time, never from the CSV's `id` column."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = (
         "id;title;price;VIN\n42;DJ;25000;1FMSK7DH7LGA77418\n42;DJ;18000;2T1BURHE0LC123456\n"
     )
@@ -83,7 +180,9 @@ async def test_preview_does_not_flag_empty_csv_id() -> None:
     only, same as a populated one."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     # No `id` column at all → every row has csv_id=None → nothing to check.
     csv_content = "title;price;VIN\nDJ;25000;1FMSK7DH7LGA77418\n"
 
@@ -119,7 +218,9 @@ async def test_preview_accepts_row_path_matching_a_zip_folder() -> None:
     file path directly."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = "id;title;price;path;VIN\n1;DJ;25000;org/vehicle;1FMSK7DH7LGA77418\n"
     zip_bytes = _make_zip_with_files(["org/vehicle/photo1.jpg", "org/vehicle/photo2.jpg"])
 
@@ -139,7 +240,9 @@ async def test_preview_flags_row_path_missing_from_zip() -> None:
     missing path so the user knows which row to fix."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = "id;title;price;path;VIN\n1;DJ;25000;org/missing-vehicle;1FMSK7DH7LGA77418\n"
     zip_bytes = _make_zip_with_files(["org/vehicle/other_photo.jpg"])
 
@@ -161,7 +264,9 @@ async def test_preview_does_not_flag_row_with_no_image_path() -> None:
     nothing to look up in the ZIP)."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = "id;title;price;path;VIN\n1;DJ;25000;;1FMSK7DH7LGA77418\n"
     zip_bytes = _make_zip_with_files(["org/vehicle/photo1.jpg"])
 
@@ -179,7 +284,9 @@ async def test_preview_skips_image_validation_when_no_zip_uploaded() -> None:
     supported."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     csv_content = (
         "id;title;price;path;VIN\n"
         "1;DJ;25000;photo1.jpg;1FMSK7DH7LGA77418\n"
@@ -205,7 +312,9 @@ async def test_preview_accepts_folder_prefix_path_matched_by_csv_image_mapper() 
     client upload."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     folder_path = (
         "/Users/juanl/proy/facebook-auto-post/IMG/Vehiculos/AF/2004-FORD-F150-216K-ROJO-AF"
     )
@@ -226,7 +335,9 @@ async def test_preview_still_flags_folder_prefix_path_with_no_matching_folder() 
     fix must not turn the check into a no-op for real missing images."""
     organization_repository = AsyncMock()
     organization_repository.get_by_codes.return_value = []
-    use_case = BulkUploadPreviewUseCase(organization_repository)
+    product_repository = AsyncMock()
+    product_repository.get_by_vin.return_value = None
+    use_case = BulkUploadPreviewUseCase(organization_repository, product_repository)
     folder_path = "IMG/Vehiculos/AF/2004-FORD-F150-216K-ROJO-AF"
     csv_content = f"id;title;price;path;VIN\n1;AF;25000;{folder_path};1FTPX12554NB18918\n"
     zip_bytes = _make_zip_with_files(["IMG/Vehiculos/AF/OTHER-VEHICLE/photo1.jpg"])

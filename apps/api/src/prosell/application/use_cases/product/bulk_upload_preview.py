@@ -12,6 +12,7 @@ from prosell.application.dto.product.bulk_upload import (
     PreviewSummaryResponse,
 )
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
+from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_field_mapper import CSVFieldMapper, MappedCSVRow
 from prosell.domain.services.csv_image_mapper import CSVImageMapper
 
@@ -48,14 +49,20 @@ class BulkUploadPreviewUseCase:
     def __init__(
         self,
         organization_repository: AbstractOrganizationRepository,
+        product_repository: AbstractProductRepository,
     ) -> None:
         """Initialize the preview use case.
 
         Args:
             organization_repository: Used to resolve CSV org codes
                 against existing organizations, scoped to the caller's tenant.
+            product_repository: Used to check whether a row's VIN already
+                belongs to a product, and if so, to which organization —
+                mirrors the real import's own VIN-ownership check so the
+                preview never promises an outcome the import won't deliver.
         """
         self._organization_repository = organization_repository
+        self._product_repository = product_repository
 
     async def execute(
         self,
@@ -157,16 +164,26 @@ class BulkUploadPreviewUseCase:
         error_count = total - importable_count
 
         scope_tenant_id = None if can_view_all_orgs else tenant_id
-        existing_org_codes = {
-            org.code.strip().upper()
-            for org in await self._organization_repository.get_by_codes(
-                sorted(code.upper() for code in detected_org_codes), tenant_id=scope_tenant_id
-            )
-            if org.code
-        }
+        resolved_orgs = await self._organization_repository.get_by_codes(
+            sorted(code.upper() for code in detected_org_codes), tenant_id=scope_tenant_id
+        )
+        org_code_map = {org.code.strip().upper(): org.id for org in resolved_orgs if org.code}
+        existing_org_codes = set(org_code_map)
         missing_org_codes = sorted(
             code for code in detected_org_codes if code.upper() not in existing_org_codes
         )
+
+        # VIN-ownership check — must run AFTER org-code resolution above,
+        # since it needs org_code_map to know which organization EACH row
+        # targets before it can compare against the VIN's actual owner.
+        await self._apply_vin_ownership_validations(rows, org_code_map)
+
+        # Recount again: this third post-loop validation (after
+        # image-filename above) can also flip `importable=False` on rows
+        # that were previously green.
+        importable_count = sum(1 for r in rows if r.importable)
+        error_count = total - importable_count
+
         summary = PreviewSummaryResponse(
             importable_count=importable_count,
             error_count=error_count,
@@ -275,6 +292,51 @@ class BulkUploadPreviewUseCase:
             images_found=images_found,
             errors=errors,
         )
+
+    async def _apply_vin_ownership_validations(
+        self,
+        rows: list[PreviewRowResponse],
+        org_code_map: dict[str, UUID],
+    ) -> None:
+        """Flag rows whose VIN already belongs to a DIFFERENT organization.
+
+        Mirrors the real import's own `_upsert_vehicle` check
+        (`BulkUploadVehiclesUseCase`): a VIN that already exists under the
+        row's target organization is a legitimate update
+        (`vin_organization_match=True`). One that exists under a DIFFERENT
+        organization will be silently SKIPPED by the real import — never
+        created, never updated, to avoid overwriting that other
+        organization's data — so the preview must say so instead of
+        promising an outcome the import won't deliver.
+
+        Args:
+            rows: Preview rows, mutated in place.
+            org_code_map: Org code (uppercase) -> organization_id, resolved
+                from the CSV's detected codes.
+        """
+        for row in rows:
+            if not row.vin:
+                continue
+            row_org_id = org_code_map.get(row.title.strip().upper())
+            if row_org_id is None:
+                # No resolvable organization for this row — nothing to
+                # compare the VIN's owner against. A missing/unknown code
+                # is already surfaced via `missing_org_codes` in the summary.
+                continue
+
+            existing = await self._product_repository.get_by_vin(row.vin, row_org_id)
+            if existing is None:
+                continue
+
+            row.vin_exists = True
+            row.vin_organization_match = existing.organization_id == row_org_id
+            if not row.vin_organization_match:
+                row.errors.append(
+                    "VIN already belongs to a different organization — "
+                    "this row will be ignored on import to avoid "
+                    "overwriting that organization's data"
+                )
+                row.importable = False
 
     def _apply_image_filename_validations(
         self,

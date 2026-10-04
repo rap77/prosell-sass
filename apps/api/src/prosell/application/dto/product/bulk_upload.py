@@ -33,6 +33,20 @@ class PreviewRowResponse(BaseModel):
         default_factory=list,
         description="Validation or parsing errors for this row",
     )
+    vin_exists: bool = Field(
+        default=False,
+        description="Whether a product with this VIN already exists",
+    )
+    vin_organization_match: bool | None = Field(
+        default=None,
+        description=(
+            "None when vin_exists is False. True when the existing product "
+            "belongs to the same organization this row targets (the real "
+            "import will update it). False when it belongs to a different "
+            "organization (the real import will skip this row entirely, "
+            "to avoid overwriting another organization's data)."
+        ),
+    )
 
 
 class PreviewSummaryResponse(BaseModel):
@@ -71,7 +85,7 @@ class VehicleImportRowResponse(BaseModel):
     vin: str = Field(description="VIN of the imported vehicle")
     product_id: UUID | None = Field(description="UUID of the created/updated product")
     images_uploaded: int = Field(description="Number of images uploaded")
-    status: str = Field(description="Status: imported, updated, or failed")
+    status: str = Field(description="Status: imported, updated, skipped, or failed")
     errors: list[str] = Field(default_factory=list, description="Error messages if failed")
 
 
@@ -81,6 +95,14 @@ class BulkUploadVehiclesResponse(BaseModel):
     total_rows: int = Field(description="Total number of data rows in the CSV")
     imported_count: int = Field(description="Number of newly imported vehicles")
     updated_count: int = Field(description="Number of updated vehicles")
+    skipped_count: int = Field(
+        default=0,
+        description=(
+            "Number of rows skipped because their VIN already belongs to a "
+            "different organization — never created or updated, to avoid "
+            "overwriting another organization's data"
+        ),
+    )
     failed_count: int = Field(description="Number of failed rows")
     results: list[VehicleImportRowResponse] = Field(
         default_factory=list,

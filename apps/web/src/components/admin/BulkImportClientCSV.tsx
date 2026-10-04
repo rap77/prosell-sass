@@ -276,7 +276,7 @@ function UploadStep({
         type="button"
         onClick={onPreview}
         disabled={!canPreview}
-        className={primaryBtnClass}
+        className={PRIMARY_BTN_CLASS}
       >
         {isPending ? "Analizando..." : "Vista previa"}
         {!isPending && <ChevronRight size={16} />}
@@ -305,7 +305,7 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
       </div>
 
       {file ? (
-        <div className={fileCardClass}>
+        <div className={FILE_CARD_CLASS}>
           <FileText size={20} className="text-ps-cyan" />
           <span className="flex-1 text-xs">{file.name}</span>
           <button
@@ -321,7 +321,7 @@ function Dropzone({ label, sublabel, file, dropzone, onClear }: DropzoneProps) {
         <div
           {...getRootProps()}
           className={cn(
-            dropzoneCardClass,
+            DROPZONE_CARD_CLASS,
             isDragActive ? "border-ps-cyan" : "border-ps-border-default",
           )}
         >
@@ -396,12 +396,12 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
         <div className="surface-scrollbar max-h-96 overflow-y-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
-              <tr className={tableHeadRowClass}>
-                <th className={thClass}>#</th>
-                <th className={thClass}>ID CSV</th>
-                <th className={thClass}>VIN</th>
-                <th className={thClass}>Estado</th>
-                <th className={thClass}>Mapeados</th>
+              <tr className={TABLE_HEAD_ROW_CLASS}>
+                <th className={TH_CLASS}>#</th>
+                <th className={TH_CLASS}>ID CSV</th>
+                <th className={TH_CLASS}>VIN</th>
+                <th className={TH_CLASS}>Estado</th>
+                <th className={TH_CLASS}>Mapeados</th>
               </tr>
             </thead>
             <tbody>
@@ -414,14 +414,14 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
       </div>
 
       <div className="flex justify-between gap-3">
-        <button type="button" onClick={onBack} className={secondaryBtnClass}>
+        <button type="button" onClick={onBack} className={SECONDARY_BTN_CLASS}>
           <ChevronLeft size={16} />
           Volver
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          className={primaryBtnClass}
+          className={PRIMARY_BTN_CLASS}
           disabled={summary.importable_count === 0 || hasMissingOrganizations}
         >
           Continuar
@@ -434,14 +434,26 @@ function PreviewStep({ preview, onBack, onConfirm }: PreviewStepProps) {
 
 function PreviewRowView({ row }: { row: PreviewRow }) {
   const status = resolvePreviewStatus(row);
+  // vin_organization_match === false already pushed its own message into
+  // `row.errors` (rendered below) and flipped `importable` to false — this
+  // note is only for the benign case: VIN exists under the SAME
+  // organization, so the real import will UPDATE it rather than create a
+  // new product. Informational, not an error.
+  const willUpdateExisting =
+    row.vin_exists && row.vin_organization_match === true;
 
   return (
-    <tr className={tableBodyRowClass}>
-      <td className={tdClass}>{row.row_number}</td>
-      <td className={tdClass}>{row.csv_id || "—"}</td>
-      <td className={tdClass}>{row.vin || "—"}</td>
-      <td className={cn(tdClass, "font-semibold", status.className)}>
+    <tr className={TABLE_BODY_ROW_CLASS}>
+      <td className={TD_CLASS}>{row.row_number}</td>
+      <td className={TD_CLASS}>{row.csv_id || "—"}</td>
+      <td className={TD_CLASS}>{row.vin || "—"}</td>
+      <td className={cn(TD_CLASS, "font-semibold", status.className)}>
         {status.label}
+        {willUpdateExisting && (
+          <p className="m-0 mt-1 text-[10px] font-normal text-ps-text-secondary">
+            VIN existente — se actualizará el producto
+          </p>
+        )}
         {row.errors.length > 0 && (
           <ul className="m-0 mt-1 pl-3 text-[10px] font-normal list-disc">
             {row.errors.map((e, i) => (
@@ -450,7 +462,7 @@ function PreviewRowView({ row }: { row: PreviewRow }) {
           </ul>
         )}
       </td>
-      <td className={tdClass}>{Object.keys(row.mapped_fields).length}</td>
+      <td className={TD_CLASS}>{Object.keys(row.mapped_fields).length}</td>
     </tr>
   );
 }
@@ -529,13 +541,19 @@ function ConfirmStep({
 
       <div className="rounded-lg bg-ps-bg-surface border border-ps-border-default p-3.5 text-xs text-ps-text-secondary">
         La importación es <strong>idempotente por VIN</strong>: productos
-        existentes se actualizan, los nuevos se crean. Las imágenes del ZIP se
-        suben a DO Spaces y se asocian al producto.
+        existentes de esta organización se actualizan, los nuevos se crean. Un
+        VIN que ya pertenece a OTRA organización se ignora por completo — nunca
+        se sobreescribe. Las imágenes del ZIP se suben a DO Spaces y se asocian
+        al producto.
       </div>
 
       <div className="flex justify-between gap-3">
         <div className="flex gap-3">
-          <button type="button" onClick={onBack} className={secondaryBtnClass}>
+          <button
+            type="button"
+            onClick={onBack}
+            className={SECONDARY_BTN_CLASS}
+          >
             <ChevronLeft size={16} />
             Volver
           </button>
@@ -543,7 +561,7 @@ function ConfirmStep({
             <button
               type="button"
               onClick={onCancel}
-              className={secondaryBtnClass}
+              className={SECONDARY_BTN_CLASS}
             >
               Cancelar
             </button>
@@ -558,7 +576,7 @@ function ConfirmStep({
             (!hasOrgInCsv && !organizationId) ||
             !categoryId
           }
-          className={primaryBtnClass}
+          className={PRIMARY_BTN_CLASS}
         >
           {isPending ? "Importando..." : "Importar"}
         </button>
@@ -606,7 +624,7 @@ const SUMMARY_TONE = {
 } as const;
 type SummaryTone = (typeof SUMMARY_TONE)[keyof typeof SUMMARY_TONE];
 
-const summaryToneClass: Record<SummaryTone, string> = {
+const SUMMARY_TONE_CLASS: Record<SummaryTone, string> = {
   success: "text-ps-success",
   error: "text-ps-error",
   cyan: "text-ps-cyan",
@@ -626,7 +644,7 @@ function SummaryCard({
       <p className="m-0 text-xs uppercase text-ps-text-secondary tracking-wide">
         {label}
       </p>
-      <p className={cn("mt-2 text-2xl font-bold", summaryToneClass[tone])}>
+      <p className={cn("mt-2 text-2xl font-bold", SUMMARY_TONE_CLASS[tone])}>
         {value}
       </p>
     </div>
@@ -648,23 +666,23 @@ function resolvePreviewStatus(row: PreviewRow): {
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const primaryBtnClass =
+const PRIMARY_BTN_CLASS =
   "inline-flex items-center gap-1.5 rounded-lg bg-ps-cyan px-4 py-2.5 text-sm font-bold text-ps-base cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed";
 
-const secondaryBtnClass =
+const SECONDARY_BTN_CLASS =
   "inline-flex items-center gap-1.5 rounded-lg bg-transparent px-4 py-2.5 text-sm font-semibold text-ps-text-primary cursor-pointer border border-ps-border-default";
 
-const dropzoneCardClass =
+const DROPZONE_CARD_CLASS =
   "flex flex-col items-center gap-2.5 rounded-xl border-2 border-dashed bg-ps-bg-surface p-6 cursor-pointer";
 
-const fileCardClass =
+const FILE_CARD_CLASS =
   "flex items-center gap-3 rounded-lg border border-ps-border-default bg-ps-bg-surface p-3.5";
 
-const tableHeadRowClass = "bg-ps-bg-surface";
+const TABLE_HEAD_ROW_CLASS = "bg-ps-bg-surface";
 
-const tableBodyRowClass = "border-t border-ps-border-default";
+const TABLE_BODY_ROW_CLASS = "border-t border-ps-border-default";
 
-const thClass =
+const TH_CLASS =
   "px-3 py-2.5 text-left text-xs font-semibold uppercase text-ps-text-secondary tracking-wider";
 
-const tdClass = "px-3 py-2.5 text-xs";
+const TD_CLASS = "px-3 py-2.5 text-xs";
