@@ -10,13 +10,27 @@ This design keeps the API request fast (no image downloads in request cycle)
 and avoids serializing large image bytes into the Taskiq payload.
 """
 
-from typing import Any
+from typing import TypedDict
 
 from prosell.infrastructure.tasks.broker import broker
 
 
+class PublishProductTaskResult(TypedDict, total=False):
+    """Result shape for publish_product_task — fields populated vary by branch
+    (error/blocked/published/failed/retry_scheduled), so all are optional."""
+
+    error: str
+    status: str
+    publication_id: str
+    fb_listing_id: str
+    engine: str
+    category: str
+    retry_count: int
+    delay_seconds: int
+
+
 @broker.task
-async def publish_product_task(publication_id: str) -> dict[str, Any]:
+async def publish_product_task(publication_id: str) -> PublishProductTaskResult:
     """Execute publication via selected publisher strategy.
 
     Args:
@@ -36,6 +50,10 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
     import httpx
 
     from prosell.domain.entities.publication import PublicationErrorCategory
+    from prosell.domain.services.publisher_error_classifier import (
+        classify_publisher_error,
+        scrub_secret,
+    )
     from prosell.infrastructure.database.session import async_session_maker
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,
@@ -44,8 +62,7 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
         SqlAlchemyPublicationRepository,
     )
     from prosell.infrastructure.services.image_pipeline import ImagePipelineService
-    from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
-    from prosell.infrastructure.services.publisher_strategy import PublisherStrategySelector
+    from prosell.infrastructure.services.publisher_strategy import build_publisher_selector
     from prosell.infrastructure.services.token_encryption_service import (
         create_encryption_service,
     )
@@ -74,6 +91,9 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
         publication.mark_publishing()
         await pub_repo.update(publication)
 
+        # Scrubbed in the except block below — may still be None if the exception
+        # happens before decryption (e.g. missing facebook_page_id).
+        access_token: str | None = None
         try:
             # Get decrypted page access token from DB (never in task payload)
             if not publication.facebook_page_id:
@@ -94,17 +114,10 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
                     processed = await image_pipeline.process(resp.content)
                     image_bytes_list.append(processed)
 
-            # Select publisher strategy (playwright vs graph_api based on settings)
-            playwright_svc = PlaywrightPublisherService()
-
-            # NullGraphAPIPublisherService satisfies the interface but raises NotImplementedError.
-            # Strategy selector always returns playwright when graph_api_approved=False (Phase 1).
-            from prosell.infrastructure.services.null_graph_api_publisher import (
-                NullGraphAPIPublisherService,
-            )
-
-            graph_api_svc = NullGraphAPIPublisherService()
-            selector = PublisherStrategySelector(playwright_svc, graph_api_svc)
+            # Select publisher strategy (playwright vs graph_api based on settings).
+            # Shared with update_listing_task/delete_listing_task so all three tasks
+            # can never independently drift on which graph_api implementation they wire.
+            selector = build_publisher_selector(encryption)
             service, engine_name = selector.select()
 
             # Execute publish with processed image bytes
@@ -122,13 +135,17 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
             }
 
         except Exception as exc:
-            err_str = str(exc).lower()
+            # Never let the adapter's raw exception text reach persisted storage or a
+            # task result — it could embed the decrypted access_token above (e.g. an
+            # HTTP/Playwright timeout error echoing request state).
+            safe_error = scrub_secret(str(exc), access_token)
+            category = classify_publisher_error(exc)
 
-            if "captcha" in err_str or "checkpoint" in err_str or "ban" in err_str:
+            if category == PublicationErrorCategory.B:
                 # Category B — blocking error, requires human confirmation before retry
-                publication.mark_failed(PublicationErrorCategory.B, str(exc))
+                publication.mark_failed(PublicationErrorCategory.B, safe_error)
                 await pub_repo.update(publication)
-                return {"status": "failed", "category": "B", "error": str(exc)}
+                return {"status": "failed", "category": "B", "error": safe_error}
 
             else:
                 # Category A — transient error, schedule retry with exponential backoff
@@ -151,8 +168,8 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
                 else:
                     publication.mark_failed(
                         PublicationErrorCategory.A,
-                        str(exc),
+                        safe_error,
                         "Max retries exceeded",
                     )
                     await pub_repo.update(publication)
-                    return {"status": "failed", "category": "A", "error": str(exc)}
+                    return {"status": "failed", "category": "A", "error": safe_error}

@@ -1,12 +1,22 @@
 """delete_listing_task — remove a FB Marketplace listing (best-effort)."""
 
-from typing import Any
+from typing import TypedDict
 
 from prosell.infrastructure.tasks.broker import broker
 
 
+class DeleteListingTaskResult(TypedDict, total=False):
+    """Result shape for delete_listing_task — fields populated vary by branch
+    (error/skipped/deleted/fb_delete_failed), so all are optional."""
+
+    error: str
+    status: str
+    reason: str
+    fb_listing_id: str
+
+
 @broker.task
-async def delete_listing_task(publication_id: str) -> dict[str, Any]:
+async def delete_listing_task(publication_id: str) -> DeleteListingTaskResult:
     """Remove FB Marketplace listing via publisher strategy.
 
     Note: Publication is already SOLD in DB when this task runs.
@@ -16,6 +26,7 @@ async def delete_listing_task(publication_id: str) -> dict[str, Any]:
     import os
     from uuid import UUID
 
+    from prosell.domain.services.publisher_error_classifier import scrub_secret
     from prosell.infrastructure.database.session import async_session_maker
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,
@@ -23,9 +34,7 @@ async def delete_listing_task(publication_id: str) -> dict[str, Any]:
     from prosell.infrastructure.repositories.publication_repository_impl import (
         SqlAlchemyPublicationRepository,
     )
-    from prosell.infrastructure.services.graph_api_publisher import GraphAPIPublisherService
-    from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
-    from prosell.infrastructure.services.publisher_strategy import PublisherStrategySelector
+    from prosell.infrastructure.services.publisher_strategy import build_publisher_selector
     from prosell.infrastructure.services.token_encryption_service import (
         create_encryption_service,
     )
@@ -54,14 +63,14 @@ async def delete_listing_task(publication_id: str) -> dict[str, Any]:
             return {"error": "FacebookPage not found"}
         access_token = encryption.decrypt(page.page_access_token_encrypted)
 
-        playwright_svc = PlaywrightPublisherService()
-        graph_api_svc = GraphAPIPublisherService(encryption)
-        selector = PublisherStrategySelector(playwright_svc, graph_api_svc)
+        selector = build_publisher_selector(encryption)
         service, _ = selector.select()
 
         try:
             await service.delete(publication, access_token)
             return {"status": "deleted", "fb_listing_id": publication.fb_listing_id}
         except Exception as exc:
-            # Best-effort: log but don't fail — publication is already SOLD in DB
-            return {"status": "fb_delete_failed", "error": str(exc)}
+            # Best-effort: log but don't fail — publication is already SOLD in DB.
+            # Scrub in case the adapter's exception message embeds access_token.
+            safe_error = scrub_secret(str(exc), access_token)
+            return {"status": "fb_delete_failed", "error": safe_error}

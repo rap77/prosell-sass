@@ -1,12 +1,25 @@
 """update_listing_task — propagate listing content updates to Facebook Marketplace."""
 
-from typing import Any
+from typing import TypedDict
 
 from prosell.infrastructure.tasks.broker import broker
 
 
+class UpdateListingTaskResult(TypedDict, total=False):
+    """Result shape for update_listing_task — fields populated vary by branch
+    (error/skipped/blocked/updated/failed), so all are optional."""
+
+    error: str
+    status: str
+    reason: str
+    publication_id: str
+    fb_listing_id: str
+    engine: str
+    category: str
+
+
 @broker.task
-async def update_listing_task(publication_id: str) -> dict[str, Any]:
+async def update_listing_task(publication_id: str) -> UpdateListingTaskResult:
     """Update existing FB Marketplace listing via publisher strategy.
 
     Same DI pattern as publish_product_task and delete_listing_task:
@@ -20,6 +33,10 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
     from uuid import UUID
 
     from prosell.domain.entities.publication import PublicationErrorCategory
+    from prosell.domain.services.publisher_error_classifier import (
+        classify_publisher_error,
+        scrub_secret,
+    )
     from prosell.infrastructure.database.session import async_session_maker
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,
@@ -27,9 +44,7 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
     from prosell.infrastructure.repositories.publication_repository_impl import (
         SqlAlchemyPublicationRepository,
     )
-    from prosell.infrastructure.services.graph_api_publisher import GraphAPIPublisherService
-    from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
-    from prosell.infrastructure.services.publisher_strategy import PublisherStrategySelector
+    from prosell.infrastructure.services.publisher_strategy import build_publisher_selector
     from prosell.infrastructure.services.token_encryption_service import (
         create_encryption_service,
     )
@@ -65,9 +80,7 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
             return {"error": f"FacebookPage {publication.facebook_page_id} not found"}
         access_token = encryption.decrypt(page.page_access_token_encrypted)
 
-        playwright_svc = PlaywrightPublisherService()
-        graph_api_svc = GraphAPIPublisherService(encryption)
-        selector = PublisherStrategySelector(playwright_svc, graph_api_svc)
+        selector = build_publisher_selector(encryption)
         service, engine_name = selector.select()
 
         try:
@@ -87,12 +100,15 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
             }
 
         except Exception as exc:
-            err_str = str(exc).lower()
-            if "captcha" in err_str or "checkpoint" in err_str or "ban" in err_str:
+            # Never let the adapter's raw exception text reach persisted storage or a
+            # task result — it could embed the decrypted access_token above.
+            safe_error = scrub_secret(str(exc), access_token)
+
+            if classify_publisher_error(exc) == PublicationErrorCategory.B:
                 # Category B — block queue for this seller
-                publication.mark_failed(PublicationErrorCategory.B, str(exc))
+                publication.mark_failed(PublicationErrorCategory.B, safe_error)
                 await pub_repo.update(publication)
-                return {"status": "failed", "category": "B", "error": str(exc)}
+                return {"status": "failed", "category": "B", "error": safe_error}
             else:
                 # Category A — transient, caller decides retry
-                return {"status": "failed", "category": "A", "error": str(exc)}
+                return {"status": "failed", "category": "A", "error": safe_error}

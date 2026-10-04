@@ -7,6 +7,7 @@ Pattern:
 """
 
 from prosell.core.config import settings
+from prosell.domain.ports.i_encryption_service import IEncryptionService
 from prosell.domain.ports.i_publisher_service import IPublisherService
 
 
@@ -44,3 +45,24 @@ class PublisherStrategySelector:
             return self._graph_api, "graph_api"
 
         return self._playwright, "playwright"
+
+
+def build_publisher_selector(encryption: IEncryptionService) -> PublisherStrategySelector:
+    """Wire the real Playwright + Graph API adapters behind one selector.
+
+    Single construction point for `publish_product_task`, `update_listing_task`, and
+    `delete_listing_task` — before this, each task independently hand-constructed its
+    own selector, and `publish_product_task` had silently drifted to wire
+    `NullGraphAPIPublisherService` (a dead-end stub) instead of the real
+    `GraphAPIPublisherService` the other two tasks already used. Both are stubs today
+    (raise NotImplementedError pending FB App Review), but only `GraphAPIPublisherService`
+    is the one slated to receive the real implementation — routing all three tasks
+    through this factory means that swap happens once, for everyone, with no risk of a
+    task silently being left behind.
+    """
+    from prosell.infrastructure.services.graph_api_publisher import GraphAPIPublisherService
+    from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
+
+    return PublisherStrategySelector(
+        PlaywrightPublisherService(), GraphAPIPublisherService(encryption)
+    )
