@@ -496,23 +496,38 @@ spaces)`) used by both handlers in `product_router.py`.
 
 ## Checklist
 
+> **Progress note (2026-10-04)**: items below marked `[x]` landed across 3 commits
+> (`7a1e4b80`, `38213f59`, `dc77412d`) in a session that prioritized the 3 items an
+> explicit code-quality ask called out as "weaknesses" — a real security finding, a
+> DRY/correctness gap, and the 4 zero-coverage files — not a top-to-bottom pass through
+> every stage. Full pytest suite stayed green throughout (2534 passed, 0 regressions).
+
 - [ ] Stage 3.1 `InternalCodeResolver` extracted, used by both `create_product.py` and `update_product.py`
 - [ ] Stage 3.2 shared image-field sanitizer extracted
-- [ ] Stage 3.3 shared vehicle-attribute field table extracted (behavioral discrepancy between the two consumers
-      checked and resolved, not papered over)
+- [x] Stage 3.3 shared vehicle-attribute field table extracted (behavioral discrepancy between the two consumers
+      checked and resolved, not papered over — `publicado` divergence fixed, team decision recorded)
 - [ ] Stage 1.1 `update_product.py` decomposed
 - [ ] Stage 1.2 `create_product.py` decomposed
-- [ ] Stage 1.3 `bulk_upload_vehicles.py` decomposed
-- [ ] Stage 1.4 `publish_product_task.py`/`update_listing_task.py` — characterization tests written, selector
-      divergence fixed, error-classification deduplicated
+- [~] Stage 1.3 `bulk_upload_vehicles.py` decomposed — **partial**: `_build_attributes`'s field
+  table landed (via 3.3, plus a DRY/correctness fix for row-numbering and parse-failure
+  handling found by GGA), but `_upsert_vehicle` itself (`_build_title`, `_upload_vehicle_images`,
+  `_check_missing_images`, `_create_vehicle_product`/`_update_vehicle_product`) is still
+  undecomposed
+- [x] Stage 1.4 `publish_product_task.py`/`update_listing_task.py` — characterization tests written, selector
+      divergence fixed, error-classification deduplicated, secret-scrubbing fix applied to all 3 FB tasks
+      (including `delete_listing_task.py`, found during investigation, not originally listed here)
 - [ ] Stage 1.5 `fb_sync_router.py`/`fb_credential_migration_router.py` decomposed
 - [ ] Stage 1.6 `create_lead.py` decomposed (duplicate-reconciliation branch tested first)
-- [ ] Stage 2.1 `PatchCategorySchemaUseCase` — characterization tests written
-- [ ] Stage 2.2 `get_team_metrics.py` — characterization tests written, DRY extraction done
-- [ ] Stage 2.3 `nhtsa_normalizer.py` — characterization tests written, Strategy dispatch + canonical-catalog
-      reference done
-- [ ] Stage 2.4 `category_field.py` — characterization tests written, lookup table extracted
+- [x] Stage 2.1 `PatchCategorySchemaUseCase` — characterization tests written (15 tests; no decomposition
+      needed per this plan's own Stage 5 note on `_build_summary`)
+- [x] Stage 2.2 `get_team_metrics.py` — characterization tests written, DRY extraction done
+      (`execute()`: C=15 → A=5)
+- [~] Stage 2.3 `nhtsa_normalizer.py` — **partial**: characterization tests written (92 tests, every
+  field_type's dict-hit + fallback branches); the Strategy-dispatch collapse and canonical-catalog
+  reference ((a)/(b) below) are NOT done — deliberately out of scope for this pass
+- [x] Stage 2.4 `category_field.py` — characterization tests written, lookup table extracted
 - [ ] Stage 2.5 `get_category_filter_values` coverage gap confirmed/closed
-- [ ] Stage 3.4-3.7 remaining shared extractions done
+- [~] Stage 3.4-3.7 remaining shared extractions — 3.7 (`build_publisher_selector` factory) done as part
+  of 1.4; 3.4/3.5/3.6 not done
 - [ ] Stage 4 items addressed (contained risk, can be done opportunistically)
 - [ ] Stage 5 items left alone unless touched for unrelated reasons

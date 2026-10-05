@@ -1,9 +1,10 @@
 # Technical Debt Tracker
 
-> **Last Updated**: 2026-10-03
+> **Last Updated**: 2026-10-04
 > **Total Items**: 3
 > **Resolved**: 0
-> **Pending**: 3
+> **In Progress**: 1
+> **Pending**: 2
 
 ---
 
@@ -91,11 +92,14 @@ explicit dependencies between items and a non-regression protocol per extraction
 
 ### 3. Backend Decomposition — Staged Mitigation Plan
 
-**Status**: ⏳ Pending
+**Status**: 🟡 In Progress — Stage 1.4 done, Stage 2 (all 4 zero-coverage files) tested,
+Stage 3.3/3.7 extracted; most of Stage 1 (1.1/1.2/1.3/1.5/1.6), 2.5, 3.1/3.2/3.4-3.6, and
+all of Stage 4/5 still pending. See the plan's own checklist for the exact breakdown.
 **Priority**: Mixed (5 stages, Critical → Low, see the doc)
-**Estimate**: ~6-8 weeks of incremental work
+**Estimate**: ~6-8 weeks of incremental work (original estimate; ~1 session landed Stage 1.4 + 2 + 3.3/3.7)
 **Complexity**: High
 **Created**: 2026-10-03
+**Updated**: 2026-10-04 (commits `7a1e4b80`, `38213f59`, `dc77412d`)
 
 **Description**:
 Same methodology as item #2, applied to `apps/api` (Python/FastAPI, Clean Architecture). Full
@@ -110,21 +114,31 @@ one merged sequential plan — see that section for why.
 **Impact**:
 
 - Not blocking — every stage is independently shippable, same non-regression discipline as item #2
-- Worst single function in the backend: `nhtsa_normalizer.normalize_nhtsa_value` (F=63), zero test coverage
-- 4 files/use cases found with **zero** existing test coverage despite real business-rule risk
+- Worst single function in the backend: `nhtsa_normalizer.normalize_nhtsa_value` (F=63) — **92
+  characterization tests landed 2026-10-04**; the Strategy-dispatch collapse + canonical-catalog
+  reference ((a)/(b) in the plan doc) remain undone, deliberately out of scope for that pass
+- The 4 files/use cases with **zero** existing test coverage despite real business-rule risk
   (`PatchCategorySchemaUseCase`, `get_team_metrics.py`, `publish_product_task.py`/`update_listing_task.py`,
-  `category_field.py`) — staged separately (Stage 2) since they need characterization tests before any
-  refactor, not just a complexity fix
-- A real, latent security risk found (not hypothetical): two Facebook publish/update background tasks
-  stringify the full exception from the publisher adapter to classify retry-vs-block, which could leak a
-  decrypted session cookie/token into persisted error storage if the adapter's exception message ever embeds
-  one — currently untested on either task
-- A real cross-file DRY violation found with correctness implications: `bulk_upload_vehicles.py`'s
-  `_build_attributes` and `bulk_upload_preview.py`'s `_analyze_row` independently duplicate the same ~16-field
-  vehicle attribute list — same risk shape as the already-known NHTSA/Facebook catalog mismatch (hallazgo #87)
+  `category_field.py`) — **all 4 now have characterization coverage** (2026-10-04): 15, 11, 7+5+3
+  (split across `publish_product_task.py`/`update_listing_task.py`/`delete_listing_task.py`), and 30
+  tests respectively
+- **Fixed** (2026-10-04, commit `7a1e4b80`): the latent security risk where `publish_product_task.py`/
+  `update_listing_task.py` stringified the full publisher-adapter exception, risking a leaked decrypted
+  token in persisted error storage. Also fixed an independent finding from the same investigation:
+  `publish_product_task.py` was wired to a dead-end `NullGraphAPIPublisherService` stub instead of the
+  real adapter the other two FB tasks already used — now all three share one `build_publisher_selector()`
+  construction point.
+- **Fixed** (2026-10-04, commit `38213f59`): the cross-file DRY violation where `bulk_upload_vehicles.py`'s
+  `_build_attributes` and `bulk_upload_preview.py`'s `_analyze_row` independently duplicated the same
+  ~16-field vehicle attribute list — same risk shape as the NHTSA/Facebook catalog mismatch (hallazgo #87).
+  The duplication had already silently diverged (`publicado` shown inconsistently between import and
+  preview); also fixed 3 further GGA-flagged correctness bugs found in the same touched file (row
+  numbering always reporting row 1, a parse failure that could import as a $0 product, silent image-mapping
+  skip on multi-org CSVs).
 - The originally-assumed NHTSA/Facebook dual-catalog mismatch (English backend vs. Spanish frontend) is
   **already fixed** — investigation found a narrower, backend-only remaining issue instead (hardcoded Spanish
-  literals duplicating a canonical catalog they claim to track, never importing it)
+  literals duplicating a canonical catalog they claim to track, never importing it) — still open, part of
+  the undone Stage 2.3 (b)
 
 **Documentation**: [`backend-decomposition-plan.md`](./backend-decomposition-plan.md)
 
@@ -155,11 +169,11 @@ one merged sequential plan — see that section for why.
 
 ## 📊 Summary
 
-| Item                              | Priority | Estimate   | Status     | Blocking? |
-| --------------------------------- | -------- | ---------- | ---------- | --------- |
-| OAuth External Setup              | P1       | 30 min     | ⏳ Pending | No        |
-| Component Decomposition Plan (FE) | Mixed    | ~6-8 weeks | ⏳ Pending | No        |
-| Backend Decomposition Plan (BE)   | Mixed    | ~6-8 weeks | ⏳ Pending | No        |
+| Item                              | Priority | Estimate   | Status         | Blocking? |
+| --------------------------------- | -------- | ---------- | -------------- | --------- |
+| OAuth External Setup              | P1       | 30 min     | ⏳ Pending     | No        |
+| Component Decomposition Plan (FE) | Mixed    | ~6-8 weeks | ⏳ Pending     | No        |
+| Backend Decomposition Plan (BE)   | Mixed    | ~6-8 weeks | 🟡 In Progress | No        |
 
 **Total Time Estimate**: 30 minutes + ~12-16 weeks combined (incremental, not blocking, parallel tracks)
 
@@ -256,5 +270,5 @@ When identifying new technical debt:
 
 ---
 
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-10-04
 **Maintained By**: Claude Code (Serena MCP)
