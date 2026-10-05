@@ -30,13 +30,24 @@ import {
  * Navigation groups for role-based sidebar filtering.
  * Const-first pattern for type safety (GGA TypeScript Const Types Rule).
  *
- * - 'general'        → top-level items (Dashboard), no group header shown
- * - 'inventario'     → catalog & publications
- * - 'ventas'         → sales execution (leads, pipeline, analytics)
- * - 'configuración'  → admin/branch only
+ * - 'general'        → top-level items (Dashboard) — visible to every authenticated user
+ * - 'inventario'     → catalog & publications — visible to every authenticated user;
+ *   no dedicated Permission exists for this domain yet
+ * - 'ventas'         → sales execution (leads, pipeline, analytics) — visible to every
+ *   authenticated user; no lead-specific Permission exists yet either
+ *   (see rbac-security-profiles-diagnostic doc §8 — open question)
+ * - 'configuración'  → gated behind Permission.SETTINGS_READ
  * - 'concesionarios' → Subsystem D: cross-organization admin view, gated behind
- *   Permission.ORG_ADMIN_VIEW_ALL regardless of whether the caller's
- *   layout requests this group (defense in depth — see `Sidebar()` below).
+ *   Permission.ORG_ADMIN_VIEW_ALL
+ *
+ * Visibility is role/permission-driven ONLY — Sidebar computes it itself from
+ * `useAuth().hasPermission`, never from a prop. Previously each of 5 layout.tsx
+ * files passed its own hardcoded `groups` prop, so which sections appeared
+ * depended on which route-group folder the current page physically lived in,
+ * not on the user's role — navigating from /dashboard ((admin) layout, 5
+ * groups) to /catalog ((seller) layout, 4 groups) made "Configuración" vanish
+ * for every user, not just lower-privilege ones. Fixed by removing the prop
+ * entirely; there is now exactly one code path for "what can this user see."
  */
 const NAV_GROUP_ORDER = [
   "general",
@@ -153,11 +164,6 @@ const navigationItems: NavItem[] = [
   },
 ];
 
-interface SidebarProps {
-  /** Navigation groups to display based on user role */
-  groups: NavGroup[];
-}
-
 /**
  * Collapsible sidebar navigation component using Compound Components pattern.
  *
@@ -166,10 +172,11 @@ interface SidebarProps {
  * - Mobile: hidden by default, drawer overlay on toggle
  * - Framer Motion slide animations (mobile drawer)
  * - Auto-close drawer on route change (mobile)
- * - Role-based filtering via `groups` prop
+ * - Role-based filtering computed internally from `useAuth().hasPermission` —
+ *   never from a caller-supplied prop, so visibility can't drift by route/layout
  * - Active route highlighting
  */
-export function Sidebar({ groups }: SidebarProps) {
+export function Sidebar() {
   // Zustand 5: use selectors to avoid re-renders on unrelated state changes
   const sidebarCollapsed = useLayoutStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useLayoutStore((state) => state.toggleSidebar);
@@ -197,19 +204,18 @@ export function Sidebar({ groups }: SidebarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Filter navigation items: defense in depth (layout groups + permissions)
+  // Visibility is permission-driven only — same result for every route/layout.
   const visibleItems = navigationItems.filter((item) => {
-    // Layer 1: Layout-based filtering (which groups to show)
-    if (!groups.includes(item.group)) return false;
-
-    // Layer 2: Permission-based gating (sensitive items)
-    if (item.group === "concesionarios") {
-      return hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
+    switch (item.group) {
+      case "general":
+      case "inventario":
+      case "ventas":
+        return true; // No dedicated Permission yet for these — see diagnostic doc §8
+      case "concesionarios":
+        return hasPermission(Permission.ORG_ADMIN_VIEW_ALL);
+      case "configuración":
+        return hasPermission(Permission.SETTINGS_READ);
     }
-    if (item.group === "configuración") {
-      return hasPermission(Permission.SETTINGS_READ);
-    }
-    return true;
   });
 
   // Sidebar content (shared between desktop and mobile drawer)

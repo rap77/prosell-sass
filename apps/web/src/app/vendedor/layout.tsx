@@ -15,9 +15,7 @@ export default function VendedorLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
-      <div className="hidden md:block">
-        <Sidebar groups={["general", "ventas"]} />
-      </div>
+      <Sidebar />
 
       <MainContentWrapper>
         <Header />

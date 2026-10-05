@@ -8,11 +8,8 @@ import { NavigationCleanup } from "@/components/layout/NavigationCleanup";
  * Admin-specific layout with full system access.
  *
  * Role: Admin - Infrastructure and global configuration
- * Navigation groups:
- * - Inventario: Catálogo, Publicaciones
- * - Ventas: Leads, Citas
- * - Concesionarios: cross-organization admin view (Subsystem D)
- * - Configuración: Settings, Logs (full access)
+ * Sidebar navigation visibility is computed internally by `Sidebar` from the
+ * user's own permissions — not passed from here. See `Sidebar.tsx`.
  *
  * Server Component by default (minimize client JS).
  */
@@ -26,15 +23,7 @@ export default function AdminLayout({
       {/* ponytail: clear navigation flag when layout mounts */}
       <NavigationCleanup />
       {/* Sidebar - desktop always visible, mobile drawer */}
-      <Sidebar
-        groups={[
-          "general",
-          "inventario",
-          "ventas",
-          "concesionarios",
-          "configuración",
-        ]}
-      />
+      <Sidebar />
 
       {/* Main content area */}
       <MainContentWrapper>

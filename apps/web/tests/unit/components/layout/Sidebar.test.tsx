@@ -87,7 +87,7 @@ describe("Sidebar", () => {
       hasPermission: vi.fn((p: Permission) => p === Permission.SETTINGS_READ),
     } as unknown as ReturnType<typeof useAuth>);
 
-    render(<Sidebar groups={["inventario", "ventas", "configuración"]} />);
+    render(<Sidebar />);
 
     expect(screen.getAllByText("Inventario").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ventas").length).toBeGreaterThan(0);
@@ -97,7 +97,7 @@ describe("Sidebar", () => {
   it("filters navigation by permissions, not groups prop", () => {
     // ponytail: groups prop no longer filters — permissions do
     // Seller without SETTINGS_READ sees Inventario + Ventas but not Configuración
-    render(<Sidebar groups={["inventario", "ventas"]} />);
+    render(<Sidebar />);
 
     expect(screen.getByText("Inventario")).toBeInTheDocument();
     expect(screen.getByText("Ventas")).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe("Sidebar", () => {
 
   it("shows Inventario and Ventas for all users (no permission required)", () => {
     // ponytail: these groups are always visible regardless of groups prop
-    render(<Sidebar groups={["inventario", "ventas"]} />);
+    render(<Sidebar />);
 
     expect(screen.getByText("Inventario")).toBeInTheDocument();
     expect(screen.getByText("Ventas")).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe("Sidebar", () => {
   });
 
   it("renders navigation items within groups", () => {
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar />);
 
     expect(screen.getByText("Catálogo")).toBeInTheDocument();
     expect(screen.getByText("Publicaciones")).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe("Sidebar", () => {
       hasPermission: vi.fn((p: Permission) => p === Permission.SETTINGS_READ),
     } as unknown as ReturnType<typeof useAuth>);
 
-    render(<Sidebar groups={["inventario", "ventas", "configuración"]} />);
+    render(<Sidebar />);
 
     // Verify correct terms are present (Configuración appears twice: as group header and as nav item)
     expect(screen.getAllByText("Inventario").length).toBeGreaterThan(0);
@@ -149,7 +149,7 @@ describe("Sidebar", () => {
   });
 
   it("highlights active route", () => {
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar />);
 
     const catalogLink = screen.getByText("Catálogo").closest("a");
     expect(catalogLink).toHaveClass(
@@ -159,27 +159,27 @@ describe("Sidebar", () => {
   });
 
   it("renders collapse toggle button", () => {
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar />);
 
     const toggleButton = screen.getByLabelText(/collapse sidebar/i);
     expect(toggleButton).toBeInTheDocument();
   });
 
   it("renders footer with user info", () => {
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar />);
 
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.getByText("Seller")).toBeInTheDocument();
   });
 
   it("renders ProSell logo when expanded", () => {
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar />);
 
     expect(screen.getByText("ProSell")).toBeInTheDocument();
   });
 
   it("exposes the sidebar as a labeled complementary landmark", () => {
-    render(<Sidebar groups={["inventario"]} />);
+    render(<Sidebar />);
 
     // A11y: when this sidebar coexists with FilterSidebar, an unlabeled
     // <aside> announces only "complementary" — indistinguishable. The
@@ -209,11 +209,7 @@ describe("Sidebar", () => {
         ),
       } as unknown as ReturnType<typeof useAuth>);
 
-      render(
-        <Sidebar
-          groups={["general", "inventario", "ventas", "concesionarios"]}
-        />,
-      );
+      render(<Sidebar />);
 
       expect(screen.getAllByText("Organizaciones").length).toBeGreaterThan(0);
     });
@@ -232,11 +228,7 @@ describe("Sidebar", () => {
         hasPermission: vi.fn(() => false),
       } as unknown as ReturnType<typeof useAuth>);
 
-      render(
-        <Sidebar
-          groups={["general", "inventario", "ventas", "concesionarios"]}
-        />,
-      );
+      render(<Sidebar />);
 
       expect(screen.queryByText("Organizaciones")).not.toBeInTheDocument();
     });

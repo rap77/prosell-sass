@@ -16,21 +16,12 @@ export default function ManagerLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Desktop sidebar */}
-      <div className="hidden md:block">
-        <Sidebar groups={["inventario", "ventas"]} />
-      </div>
+      <Sidebar />
 
       {/* Main content */}
       <MainContentWrapper>
         <Header />
-        <main
-          className="relative z-50 flex-1 overflow-y-auto"
-          style={{
-            background: "var(--ps-bg-base)",
-            padding: 24,
-          }}
-        >
+        <main className="relative z-50 flex-1 overflow-y-auto bg-muted/20 p-6">
           {children}
         </main>
       </MainContentWrapper>

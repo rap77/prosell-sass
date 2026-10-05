@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { useLayoutStore } from "@/lib/stores/layoutStore";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
+import { Permission } from "@/lib/auth/permissions";
 
 // Mock hooks with explicit implementations (React 19 requires proper mock structure)
 // Use vi.hoisted() to ensure mock functions are available before module mocking
@@ -65,7 +66,7 @@ describe("Sidebar Mobile Drawer", () => {
     // Viewport: 375px (mobile)
     global.innerWidth = 375;
 
-    render(<Sidebar groups={["general"]} />);
+    render(<Sidebar />);
 
     const sidebar = screen.getByRole("complementary", { name: /sidebar/i });
     // Sidebar debe tener hidden md:block (oculto en mobile, visible en desktop)
@@ -90,7 +91,7 @@ describe("Sidebar Mobile Drawer", () => {
 
     render(
       <>
-        <Sidebar groups={["general"]} />
+        <Sidebar />
         <button aria-label="Open menu" onClick={mockToggleMobileDrawer}>
           Menu
         </button>
@@ -112,7 +113,7 @@ describe("Sidebar Mobile Drawer", () => {
       toggleMobileDrawer: mockToggleMobileDrawer,
     });
 
-    render(<Sidebar groups={["general"]} />);
+    render(<Sidebar />);
 
     // Backdrop debe estar visible
     const backdrop = screen.getByTestId("sidebar-drawer-backdrop");
@@ -132,7 +133,7 @@ describe("Sidebar Mobile Drawer", () => {
       toggleMobileDrawer: mockToggle,
     });
 
-    render(<Sidebar groups={["general"]} />);
+    render(<Sidebar />);
 
     const backdrop = screen.getByTestId("sidebar-drawer-backdrop");
     await user.click(backdrop);
@@ -143,7 +144,7 @@ describe("Sidebar Mobile Drawer", () => {
   });
 
   it("should close drawer when route changes", () => {
-    const { rerender } = render(<Sidebar groups={["general"]} />);
+    const { rerender } = render(<Sidebar />);
 
     // Open drawer
     mockStore({
@@ -156,7 +157,7 @@ describe("Sidebar Mobile Drawer", () => {
     // Change route
     (usePathname as ReturnType<typeof vi.fn>).mockReturnValue("/catalog");
 
-    rerender(<Sidebar groups={["general"]} />);
+    rerender(<Sidebar />);
 
     // Drawer should auto-close on navigation
     // This will be tested via useEffect in implementation
@@ -166,7 +167,7 @@ describe("Sidebar Mobile Drawer", () => {
   it("should show sidebar normally on desktop", () => {
     global.innerWidth = 1024; // Desktop viewport
 
-    render(<Sidebar groups={["general"]} />);
+    render(<Sidebar />);
 
     const sidebar = screen.getByRole("complementary", { name: /sidebar/i });
 
@@ -180,7 +181,7 @@ describe("Sidebar Mobile Drawer", () => {
   });
 
   it("uses the theme-aware scrollbar in the main navigation", () => {
-    render(<Sidebar groups={["general"]} />);
+    render(<Sidebar />);
 
     expect(
       screen.getByRole("navigation", { name: /main navigation/i }),
@@ -195,7 +196,7 @@ describe("Sidebar Mobile Drawer", () => {
       toggleMobileDrawer: mockToggleMobileDrawer,
     });
 
-    render(<Sidebar groups={["general"]} />);
+    render(<Sidebar />);
 
     const sidebars = screen.getAllByRole("complementary", { name: /sidebar/i });
 
@@ -208,5 +209,117 @@ describe("Sidebar Mobile Drawer", () => {
     // Backdrop should have z-[60]
     const backdrop = screen.getByTestId("sidebar-drawer-backdrop");
     expect(backdrop).toHaveClass("z-[60]");
+  });
+});
+
+describe("Sidebar permission-driven visibility", () => {
+  // Regression guard for a real bug: before this fix, each of 5 layout.tsx
+  // files passed Sidebar a hardcoded `groups` prop, so which sections
+  // appeared depended on which route-group folder the CURRENT PAGE
+  // physically lived in — not on the user's role. Navigating from /dashboard
+  // ((admin) layout, 5 groups) to /catalog ((seller) layout, 4 groups) made
+  // "Configuración" vanish for every user, not just lower-privilege ones.
+  // Sidebar now computes visibility itself, purely from hasPermission — no
+  // prop, so there is exactly one code path regardless of route/layout.
+
+  const mockToggleMobileDrawer = vi.fn();
+
+  const mockStore = (state: Partial<ReturnType<typeof useLayoutStore>>) => {
+    mockUseLayoutStore.mockImplementation((selector?: (s: any) => any) => {
+      if (!selector) return state;
+      return selector(state);
+    });
+  };
+
+  const setHasPermission = (deniedPermissions: Permission[] = []) => {
+    mockUseAuth.mockReturnValue({
+      hasPermission: (permission: Permission) =>
+        !deniedPermissions.includes(permission),
+      user: {
+        first_name: "Test",
+        last_name: "User",
+        email: "test@example.com",
+        role: "admin",
+      },
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockStore({
+      sidebarCollapsed: false,
+      toggleSidebar: vi.fn(),
+      mobileDrawerOpen: false,
+      toggleMobileDrawer: mockToggleMobileDrawer,
+    });
+    (usePathname as ReturnType<typeof vi.fn>).mockReturnValue("/dashboard");
+  });
+
+  it("shows every section when the user has every permission", () => {
+    setHasPermission([]);
+    render(<Sidebar />);
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Catálogo")).toBeInTheDocument();
+    expect(screen.getByText("Leads")).toBeInTheDocument();
+    expect(screen.getAllByText("Organizaciones").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Configuración").length).toBeGreaterThan(0);
+  });
+
+  it("always shows Dashboard, even with every permission denied", () => {
+    setHasPermission(Object.values(Permission));
+    render(<Sidebar />);
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+  });
+
+  it("hides Configuración (and nothing else) without SETTINGS_READ", () => {
+    setHasPermission([Permission.SETTINGS_READ]);
+    render(<Sidebar />);
+
+    expect(screen.queryByText("Configuración")).not.toBeInTheDocument();
+    expect(screen.queryByText("Logs")).not.toBeInTheDocument();
+    // Unrelated sections stay visible — this permission gates only its own group.
+    expect(screen.getByText("Catálogo")).toBeInTheDocument();
+    expect(screen.getAllByText("Organizaciones").length).toBeGreaterThan(0);
+    expect(screen.getByText("Leads")).toBeInTheDocument();
+  });
+
+  it("hides Organizaciones (concesionarios group) without ORG_ADMIN_VIEW_ALL", () => {
+    setHasPermission([Permission.ORG_ADMIN_VIEW_ALL]);
+    render(<Sidebar />);
+
+    expect(screen.queryByText("Organizaciones")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cuentas FB")).not.toBeInTheDocument();
+    expect(screen.getByText("Catálogo")).toBeInTheDocument();
+  });
+
+  it("shows inventario and ventas regardless of VEHICLE_READ/ANALYTICS_VIEW — no Permission gates either group yet", () => {
+    setHasPermission([Permission.VEHICLE_READ, Permission.ANALYTICS_VIEW]);
+    render(<Sidebar />);
+
+    expect(screen.getByText("Catálogo")).toBeInTheDocument();
+    expect(screen.getByText("Leads")).toBeInTheDocument();
+  });
+
+  it("renders the exact same visible items for the same permissions, regardless of pathname", () => {
+    // The actual bug: visibility used to depend on which layout.tsx wrapped
+    // the current route. Prove it no longer does by rendering at two
+    // different pathnames with identical permissions and comparing output.
+    setHasPermission([Permission.SETTINGS_READ]);
+    (usePathname as ReturnType<typeof vi.fn>).mockReturnValue("/dashboard");
+    const { unmount } = render(<Sidebar />);
+    const dashboardNav = screen.getByRole("navigation", {
+      name: /main navigation/i,
+    }).textContent;
+    unmount();
+
+    (usePathname as ReturnType<typeof vi.fn>).mockReturnValue("/catalog");
+    render(<Sidebar />);
+    const catalogNav = screen.getByRole("navigation", {
+      name: /main navigation/i,
+    }).textContent;
+
+    expect(catalogNav).toBe(dashboardNav);
   });
 });

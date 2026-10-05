@@ -25,7 +25,7 @@ export default function SellerLayout({
       {/* ponytail: clear navigation flag when layout mounts */}
       <NavigationCleanup />
       {/* Sidebar - handles mobile drawer + desktop sidebar internally */}
-      <Sidebar groups={["general", "inventario", "ventas", "concesionarios"]} />
+      <Sidebar />
 
       {/* Main content area */}
       <MainContentWrapper>
