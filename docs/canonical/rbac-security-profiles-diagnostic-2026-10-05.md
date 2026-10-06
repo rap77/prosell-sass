@@ -1,15 +1,23 @@
 # Diagnóstico: RBAC, Visibilidad de Datos y Perfiles de Seguridad
 
-> **Fecha**: 2026-10-05 · **Tipo**: Diagnóstico técnico, no una decisión de diseño.
+> **Fecha**: 2026-10-05 · **Actualizado**: 2026-10-05 (misma sesión, continuación) ·
+> **Tipo**: Diagnóstico técnico + diseño propuesto (§5-§9), no una decisión cerrada.
 > Cada afirmación de este documento está verificada contra el código real (commit
-> `a3eb9541`), no contra lo que el nombre de una clase o un test sugiere. Donde no
-> verifiqué algo a fondo, lo digo explícitamente en vez de asumir.
+> `a3eb9541` + `962b0914`), no contra lo que el nombre de una clase o un test sugiere.
+> Donde no verifiqué algo a fondo, lo digo explícitamente en vez de asumir.
 >
 > **Propósito**: servir de insumo para decidir cómo diseñar e implementar un sistema
 > de roles/permisos dinámico y administrable — empezando por `super_admin` y bajando
 > hacia perfiles personalizados con visibilidad de datos y acceso a zonas de la
 > plataforma — sin repetir trabajo si más adelante esto pasa por un flujo formal
 > (AIDLC u otro).
+>
+> **Estado**: las 8 preguntas de §3 ya fueron respondidas (§3.1). A partir de esas
+> respuestas se armó un diseño propuesto (§6), se validó en código real el repo
+> paralelo `fb-autopost` (§5 — corrige una afirmación mía errónea), se definió el
+> catálogo público como landing con buscador tipo marketplace (§7), y se encontró un
+> bug de seguridad real e independiente (§4) que conviene arreglar ya. Nada de esto
+> está implementado todavía — es diseño + hallazgos, pendiente de ejecución.
 
 ---
 
@@ -200,29 +208,288 @@ esperar al diseño completo para esto.
 
 ---
 
-## 4. Recomendación de proceso
+## 3.1 Respuestas del equipo (2026-10-05)
 
-Tu preocupación con `/aidlc` es legítima: si el problema no está bien acotado antes
-de entrar a Domain Design, la ceremonia no previene gaps — los esconde detrás de más
-documentación, y terminás rehaciendo trabajo igual. Pero la causa de ese fracaso casi
-siempre es la misma: se salta la etapa de "entender qué hay" y se va directo a
-"diseñar qué debería haber".
-
-Este documento **es** esa etapa — es, de hecho, el insumo que las etapas de
-Feasibility/Reverse Engineering de AIDLC piden como punto de partida. Mi recomendación
-concreta:
-
-1. Contestá las 8 preguntas de §3 (podés hacerlo acá, en el chat, no hace falta
-   ceremonia para esa parte).
-2. Con esas respuestas, el espacio de diseño queda acotado de verdad — y recién ahí
-   decidimos si el tamaño real justifica pasar por `/aidlc` (Domain Design + NFR
-   Design, dado que esto toca seguridad multi-tenant) o si alcanza con que yo
-   escriba el diseño técnico directo y lo implementemos en bloques chicos, mismo
-   estilo que usamos esta semana para los tres items de deuda técnica.
-3. Dado el historial del proyecto con fugas cross-tenant reales (ya arreglé dos esta
-   semana), sea cual sea la vía elegida, esto necesita un piso de test más alto que
-   lo normal antes de mergear — eso no es negociable independientemente del proceso.
+1. **¿Qué es una "zona"?** Agrupación por **sección de UI** (Catálogo, Leads,
+   Marketplace, Concesionarios, Configuración, Admin), no los dominios actuales de
+   `Permission` 1:1 — cada zona mapea hacia uno o más dominios de permiso por debajo.
+2. **¿Granularidad?** CRUD completo por zona. Caso de uso confirmado explícitamente:
+   un perfil "agente vendedor Prosell" que solo puede **leer** el catálogo (no
+   modificarlo), con **visibilidad por organización** — `super_admin` o un manager
+   con privilegios menores puede verle todas las organizaciones o solo las que se le
+   habiliten. Esto confirma que "alcance" (de quién son los datos) es un eje
+   **separado** de "acción" (qué puede hacer) — ver el modelo de 3 ejes en §6.
+3. **¿Alcance de un perfil personalizado?** Hybrid confirmado: `super_admin` define
+   plantillas globales, cada organización puede **clonarlas**, pero la visibilidad
+   por organización de cada clon se fija de cero por organización — **no se hereda
+   del template**. La matriz de permisos (qué puede hacer) sí se clona; el alcance
+   (qué organizaciones ve) nunca.
+4. **¿Quién puede crear perfiles?** Confirmado: `admin` dentro de su propia
+   organización, pero el `manager` **solo tiene los permisos que el propio `admin`
+   le configure** — es decir, en el modelo nuevo hasta los roles "fijos" de hoy
+   (incluido `manager`) pasan a ser perfiles configurables, no un camino de código
+   especial. Ver regla de anti-escalación en §6.
+5. **¿Qué hacemos con `RBACMiddleware`?** Confirmado: se borra. No hay nada
+   reutilizable (ver §1.2 — espera un `dict` plano incompatible con el `User` real
+   que usa el resto del sistema). Migra todo al dependency único que describe §6.
+6. **El gap de `sales_agent` + `marketplace:publish`** — Confirmado como diseño
+   intencional, no bug: el vendedor publica solo, sin aprobación previa; la
+   "aprobación" del manager ocurre al otorgarle acceso a organizaciones/lotes de
+   productos (no al momento de publicar). Pregunta de seguimiento del equipo —
+   respondida en §5: si el manager o la plataforma pueden usar la cuenta del
+   vendedor para despublicar vendidos o programar publicaciones automáticas.
+7. **`sales_user` vs `viewer`** — Pendiente de resolver en la práctica: el equipo
+   pidió aclarar primero qué son estos roles hoy y cómo funciona el catálogo público
+   (cubierto en §7) antes de decidir fusión. No cambia la recomendación original de
+   fusionarlos (siguen siendo roles internos de staff, idénticos en permisos) — ver
+   §7 para la aclaración completa sobre visitantes públicos vs. staff interno.
+8. **Permisos de Leads/CRM** — Confirmado: nuevo dominio de permiso. El vendedor ve
+   sus propios leads; manager y `super_admin` ven **todos los leads de todos los
+   vendedores, agrupados por vendedor, con su progreso y estado**. Mapea 1:1 al
+   mismo eje de alcance de la pregunta 2 (`own` para vendedor, `all` para
+   manager/super_admin) — valida que el modelo de 3 ejes cubre ambos casos sin
+   lógica especial. El equipo también señaló que hay que tener en cuenta el
+   publicador automático `fb-autopost` (hoy pausado) al diseñar esto — cubierto en
+   §5.
 
 ---
 
-**Próximo paso**: tus respuestas a las 8 preguntas de §3.
+## 4. Bug real encontrado — independiente de las 8 preguntas, arreglar ya
+
+Mismo criterio que el bug del sidebar (§1.4): esto no depende de ninguna decisión de
+diseño de arriba, es un defecto de código a corregir sin esperar al resto.
+
+**El endpoint público de producto filtra `tenant_id` y `organization_id` a
+cualquier visitante anónimo.**
+
+Verificado en código:
+
+- `apps/api/src/prosell/infrastructure/api/routers/public_product_router.py:116-151`
+  (`get_public_product`, `GET /{slug}`, sin autenticación) construye la respuesta con
+  `tenant_id=model.tenant_id, organization_id=model.organization_id` explícitamente.
+- `apps/api/src/prosell/application/dto/product/response.py:149`
+  (`PublicProductResponse`) hereda de `ProductResponse`, que declara
+  `tenant_id: UUID` y `organization_id: UUID` como campos planos (línea ~29-30) — la
+  clase pública nunca los excluye.
+- `PublicProductResponse` sí excluye deliberadamente el teléfono de la organización
+  (por diseño, documentado en su propio docstring) — el patrón de "no todo campo
+  interno llega al DTO público" ya existe en el código, simplemente no se aplicó a
+  estos dos UUIDs.
+
+Es el tercer leak cross-tenant real encontrado esta semana (los otros dos ya se
+arreglaron — ver `project.md` § Deviations, intent `260911-cross-org-export-ux`).
+Fix: excluir ambos campos del DTO público (o de su serialización), sin esperar al
+rediseño del catálogo público de §7 — el mismo DTO sanitizado es la base de ese
+catálogo nuevo, así que conviene resolverlo primero.
+
+**Corrección de alcance al implementar (2026-10-06)**: al re-verificar el código
+antes de tocarlo (regla 1 del workbook), `ProductResponse` tenía además `org_code`/
+`org_color`/`fb_account_ids` heredados por `PublicProductResponse` — no filtraban
+un valor real hoy (el router nunca los poblaba para el path público, siempre
+`null`/`[]`), pero quedaban ahí por descuido de herencia, no por diseño, y
+`org_code` en particular es exactamente "algo que relaciona el producto con su
+organización" (§7). Se excluyeron los 5 campos juntos, no solo los 2 originales —
+mismo defecto, alcance más completo. Fix real: `PublicProductResponse` dejó de
+heredar de `ProductResponse` — ambas extienden ahora una base compartida
+(`_ProductPublicSafeResponse`) con solo los campos públicos, así que un campo
+sensible nuevo que se agregue a `ProductResponse` a futuro no puede filtrarse por
+accidente de herencia. Verificado end-to-end: suite completa backend (1852
+passed), integración real del router (10/10), y `curl` directo contra
+`prosell-staging-api` confirmando 0 campos sensibles en el JSON real.
+
+---
+
+## 5. Validación del repo `fb-autopost` (corrige una afirmación errónea)
+
+En una vuelta anterior de esta conversación afirmé "fb-autopost hoy tiene cero
+código" — **eso era falso**, y quedó corregido en el chat pero merece quedar
+documentado con la corrección explícita: esa afirmación se basó en buscar la palabra
+"autopost" _dentro_ de `prosell-sass`, nunca miré el repo hermano ni el router del
+backend que ya le habla. El equipo pidió explícitamente "validalo primero" antes de
+proponer nada — correcto, cambió la propuesta entera.
+
+### 5.1 Lo que existe, verificado
+
+**Repo paralelo**: `/home/rpadron/proy/fb-autopost` — app de escritorio con **Flet**
+(no un repo vacío ni un concepto a futuro). Cliente HTTP propio
+(`src/fb_autopost/api/prosell_client.py`) que ya pega contra la API real de ProSell
+vía un bot-token compartido (`FB_PROSELL_BOT_TOKEN` / header `X-Bot-Token`).
+
+**Backend** (`apps/api/src/prosell/infrastructure/api/routers/fb_sync_router.py`),
+auth vía `verify_bot_token` (`dependencies.py:280-305`, comparación constant-time
+contra un secreto único global, documentado como "no scopea por tenant — cada
+endpoint debe verificar tenant por sí mismo"):
+
+| Necesidad del equipo                         | Ya existe como                                                                                                                                                                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Traer productos marcados a publicar"        | `GET /api/v1/fb-sync/pending` (`get_pending_products`, línea 423)                                                                                                                                                       |
+| "Control de quién puede publicar qué"        | tabla `product_fb_account_assignments` + `OrganizationMarketplaceAccessModel` (línea 240-267) — grant cross-tenant explícito (`inventory_owner_organization_id`, `operator_organization_id`, `can_publish_marketplace`) |
+| "Historia de publicaciones de cada producto" | `fb_publication_history` — log inmutable de eventos (`published`/`failed`/`deleted`), una fila por intento (`fb_sync_router.py:628-786`, handler `sync_callback`)                                                       |
+| "Estado/control consolidado"                 | `fb_publication_status` — fila consolidada por producto+cuenta con contadores (`publication_count`, `failure_count`, `first_published_at`, `last_published_at`)                                                         |
+| Despublicar (manual o por venta)             | cola `FBUnpublishRequestModel` con reintentos (`attempt_count`, máx. `MAX_UNPUBLISH_ATTEMPTS`) vía `GET /unpublish-pending` + `POST /unpublish-callback`                                                                |
+| Compat hacia atrás                           | tabla legacy `marketplace_publications` (mantenida a propósito, documentada como "legacy, kept for backwards compat")                                                                                                   |
+
+El dominio `Publication` (`apps/api/src/prosell/domain/entities/publication.py`) ya
+modela la máquina de estados completa (`pending → publishing → published →
+failed/expired/sold`), con categorización de error (A=transiente/reintentable,
+B=bloqueante/requiere confirmación humana) y el comentario explícito "un producto
+puede tener múltiples publicaciones (ej. tras expirar/republicar)".
+
+### 5.2 Qué significa esto para el diseño de permisos (§6)
+
+**No hay que diseñar nada nuevo para automatización.** Lo que yo proponía como
+`automation_grants` (tabla nueva, permiso separado para que el sistema actúe sin un
+humano haciendo clic) ya existe, con otro nombre, más maduro de lo que supuse
+(`product_fb_account_assignments` + `OrganizationMarketplaceAccessModel`).
+
+Lo que sí corresponde:
+
+- **Mantener separadas** las dos capas de autorización — el bot-token (máquina a
+  máquina, ya auditado por fila) y el motor de permisos humano de §6 (qué puede
+  hacer un usuario logueado en la web). El motor de permisos humano debe gatear la
+  **gestión** de esas tablas (crear/editar un assignment, aprobar un
+  `OrganizationMarketplaceAccessModel`) — zona `marketplace`, acción
+  `manage_access` — no reemplazar el mecanismo de automatización en sí.
+- **Pregunta del equipo, respondida**: sí, el manager puede usar la cuenta del
+  vendedor para despublicar vendidos manualmente — es la misma matriz
+  zona=`marketplace`/acción=`unpublish`, con el mismo alcance que ya tiene. La
+  publicación/despublicación **automática y programada** (fb-autopost ejecutando sin
+  que nadie haga clic) ya tiene su propio camino de datos (`fb_sync_router` +
+  `FBUnpublishRequestModel`) — no requiere humano en el request, por diseño.
+- **Riesgo anotado, no urgente**: `verify_bot_token` usa un único secreto global
+  para todo el bot, no uno por cuenta/instalación. Hoy no es explotable porque cada
+  endpoint valida tenant/assignment por fila de todos modos — pero si el `.exe` de
+  `fb-autopost` se distribuye a varios vendedores con el mismo secreto embebido, el
+  radio de daño de una fuga del secreto sube. No bloquea nada, queda para cuando se
+  retome ese proyecto (hoy pausado, confirmado sin código de automation-scheduling
+  todavía — `fd -i "autopost"` sobre `apps/api` y `apps/web` no devuelve nada más
+  que lo ya listado arriba).
+
+---
+
+## 6. Diseño propuesto: motor de permisos Zona × Acción × Alcance
+
+Respuesta al pedido explícito del equipo: "diseña la mejor forma de manejar los
+perfiles dinámicamente, SOLID, DRY, patrones de diseño, reutilizable y escalable,
+hasta cada campo de sección."
+
+### 6.1 Los tres ejes
+
+| Eje         | Responde                       | Ejemplos                                                                                 |
+| ----------- | ------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Zona**    | ¿Qué sección de la plataforma? | `catalog`, `leads`, `marketplace`, `organizations`, `settings`, `admin`                  |
+| **Acción**  | ¿Qué puede hacer ahí?          | `read`, `create`, `update`, `delete`, `publish`, `unpublish`, `approve`, `manage_access` |
+| **Alcance** | ¿De quién son los datos?       | `own` / `explicit` (set de orgs puntuales) / `all`                                       |
+
+Un único modelo cubre los dos casos que el equipo presentó como separados: vendedor
+Prosell solo-lectura de catálogo con orgs puntuales = `(catalog, read,
+explicit=[org1, org3])`; manager viendo todos los leads agrupados por vendedor =
+`(leads, read, all)`; vendedor viendo solo los suyos = `(leads, read, own)`.
+
+### 6.2 Tablas (reemplazan el dict `ROLE_PERMISSIONS`)
+
+- `permission_profiles` (`id`, `name`, `tenant_id` NULL si es plantilla global,
+  `is_template`, `cloned_from_id`)
+- `profile_grants` (`profile_id`, `zone`, `action`) — la matriz, editable desde UI
+- `profile_scope` (`profile_id`, `scope_type`: own/explicit/all) +
+  `profile_organization_access` (filas de organización cuando `scope_type=explicit`)
+  — **tabla separada de `profile_grants` a propósito**, porque §3.1(3) confirmó que
+  un clon hereda la matriz pero nunca el alcance.
+- `user_profile_assignments` (`user_id`, `profile_id`)
+
+**Regla de anti-escalación** (servicio de dominio, testeado aparte): al crear o
+asignar un perfil, el motor valida que el set de grants resultante sea subconjunto
+de lo que el actor que lo otorga ya tiene. Nadie otorga lo que no tiene — responde
+directo a §3.1(4) (manager limitado a lo que `admin` le configure).
+
+### 6.3 Campo individual (no como eje del motor)
+
+Ir hasta **campo** (ej. ocultar precio de costo) NO se modela como un cuarto eje
+genérico — la combinatoria zona×acción×alcance×campo explota para casi ningún
+beneficio real. Se resuelve aparte, a nivel de serialización del DTO, con un flag
+puntual por campo sensible (ej. `catalog.view_cost_price`). El patrón ya existe en
+el código: `PublicProductResponse` nunca incluye el teléfono de la organización, por
+construcción — formalizarlo como un servicio chico y reutilizable en vez de
+repetirlo ad hoc por DTO.
+
+### 6.4 SOLID/DRY aplicado
+
+- **Open/Closed**: agregar una zona (ej. `leads`, confirmada en §3.1(8)) es una fila
+  de dato — cero código nuevo en el motor de chequeo.
+- **Liskov**: los roles fijos de hoy (`super_admin`…`viewer`) se modelan como
+  perfiles-plantilla que cumplen la misma interfaz que uno personalizado — nada de
+  `if role_type == X` especial en ningún lado.
+- **Dependency Inversion**: el dominio define `IPermissionChecker` (puerto); la
+  infra lo implementa contra estas tablas. Un único FastAPI dependency
+  (`require_zone_action(zone, action)`) reemplaza: el `RBACMiddleware` muerto
+  (§3.1(5), confirmado para borrar), los +5 `current_user.has_permission(...)`
+  repetidos a mano en `product_router.py` (§1.2), y el único uso real de
+  `require_permission` de hoy. Una sola fuente de verdad por request — arregla de
+  paso la relectura repetida de `is_org_admin` (§1.5).
+- **Specification pattern** para el alcance: `OwnScope`/`AllScope`/
+  `ExplicitOrgsScope` como objetos con un método `filter(query)`, sin `if/elif`
+  esparcido por el código.
+
+---
+
+## 7. Catálogo público + landing page (marketplace-style)
+
+Aclaración del equipo: el catálogo público no es un listado simple — es parte de la
+**landing page**, con buscador y filtros, al estilo Marketplace/MercadoLibre.
+Verificado en código: hoy **no existe nada de esto**.
+
+- `apps/web/src/app/page.tsx` — landing actual, 88 líneas, sin buscador ni grilla.
+- `apps/web/src/app/p/[slug]/` — única página pública existente, un producto por
+  link secreto (la que tiene el leak de §4).
+- No hay ningún endpoint de listado público — solo `GET /{slug}` individual.
+
+**Quiénes son `sales_user`/`viewer` vs. el público** (respuesta a §3.1(7)): son
+roles internos de staff de dealer, atados a `tenant_id` — nada que ver con el
+visitante anónimo del catálogo público. El público nunca pasa por el RBAC interno;
+usa un mecanismo separado, sin autenticación, por diseño (igual que hoy).
+
+### Propuesta
+
+- **Backend**: `GET /public/products` nuevo — sin auth, paginado, con filtros
+  (categoría, rango de precio, condición, ubicación, búsqueda de texto), mismo motor
+  de query que ya usa `list_products` internamente, detrás de un DTO público
+  sanitizado desde el día uno (sin `tenant_id`/`organization_id` crudos — mismo fix
+  de §4, aplicado acá también, no después).
+- **Frontend**: la landing (`page.tsx`) pasa a tener buscador + grilla + filtros,
+  cada card linkeando a `/p/[slug]` (ya existe) — reusa el patrón de card del
+  catálogo interno (`/catalog`), no arranca de cero ahí.
+- **Pregunta de producto abierta, no resuelta aquí**: si el catálogo público va a
+  mostrar de qué dealer es cada auto sin exponer el UUID interno, probablemente haga
+  falta un **nombre público del dealer** (campo nuevo en el DTO — hoy solo existe
+  `contact_name`, que es una persona, no la organización).
+
+---
+
+## 8. Recomendación de proceso (actualizada)
+
+Con las 8 preguntas respondidas (§3.1), el bug de §4 verificado, `fb-autopost`
+validado (§5) y el diseño de §6-§7 propuesto, el espacio ya está acotado de verdad.
+Separar en bloques:
+
+1. **Fix del leak de §4** — chico, independiente, sin esperar nada más (mismo
+   criterio que el bug del sidebar).
+2. **Motor central** (§6: Zona/Acción/Alcance + reemplazo de `RBACMiddleware`/
+   chequeos inline) — el más grande, el que amerita `/aidlc` (Domain Design + NFR
+   Design) dado que toca seguridad multi-tenant y el proyecto ya tiene historial de
+   leaks reales (van tres esta semana).
+3. **UI de admin** para armar/clonar perfiles (depende de 2).
+4. **Zona de Leads/CRM** (§3.1(8)) + **catálogo público/landing** (§7) — pueden
+   avanzar en paralelo entre sí, cada uno depende solo del motor central (2), no uno
+   del otro.
+5. **Gestión de `product_fb_account_assignments`/`OrganizationMarketplaceAccessModel`
+   desde la zona `marketplace`** (§5.2) — depende de 2; el mecanismo de
+   automatización en sí (fb-autopost) no se toca, solo su capa de gestión humana.
+
+Dado el historial de fugas cross-tenant reales (van tres), sea cual sea el orden,
+esto necesita un piso de test más alto que lo normal antes de mergear — no
+negociable, independiente del proceso elegido.
+
+---
+
+**Próximo paso**: decidir con qué bloque de §8 arrancar, y si el bloque 2 (motor
+central) pasa por `/aidlc` o se diseña/implementa directo en bloques chicos.
