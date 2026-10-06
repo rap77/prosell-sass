@@ -23,6 +23,29 @@ def test_public_product_response_has_no_phone_field() -> None:
     assert "phone" not in PublicProductResponse.model_fields
 
 
+def test_public_product_response_has_no_tenant_or_organization_identifiers() -> None:
+    """Structurally guarantee the public (unauthenticated) product DTO can
+    never carry tenant/organization identifiers, regardless of what the
+    router passes in — same principle as the phone-field guarantee above.
+    Regression for the real leak found 2026-10-05: `PublicProductResponse`
+    used to inherit `tenant_id`/`organization_id`/`org_code`/`org_color`/
+    `fb_account_ids`/`submitted_by`/`approved_by`/`rejection_reason` from
+    `ProductResponse` — the first two, plus the moderation trio
+    (`submitted_by`/`approved_by`/`rejection_reason`), were populated with
+    REAL values for every public response, not just inert defaults."""
+    leaking_fields = {
+        "tenant_id",
+        "organization_id",
+        "org_code",
+        "org_color",
+        "fb_account_ids",
+        "submitted_by",
+        "approved_by",
+        "rejection_reason",
+    }
+    assert not leaking_fields & set(PublicProductResponse.model_fields)
+
+
 def _make_org(**overrides: object) -> Organization:
     defaults: dict[str, object] = {
         "id": uuid4(),

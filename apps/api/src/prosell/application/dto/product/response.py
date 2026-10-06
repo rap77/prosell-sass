@@ -22,19 +22,20 @@ class ProductSummaryForLead(BaseModel):
     updated_at: datetime
 
 
-class ProductResponse(BaseModel):
-    """DTO for product responses."""
+class _ProductPublicSafeResponse(BaseModel):
+    """Fields safe to expose to ANY consumer, public or authenticated — no
+    tenant/organization identifier of any kind.
+
+    Shared base for `ProductResponse` (authenticated) and
+    `PublicProductResponse` (anonymous): a field added HERE is safe-by-default
+    for both. A field that must stay authenticated-only (tenant/org
+    identifiers, internal FB account assignment) goes on `ProductResponse`
+    instead, never here — same "safe by construction" principle this file
+    already applies to the organization phone number (see
+    `PublicProductResponse`'s docstring).
+    """
 
     id: UUID
-    tenant_id: UUID
-    organization_id: UUID
-    # ponytail: derived directly from products.organization_id JOIN organizations.
-    # Single source of truth for who owns the product — the tenant column.
-    # The old `owner_org_*` fields came from a JOIN with product_ownership
-    # type=organization that duplicated this intent; that table now only
-    # stores broker (user) shares.
-    org_code: str | None = None
-    org_color: str | None = None
     category_id: UUID
     # Note: the legacy `vehicle_code` field no longer lives at the top
     # level of this DTO — it moved into `attributes["internal_code"]`
@@ -72,15 +73,10 @@ class ProductResponse(BaseModel):
     location_zip: str | None = None
     is_featured: bool
     published_to_marketplace: bool
-    # FB accounts assigned to publish this product. Empty = any account.
-    fb_account_ids: list[UUID] = Field(default_factory=list)
     view_count: int
     favorite_count: int
     submitted_for_approval_at: datetime | None = None
-    submitted_by: UUID | None = None
     approved_at: datetime | None = None
-    approved_by: UUID | None = None
-    rejection_reason: str | None = None
     published_at: datetime | None = None
     sold_at: datetime | None = None
     archived_at: datetime | None = None
@@ -94,6 +90,36 @@ class ProductResponse(BaseModel):
     def price_dollars(self) -> float:
         """Get price in dollars."""
         return self.price_cents / 100
+
+
+class ProductResponse(_ProductPublicSafeResponse):
+    """DTO for product responses (authenticated endpoints only).
+
+    Adds every field that identifies the owning tenant/organization, plus
+    the internal FB-account assignment — none of these may reach an
+    unauthenticated consumer. `PublicProductResponse` intentionally does
+    NOT extend this class (see its own docstring) so a field added here
+    can never leak to the public DTO by accident.
+    """
+
+    tenant_id: UUID
+    organization_id: UUID
+    # ponytail: derived directly from products.organization_id JOIN organizations.
+    # Single source of truth for who owns the product — the tenant column.
+    # The old `owner_org_*` fields came from a JOIN with product_ownership
+    # type=organization that duplicated this intent; that table now only
+    # stores broker (user) shares.
+    org_code: str | None = None
+    org_color: str | None = None
+    # FB accounts assigned to publish this product. Empty = any account.
+    fb_account_ids: list[UUID] = Field(default_factory=list)
+    # Moderation workflow — internal reviewer identity + notes. Caught by
+    # GGA (2026-10-06) as a real active leak: these were populated with
+    # REAL values (not null, unlike org_code/org_color/fb_account_ids
+    # above) for every public product response until this fix.
+    submitted_by: UUID | None = None
+    approved_by: UUID | None = None
+    rejection_reason: str | None = None
 
     @classmethod
     def from_entity(
@@ -146,16 +172,18 @@ class ProductResponse(BaseModel):
         )
 
 
-class PublicProductResponse(ProductResponse):
+class PublicProductResponse(_ProductPublicSafeResponse):
     """DTO for the public (unauthenticated) product page.
 
+    Extends `_ProductPublicSafeResponse` directly — NOT `ProductResponse` —
+    so it structurally cannot carry `tenant_id`/`organization_id`/`org_code`/
+    `org_color`/`fb_account_ids`, regardless of what the entity holds.
     Adds the organization contact fields needed for the "message the
     seller on WhatsApp" flow (FR5). Deliberately does NOT include a
-    phone field — the organization's phone must never reach this DTO,
-    by construction, regardless of what `OrganizationContact.phone`
-    holds. Built only by `public_product_router.get_public_product`;
-    the shared `ProductResponse` used by authenticated endpoints is
-    untouched.
+    phone field either — the organization's phone must never reach this
+    DTO, by construction, regardless of what `OrganizationContact.phone`
+    holds. Built only by `public_product_router.get_public_product`; the
+    `ProductResponse` used by authenticated endpoints is untouched.
     """
 
     contact_name: str | None = None

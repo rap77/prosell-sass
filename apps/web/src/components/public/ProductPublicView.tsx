@@ -38,7 +38,6 @@ interface ProductData {
   cover_image_key: string | null;
   location_city: string | null;
   location_state: string | null;
-  organization_id: string;
   /** Organization WhatsApp contact (FR5) — never includes a phone. */
   contact_name: string | null;
   contact_whatsapp: string | null;
