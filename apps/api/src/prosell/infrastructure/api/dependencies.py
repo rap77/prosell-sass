@@ -485,6 +485,52 @@ def require_permission(permission: Permission) -> Callable[..., Awaitable[User]]
     return _check
 
 
+def require_zone_action(zone: str, action: str) -> Callable[..., Awaitable[User]]:
+    """
+    Dependency factory for the NEW zone/action permission engine
+    (diagnostic doc §6) — parallel to `require_permission()` above,
+    which still reads the legacy `ROLE_PERMISSIONS` dict.
+
+    Usage in FastAPI routes:
+        current_user: User = Depends(require_zone_action("catalog", "read"))
+
+    `zone`/`action` are plain strings, not an enum — §6.1: they're data
+    (rows in `role_grants`), not a code deploy.
+
+    Not yet used by any router. Migrating existing endpoints from
+    `require_permission()`/inline `current_user.has_permission(...)` to
+    this is explicitly a SEPARATE, later step (see the workbook) — a
+    repo-wide swap in the same change as building this dependency would
+    make a security-relevant diff much harder to review.
+
+    Args:
+        zone: The permission zone (e.g. "catalog", "leads")
+        action: The action within that zone (e.g. "read", "update")
+
+    Returns:
+        Dependency function that FastAPI can call
+    """
+
+    async def _check(
+        current_user: Annotated[User, Depends(get_current_auth_user)],
+        role_repository: Annotated[AbstractRoleRepository, Depends(get_role_repository)],
+    ) -> User:
+        """Check if any of the user's roles grants this zone/action."""
+        from fastapi import HTTPException, status
+
+        user_roles = await role_repository.get_user_roles_with_grants(current_user.id)
+
+        if not any(role.has_zone_action(zone, action) for role in user_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission '{zone}:{action}' required",
+            )
+
+        return current_user
+
+    return _check
+
+
 def require_role(role_type: RoleType) -> Callable[..., Awaitable[User]]:
     """
     Dependency factory for role-based authorization.

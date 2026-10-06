@@ -98,3 +98,23 @@ class AbstractRoleRepository(Protocol):
             List of role entities
         """
         ...
+
+    async def get_user_roles_with_grants(self, user_id: UUID) -> list[Role]:
+        """
+        Get all roles for a user, with the new permission engine's
+        `grants`/`scope` populated from `role_grants`/`role_scope`/
+        `role_organization_access` (diagnostic doc §6) — unlike
+        `get_user_roles()`, which always maps them as empty/None.
+
+        A separate method rather than changing `get_user_roles()` itself:
+        that method is already used by `require_permission()` and other
+        existing call sites that have no need for the extra joins: this
+        one exists for `require_zone_action()` and nothing else so far.
+
+        Args:
+            user_id: User UUID
+
+        Returns:
+            List of role entities, grants/scope populated
+        """
+        ...

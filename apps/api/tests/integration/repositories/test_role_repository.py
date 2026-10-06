@@ -16,7 +16,15 @@ from uuid import uuid4
 import pytest
 
 from prosell.domain.entities.role import Role, RoleType
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.role_model import (
+    RoleGrantModel,
+    RoleModel,
+    RoleOrganizationAccessModel,
+    RoleScopeModel,
+)
+from prosell.infrastructure.models.user_model import UserModel
 from prosell.infrastructure.repositories.role_repository_impl import (
     SqlAlchemyRoleRepository,
 )
@@ -87,3 +95,93 @@ async def test_role_get_by_id_does_not_filter_by_tenant(
     fetched = await repo.get_by_id(created.id)
     assert fetched is not None
     assert fetched.tenant_id == other_org.tenant_id
+
+
+@pytest.mark.asyncio
+async def test_get_user_roles_with_grants_populates_grants_and_own_scope(
+    db_session,
+    test_user: UserModel,
+    test_role: RoleModel,
+) -> None:
+    """Real async session, real eager-loaded relationships — this is
+    exactly the shape of bug (`MissingGreenlet`) that bit `_to_entity()`
+    for a plain `get_user_roles()` call; `get_user_roles_with_grants()`
+    must not repeat it despite reading the SAME relationship names."""
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=test_role.id, zone="catalog", action="read"))
+    db_session.add(
+        RoleGrantModel(id=uuid4(), role_id=test_role.id, zone="catalog", action="update")
+    )
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=test_role.id, scope_type="own"))
+    await db_session.flush()
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    roles = await repo.get_user_roles_with_grants(test_user.id)
+
+    assert len(roles) == 1
+    role = roles[0]
+    assert role.has_zone_action("catalog", "read") is True
+    assert role.has_zone_action("catalog", "update") is True
+    assert role.has_zone_action("catalog", "delete") is False
+    assert isinstance(role.scope, OwnScope)
+
+
+@pytest.mark.asyncio
+async def test_get_user_roles_with_grants_populates_explicit_orgs_scope(
+    db_session,
+    test_user: UserModel,
+    test_role: RoleModel,
+    test_organization: OrganizationModel,
+    second_organization: OrganizationModel,
+) -> None:
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=test_role.id, scope_type="explicit"))
+    db_session.add(
+        RoleOrganizationAccessModel(
+            id=uuid4(), role_id=test_role.id, organization_id=test_organization.id
+        )
+    )
+    await db_session.flush()
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    roles = await repo.get_user_roles_with_grants(test_user.id)
+
+    assert len(roles) == 1
+    scope = roles[0].scope
+    assert isinstance(scope, ExplicitOrgsScope)
+    assert (
+        scope.permits(organization_id=test_organization.id, actor_organization_id=uuid4()) is True
+    )
+    assert (
+        scope.permits(organization_id=second_organization.id, actor_organization_id=uuid4())
+        is False
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_user_roles_with_grants_populates_all_scope(
+    db_session,
+    test_user: UserModel,
+    test_role: RoleModel,
+) -> None:
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=test_role.id, scope_type="all"))
+    await db_session.flush()
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    roles = await repo.get_user_roles_with_grants(test_user.id)
+
+    assert isinstance(roles[0].scope, AllScope)
+
+
+@pytest.mark.asyncio
+async def test_get_user_roles_with_grants_defaults_when_no_rows_exist(
+    db_session,
+    test_user: UserModel,
+) -> None:
+    """A role with no `role_grants`/`role_scope` rows yet (the common
+    case until an admin actually configures one) maps as empty/None,
+    same as `_to_entity()`'s default — not a crash, not a stale value."""
+    repo = SqlAlchemyRoleRepository(db_session)
+    roles = await repo.get_user_roles_with_grants(test_user.id)
+
+    assert len(roles) == 1
+    assert roles[0].grants == []
+    assert roles[0].scope is None
