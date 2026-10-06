@@ -487,7 +487,19 @@ repetirlo ad hoc por DTO.
   migración de los call sites reales de `product_router.py` y el borrado
   de `RBACMiddleware` quedan como un paso separado y deliberado (no se
   mezcla "construir el dependency" con "cambiar autorización en producción"
-  en el mismo diff). Detalle en el workbook, bloque 2.
+  en el mismo diff). `RBACMiddleware` ya se borró (confirmado muerto, de
+  nuevo, antes de borrarlo); la migración de call sites, no todavía.
+
+  **Corrección real al re-verificar antes de migrar (2026-10-06)**: no son
+  "+5 repeticiones" — son **32 call sites reales**, y **30 de los 32 no
+  migran a `require_zone_action` en absoluto**. `Permission.ORG_ADMIN_VIEW_ALL`
+  nunca fue un permiso de acción — es, y siempre fue, un alcance de
+  visibilidad (`role_scope.scope_type='all'`, ya mapeado así en la
+  migración de datos). Hizo falta una pieza nueva:
+  `domain/services/scope_resolver.py` (`resolve_effective_scope`, unión de
+  alcances entre los roles de un usuario, **confirmado con el usuario**:
+  el más permisivo gana) + `get_effective_scope()` en `dependencies.py`.
+  Detalle completo y los 32 call sites exactos en el workbook, bloque 2.
 
 - **Specification pattern** para el alcance: `OwnScope`/`AllScope`/
   `ExplicitOrgsScope` como objetos con un método `filter(query)`, sin `if/elif`

@@ -205,15 +205,38 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
         sin DB). Suite completa sin ripple (2569 passed). Verificado en
         staging real: reinicio de contenedor + login real sigue
         funcionando (nada roto en el arranque de la app).
-  - [ ] **Pendiente, deliberadamente separado**: migrar los routers reales
-        que hoy usan `require_permission(Permission.X)` o
-        `current_user.has_permission(Permission.X)` inline (`product_router.py`
-        tiene +5 repeticiones, per §1.2 del diagnóstico) para que usen
-        `require_zone_action()` en su lugar. No lo hice en este mismo ítem
-        a propósito — es un cambio repo-wide sobre autorización real en
-        producción, y mezclarlo con "construir el dependency" hace un diff
-        mucho más difícil de revisar. Queda como su propio paso, antes de
-        poder borrar `RBACMiddleware` de verdad (ítem de abajo).
+  - [x] **Re-verificado (regla 1) antes de migrar routers — el tamaño real
+        no era "+5"**: `rg` real sobre el repo encontró **32 call sites**,
+        no 5: 1 `require_permission(Permission.ORG_CREATE)`, 1
+        `has_permission(Permission.MARKETPLACE_PUBLISH)` inline, y **30
+        `has_permission(Permission.ORG_ADMIN_VIEW_ALL)` inline** (27 solo
+        en `product_router.py`). De esos 30, ninguno migra a
+        `require_zone_action` — `ORG_ADMIN_VIEW_ALL` nunca fue un permiso
+        de acción, siempre fue un alcance de visibilidad disfrazado de
+        `Permission` (ya mapeado así en la migración `20261006_0002`,
+        `role_scope.scope_type='all'`, no un grant). Hacía falta una pieza
+        nueva que todavía no existía.
+  - [x] Pregunta real, confirmada con el usuario (2026-10-06): para un
+        usuario con más de un rol, ¿cómo se combina el alcance de cada
+        uno? Respuesta: **el más permisivo gana** (`AllScope` >
+        `ExplicitOrgsScope` > `OwnScope`), mismo criterio de unión que ya
+        usan `has_permission()`/`has_zone_action()`.
+  - [x] `domain/services/scope_resolver.py` (`resolve_effective_scope`) —
+        pura lógica de dominio, 10 tests. `get_effective_scope()` nuevo en
+        `dependencies.py` — dependency que carga roles vía
+        `get_user_roles_with_grants()` (no la versión plana) y resuelve el
+        alcance efectivo. 3 tests nuevos — encontré y corregí un detalle
+        real de tipos al escribirlos: el fake repo de
+        `test_require_zone_action.py` "pasaba" pyright solo porque
+        `require_zone_action()` devuelve `Callable[..., Awaitable[User]]`
+        (los `...` apagan el chequeo de argumentos) — `get_effective_scope`
+        se llama directo con su firma real, así que su fake repo necesitó
+        implementar el Protocol completo de verdad. Suite completa: 2573
+        passed. Verificado en staging real (reinicio + login).
+  - [ ] **Pendiente, siguiente paso real**: migrar los 32 call sites de
+        verdad — 2 de acción (→ `require_zone_action`) y 30 de alcance
+        (→ `get_effective_scope` + `isinstance(scope, AllScope)`), la
+        mayoría concentrados en `product_router.py`. Todavía no tocado.
 - [x] Migrar los 6 roles fijos actuales a perfiles-plantilla (2026-10-06) —
       migración de datos `20261006_0002`, siembra `role_grants`/`role_scope`
       para los 6 roles `RoleType` traduciendo `ROLE_PERMISSIONS` 1:1. Mismas
