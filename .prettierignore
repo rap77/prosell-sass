@@ -14,3 +14,8 @@ tests/e2e/test-results/
 # Already in .gitignore; listed here too because Prettier reads the working
 # tree directly and would otherwise flag these files in pre-push checks.
 aidlc/spaces/*/intents/*/audit/
+
+# Vendored anti-slop Oxlint plugin — the target repository owns its rules,
+# but formatting is upstream's call, not ours; reformatting here would
+# diverge from the pristine snapshot the next update diffs against.
+apps/web/tools/oxlint/anti-slop/
