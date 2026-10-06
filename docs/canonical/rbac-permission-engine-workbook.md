@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                                                           |
-| ------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito) |
-| 2      | Motor central Zona × Acción × Alcance                                                 | 🟡 In Progress (migraciones listas, sin commitear)               |
-| 3      | UI de admin para perfiles                                                             | 🔴 Not started                                                   |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                   |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                   |
+| Bloque | Descripción                                                                           | Estado                                                                              |
+| ------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                    |
+| 2      | Motor central Zona × Acción × Alcance                                                 | 🟡 Casi completo — falta migrar routers reales a `require_zone_action` (deliberado) |
+| 3      | UI de admin para perfiles                                                             | 🔴 Not started                                                                      |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                      |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                      |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
@@ -259,7 +259,23 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
     subsystem de `vendedor_router.py` son decisiones de producto, no algo
     para que yo decida solo. Verificado en staging real: `vendedor` quedó en
     0 grants / scope NULL tras la migración, exactamente como se diseñó.
-- [ ] Borrar `RBACMiddleware` (confirmado muerto, §3.1(5))
+- [x] Borrar `RBACMiddleware` (2026-10-06) — re-verifiqué antes de borrar
+      (regla 1, no confío en un diagnóstico de hace horas): `rg -ln
+    "RBACMiddleware"` solo devolvía el propio archivo y su test, cero
+      routers. Borrado el archivo
+      (`infrastructure/api/middleware/rbac_middleware.py`) + los 9 tests
+      que lo ejercitaban directo en `test_role_based_permissions.py`
+      (dos bloques contiguos, `# ── require_roles`/`# ── require_permissions`).
+      Las propiedades de escalación que esos tests cubrían ya estaban
+      cubiertas aparte vía `User.has_permission()`/`has_role()` (el
+      mecanismo que de verdad está vivo, §1.2) — sin pérdida real de
+      cobertura. Un test sí se reescribió (no se borró sin más):
+      `test_invalid_role_string_does_not_grant_permissions` ahora verifica
+      lo mismo (un string de rol inventado no otorga nada) contra
+      `RoleType("super_hacker")` directo, en vez de contra el middleware
+      muerto. Suite completa: 2560 passed (2569 − 9 tests removidos).
+      Verificado en staging real: reinicio de contenedor sin el archivo,
+      login real sigue funcionando.
 
 _(desglose de tareas más fino se agrega cuando este bloque arranque — no
 inventar detalle de implementación que todavía no se decidió)_
