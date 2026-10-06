@@ -101,6 +101,8 @@ from prosell.domain.repositories.publication_repository import IPublicationRepos
 from prosell.domain.repositories.user_branch_repository import (
     AbstractUserBranchRepository,
 )
+from prosell.domain.services.scope_resolver import resolve_effective_scope
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
@@ -529,6 +531,35 @@ def require_zone_action(zone: str, action: str) -> Callable[..., Awaitable[User]
         return current_user
 
     return _check
+
+
+async def get_effective_scope(
+    current_user: Annotated[User, Depends(get_current_auth_user)],
+    role_repository: Annotated[AbstractRoleRepository, Depends(get_role_repository)],
+) -> AllScope | ExplicitOrgsScope | OwnScope:
+    """
+    Dependency: the current user's effective data-visibility scope
+    (diagnostic doc §6), unioned across every role they hold via
+    `resolve_effective_scope()` — the most permissive scope wins
+    (confirmed with the user, 2026-10-06), not a "primary role" rule.
+
+    Replaces the inline `current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`
+    pattern repeated 30 times across routers (§1.2/§1.6 of the
+    diagnostic) — that permission was never really an action grant, it
+    was always a visibility scope wearing a `Permission` costume.
+
+    Usage in FastAPI routes:
+        scope: Annotated[Scope, Depends(get_effective_scope)]
+        can_view_all_orgs = isinstance(scope, AllScope)
+
+    Loads roles via `get_user_roles_with_grants()` deliberately, NOT the
+    plain `get_user_roles()` that populates `current_user.roles` at auth
+    time — that one always maps `scope=None` by design (see
+    `_to_entity()`'s docstring), since it predates this permission
+    engine and most callers never needed grants/scope loaded.
+    """
+    user_roles = await role_repository.get_user_roles_with_grants(current_user.id)
+    return resolve_effective_scope(user_roles)
 
 
 def require_role(role_type: RoleType) -> Callable[..., Awaitable[User]]:
