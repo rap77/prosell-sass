@@ -130,16 +130,23 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         return [self._to_entity(model) for model in models]
 
     async def get_user_roles(self, user_id: UUID) -> list[str]:
-        """Get list of role names for a user."""
+        """Get list of system role-type strings for a user.
+
+        `role_type` is now nullable (custom, non-system profiles have
+        `role_type=NULL` — see migration `20261006_0001`). Callers of this
+        method (`dependencies.py`) convert each string back into a
+        `RoleType` enum member, which has no case for a custom profile, so
+        null role types are excluded here rather than crashing there.
+        """
         from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
 
         stmt = (
             select(RoleModel.role_type)
             .join(UserRoleModel, UserRoleModel.role_id == RoleModel.id)
-            .where(UserRoleModel.user_id == user_id)
+            .where(UserRoleModel.user_id == user_id, RoleModel.role_type.is_not(None))
         )
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return [role_type for role_type in result.scalars().all() if role_type is not None]
 
     async def email_exists(self, email: str) -> bool:
         """Check if email already exists."""
