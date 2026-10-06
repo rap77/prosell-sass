@@ -379,8 +379,8 @@ Depends(...)]`. Pyright (0 errores) y la suite completa lo validaron,
       patrón ya varias veces documentado de que el conteo original
       siempre hay que re-grepearlo). El helper cambió de firma
       (`current_user: User` → `effective_scope: AllScope |
-  ExplicitOrgsScope | OwnScope`, body a `isinstance(effective_scope,
-  AllScope)`), mismo alias nombrado `get_cookie_effective_scope` +
+ExplicitOrgsScope | OwnScope`, body a `isinstance(effective_scope,
+AllScope)`), mismo alias nombrado `get_cookie_effective_scope` +
       `EffectiveScope` que ya usan `org_router.py`/`org_verticals_router.py`.
       10 de los 12 endpoints migrados perdieron su único uso real de
       `current_user` (solo servía para el chequeo viejo) — quitado de
