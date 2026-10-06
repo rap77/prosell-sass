@@ -11,7 +11,7 @@ uses `Role.model_validate(model, from_attributes=True)` which depends on
 Pydantic coercing the str back into the `RoleType` StrEnum.
 """
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -20,14 +20,34 @@ from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgs
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.role_model import (
     RoleGrantModel,
-    RoleModel,
     RoleOrganizationAccessModel,
     RoleScopeModel,
+    UserRoleModel,
 )
 from prosell.infrastructure.models.user_model import UserModel
 from prosell.infrastructure.repositories.role_repository_impl import (
     SqlAlchemyRoleRepository,
 )
+
+
+async def _create_and_assign_fresh_role(db_session, user: UserModel, tenant_id: UUID) -> UUID:
+    """A brand-new custom role with zero grants/scope, assigned to `user`.
+
+    Deliberately NOT the shared, session-scoped `test_role` fixture
+    (SUPER_ADMIN): the seed migration `20261006_0002` now gives every
+    system role real grants/scope, so a test that assumes a system role
+    starts empty would be fragile against — and collide with — whatever
+    that migration seeds. A fresh custom role has none of that baggage.
+    """
+    repo = SqlAlchemyRoleRepository(db_session)
+    role = await repo.create(
+        Role.create_custom_role(
+            name=f"Fresh {uuid4().hex[:6]}", description="Test-only", tenant_id=tenant_id
+        )
+    )
+    db_session.add(UserRoleModel(id=uuid4(), user_id=user.id, role_id=role.id))
+    await db_session.flush()
+    return role.id
 
 
 @pytest.mark.asyncio
@@ -101,24 +121,24 @@ async def test_role_get_by_id_does_not_filter_by_tenant(
 async def test_get_user_roles_with_grants_populates_grants_and_own_scope(
     db_session,
     test_user: UserModel,
-    test_role: RoleModel,
+    test_organization: OrganizationModel,
 ) -> None:
     """Real async session, real eager-loaded relationships — this is
     exactly the shape of bug (`MissingGreenlet`) that bit `_to_entity()`
     for a plain `get_user_roles()` call; `get_user_roles_with_grants()`
     must not repeat it despite reading the SAME relationship names."""
-    db_session.add(RoleGrantModel(id=uuid4(), role_id=test_role.id, zone="catalog", action="read"))
-    db_session.add(
-        RoleGrantModel(id=uuid4(), role_id=test_role.id, zone="catalog", action="update")
+    role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
     )
-    db_session.add(RoleScopeModel(id=uuid4(), role_id=test_role.id, scope_type="own"))
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=role_id, zone="catalog", action="read"))
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=role_id, zone="catalog", action="update"))
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=role_id, scope_type="own"))
     await db_session.flush()
 
     repo = SqlAlchemyRoleRepository(db_session)
     roles = await repo.get_user_roles_with_grants(test_user.id)
 
-    assert len(roles) == 1
-    role = roles[0]
+    role = next(r for r in roles if r.id == role_id)
     assert role.has_zone_action("catalog", "read") is True
     assert role.has_zone_action("catalog", "update") is True
     assert role.has_zone_action("catalog", "delete") is False
@@ -129,14 +149,16 @@ async def test_get_user_roles_with_grants_populates_grants_and_own_scope(
 async def test_get_user_roles_with_grants_populates_explicit_orgs_scope(
     db_session,
     test_user: UserModel,
-    test_role: RoleModel,
     test_organization: OrganizationModel,
     second_organization: OrganizationModel,
 ) -> None:
-    db_session.add(RoleScopeModel(id=uuid4(), role_id=test_role.id, scope_type="explicit"))
+    role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
+    )
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=role_id, scope_type="explicit"))
     db_session.add(
         RoleOrganizationAccessModel(
-            id=uuid4(), role_id=test_role.id, organization_id=test_organization.id
+            id=uuid4(), role_id=role_id, organization_id=test_organization.id
         )
     )
     await db_session.flush()
@@ -144,8 +166,7 @@ async def test_get_user_roles_with_grants_populates_explicit_orgs_scope(
     repo = SqlAlchemyRoleRepository(db_session)
     roles = await repo.get_user_roles_with_grants(test_user.id)
 
-    assert len(roles) == 1
-    scope = roles[0].scope
+    scope = next(r for r in roles if r.id == role_id).scope
     assert isinstance(scope, ExplicitOrgsScope)
     assert (
         scope.permits(organization_id=test_organization.id, actor_organization_id=uuid4()) is True
@@ -160,28 +181,36 @@ async def test_get_user_roles_with_grants_populates_explicit_orgs_scope(
 async def test_get_user_roles_with_grants_populates_all_scope(
     db_session,
     test_user: UserModel,
-    test_role: RoleModel,
+    test_organization: OrganizationModel,
 ) -> None:
-    db_session.add(RoleScopeModel(id=uuid4(), role_id=test_role.id, scope_type="all"))
+    role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
+    )
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=role_id, scope_type="all"))
     await db_session.flush()
 
     repo = SqlAlchemyRoleRepository(db_session)
     roles = await repo.get_user_roles_with_grants(test_user.id)
 
-    assert isinstance(roles[0].scope, AllScope)
+    assert isinstance(next(r for r in roles if r.id == role_id).scope, AllScope)
 
 
 @pytest.mark.asyncio
 async def test_get_user_roles_with_grants_defaults_when_no_rows_exist(
     db_session,
     test_user: UserModel,
+    test_organization: OrganizationModel,
 ) -> None:
     """A role with no `role_grants`/`role_scope` rows yet (the common
     case until an admin actually configures one) maps as empty/None,
     same as `_to_entity()`'s default — not a crash, not a stale value."""
+    role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
+    )
+
     repo = SqlAlchemyRoleRepository(db_session)
     roles = await repo.get_user_roles_with_grants(test_user.id)
 
-    assert len(roles) == 1
-    assert roles[0].grants == []
-    assert roles[0].scope is None
+    role = next(r for r in roles if r.id == role_id)
+    assert role.grants == []
+    assert role.scope is None
