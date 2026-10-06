@@ -261,7 +261,7 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
     0 grants / scope NULL tras la migración, exactamente como se diseñó.
 - [x] Borrar `RBACMiddleware` (2026-10-06) — re-verifiqué antes de borrar
       (regla 1, no confío en un diagnóstico de hace horas): `rg -ln
-    "RBACMiddleware"` solo devolvía el propio archivo y su test, cero
+"RBACMiddleware"` solo devolvía el propio archivo y su test, cero
       routers. Borrado el archivo
       (`infrastructure/api/middleware/rbac_middleware.py`) + los 9 tests
       que lo ejercitaban directo en `test_role_based_permissions.py`
