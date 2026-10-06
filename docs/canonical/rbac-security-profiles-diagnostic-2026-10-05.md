@@ -151,6 +151,21 @@ de navegación/UI, no de datos.
   un módulo entero del producto. Hoy el acceso a leads no está gateado por
   `Permission` en absoluto.
 
+**Hallazgo nuevo (2026-10-06, al implementar — no estaba en el scan original
+de este documento)**: hay un **7mo rol de sistema real**, `role_type='vendedor'`
+("Sales Agent"), seedeado por `scripts/init_data.py:81`, **separado del enum
+`RoleType.SALES_AGENT`**. No es un leftover muerto — `vendedor_router.py` y
+`GetVendedoresUseCase` filtran usuarios por ese string literal
+(`get_users_by_tenant_and_role(role="vendedor")`), un subsistema real y activo.
+Consecuencia: cualquier usuario con ese `role_type` tiene HOY cero permisos
+bajo `ROLE_PERMISSIONS` (esa clave no existe en el dict). Verificado que
+`test_doc_vendedor_has_4_permissions` (nombre en español del test, no del
+código real) testea `RoleType.SALES_AGENT`, no `"vendedor"` — mismo patrón de
+nomenclatura mixto español/inglés, sin relación mecánica entre ambos en
+ningún lado del código. Sin resolver a propósito — ver workbook, bloque 2,
+para los detalles y las opciones (fusionar, dejar en cero, o deprecar el
+subsistema de `vendedor_router.py`).
+
 ---
 
 ## 2. Visión objetivo (como la planteaste)

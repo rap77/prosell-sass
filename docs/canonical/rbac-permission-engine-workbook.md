@@ -214,9 +214,52 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
         producción, y mezclarlo con "construir el dependency" hace un diff
         mucho más difícil de revisar. Queda como su propio paso, antes de
         poder borrar `RBACMiddleware` de verdad (ítem de abajo).
-- [ ] Migrar los 6 roles fijos actuales a perfiles-plantilla (Liskov — sin camino de código especial)
+- [x] Migrar los 6 roles fijos actuales a perfiles-plantilla (2026-10-06) —
+      migración de datos `20261006_0002`, siembra `role_grants`/`role_scope`
+      para los 6 roles `RoleType` traduciendo `ROLE_PERMISSIONS` 1:1. Mismas
+      guardas de seguridad que el precedente ya establecido
+      (`20260812_0002_migrate_legacy_sedan_products.py`): salta silenciosamente
+      si el rol todavía no existe, `ON CONFLICT DO NOTHING` en ambas tablas
+      (nunca pisa un grant que un admin ya haya configurado a mano),
+      `downgrade()` simétrico. Probado upgrade→downgrade→upgrade contra
+      Postgres real y aplicado en staging real — conteos exactos verificados
+      por SQL directo (super_admin=21, admin=13, manager=10, sales_agent=4,
+      sales_user=2, viewer=2, scope `all` para super_admin/admin, `own` para
+      el resto).
+  - ⚠️ **Decisión de diseño real, documentada, no trivial**: la granularidad
+    de zona usada acá NO es la de las 6 secciones de UI de §3.1(1)
+    (Catálogo/Leads/Marketplace/Concesionarios/Configuración/Admin) — es
+    `users`/`roles`/`organizations`/`catalog`/`marketplace`/`analytics`/
+    `settings`, calcando 1:1 los 7 dominios de recurso del `Permission` enum
+    viejo. Colapsar a las 6 zonas de UI hubiera perdido distinción real
+    (ej. "crear usuario" y "crear rol" habrían quedado como el mismo
+    `admin:create`) — agrupar varias zonas bajo una sección de UI es un
+    problema de presentación (bloque 3), no de granularidad de autorización.
+  - ⚠️ **`Permission.ORG_ADMIN_VIEW_ALL` no se tradujo a un grant** — se
+    tradujo a `role_scope.scope_type = 'all'` para `super_admin`/`admin`
+    (los únicos dos roles que lo tenían), `'own'` para el resto. Es
+    semánticamente un alcance de visibilidad, no una acción sobre una zona.
+  - 🔴 **HALLAZGO REAL, SIN RESOLVER — para que decida el usuario, no yo**:
+    al re-verificar antes de migrar (regla 1), encontré que staging/prod
+    tienen **7** roles de sistema, no 6. El 7mo es `role_type='vendedor'`
+    ("Sales Agent"), seedeado por `scripts/init_data.py:81` — un subsistema
+    REAL y activo (`vendedor_router.py`, `GetVendedoresUseCase`,
+    `get_users_by_tenant_and_role(role="vendedor")`) que filtra por ese
+    string literal, **separado del enum `RoleType.SALES_AGENT`**. Esto es un
+    bug preexistente real, no relacionado con este trabajo: cualquier
+    usuario con `role_type='vendedor'` tiene HOY cero permisos bajo
+    `ROLE_PERMISSIONS` (esa clave no existe en el dict, `.get()` devuelve
+    `set()` vacío). Un test ya existente
+    (`test_doc_vendedor_has_4_permissions` en
+    `tests/unit/test_role_based_permissions.py:1013`) usa "vendedor" como
+    nombre en español para `RoleType.SALES_AGENT` — es terminología de test,
+    NO evidencia de que el código real los trate como equivalentes en
+    ningún lado. Esta migración **NO sembró grants para `vendedor` a
+    propósito** — fusionarlo con `sales_agent`, dejarlo en cero, o borrar el
+    subsystem de `vendedor_router.py` son decisiones de producto, no algo
+    para que yo decida solo. Verificado en staging real: `vendedor` quedó en
+    0 grants / scope NULL tras la migración, exactamente como se diseñó.
 - [ ] Borrar `RBACMiddleware` (confirmado muerto, §3.1(5))
-- [ ] Tests (unit + integración del dependency nuevo)
 
 _(desglose de tareas más fino se agrega cuando este bloque arranque — no
 inventar detalle de implementación que todavía no se decidió)_
