@@ -5,6 +5,8 @@ from enum import StrEnum
 from uuid import UUID, uuid4
 
 from prosell.domain.base import DomainModel, Field
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
+from prosell.domain.value_objects.role_grant import RoleGrant
 
 
 class RoleType(StrEnum):
@@ -142,6 +144,15 @@ class Role(DomainModel):
     description: str | None = None
     is_system_role: bool = False
     tenant_id: UUID | None = None
+    # New permission engine (diagnostic doc §6) — the zone x action grant
+    # matrix (role_grants) and the data-visibility scope (role_scope /
+    # role_organization_access). Empty/None for every role until the next
+    # workbook item wires repository loading and migrates the 6 system
+    # roles' fixed ROLE_PERMISSIONS into real grant rows — `get_permissions()`/
+    # `has_permission()` below are untouched and still the live
+    # authorization path.
+    grants: list[RoleGrant] = Field(default_factory=list)
+    scope: OwnScope | AllScope | ExplicitOrgsScope | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -187,3 +198,10 @@ class Role(DomainModel):
     def has_permission(self, permission: Permission) -> bool:
         """Check if role has a specific permission."""
         return permission in self.get_permissions()
+
+    def has_zone_action(self, zone: str, action: str) -> bool:
+        """Check the NEW permission engine's grant matrix (`role_grants`),
+        independent of the legacy `role_type`-keyed `ROLE_PERMISSIONS` dict
+        that `has_permission()` still reads. Not yet wired into any live
+        authorization path — see this class's `grants` field docstring."""
+        return any(g.zone == zone and g.action == action for g in self.grants)

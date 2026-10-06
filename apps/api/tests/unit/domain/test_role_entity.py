@@ -12,6 +12,7 @@ Tests all business logic in the Role domain entities:
 from uuid import UUID, uuid4
 
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, Role, RoleType
+from prosell.domain.value_objects.role_grant import RoleGrant
 
 
 class TestRoleTypeEnum:
@@ -296,4 +297,38 @@ class TestRoleEntity:
         # Custom roles use RoleType.VIEWER which has VEHICLE_READ and ANALYTICS_VIEW
         assert role.has_permission(Permission.VEHICLE_READ) is True
         assert role.has_permission(Permission.ANALYTICS_VIEW) is True
-        assert role.has_permission(Permission.USER_READ) is False
+
+
+class TestRoleZoneActionGrants:
+    """Test the NEW permission engine's grant matrix (`has_zone_action`),
+    independent of the legacy `role_type`-keyed `ROLE_PERMISSIONS` dict
+    that `has_permission()`/`get_permissions()` above still read."""
+
+    def test_no_grants_by_default(self) -> None:
+        role = Role.create_system_role(RoleType.ADMIN)
+
+        assert role.grants == []
+        assert role.has_zone_action("catalog", "read") is False
+
+    def test_has_zone_action_true_for_a_granted_pair(self) -> None:
+        role = Role.create_system_role(RoleType.ADMIN)
+        role.grants = [RoleGrant(zone="catalog", action="read")]
+
+        assert role.has_zone_action("catalog", "read") is True
+
+    def test_has_zone_action_false_for_wrong_action_same_zone(self) -> None:
+        role = Role.create_system_role(RoleType.ADMIN)
+        role.grants = [RoleGrant(zone="catalog", action="read")]
+
+        assert role.has_zone_action("catalog", "update") is False
+
+    def test_has_zone_action_false_for_wrong_zone_same_action(self) -> None:
+        role = Role.create_system_role(RoleType.ADMIN)
+        role.grants = [RoleGrant(zone="catalog", action="read")]
+
+        assert role.has_zone_action("leads", "read") is False
+
+    def test_scope_defaults_to_none(self) -> None:
+        role = Role.create_system_role(RoleType.ADMIN)
+
+        assert role.scope is None

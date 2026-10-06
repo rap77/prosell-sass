@@ -106,8 +106,25 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
 
     def _to_entity(self, model: RoleModel) -> Role:
         """
-        Convert ORM model to domain entity using Pydantic model_validate.
+        Convert ORM model to domain entity.
 
-        This leverages Pydantic's from_attributes=True for automatic conversion.
+        Built explicitly rather than via `Role.model_validate(model,
+        from_attributes=True)`: `RoleModel.grants`/`.scope` are lazy
+        SQLAlchemy relationships that share a name with `Role.grants`/
+        `.scope` (the new permission engine, §6 of the diagnostic) —
+        `from_attributes` would try to access them here and crash with
+        MissingGreenlet outside an awaited context, since this method
+        isn't async. Loading the real grants/scope from the DB is a
+        later workbook item; until then every role maps as empty/None
+        here regardless of what rows exist.
         """
-        return Role.model_validate(model, from_attributes=True)
+        return Role(
+            id=model.id,
+            role_type=RoleType(model.role_type) if model.role_type else RoleType.VIEWER,
+            name=model.name,
+            description=model.description,
+            is_system_role=model.is_system_role,
+            tenant_id=model.tenant_id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
