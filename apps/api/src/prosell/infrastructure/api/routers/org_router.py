@@ -26,7 +26,7 @@ from prosell.application.use_cases.org import (
     UpdateOrganizationUseCase,
     VerifyOrganizationUseCase,
 )
-from prosell.domain.entities.role import Permission, RoleType
+from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
     OrganizationAlreadyExistsException,
@@ -40,11 +40,13 @@ from prosell.domain.repositories.organization_repository import (
     AbstractOrganizationRepository,
 )
 from prosell.domain.repositories.wallet_repository import AbstractWalletRepository
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
+    get_effective_scope,
     get_spaces_service,
-    require_permission,
     require_role,
+    require_zone_action,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.organization_repository_impl import (
@@ -93,7 +95,7 @@ def get_wallet_repository(
 )
 async def create_organization(
     request: CreateOrganizationRequest,
-    current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
+    current_user: Annotated[User, Depends(require_zone_action("organizations", "create"))],
     org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
     wallet_repo: Annotated[AbstractWalletRepository, Depends(get_wallet_repository)],
 ) -> OrganizationResponse:
@@ -132,6 +134,9 @@ async def create_organization(
 async def list_organizations(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope, Depends(get_effective_scope)
+    ],
     skip: int = 0,
     limit: int = 100,
 ) -> OrganizationListResponse:
@@ -141,7 +146,7 @@ async def list_organizations(
     - SUPER_ADMIN/ADMIN: sees all orgs (no tenant filter)
     - Others: only see their own org
     """
-    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    can_view_all_orgs = isinstance(effective_scope, AllScope)
     # A non-admin user with no tenant_id must never fall through to the same
     # `None` the use case treats as "no filter, every org" for admins.
     if not can_view_all_orgs and current_user.tenant_id is None:

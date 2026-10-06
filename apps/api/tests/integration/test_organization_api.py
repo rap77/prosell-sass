@@ -38,12 +38,31 @@ def auto_mock_auth(mock_auth_user: User) -> Generator[None]:
 
 @pytest.fixture
 def mock_role_repo_super_admin() -> MagicMock:
-    """Mock role repository returning SUPER_ADMIN role."""
+    """Mock role repository returning SUPER_ADMIN role.
+
+    Configures BOTH `get_user_roles()` (legacy, read by
+    `has_permission()`) and `get_user_roles_with_grants()` (new, read by
+    `require_zone_action()`/`get_effective_scope()`) — a mock that only
+    implements the first silently "passes" the require_permission()
+    call-sites this fixture used to cover, but crashes
+    (`TypeError: object MagicMock can't be used in 'await' expression`)
+    the moment an endpoint migrates to the new dependency, since the
+    unconfigured attribute returns a plain MagicMock, not an awaitable.
+    """
     from prosell.domain.entities.role import Role, RoleType
+    from prosell.domain.value_objects.permission_scope import AllScope
+    from prosell.domain.value_objects.role_grant import RoleGrant
 
     role = Role.create_system_role(RoleType.SUPER_ADMIN)
+    role_with_grants = role.model_copy(
+        update={
+            "scope": AllScope(),
+            "grants": [RoleGrant(zone="organizations", action="create")],
+        }
+    )
     repo = MagicMock()
     repo.get_user_roles = AsyncMock(return_value=[role])
+    repo.get_user_roles_with_grants = AsyncMock(return_value=[role_with_grants])
     return repo
 
 
@@ -313,15 +332,21 @@ class TestListOrganizations:
             roles=[Role.create_system_role(RoleType.SUPER_ADMIN)],
         )
 
+        from prosell.domain.value_objects.permission_scope import AllScope
         from prosell.infrastructure.api.dependencies import (
             get_current_auth_user,
             get_current_auth_user_from_cookie,
+            get_effective_scope,
         )
         from prosell.infrastructure.api.routers.org_router import get_org_repository
 
         app.dependency_overrides[get_current_auth_user] = lambda: admin_user
         app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
+        # list_organizations now resolves visibility via get_effective_scope()
+        # (diagnostic doc §6), not current_user.has_permission() directly —
+        # override it to the scope this test is exercising.
+        app.dependency_overrides[get_effective_scope] = lambda: AllScope()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/org")
