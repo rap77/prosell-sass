@@ -425,6 +425,13 @@ resolver, para el próximo ítem**: staging tiene 7 roles de sistema, no 6 — h
 esta migración, probablemente un seed viejo; el ítem de migrar los 6 roles fijos a
 plantillas necesita investigar esto antes de asumir que son exactamente 6.
 
+**Mismo refinamiento aplicado a la entidad de dominio (2026-10-06)**: tampoco se
+creó una clase `PermissionProfile` aparte — se extendió `Role`
+(`domain/entities/role.py`) con `grants`/`scope`/`has_zone_action()`. Detalle
+completo (incluido un ripple real que la suite completa atrapó —
+`_to_entity()` rompía con `MissingGreenlet` por un choque de nombre entre
+campo de dominio y relationship ORM) en el workbook, bloque 2.
+
 ### 6.3 Campo individual (no como eje del motor)
 
 Ir hasta **campo** (ej. ocultar precio de costo) NO se modela como un cuarto eje

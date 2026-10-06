@@ -132,11 +132,40 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
       staging real (reinicio de contenedor, logs limpios, 6 roles de sistema
       siguen con su `role_type` intacto). Detalle completo y por qué del
       refinamiento: diagnóstico §6.2.
-  - [ ] **Sin commitear todavía** — pendiente de confirmación del usuario (regla 10).
+  - [x] Commit + push (2026-10-06) — confirmado por el usuario. Dos commits:
+        `9ff545b` (feat, incluye un ripple real que pyright atrapó:
+        `get_user_roles()` asumía `role_type` siempre no-nulo y hubiera
+        crasheado con un perfil custom — arreglado filtrando `None`, no
+        solo relajando el tipo) y `59d80efb` (docs). Pusheado a `main`
+        (`c3029c60..59d80efb`).
   - ⚠️ Hallazgo aparte para el próximo ítem: staging tiene 7 roles de
     sistema, no 6 (`vendedor` además de `sales_agent`) — investigar antes
     de asumir "6 roles fijos" literal en el siguiente paso.
-- [ ] Domain: entidad `PermissionProfile` + specification objects de alcance (`OwnScope`/`AllScope`/`ExplicitOrgsScope`)
+- [x] Domain: entidad `PermissionProfile` + specification objects de alcance
+      (2026-10-06) — **refinamiento igual que en migraciones**: no se creó
+      `PermissionProfile` aparte, se extendió `Role` (`grants: list[RoleGrant]`,
+      `scope: OwnScope | AllScope | ExplicitOrgsScope | None`, método
+      `has_zone_action(zone, action)`). Nuevos value objects
+      `RoleGrant` (`domain/value_objects/role_grant.py`) y
+      `OwnScope`/`AllScope`/`ExplicitOrgsScope` (`domain/value_objects/permission_scope.py`,
+      Specification pattern vía `Protocol` + `@runtime_checkable`, sin ABC —
+      evita el choque de metaclases Pydantic+ABCMeta). 19 tests nuevos,
+      todos pasando. `has_permission()`/`get_permissions()` (el camino viejo
+      de `ROLE_PERMISSIONS`) quedaron intactos — `has_zone_action()` es
+      paralelo, todavía no wireado a ningún endpoint real (eso es el ítem
+      del dependency, más abajo).
+  - ⚠️ **Ripple real encontrado por la suite completa** (regla 4 — nunca
+    confiar en "pasó el archivo nuevo"): agregar `grants`/`scope` como
+    campos de `Role` con el MISMO nombre que las relationships lazy de
+    `RoleModel` rompió `_to_entity()` — `from_attributes=True` intentaba
+    leer la relationship fuera de contexto async (`MissingGreenlet`).
+    Atrapado por 3 tests de integración reales (no por los tests nuevos
+    en sí). Fix: `_to_entity()` construye `Role` explícito en vez de
+    reflexión automática — mismo principio que ya se aplicó con
+    `get_user_roles()` en el ítem anterior: un campo nuevo en el dominio
+    puede romper un mapeo ORM↔dominio existente sin tocar ese archivo
+    directamente. Verificado con la suite completa (2554 passed) Y login
+    real contra `prosell-staging-api` (JWT con `roles` cargados sin crash).
 - [ ] Servicio de anti-escalación (nadie otorga lo que no tiene)
 - [ ] Dependency único `require_zone_action(zone, action)` — reemplaza `RBACMiddleware` + los `current_user.has_permission(...)` inline
 - [ ] Migrar los 6 roles fijos actuales a perfiles-plantilla (Liskov — sin camino de código especial)
