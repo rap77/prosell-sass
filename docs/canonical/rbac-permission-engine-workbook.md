@@ -187,7 +187,33 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
   - Sin verificación en staging — no aplica: nada todavía llama a este
     servicio desde un endpoint real, no hay comportamiento vivo que
     comprobar más allá de los tests unitarios.
-- [ ] Dependency único `require_zone_action(zone, action)` — reemplaza `RBACMiddleware` + los `current_user.has_permission(...)` inline
+- [x] Dependency `require_zone_action(zone, action)` — **construido y
+      testeado, pero NO migrado a ningún router todavía** (desglosado
+      abajo, no es lo mismo):
+  - [x] `AbstractRoleRepository.get_user_roles_with_grants()` nuevo —
+        paralelo a `get_user_roles()` (que sigue devolviendo
+        grants=[]/scope=None, sin tocar), con `selectinload()` explícito
+        en las 3 relationships para no repetir el bug de `MissingGreenlet`
+        de los ítems anteriores. Mapea `role_scope.scope_type` a
+        `OwnScope`/`AllScope`/`ExplicitOrgsScope` (con
+        `role_organization_access` para el caso explícito).
+  - [x] `require_zone_action()` en `dependencies.py`, mismo patrón que
+        `require_permission()` ya existente — verifica unión sobre todos
+        los roles del usuario (`any(role.has_zone_action(...))`).
+  - [x] Tests: 4 de integración nuevos (sesión async real, los 3 tipos de
+        scope + el caso sin filas) + 5 unitarios del dependency (fake repo,
+        sin DB). Suite completa sin ripple (2569 passed). Verificado en
+        staging real: reinicio de contenedor + login real sigue
+        funcionando (nada roto en el arranque de la app).
+  - [ ] **Pendiente, deliberadamente separado**: migrar los routers reales
+        que hoy usan `require_permission(Permission.X)` o
+        `current_user.has_permission(Permission.X)` inline (`product_router.py`
+        tiene +5 repeticiones, per §1.2 del diagnóstico) para que usen
+        `require_zone_action()` en su lugar. No lo hice en este mismo ítem
+        a propósito — es un cambio repo-wide sobre autorización real en
+        producción, y mezclarlo con "construir el dependency" hace un diff
+        mucho más difícil de revisar. Queda como su propio paso, antes de
+        poder borrar `RBACMiddleware` de verdad (ítem de abajo).
 - [ ] Migrar los 6 roles fijos actuales a perfiles-plantilla (Liskov — sin camino de código especial)
 - [ ] Borrar `RBACMiddleware` (confirmado muerto, §3.1(5))
 - [ ] Tests (unit + integración del dependency nuevo)

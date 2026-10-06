@@ -465,6 +465,15 @@ repetirlo ad hoc por DTO.
   repetidos a mano en `product_router.py` (§1.2), y el único uso real de
   `require_permission` de hoy. Una sola fuente de verdad por request — arregla de
   paso la relectura repetida de `is_org_admin` (§1.5).
+
+  **Implementado (2026-10-06), con el "reemplaza" todavía pendiente de
+  verdad**: `require_zone_action()` existe y está testeado (unit +
+  integración, sesión async real), pero ningún router lo usa todavía — la
+  migración de los call sites reales de `product_router.py` y el borrado
+  de `RBACMiddleware` quedan como un paso separado y deliberado (no se
+  mezcla "construir el dependency" con "cambiar autorización en producción"
+  en el mismo diff). Detalle en el workbook, bloque 2.
+
 - **Specification pattern** para el alcance: `OwnScope`/`AllScope`/
   `ExplicitOrgsScope` como objetos con un método `filter(query)`, sin `if/elif`
   esparcido por el código.
