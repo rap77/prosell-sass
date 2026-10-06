@@ -402,6 +402,29 @@ asignar un perfil, el motor valida que el set de grants resultante sea subconjun
 de lo que el actor que lo otorga ya tiene. Nadie otorga lo que no tiene — responde
 directo a §3.1(4) (manager limitado a lo que `admin` le configure).
 
+**Refinamiento al implementar (2026-10-06, regla 1 del workbook — re-verificar antes
+de migrar)**: `permission_profiles` y `user_profile_assignments` NO se crearon como
+tablas nuevas — ya existían, con otro nombre, más completas de lo que supuse acá.
+Verificado en código: `roles.tenant_id` ya es nullable (global vs. por-org),
+`roles.is_system_role` ya distingue fijo-vs-custom, y existe `user_roles` (junction
+many-to-many) — y `User.has_permission()` YA itera `self.roles` (plural, semántica de
+unión), no un solo rol. Reusar esto es DRY real (regla 11), no solo una preferencia
+de estilo: inventar `permission_profiles`/`user_profile_assignments` en paralelo
+hubiera duplicado una solución que el código ya tenía. Lo único genuinamente nuevo
+son las 3 tablas de grant/alcance — **reemplazadas de nombre** para que calcen con
+`roles` en vez de un `profile_id` inexistente: `role_grants` (↔ `profile_grants`),
+`role_scope` + `role_organization_access` (↔ `profile_scope`/
+`profile_organization_access`). La barrera real de §1.3(2) (`role_type` UNIQUE NOT
+NULL, por la que `create_custom_role()` hardcodea `VIEWER`) se resolvió con
+`role_type` nullable + índice único parcial (`WHERE role_type IS NOT NULL`) — los 6
+roles fijos siguen únicos entre sí, un perfil custom puede tener `role_type=NULL`.
+Migración `20261006_0001`, probada upgrade+downgrade+upgrade contra Postgres real y
+contra staging (reinicio de contenedor, logs limpios). **Hallazgo aparte, sin
+resolver, para el próximo ítem**: staging tiene 7 roles de sistema, no 6 — hay un
+`vendedor` además de `sales_agent` (`is_system_role=true` en ambos) — no viene de
+esta migración, probablemente un seed viejo; el ítem de migrar los 6 roles fijos a
+plantillas necesita investigar esto antes de asumir que son exactamente 6.
+
 ### 6.3 Campo individual (no como eje del motor)
 
 Ir hasta **campo** (ej. ocultar precio de costo) NO se modela como un cuarto eje

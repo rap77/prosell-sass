@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                               |
-| ------ | ------------------------------------------------------------------------------------- | ------------------------------------ |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | 🟡 In Progress (falta commit/deploy) |
-| 2      | Motor central Zona × Acción × Alcance                                                 | 🔴 Not started                       |
-| 3      | UI de admin para perfiles                                                             | 🔴 Not started                       |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                       |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                       |
+| Bloque | Descripción                                                                           | Estado                                                           |
+| ------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito) |
+| 2      | Motor central Zona × Acción × Alcance                                                 | 🟡 In Progress (migraciones listas, sin commitear)               |
+| 3      | UI de admin para perfiles                                                             | 🔴 Not started                                                   |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                   |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                   |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
@@ -103,12 +103,39 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
       frontend limpios + curl real contra `prosell-staging-api` con un producto
       de prueba insertado y borrado después: confirmado 0 campos sensibles en el
       JSON real devuelto.
-- [ ] Commit + deploy — pendiente de confirmación del usuario (regla 10, no
-      commitear de oficio).
+- [x] Commit + push (2026-10-06) — dos commits en `main`
+      (`0fca068` fix, `c3029c60` docs), pusheados a `origin/main`
+      (`48cf34a2..c3029c60`). Pre-push corrió ruff/pyright/prettier + la
+      suite completa de pytest, todo verde. **Deploy a staging ocurre
+      automático vía CI al mergear a `main`** (ya en curso); **producción
+      NO se promueve** — decisión explícita del usuario, pendiente para
+      más adelante.
+  - GGA encontró en el commit del fix un hallazgo real que yo no había
+    visto en la re-verificación manual: `submitted_by`/`approved_by`
+    (UUIDs reales de usuario) y `rejection_reason` (texto real de
+    moderación) también se estaban filtrando — con valores reales, no
+    `null` como `org_code`/`org_color`/`fb_account_ids`. Se corrigió en
+    el mismo bloque antes de reintentar el commit — la regla 6 funcionó
+    como red de seguridad real, no solo como ítem de checklist.
 
 ## Bloque 2 — Motor central (§6 del diagnóstico)
 
-- [ ] Migraciones: `permission_profiles`, `profile_grants`, `profile_scope`, `profile_organization_access`, `user_profile_assignments`
+- [x] Migraciones (2026-10-06) — **refinamiento real vs. lo escrito en §6.2**:
+      `permission_profiles`/`user_profile_assignments` NO se crearon — ya
+      existían como `roles`/`user_roles` (tenant_id nullable, is_system_role,
+      y `User.has_permission()` ya itera `self.roles` con semántica de unión).
+      Solo 3 tablas nuevas, renombradas para calzar con `roles`:
+      `role_grants`, `role_scope`, `role_organization_access`. Migración
+      `20261006_0001` (relaja `roles.role_type` a nullable + índice único
+      parcial, agrega las 3 tablas) — probada upgrade+downgrade+upgrade contra
+      Postgres real, suite completa backend (2535 passed), y aplicada en
+      staging real (reinicio de contenedor, logs limpios, 6 roles de sistema
+      siguen con su `role_type` intacto). Detalle completo y por qué del
+      refinamiento: diagnóstico §6.2.
+  - [ ] **Sin commitear todavía** — pendiente de confirmación del usuario (regla 10).
+  - ⚠️ Hallazgo aparte para el próximo ítem: staging tiene 7 roles de
+    sistema, no 6 (`vendedor` además de `sales_agent`) — investigar antes
+    de asumir "6 roles fijos" literal en el siguiente paso.
 - [ ] Domain: entidad `PermissionProfile` + specification objects de alcance (`OwnScope`/`AllScope`/`ExplicitOrgsScope`)
 - [ ] Servicio de anti-escalación (nadie otorga lo que no tiene)
 - [ ] Dependency único `require_zone_action(zone, action)` — reemplaza `RBACMiddleware` + los `current_user.has_permission(...)` inline
