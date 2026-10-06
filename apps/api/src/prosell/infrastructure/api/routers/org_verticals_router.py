@@ -18,10 +18,11 @@ from prosell.application.dto.organization.verticals import OrgVerticalsResponse
 from prosell.application.use_cases.organization.list_org_verticals import (
     ListOrgVerticalsUseCase,
 )
-from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
+    get_effective_scope,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
@@ -33,6 +34,11 @@ from prosell.infrastructure.repositories.organization_vertical_repository_impl i
 
 router = APIRouter()
 
+# Named module-level alias so tests can override this exact dependency via
+# `app.dependency_overrides` — same reasoning as org_router.py's
+# `get_cookie_effective_scope`.
+get_cookie_effective_scope = get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)
+
 
 @router.get(
     "/{organization_id}/verticals",
@@ -43,6 +49,9 @@ async def list_org_verticals(
     organization_id: UUID,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     db: Annotated[AsyncSession, Depends(get_async_session)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope, Depends(get_cookie_effective_scope)
+    ],
 ) -> OrgVerticalsResponse:
     """Return the verticals enabled for ``organization_id``.
 
@@ -56,7 +65,7 @@ async def list_org_verticals(
     from its ``attribute_schema``.
     """
     # ponytail: super_admin can read any org's verticals for cross-tenant editing
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     if not is_org_admin and current_user.tenant_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

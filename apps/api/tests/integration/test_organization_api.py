@@ -336,17 +336,21 @@ class TestListOrganizations:
         from prosell.infrastructure.api.dependencies import (
             get_current_auth_user,
             get_current_auth_user_from_cookie,
-            get_effective_scope,
         )
-        from prosell.infrastructure.api.routers.org_router import get_org_repository
+        from prosell.infrastructure.api.routers.org_router import (
+            get_cookie_effective_scope,
+            get_org_repository,
+        )
 
         app.dependency_overrides[get_current_auth_user] = lambda: admin_user
         app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
-        # list_organizations now resolves visibility via get_effective_scope()
+        # list_organizations now resolves visibility via get_cookie_effective_scope()
         # (diagnostic doc §6), not current_user.has_permission() directly —
-        # override it to the scope this test is exercising.
-        app.dependency_overrides[get_effective_scope] = lambda: AllScope()
+        # override it to the scope this test is exercising. (get_effective_scope
+        # itself is a factory now, not a dependency -- override the exact
+        # closure org_router.py actually uses, not the factory function.)
+        app.dependency_overrides[get_cookie_effective_scope] = lambda: AllScope()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/org")

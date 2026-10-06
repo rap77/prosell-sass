@@ -292,8 +292,86 @@ sobre TODOS los routers, no solo el patrón obvio):
       (`test_super_admin_sees_all_orgs_no_tenant_filter`) que no usaba el
       fixture compartido, arreglado overrideando `get_effective_scope`
       directo.
-- [ ] `org_verticals_router.py` — 0/1 (alcance inline, línea 59). El más
-      chico, sin tocar todavía.
+- [x] `org_verticals_router.py` — 1/1 migrado (alcance `ORG_ADMIN_VIEW_ALL`
+      en `list_org_verticals`, vía el mismo alias nombrado
+      `get_cookie_effective_scope` que ya usa `org_router.py`). Lint/pyright/
+      suite completa (2573 passed)/staging verificados con request real
+      (login real + `GET /organizations/{id}/verticals`, 200 con datos
+      reales — antes 422).
+
+  - 🔴 **Bug real encontrado y arreglado al migrar este archivo, severidad
+    alta — afecta además a `org_router.py` YA migrado antes (committeado
+    en `86320bc3`)**: `require_zone_action`/`get_effective_scope` en
+    `dependencies.py` tenían hardcodeado internamente
+    `Depends(get_current_auth_user)` (auth por **Bearer token**). Pero 3 de
+    los 4 routers reales que necesitan este engine (`org_router.py`,
+    `org_verticals_router.py`, `admin_organizations_router.py`, y
+    `product_router.py`) autentican por **cookie httpOnly**
+    (`get_current_auth_user_from_cookie`) — los dos mecanismos NO son
+    intercambiables. Esto significa que `list_organizations` en
+    `org_router.py`, ya pusheado a `main`, tenía un 401 latente en
+    producción real para cualquier request autenticado solo por cookie (el
+    camino real del frontend) — enmascarado en tests porque el fixture
+    compartido overrideaba ambos mecanismos de auth a la vez, así que
+    nunca se ejecutó el `Depends()` interno real.
+    **Fix**: ambas factories ahora exigen `auth_dependency` como parámetro
+    **obligatorio** (sin default) — cada router pasa explícitamente cuál
+    de los dos mecanismos usa. Para que los tests puedan seguir
+    overrideando exactamente el callable que FastAPI resuelve en runtime,
+    cada router expone un alias nombrado a nivel de módulo (ej.
+    `get_cookie_effective_scope = get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)`)
+    en vez de construir el dependency inline en la firma del endpoint.
+  - 🔴 **Segundo bug, encadenado al anterior, encontrado recién al intentar
+    probar el fix en vivo**: tras parametrizar `auth_dependency`, la
+    request real a `org_verticals_router.py` empezó a fallar con
+    `422 Unprocessable Entity` / `{"detail":[{"type":"missing","loc":["query","current_user"],...}]}`
+    — FastAPI trataba `current_user` como un query param obligatorio, no
+    como una dependencia a resolver. Causa raíz: `dependencies.py` tiene
+    `from __future__ import annotations` (línea 3), que convierte TODAS
+    las anotaciones de tipo del módulo en strings, resueltas después por
+    `get_type_hints()` usando el namespace global del módulo. Pero
+    `Annotated[User, Depends(auth_dependency)]` referencia `auth_dependency`
+    como **variable de clausura** (el propio parámetro de la factory) —
+    no está en los globals del módulo, así que esa resolución falla en
+    silencio y FastAPI cae al fallback de query param. Los valores
+    DEFAULT de un parámetro (`= Depends(auth_dependency)`) no se
+    stringifican — se evalúan en el momento de definir la función, cuando
+    `auth_dependency` todavía está en scope.
+
+    **Fix intermedio (descartado por GGA, correctamente)**: el primer
+    intento reescribió `current_user`/`role_repository` al estilo clásico
+    `param: Tipo = Depends(...)` en vez de `param: Annotated[Tipo,
+Depends(...)]`. Pyright (0 errores) y la suite completa lo validaron,
+    pero GGA (pre-commit real, provider `codex`) lo bloqueó: `AGENTS.md`
+    exige `Annotated[Tipo, Depends(...)]` en TODA dependencia FastAPI, sin
+    excepción documentada para este caso — un workaround que resuelve el
+    bug pero viola la convención del equipo, exactamente el caso que el
+    mandate de "corregir TODO lo que GGA señale" (`project.md` § Mandated)
+    existe para atrapar. El propio output de GGA lo resumió bien: "Either
+    refactor the dependency pattern or add an explicit standards
+    exception" — se eligió la primera opción, no bypassear el hook ni
+    reescribir `AGENTS.md` por una decisión unilateral.
+
+    **Fix real y definitivo**: `require_zone_action`/`get_effective_scope`
+    (+ `get_role_repository`, su única dependencia compartida) se movieron
+    a un módulo nuevo, `dependencies_zone_action.py`, que
+    **deliberadamente NO tiene** `from __future__ import annotations`. Sin
+    ese import, las anotaciones se evalúan de forma eager en el momento de
+    definir la función (no como string) — `auth_dependency` sigue
+    resuelto correctamente como variable de clausura real, y el estilo
+    `Annotated[Tipo, Depends(...)]` que `AGENTS.md` exige funciona sin
+    ninguna excepción. Cero imports circulares: el import es unidireccional
+    (`dependencies.py` → `dependencies_zone_action.py`); el módulo nuevo
+    importa `get_async_session` directo de
+    `prosell.infrastructure.database.session` (no de `dependencies.py`), y
+    `dependencies.py` re-exporta las 3 funciones vía `__all__` para que
+    ningún import existente (`org_router.py`, `org_verticals_router.py`,
+    los 3 archivos de test) tuviera que cambiar. Verificado: ruff +
+    ruff-format + pyright real (0 errores en ambos archivos), suite
+    completa backend (2573 passed), y request real contra staging con
+    cookie real (200 en los dos endpoints migrados, antes 422/401). GGA
+    (pre-commit real) pendiente de confirmación en este mismo commit.
+
 - [ ] `admin_organizations_router.py` — 0/13 (alcance, vía helper
       `_require_org_admin_view_all(current_user)` — 13 call sites del
       helper, no inline). Sin tocar.

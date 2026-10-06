@@ -26,6 +26,15 @@ class _FakeRoleRepository:
         return self._roles
 
 
+async def _dummy_auth_dependency() -> User:
+    """Never actually called — `check(...)` below is invoked directly
+    with `current_user=`/`role_repository=` kwargs, bypassing FastAPI's
+    own `Depends()` resolution entirely. `auth_dependency` is required
+    by `require_zone_action()`'s signature regardless (bug found
+    2026-10-06 — see its docstring), so a placeholder satisfies it."""
+    raise NotImplementedError
+
+
 def _make_user() -> User:
     return User(id=uuid4(), email="test@example.com", full_name="Test User")
 
@@ -44,7 +53,7 @@ class TestRequireZoneAction:
     @pytest.mark.asyncio
     async def test_allows_when_a_role_has_the_grant(self) -> None:
         user = _make_user()
-        check = require_zone_action("catalog", "read")
+        check = require_zone_action("catalog", "read", auth_dependency=_dummy_auth_dependency)
 
         result = await check(
             current_user=user,
@@ -56,7 +65,7 @@ class TestRequireZoneAction:
     @pytest.mark.asyncio
     async def test_blocks_when_no_role_has_the_grant(self) -> None:
         user = _make_user()
-        check = require_zone_action("catalog", "read")
+        check = require_zone_action("catalog", "read", auth_dependency=_dummy_auth_dependency)
 
         with pytest.raises(HTTPException) as exc_info:
             await check(
@@ -69,7 +78,7 @@ class TestRequireZoneAction:
     @pytest.mark.asyncio
     async def test_blocks_when_user_has_no_roles_at_all(self) -> None:
         user = _make_user()
-        check = require_zone_action("catalog", "read")
+        check = require_zone_action("catalog", "read", auth_dependency=_dummy_auth_dependency)
 
         with pytest.raises(HTTPException) as exc_info:
             await check(current_user=user, role_repository=_FakeRoleRepository([]))
@@ -80,7 +89,7 @@ class TestRequireZoneAction:
     async def test_allows_when_any_of_multiple_roles_has_the_grant(self) -> None:
         """Union semantics, same as the legacy has_permission() path."""
         user = _make_user()
-        check = require_zone_action("catalog", "read")
+        check = require_zone_action("catalog", "read", auth_dependency=_dummy_auth_dependency)
 
         result = await check(
             current_user=user,
@@ -94,7 +103,7 @@ class TestRequireZoneAction:
     @pytest.mark.asyncio
     async def test_action_mismatch_in_same_zone_is_blocked(self) -> None:
         user = _make_user()
-        check = require_zone_action("catalog", "delete")
+        check = require_zone_action("catalog", "delete", auth_dependency=_dummy_auth_dependency)
 
         with pytest.raises(HTTPException):
             await check(

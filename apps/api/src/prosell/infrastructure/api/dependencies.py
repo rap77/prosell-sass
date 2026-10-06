@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-__all__ = ["get_async_session"]
+__all__ = [
+    "get_async_session",
+    # Re-exported from dependencies_zone_action for backward compatibility —
+    # every existing `from prosell.infrastructure.api.dependencies import
+    # require_zone_action` (etc.) keeps working after the move.
+    "get_effective_scope",
+    "get_role_repository",
+    "require_zone_action",
+]
 
 import secrets
 from collections.abc import Awaitable, Callable
@@ -101,8 +109,11 @@ from prosell.domain.repositories.publication_repository import IPublicationRepos
 from prosell.domain.repositories.user_branch_repository import (
     AbstractUserBranchRepository,
 )
-from prosell.domain.services.scope_resolver import resolve_effective_scope
-from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
+from prosell.infrastructure.api.dependencies_zone_action import (
+    get_effective_scope,
+    get_role_repository,
+    require_zone_action,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
@@ -117,7 +128,6 @@ from prosell.infrastructure.repositories.organization_repository_impl import (
 from prosell.infrastructure.repositories.organization_vertical_repository_impl import (
     SqlAlchemyOrganizationVerticalRepository,
 )
-from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyRoleRepository
 from prosell.infrastructure.repositories.session_repository_impl import SqlAlchemySessionRepository
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 from prosell.infrastructure.security.token_hasher import TokenHasher
@@ -147,13 +157,6 @@ async def get_user_repository(
 ) -> AbstractUserRepository:
     """Get user repository instance."""
     return SqlAlchemyUserRepository(session)
-
-
-async def get_role_repository(
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> AbstractRoleRepository:
-    """Get role repository instance."""
-    return SqlAlchemyRoleRepository(session)
 
 
 async def get_session_repository(
@@ -485,81 +488,6 @@ def require_permission(permission: Permission) -> Callable[..., Awaitable[User]]
         return current_user
 
     return _check
-
-
-def require_zone_action(zone: str, action: str) -> Callable[..., Awaitable[User]]:
-    """
-    Dependency factory for the NEW zone/action permission engine
-    (diagnostic doc §6) — parallel to `require_permission()` above,
-    which still reads the legacy `ROLE_PERMISSIONS` dict.
-
-    Usage in FastAPI routes:
-        current_user: User = Depends(require_zone_action("catalog", "read"))
-
-    `zone`/`action` are plain strings, not an enum — §6.1: they're data
-    (rows in `role_grants`), not a code deploy.
-
-    Not yet used by any router. Migrating existing endpoints from
-    `require_permission()`/inline `current_user.has_permission(...)` to
-    this is explicitly a SEPARATE, later step (see the workbook) — a
-    repo-wide swap in the same change as building this dependency would
-    make a security-relevant diff much harder to review.
-
-    Args:
-        zone: The permission zone (e.g. "catalog", "leads")
-        action: The action within that zone (e.g. "read", "update")
-
-    Returns:
-        Dependency function that FastAPI can call
-    """
-
-    async def _check(
-        current_user: Annotated[User, Depends(get_current_auth_user)],
-        role_repository: Annotated[AbstractRoleRepository, Depends(get_role_repository)],
-    ) -> User:
-        """Check if any of the user's roles grants this zone/action."""
-        from fastapi import HTTPException, status
-
-        user_roles = await role_repository.get_user_roles_with_grants(current_user.id)
-
-        if not any(role.has_zone_action(zone, action) for role in user_roles):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission '{zone}:{action}' required",
-            )
-
-        return current_user
-
-    return _check
-
-
-async def get_effective_scope(
-    current_user: Annotated[User, Depends(get_current_auth_user)],
-    role_repository: Annotated[AbstractRoleRepository, Depends(get_role_repository)],
-) -> AllScope | ExplicitOrgsScope | OwnScope:
-    """
-    Dependency: the current user's effective data-visibility scope
-    (diagnostic doc §6), unioned across every role they hold via
-    `resolve_effective_scope()` — the most permissive scope wins
-    (confirmed with the user, 2026-10-06), not a "primary role" rule.
-
-    Replaces the inline `current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`
-    pattern repeated 30 times across routers (§1.2/§1.6 of the
-    diagnostic) — that permission was never really an action grant, it
-    was always a visibility scope wearing a `Permission` costume.
-
-    Usage in FastAPI routes:
-        scope: Annotated[Scope, Depends(get_effective_scope)]
-        can_view_all_orgs = isinstance(scope, AllScope)
-
-    Loads roles via `get_user_roles_with_grants()` deliberately, NOT the
-    plain `get_user_roles()` that populates `current_user.roles` at auth
-    time — that one always maps `scope=None` by design (see
-    `_to_entity()`'s docstring), since it predates this permission
-    engine and most callers never needed grants/scope loaded.
-    """
-    user_roles = await role_repository.get_user_roles_with_grants(current_user.id)
-    return resolve_effective_scope(user_roles)
 
 
 def require_role(role_type: RoleType) -> Callable[..., Awaitable[User]]:

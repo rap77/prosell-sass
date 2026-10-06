@@ -47,6 +47,16 @@ class _FakeRoleRepository:
         raise NotImplementedError
 
 
+async def _dummy_auth_dependency() -> User:
+    """Never actually called — the resolved dependency below is invoked
+    directly with `current_user=`/`role_repository=` kwargs, bypassing
+    FastAPI's own `Depends()` resolution. `auth_dependency` is required
+    by `get_effective_scope()`'s factory signature regardless (bug
+    found 2026-10-06 — see its docstring), so a placeholder satisfies
+    it."""
+    raise NotImplementedError
+
+
 def _make_user() -> User:
     return User(id=uuid4(), email="test@example.com", full_name="Test User")
 
@@ -60,14 +70,14 @@ def _role_with_scope(scope) -> Role:
 class TestGetEffectiveScope:
     @pytest.mark.asyncio
     async def test_defaults_to_own_scope_when_no_roles(self) -> None:
-        scope = await get_effective_scope(
-            current_user=_make_user(), role_repository=_FakeRoleRepository([])
-        )
+        resolve = get_effective_scope(auth_dependency=_dummy_auth_dependency)
+        scope = await resolve(current_user=_make_user(), role_repository=_FakeRoleRepository([]))
         assert isinstance(scope, OwnScope)
 
     @pytest.mark.asyncio
     async def test_returns_all_scope_when_any_role_has_it(self) -> None:
-        scope = await get_effective_scope(
+        resolve = get_effective_scope(auth_dependency=_dummy_auth_dependency)
+        scope = await resolve(
             current_user=_make_user(),
             role_repository=_FakeRoleRepository(
                 [_role_with_scope(OwnScope()), _role_with_scope(AllScope())]
@@ -78,7 +88,8 @@ class TestGetEffectiveScope:
     @pytest.mark.asyncio
     async def test_returns_union_of_explicit_scopes(self) -> None:
         org_a, org_b = uuid4(), uuid4()
-        scope = await get_effective_scope(
+        resolve = get_effective_scope(auth_dependency=_dummy_auth_dependency)
+        scope = await resolve(
             current_user=_make_user(),
             role_repository=_FakeRoleRepository(
                 [

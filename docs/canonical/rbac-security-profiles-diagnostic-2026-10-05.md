@@ -312,6 +312,52 @@ accidente de herencia. Verificado end-to-end: suite completa backend (1852
 passed), integración real del router (10/10), y `curl` directo contra
 `prosell-staging-api` confirmando 0 campos sensibles en el JSON real.
 
+**Cuarto bug real encontrado (2026-10-06), durante la migración de call sites del
+§6 — 401 latente en producción por mezclar Bearer y cookie.** Mismo criterio que
+los anteriores: no depende de ninguna de las 8 preguntas, se arregla solo.
+
+`require_zone_action()`/`get_effective_scope()` (`dependencies.py`) resolvían el
+usuario autenticado hardcodeando internamente `Depends(get_current_auth_user)` —
+el mecanismo de auth por **Bearer token**. Pero 3 de los 4 routers reales que
+necesitan este motor (`org_router.py`, `org_verticals_router.py`,
+`admin_organizations_router.py`, `product_router.py`) autentican por **cookie
+httpOnly** (`get_current_auth_user_from_cookie`) — son dos mecanismos distintos,
+no intercambiables. Consecuencia real: `list_organizations` en `org_router.py`,
+ya pusheado a `main` (`078e715a`), tenía un 401 latente para cualquier request
+real del frontend (que autentica por cookie) — enmascarado en los tests porque
+el fixture compartido overrideaba los dos mecanismos de auth a la vez, así que
+nunca se ejecutaba el `Depends()` interno real. Fix: ambas factories ahora
+exigen `auth_dependency` como parámetro **obligatorio** (sin default); cada
+router pasa explícitamente cuál de los dos mecanismos usa, vía un alias nombrado
+a nivel de módulo (ej. `get_cookie_effective_scope`) para que los tests puedan
+overridear exactamente el callable que FastAPI resuelve en runtime.
+
+Ese mismo fix destapó un **segundo bug encadenado**, más sutil: con
+`auth_dependency` parametrizado, la request real empezó a fallar con
+`422 Unprocessable Entity` (`current_user` tratado como query param
+obligatorio). Causa: `dependencies.py` tiene `from __future__ import
+annotations`, que convierte toda anotación de tipo del módulo en un string
+resuelto después vía `get_type_hints()` contra los globals del módulo —
+`Annotated[User, Depends(auth_dependency)]` referenciaba `auth_dependency` como
+variable de clausura, ausente de esos globals, así que la resolución fallaba en
+silencio. Primer intento de fix (descartado): estilo clásico `current_user:
+User = Depends(auth_dependency)` (valor default, no se stringifica) — pasaba
+pyright y la suite completa, pero GGA (pre-commit real) lo bloqueó: `AGENTS.md`
+exige `Annotated[Tipo, Depends(...)]` sin excepción documentada para este caso,
+y el propio mandate del equipo de corregir todo hallazgo de GGA en archivos
+tocados aplica acá sin ambigüedad. Fix real: `require_zone_action`/
+`get_effective_scope` (+ `get_role_repository`) se movieron a un módulo nuevo,
+`dependencies_zone_action.py`, sin `from __future__ import annotations` — sin
+ese import las anotaciones se evalúan eager (no como string), `auth_dependency`
+resuelve bien como clausura real, y el estilo `Annotated[...]` que pide
+`AGENTS.md` funciona sin ninguna excepción. Import unidireccional (sin ciclo):
+`dependencies.py` re-exporta las 3 funciones vía `__all__`. Verificado: ruff +
+pyright real (0 errores), suite completa backend (2573 passed), y request real
+contra `prosell-staging-api` con login real por cookie (`GET
+/organizations/{id}/verticals`, antes 422, ahora 200 con datos reales).
+Detalle completo en `rbac-permission-engine-workbook.md`, sección "Estado EXACTO
+de la migración de call sites".
+
 ---
 
 ## 5. Validación del repo `fb-autopost` (corrige una afirmación errónea)

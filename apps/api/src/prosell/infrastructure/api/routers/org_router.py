@@ -42,6 +42,7 @@ from prosell.domain.repositories.organization_repository import (
 from prosell.domain.repositories.wallet_repository import AbstractWalletRepository
 from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user,
     get_current_auth_user_from_cookie,
     get_effective_scope,
     get_spaces_service,
@@ -86,6 +87,13 @@ def get_wallet_repository(
 # ORGANIZATION CRUD ENDPOINTS
 # =============================================================================
 
+# Named module-level alias (not inlined in the signature below) so tests
+# can override this exact dependency via `app.dependency_overrides` — a
+# `Depends(get_effective_scope(auth_dependency=...))` written inline would
+# create a fresh, unreferenceable closure each time the module is read,
+# which a test has no handle to target.
+get_cookie_effective_scope = get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)
+
 
 @router.post(
     "",
@@ -95,7 +103,12 @@ def get_wallet_repository(
 )
 async def create_organization(
     request: CreateOrganizationRequest,
-    current_user: Annotated[User, Depends(require_zone_action("organizations", "create"))],
+    current_user: Annotated[
+        User,
+        Depends(
+            require_zone_action("organizations", "create", auth_dependency=get_current_auth_user)
+        ),
+    ],
     org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
     wallet_repo: Annotated[AbstractWalletRepository, Depends(get_wallet_repository)],
 ) -> OrganizationResponse:
@@ -135,7 +148,7 @@ async def list_organizations(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     org_repo: Annotated[AbstractOrganizationRepository, Depends(get_org_repository)],
     effective_scope: Annotated[
-        AllScope | ExplicitOrgsScope | OwnScope, Depends(get_effective_scope)
+        AllScope | ExplicitOrgsScope | OwnScope, Depends(get_cookie_effective_scope)
     ],
     skip: int = 0,
     limit: int = 100,
