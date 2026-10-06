@@ -10,22 +10,24 @@ and viewer. Covers:
 - B2.5.e: Vendedor own leads/appointments (create, read, update)
 - B2.5.f: Viewer read-only
 - B2.5.g: All role combinations
-- B2.5.h: Authorization at API layer (require_permission / require_role)
 - B2.5.i: Cross-tenant access blocked
 - B2.5.j: Role escalation blocked
 - B2.5.k: Permission matrix documentation
 
 All tests are pure unit tests — no database, no HTTP client.
-They test domain entities, domain logic, and the RBAC middleware directly.
+They test domain entities and domain logic directly. `RBACMiddleware`
+was confirmed dead code (diagnostic doc §3.1(5)) and deleted
+2026-10-06 — the tests that exercised it directly are gone with it;
+the escalation properties they covered are still tested above via
+`User.has_permission()`/`has_role()`, the mechanism that's actually
+live.
 """
 
 from __future__ import annotations
 
-from typing import TypedDict
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import HTTPException
 
 from prosell.domain.entities.role import (
     ROLE_PERMISSIONS,
@@ -34,15 +36,6 @@ from prosell.domain.entities.role import (
     RoleType,
 )
 from prosell.domain.entities.user import User, UserStatus
-
-
-class _CurrentUserDict(TypedDict):
-    """Shape of the `current_user` dict RBACMiddleware.require_roles/
-    require_permissions extract `roles` from. Tests only ever populate
-    `roles`, so this is the real shape — not a justification for `Any`."""
-
-    roles: list[str]
-
 
 # =============================================================================
 # B2.5.b — PERMISSION_MATRIX
@@ -645,111 +638,6 @@ class TestAPILayerAuthorization:
             roles=roles,
         )
 
-    # ── require_roles (RBACMiddleware) ─────────────────────────────────────────
-
-    async def test_rbac_middleware_allows_matching_role(self) -> None:
-        """RBACMiddleware.require_roles passes when user has the role."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        # The middleware operates on a dict with 'roles' key
-        user_dict: _CurrentUserDict = {"roles": ["admin"]}
-
-        # Instantiate the wrapper inline to verify it doesn't raise
-        @RBACMiddleware.require_roles("admin", "super_admin")
-        async def _endpoint() -> str:
-            return "ok"
-
-        result: str = await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
-        assert result == "ok"
-
-    async def test_rbac_middleware_blocks_wrong_role(self) -> None:
-        """RBACMiddleware.require_roles raises 403 when user lacks the role."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        user_dict: _CurrentUserDict = {"roles": ["viewer"]}
-
-        @RBACMiddleware.require_roles("admin", "super_admin")
-        async def _endpoint(_current_user: _CurrentUserDict) -> str:
-            return "ok"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
-
-        assert exc_info.value.status_code == 403
-
-    async def test_rbac_middleware_blocks_empty_roles(self) -> None:
-        """RBACMiddleware.require_roles raises 403 when user has no roles."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        user_dict: _CurrentUserDict = {"roles": []}
-
-        @RBACMiddleware.require_roles("admin")
-        async def _endpoint(_current_user: _CurrentUserDict) -> str:
-            return "ok"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
-
-        assert exc_info.value.status_code == 403
-
-    async def test_rbac_middleware_allows_any_of_multiple_roles(self) -> None:
-        """require_roles is satisfied when user has *any* of the listed roles."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        user_dict: _CurrentUserDict = {"roles": ["manager"]}
-
-        @RBACMiddleware.require_roles("admin", "manager", "super_admin")
-        async def _endpoint() -> str:
-            return "ok"
-
-        result: str = await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
-        assert result == "ok"
-
-    # ── require_permissions (RBACMiddleware) ───────────────────────────────────
-
-    async def test_rbac_middleware_allows_matching_permission(self) -> None:
-        """require_permissions passes when user role grants the permission."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        user_dict: _CurrentUserDict = {"roles": ["admin"]}
-
-        @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint() -> str:
-            return "ok"
-
-        result: str = await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
-        assert result == "ok"
-
-    async def test_rbac_middleware_blocks_missing_permission(self) -> None:
-        """require_permissions raises 403 when user's role lacks the permission."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        user_dict: _CurrentUserDict = {"roles": ["viewer"]}
-
-        @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(_current_user: _CurrentUserDict) -> str:
-            return "ok"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
-
-        assert exc_info.value.status_code == 403
-
-    async def test_rbac_detail_contains_missing_permission(self) -> None:
-        """403 error detail lists the missing permissions."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        user_dict: _CurrentUserDict = {"roles": ["viewer"]}
-
-        @RBACMiddleware.require_permissions("user:delete")
-        async def _endpoint(_current_user: _CurrentUserDict) -> str:
-            return "ok"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _endpoint(user_dict)  # type: ignore[call-arg]
-
-        assert "user:delete" in exc_info.value.detail
-
     # ── Role entity has_permission ─────────────────────────────────────────────
 
     def test_role_entity_has_permission_returns_true(self) -> None:
@@ -918,51 +806,13 @@ class TestRoleEscalationBlocked:
         assert vendedor.has_role("super_admin") is False
         assert vendedor.has_role("manager") is False
 
-    async def test_rbac_middleware_prevents_privilege_escalation(self) -> None:
-        """require_roles('admin') blocks a viewer user at the middleware layer."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        viewer_dict: _CurrentUserDict = {"roles": ["viewer"]}
-
-        @RBACMiddleware.require_roles("admin")
-        async def _admin_endpoint(_current_user: _CurrentUserDict) -> str:
-            return "admin data"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _admin_endpoint(viewer_dict)  # type: ignore[call-arg]
-
-        assert exc_info.value.status_code == 403
-
-    async def test_permission_check_fails_for_escalation_attempt(self) -> None:
-        """require_permissions blocks viewer trying to access create endpoint."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        viewer_dict: _CurrentUserDict = {"roles": ["viewer"]}
-
-        @RBACMiddleware.require_permissions("user:create")
-        async def _create_user_endpoint(_current_user: _CurrentUserDict) -> str:
-            return "user created"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _create_user_endpoint(viewer_dict)  # type: ignore[call-arg]
-
-        assert exc_info.value.status_code == 403
-
-    async def test_invalid_role_string_does_not_grant_permissions(self) -> None:
-        """Injecting a non-existent role string grants no permissions via middleware."""
-        from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
-
-        # Attempt to use a crafted role name that doesn't exist in RoleType enum
-        fake_role_dict: _CurrentUserDict = {"roles": ["super_hacker"]}
-
-        @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(_current_user: _CurrentUserDict) -> str:
-            return "ok"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await _endpoint(fake_role_dict)  # type: ignore[call-arg]
-
-        assert exc_info.value.status_code == 403
+    def test_invalid_role_string_does_not_grant_permissions(self) -> None:
+        """Injecting a non-existent role string grants no permissions via
+        the real enforcement path (`User.has_permission`, §1.2 of the
+        diagnostic) — `RoleType("super_hacker")` isn't a valid enum
+        member, so no `Role` can even be constructed with it."""
+        with pytest.raises(ValueError):
+            RoleType("super_hacker")
 
 
 # =============================================================================
