@@ -233,10 +233,91 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
         se llama directo con su firma real, así que su fake repo necesitó
         implementar el Protocol completo de verdad. Suite completa: 2573
         passed. Verificado en staging real (reinicio + login).
-  - [ ] **Pendiente, siguiente paso real**: migrar los 32 call sites de
-        verdad — 2 de acción (→ `require_zone_action`) y 30 de alcance
-        (→ `get_effective_scope` + `isinstance(scope, AllScope)`), la
-        mayoría concentrados en `product_router.py`. Todavía no tocado.
+  - [~] **EN CURSO — el número real es 57, no 32** (corregido dos veces al
+    reverificar archivo por archivo — ver "Estado exacto" abajo).
+    2/57 migrados (`org_router.py`). Los 2 patrones de migración ya
+    están resueltos y probados — lo que queda es mecánico, archivo
+    por archivo, con la misma verificación de siempre.
+
+### Estado EXACTO de la migración de call sites (bloque 2, último ítem) — leer esto primero al retomar
+
+**Por qué existen 57 (no es un bug, es falta de un punto central)**: cada
+endpoint que necesita saber "¿este usuario ve todas las organizaciones o
+solo la suya?" (`ORG_ADMIN_VIEW_ALL`) o "¿puede publicar en marketplace?"
+(`MARKETPLACE_PUBLISH`) lo recalcula por su cuenta, copiado — no hay
+middleware ni dependency central (§1.2 del diagnóstico). Migrar esto NO
+arregla un bug de seguridad — el comportamiento HOY es correcto. Lo que
+hace: (1) centraliza la lógica en un solo lugar testeado, (2) **es lo que
+"prende" el motor nuevo para que tenga efecto real** — sin esto, un
+perfil personalizado con `ExplicitOrgsScope` configurado en el bloque 3
+sería ignorado por la API, porque estos 57 call sites seguirían
+preguntando `has_permission(ORG_ADMIN_VIEW_ALL)`, que un perfil custom
+nunca puede tener.
+
+**Los 2 patrones de migración, ya probados en `org_router.py` (regla 11,
+reusar, no reinventar por archivo)**:
+
+1. **Chequeo de acción** (via helper tipo `_require_marketplace_publish(current_user)`
+   que llama `has_permission()` y lanza 403): cambiar la fuente del
+   `Depends()` de `current_user` de la auth dependency actual a
+   `require_zone_action(zone, action)`, y borrar la llamada al helper
+   dentro del cuerpo — ya no hace falta, frena antes de entrar a la
+   función.
+2. **Chequeo de alcance** (`is_org_admin`/`can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`,
+   usado DESPUÉS en lógica condicional, no para bloquear de entrada):
+   agregar `effective_scope: Annotated[AllScope | ExplicitOrgsScope | OwnScope, Depends(get_effective_scope)]`
+   a la firma, cambiar la línea a `isinstance(effective_scope, AllScope)` —
+   mismo nombre de variable, cero cambios más abajo en la función.
+
+**Mapeo de Permission → (zone, action)** (mismo del seed `20261006_0002`):
+`Permission.ORG_CREATE` → `("organizations", "create")`.
+`Permission.MARKETPLACE_PUBLISH` → `("marketplace", "publish")`.
+`Permission.ORG_ADMIN_VIEW_ALL` → NO es un grant, es
+`isinstance(effective_scope, AllScope)`.
+
+**Checklist real, archivo por archivo** (57 total, verificado por grep
+exhaustivo cruzado — patrón literal + nombres de función helper + grep
+sobre TODOS los routers, no solo el patrón obvio):
+
+- [x] `org_router.py` — 2/2 migrados (1 acción `ORG_CREATE`, 1 alcance
+      `ORG_ADMIN_VIEW_ALL` en `list_organizations`). Lint/pyright/suite
+      completa (2573 passed)/staging verificados. **3 tests rotos y
+      arreglados en el camino**: el fixture compartido
+      `mock_role_repo_super_admin` (`tests/integration/test_organization_api.py`)
+      solo mockeaba `get_user_roles()` (el método viejo) — crasheaba con
+      `TypeError: object MagicMock can't be used in 'await' expression`
+      en cuanto un endpoint migrado llamaba a `get_user_roles_with_grants()`.
+      Arreglado en la fuente del fixture (afecta a los ~13 tests que lo
+      usan, no solo los 3 que fallaron), + un test suelto
+      (`test_super_admin_sees_all_orgs_no_tenant_filter`) que no usaba el
+      fixture compartido, arreglado overrideando `get_effective_scope`
+      directo.
+- [ ] `org_verticals_router.py` — 0/1 (alcance inline, línea 59). El más
+      chico, sin tocar todavía.
+- [ ] `admin_organizations_router.py` — 0/13 (alcance, vía helper
+      `_require_org_admin_view_all(current_user)` — 13 call sites del
+      helper, no inline). Sin tocar.
+- [ ] `product_router.py` — 0/41, el grande:
+  - 0/27 alcance inline (`is_org_admin`/`can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`,
+    líneas 311, 340(no, esta es marketplace), 487, 1276, 1327, 1455, 1594,
+    1751, 1984, 2074, 2105, 2134, 2162, 2191, 2215, 2243, 2277, 2309,
+    2492, 2521, 2601, 2668, 2839, 2915, 2978 y más — re-grepear
+    `has_permission\(Permission\.ORG_ADMIN_VIEW_ALL\)` al retomar, no
+    confiar en esta lista si el archivo cambió).
+  - 0/14 acción vía helper `_require_marketplace_publish(current_user)`
+    (líneas 1828, 1860, 1891, 1922, 1953, 2010, 2040, 2071, 2102, 2131,
+    2159, 2188, 2212, 2240 — mismo aviso, re-grepear).
+  - `_require_super_admin`/`_require_matching_version` en el mismo
+    archivo son OTRO mecanismo (role-based / version-based) — **NO
+    tocar, fuera de alcance**.
+- [ ] **Confirmado fuera de alcance** (verificado, no son `Permission`-based):
+      `_require_migration_admin` (`fb_credential_migration_router.py`,
+      usa `has_role(RoleType.SUPER_ADMIN)`) y `_require_platform_admin`
+      (`category_router.py`, mismo mecanismo). No migrar estos.
+- [ ] Después de migrar los 3 archivos: correr `rg -n "has_permission\(Permission\.(ORG_ADMIN_VIEW_ALL|MARKETPLACE_PUBLISH)\)|require_permission\(Permission\.ORG_CREATE\)" src/`
+      sobre TODO `src/` para confirmar 0 resultados antes de dar este
+      ítem por terminado — esa es la prueba real de "migración completa",
+      no contar manualmente.
 - [x] Migrar los 6 roles fijos actuales a perfiles-plantilla (2026-10-06) —
       migración de datos `20261006_0002`, siembra `role_grants`/`role_scope`
       para los 6 roles `RoleType` traduciendo `ROLE_PERMISSIONS` 1:1. Mismas

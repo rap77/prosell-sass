@@ -491,15 +491,25 @@ repetirlo ad hoc por DTO.
   nuevo, antes de borrarlo); la migración de call sites, no todavía.
 
   **Corrección real al re-verificar antes de migrar (2026-10-06)**: no son
-  "+5 repeticiones" — son **32 call sites reales**, y **30 de los 32 no
-  migran a `require_zone_action` en absoluto**. `Permission.ORG_ADMIN_VIEW_ALL`
+  "+5 repeticiones" — y el primer recuento tampoco alcanzó: subió de "32"
+  a **57 call sites reales** al encontrar que varios routers usan una
+  función helper (`_require_org_admin_view_all`, `_require_marketplace_publish`)
+  en vez del patrón inline que el grep original buscaba — mismo permiso,
+  forma de llamada distinta. La mayoría (55 de 57) no migran a
+  `require_zone_action` en absoluto. `Permission.ORG_ADMIN_VIEW_ALL`
   nunca fue un permiso de acción — es, y siempre fue, un alcance de
   visibilidad (`role_scope.scope_type='all'`, ya mapeado así en la
   migración de datos). Hizo falta una pieza nueva:
   `domain/services/scope_resolver.py` (`resolve_effective_scope`, unión de
   alcances entre los roles de un usuario, **confirmado con el usuario**:
   el más permisivo gana) + `get_effective_scope()` en `dependencies.py`.
-  Detalle completo y los 32 call sites exactos en el workbook, bloque 2.
+  **Importante — esto no arregla un bug de seguridad**: el comportamiento
+  actual ya es correcto; migrar estos 57 centraliza la lógica en un lugar
+  testeado y, sobre todo, es lo que hace que el motor nuevo (bloques 1-2)
+  tenga efecto real en producción — sin esto, un perfil personalizado del
+  bloque 3 quedaría configurado en la base pero ignorado por la API.
+  Detalle completo, el checklist archivo-por-archivo y el estado exacto
+  (2/57 migrados al momento de este corte) en el workbook, bloque 2.
 
 - **Specification pattern** para el alcance: `OwnScope`/`AllScope`/
   `ExplicitOrgsScope` como objetos con un método `filter(query)`, sin `if/elif`
