@@ -1,8 +1,10 @@
 """Admin organization endpoints — Subsystem D Phase 4.
 
-Lets a caller with `Permission.ORG_ADMIN_VIEW_ALL` browse every organization
-and drill into a specific organization's product catalog,
-mirroring the cross-tenant bypass already wired into `product_router.py`.
+Lets a caller whose effective data-visibility scope is `AllScope` (zone/
+action/scope permission engine, diagnostic doc §6 — formerly the
+`Permission.ORG_ADMIN_VIEW_ALL` grant) browse every organization and drill
+into a specific organization's product catalog, mirroring the cross-tenant
+bypass already wired into `product_router.py`.
 """
 
 from datetime import datetime
@@ -34,16 +36,17 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
-from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.organization_invitation_repository import (
     AbstractOrganizationInvitationRepository,
 )
 from prosell.domain.value_objects.organization_contact import OrganizationContact
 from prosell.domain.value_objects.organization_status import OrganizationStatus
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import (
     get_create_organization_use_case,
     get_current_auth_user_from_cookie,
+    get_effective_scope,
     get_invite_organization_owner_use_case,
     get_organization_invitation_repository,
 )
@@ -73,6 +76,14 @@ router = APIRouter()
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 
+# Named module-level alias so tests can override this exact dependency via
+# `app.dependency_overrides` — same reasoning as org_router.py's
+# `get_cookie_effective_scope`.
+get_cookie_effective_scope = get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)
+EffectiveScope = Annotated[
+    AllScope | ExplicitOrgsScope | OwnScope, Depends(get_cookie_effective_scope)
+]
+
 
 class UpdateOrganizationVerticalsRequest(BaseModel):
     vertical_ids: list[UUID]
@@ -90,8 +101,8 @@ class OrganizationVerticalsResponse(BaseModel):
     product_counts: list[VerticalWithProductCount]
 
 
-def _require_org_admin_view_all(current_user: User) -> None:
-    if not current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL):
+def _require_org_admin_view_all(effective_scope: AllScope | ExplicitOrgsScope | OwnScope) -> None:
+    if not isinstance(effective_scope, AllScope):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission 'org:admin_view_all' required",
@@ -99,9 +110,11 @@ def _require_org_admin_view_all(current_user: User) -> None:
 
 
 @router.get("", response_model=OrganizationListResponse)
-async def list_organizations(current_user: CurrentUser, db: DbSession) -> OrganizationListResponse:
+async def list_organizations(
+    db: DbSession, effective_scope: EffectiveScope
+) -> OrganizationListResponse:
     """List every organization organization. Requires ORG_ADMIN_VIEW_ALL."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     broker_repo = SqlAlchemyOrganizationBrokerRepository(db)
@@ -170,10 +183,12 @@ async def list_organizations(current_user: CurrentUser, db: DbSession) -> Organi
 
 @router.get("/{organization_id}/products", response_model=ProductListResponse)
 async def list_organization_products(
-    organization_id: UUID, current_user: CurrentUser, db: DbSession
+    organization_id: UUID,
+    db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductListResponse:
     """List a specific organization's products. Requires ORG_ADMIN_VIEW_ALL."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     # `organization_id` and `tenant_id` are the same value by design (see
@@ -201,6 +216,7 @@ async def create_organization(
     current_user: CurrentUser,
     db: DbSession,
     use_case: Annotated[CreateOrganizationUseCase, Depends(get_create_organization_use_case)],
+    effective_scope: EffectiveScope,
 ) -> CreateOrganizationResponse:
     """Create a new organization org + enable its verticals + invite its owner.
 
@@ -216,7 +232,7 @@ async def create_organization(
     test_create_organization_atomicity.py.
     """
     _ = request
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     try:
         result = await use_case.execute(
@@ -266,10 +282,11 @@ async def resend_organization_invitation(
     use_case: Annotated[
         InviteOrganizationOwnerUseCase, Depends(get_invite_organization_owner_use_case)
     ],
+    effective_scope: EffectiveScope,
 ) -> CreateOrganizationResponse:
     """Resend (or freshly issue) the owner invitation for an existing organization org."""
     _ = request
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -352,10 +369,12 @@ class UpdateOrganizationResponse(BaseModel):
 
 @router.get("/{organization_id}", response_model=OrganizationResponse)
 async def get_organization(
-    organization_id: UUID, current_user: CurrentUser, db: DbSession
+    organization_id: UUID,
+    db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> OrganizationResponse:
     """Get a single organization's details. Requires ORG_ADMIN_VIEW_ALL."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -369,11 +388,11 @@ async def get_organization(
 async def update_organization(
     organization_id: UUID,
     request: UpdateOrganizationRequest,
-    current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> UpdateOrganizationResponse:
     """Update a organization's details."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -495,10 +514,12 @@ class UpdateBrokerRequest(BaseModel):
 
 @router.get("/{organization_id}/brokers", response_model=BrokerListResponse)
 async def list_organization_brokers(
-    organization_id: UUID, current_user: CurrentUser, db: DbSession
+    organization_id: UUID,
+    db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> BrokerListResponse:
     """List brokers for a organization. Requires ORG_ADMIN_VIEW_ALL."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -520,14 +541,14 @@ async def list_organization_brokers(
 async def create_organization_broker(
     organization_id: UUID,
     request: CreateBrokerRequest,
-    current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> BrokerResponse:
     """Create a broker for a organization. Requires ORG_ADMIN_VIEW_ALL.
 
     Brokers start as 'pending' and can be linked to users later.
     """
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -560,11 +581,11 @@ async def update_organization_broker(
     organization_id: UUID,
     broker_id: UUID,
     request: UpdateBrokerRequest,
-    current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> BrokerResponse:
     """Update a broker. Only allowed if status is 'pending'."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -598,8 +619,8 @@ async def update_organization_broker(
 async def delete_organization_broker(
     organization_id: UUID,
     broker_id: UUID,
-    current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> None:
     """Delete a broker. Requires ORG_ADMIN_VIEW_ALL.
 
@@ -607,7 +628,7 @@ async def delete_organization_broker(
     - If broker is sole owner (100%) → ownership transfers to organization
     - If broker shares with others → percentages redistribute proportionally
     """
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -737,11 +758,11 @@ async def _count_products_per_vertical(
 @router.get("/{organization_id}/verticals", response_model=OrganizationVerticalsResponse)
 async def get_organization_verticals(
     organization_id: UUID,
-    current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> OrganizationVerticalsResponse:
     """Get an organization's verticals with product counts. Requires ORG_ADMIN_VIEW_ALL."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)
@@ -768,11 +789,11 @@ async def get_organization_verticals(
 async def update_organization_verticals(
     organization_id: UUID,
     request: UpdateOrganizationVerticalsRequest,
-    current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> OrganizationVerticalsResponse:
     """Update an organization's verticals. Requires ORG_ADMIN_VIEW_ALL."""
-    _require_org_admin_view_all(current_user)
+    _require_org_admin_view_all(effective_scope)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
     organization = await org_repo.get_by_id(organization_id, tenant_id=organization_id)

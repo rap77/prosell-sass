@@ -370,11 +370,31 @@ Depends(...)]`. Pyright (0 errores) y la suite completa lo validaron,
     ruff-format + pyright real (0 errores en ambos archivos), suite
     completa backend (2573 passed), y request real contra staging con
     cookie real (200 en los dos endpoints migrados, antes 422/401). GGA
-    (pre-commit real) pendiente de confirmación en este mismo commit.
+    (pre-commit real) confirmado `STATUS: PASSED` en el commit real
+    (`21503852`, pusheado a `main`).
 
-- [ ] `admin_organizations_router.py` — 0/13 (alcance, vía helper
-      `_require_org_admin_view_all(current_user)` — 13 call sites del
-      helper, no inline). Sin tocar.
+- [x] `admin_organizations_router.py` — 12/12 migrados (alcance, vía
+      helper `_require_org_admin_view_all`, re-verificado al retomar:
+      12 call sites reales, no 13 como decía la estimación — mismo
+      patrón ya varias veces documentado de que el conteo original
+      siempre hay que re-grepearlo). El helper cambió de firma
+      (`current_user: User` → `effective_scope: AllScope |
+  ExplicitOrgsScope | OwnScope`, body a `isinstance(effective_scope,
+  AllScope)`), mismo alias nombrado `get_cookie_effective_scope` +
+      `EffectiveScope` que ya usan `org_router.py`/`org_verticals_router.py`.
+      10 de los 12 endpoints migrados perdieron su único uso real de
+      `current_user` (solo servía para el chequeo viejo) — quitado de
+      esas 10 firmas (ruff ARG001 lo atrapó solo, no manual); los otros 2
+      (`create_organization`, `resend_organization_invitation`) lo
+      mantienen porque lo siguen usando para `created_by_user_id`/
+      `inviter_name` en el cuerpo. Lint/pyright real (0 errores)/suite
+      completa (2573 passed)/26 tests
+      de integración existentes (DB real, sin mocks, sin cambios de
+      fixture necesarios — `async_client_as_admin` ya autentica un admin
+      real contra el seed real de `20261006_0002`)/staging verificado con
+      2 requests reales (`GET /admin/organizations`,
+      `GET /admin/organizations/{id}/verticals`, ambos 200 con cookie
+      real).
 - [ ] `product_router.py` — 0/41, el grande:
   - 0/27 alcance inline (`is_org_admin`/`can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`,
     líneas 311, 340(no, esta es marketplace), 487, 1276, 1327, 1455, 1594,
