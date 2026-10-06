@@ -402,6 +402,15 @@ asignar un perfil, el motor valida que el set de grants resultante sea subconjun
 de lo que el actor que lo otorga ya tiene. Nadie otorga lo que no tiene — responde
 directo a §3.1(4) (manager limitado a lo que `admin` le configure).
 
+**Implementado (2026-10-06), con una pregunta abierta real sin resolver**:
+`permission_escalation_guard.py` cubre la matriz zona×acción. La escalación de
+**alcance** (ej. un actor con `ExplicitOrgsScope` otorgando `AllScope`) quedó
+deliberadamente sin resolver — comparar dos `Scope` para "cuál es más permisivo"
+no tiene respuesta de dominio puro cuando uno es `OwnScope` (su set permitido
+depende de quién pregunta en cada request, no es un set fijo). Queda para el
+ítem del dependency `require_zone_action`, que sí tiene el contexto del actor
+real en cada request para resolverlo — no decidido por mi cuenta.
+
 **Refinamiento al implementar (2026-10-06, regla 1 del workbook — re-verificar antes
 de migrar)**: `permission_profiles` y `user_profile_assignments` NO se crearon como
 tablas nuevas — ya existían, con otro nombre, más completas de lo que supuse acá.

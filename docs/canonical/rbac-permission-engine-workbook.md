@@ -166,7 +166,27 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
     puede romper un mapeo ORM↔dominio existente sin tocar ese archivo
     directamente. Verificado con la suite completa (2554 passed) Y login
     real contra `prosell-staging-api` (JWT con `roles` cargados sin crash).
-- [ ] Servicio de anti-escalación (nadie otorga lo que no tiene)
+- [x] Servicio de anti-escalación (2026-10-06) —
+      `domain/services/permission_escalation_guard.py` (`ensure_no_grant_escalation`) + `domain/exceptions/role_exceptions.py` (`PermissionEscalationException`).
+      Pura lógica de dominio, sin tocar repositorios/DB — compara el set
+      de grants pedidos contra `granter.has_zone_action()` uno por uno,
+      reporta exactamente cuáles de los pedidos escalan (no todo-o-nada).
+      6 tests nuevos, suite completa sin ripple esta vez (2560 passed) —
+      a diferencia de los dos ítems anteriores, este no colisiona con
+      ningún mapeo ORM existente.
+  - ⚠️ **Alcance deliberadamente acotado, documentado en el propio
+    archivo**: esto SOLO chequea escalación de la matriz zona×acción.
+    Escalación de **alcance** (ej. un actor con `ExplicitOrgsScope`
+    otorgando `AllScope` a otro rol) queda explícitamente sin resolver —
+    comparar dos `Scope` para "cuál es más permisivo" no tiene una
+    respuesta pura de dominio cuando uno de los dos es `OwnScope`
+    (su set permitido depende de quién pregunta, no es un set fijo
+    comparable). No lo resolví por mi cuenta — queda como pregunta
+    abierta para el ítem del dependency (`require_zone_action`), que sí
+    tiene contexto de request para resolverlo.
+  - Sin verificación en staging — no aplica: nada todavía llama a este
+    servicio desde un endpoint real, no hay comportamiento vivo que
+    comprobar más allá de los tests unitarios.
 - [ ] Dependency único `require_zone_action(zone, action)` — reemplaza `RBACMiddleware` + los `current_user.has_permission(...)` inline
 - [ ] Migrar los 6 roles fijos actuales a perfiles-plantilla (Liskov — sin camino de código especial)
 - [ ] Borrar `RBACMiddleware` (confirmado muerto, §3.1(5))
