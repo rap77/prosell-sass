@@ -9,10 +9,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from prosell.application.dto.role.request import CreateRoleRequest, UpdateRoleRequest
+from prosell.application.dto.role.request import (
+    CloneRoleRequest,
+    CreateRoleRequest,
+    UpdateRoleRequest,
+)
 from prosell.application.dto.role.response import RoleListResponse, RoleResponse
+from prosell.application.use_cases.role.assign_role_to_user import AssignRoleToUserUseCase
+from prosell.application.use_cases.role.clone_role import CloneRoleUseCase
 from prosell.application.use_cases.role.create_role import CreateRoleUseCase
 from prosell.application.use_cases.role.delete_role import DeleteRoleUseCase
+from prosell.application.use_cases.role.remove_role_from_user import RemoveRoleFromUserUseCase
 from prosell.application.use_cases.role.update_role import UpdateRoleUseCase
 from prosell.domain.entities.role import Role
 from prosell.domain.entities.user import User
@@ -22,8 +29,12 @@ from prosell.domain.exceptions.role_exceptions import (
     ScopeEscalationException,
 )
 from prosell.domain.repositories.role_repository import AbstractRoleRepository
+from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user_from_cookie,
+    get_user_repository,
+)
 from prosell.infrastructure.api.dependencies_zone_action import (
     get_effective_scope,
     get_role_repository,
@@ -58,6 +69,7 @@ require_roles_delete_grant = require_zone_action(
 RolesDeleteUser = Annotated[User, Depends(require_roles_delete_grant)]
 
 RoleRepo = Annotated[AbstractRoleRepository, Depends(get_role_repository)]
+UserRepo = Annotated[AbstractUserRepository, Depends(get_user_repository)]
 
 
 def get_create_role_use_case(role_repo: RoleRepo) -> CreateRoleUseCase:
@@ -72,6 +84,18 @@ def get_delete_role_use_case(role_repo: RoleRepo) -> DeleteRoleUseCase:
     return DeleteRoleUseCase(role_repo)
 
 
+def get_clone_role_use_case(role_repo: RoleRepo) -> CloneRoleUseCase:
+    return CloneRoleUseCase(role_repo)
+
+
+def get_assign_role_use_case(role_repo: RoleRepo) -> AssignRoleToUserUseCase:
+    return AssignRoleToUserUseCase(role_repo)
+
+
+def get_remove_role_use_case(role_repo: RoleRepo) -> RemoveRoleFromUserUseCase:
+    return RemoveRoleFromUserUseCase(role_repo)
+
+
 def _is_visible(
     role: Role, *, effective_scope: AllScope | ExplicitOrgsScope | OwnScope, current_user: User
 ) -> bool:
@@ -84,6 +108,18 @@ def _is_visible(
         or role.tenant_id is None
         or role.tenant_id == current_user.tenant_id
     )
+
+
+def _is_user_visible(
+    target_user: User,
+    *,
+    effective_scope: AllScope | ExplicitOrgsScope | OwnScope,
+    current_user: User,
+) -> bool:
+    """Same cross-tenant existence-leak discipline as `_is_visible()`
+    above, applied to the user being assigned/unassigned a role rather
+    than to the role itself."""
+    return isinstance(effective_scope, AllScope) or target_user.tenant_id == current_user.tenant_id
 
 
 @router.get(
@@ -163,6 +199,122 @@ async def create_role(
         )
     except (PermissionEscalationException, ScopeEscalationException) as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+
+
+@router.post(
+    "/{role_id}/clone",
+    response_model=RoleResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Clone a permission profile (role) into a new custom profile",
+)
+async def clone_role(
+    role_id: UUID,
+    request: CloneRoleRequest,
+    current_user: RolesCreateUser,
+    effective_scope: EffectiveScope,
+    role_repo: RoleRepo,
+    use_case: Annotated[CloneRoleUseCase, Depends(get_clone_role_use_case)],
+) -> RoleResponse:
+    """`role_id` is the SOURCE role (system template or existing custom
+    profile) to copy grants/scope from; the request only supplies the
+    new profile's name/description. 404s the same way `get_role` does
+    for a source the caller can't see; 403s if the source's grants/scope
+    exceed what the caller itself holds — cloning a template you can't
+    fully cover is still escalation."""
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
+    source = await role_repo.get_by_id_with_grants(role_id)
+    if source is None or not _is_visible(
+        source, effective_scope=effective_scope, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    try:
+        return await use_case.execute(
+            source,
+            request,
+            tenant_id=current_user.tenant_id,
+            granter_id=current_user.id,
+            granter_scope=effective_scope,
+        )
+    except (PermissionEscalationException, ScopeEscalationException) as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+
+
+@router.post(
+    "/{role_id}/users/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Assign a permission profile (role) to a user",
+)
+async def assign_role_to_user(
+    role_id: UUID,
+    user_id: UUID,
+    current_user: RolesUpdateUser,
+    effective_scope: EffectiveScope,
+    role_repo: RoleRepo,
+    user_repo: UserRepo,
+    use_case: Annotated[AssignRoleToUserUseCase, Depends(get_assign_role_use_case)],
+) -> None:
+    """Gated by the same `roles:update` grant as editing a profile's
+    matrix — the admin profile editor's user-assignment panel lives on
+    the same screen (bloque 3, item 3.6). 404s for a role or user the
+    caller can't see (same discipline as `get_role`); 403s if the
+    role's grants/scope exceed what the caller itself holds — nobody
+    assigns a role whose reach they couldn't grant directly."""
+    role = await role_repo.get_by_id_with_grants(role_id)
+    if role is None or not _is_visible(
+        role, effective_scope=effective_scope, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    target_user = await user_repo.get_by_id(user_id)
+    if target_user is None or not _is_user_visible(
+        target_user, effective_scope=effective_scope, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    try:
+        await use_case.execute(
+            role, user_id, granter_id=current_user.id, granter_scope=effective_scope
+        )
+    except (PermissionEscalationException, ScopeEscalationException) as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+
+
+@router.delete(
+    "/{role_id}/users/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a permission profile (role) from a user",
+)
+async def remove_role_from_user(
+    role_id: UUID,
+    user_id: UUID,
+    current_user: RolesUpdateUser,
+    effective_scope: EffectiveScope,
+    role_repo: RoleRepo,
+    user_repo: UserRepo,
+    use_case: Annotated[RemoveRoleFromUserUseCase, Depends(get_remove_role_use_case)],
+) -> None:
+    """Same visibility discipline as `assign_role_to_user`; no
+    anti-escalation check — revoking a role only ever takes power
+    away, never grants it."""
+    role = await role_repo.get_by_id_with_grants(role_id)
+    if role is None or not _is_visible(
+        role, effective_scope=effective_scope, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    target_user = await user_repo.get_by_id(user_id)
+    if target_user is None or not _is_user_visible(
+        target_user, effective_scope=effective_scope, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    await use_case.execute(role, user_id)
 
 
 @router.delete(

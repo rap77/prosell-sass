@@ -527,6 +527,414 @@ async def test_delete_role_404s_for_missing_role(
 
 
 @pytest.mark.asyncio
+async def test_clone_role_requires_roles_create_grant(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    grantless_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(grantless_user, db_session) as client:
+        response = await client.post(
+            f"/api/v1/admin/roles/{uuid4()}/clone", json={"name": "Should Fail"}
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_clone_role_copies_source_grants_and_scope_under_requested_name(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    source = await repo.create(
+        Role.create_custom_role(
+            name="Manager", description="Source profile", tenant_id=test_organization.tenant_id
+        )
+    )
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=source.id, zone="catalog", action="read"))
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=source.id, scope_type="own"))
+    await db_session.flush()
+
+    cloner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        cloner,
+        zone="roles",
+        action="create",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+    await _grant_role(
+        db_session,
+        cloner,
+        zone="catalog",
+        action="read",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(cloner, db_session) as client:
+        response = await client.post(
+            f"/api/v1/admin/roles/{source.id}/clone",
+            json={"name": "Manager Global", "description": "Clon de Manager"},
+        )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["id"] != str(source.id)
+    assert body["name"] == "Manager Global"
+    assert body["description"] == "Clon de Manager"
+    assert body["is_system_role"] is False
+    assert {"zone": "catalog", "action": "read"} in body["grants"]
+    assert body["scope"]["scope_type"] == "own"
+
+    persisted = await repo.get_by_id_with_grants(body["id"])
+    assert persisted is not None
+    assert persisted.has_zone_action("catalog", "read") is True
+
+
+@pytest.mark.asyncio
+async def test_clone_role_404s_for_missing_source_role(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    cloner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        cloner,
+        zone="roles",
+        action="create",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(cloner, db_session) as client:
+        response = await client.post(f"/api/v1/admin/roles/{uuid4()}/clone", json={"name": "Nope"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_clone_role_404s_for_a_different_tenants_source_role_without_all_scope(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    second_organization: OrganizationModel,
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    other_tenant_source = await repo.create(
+        Role.create_custom_role(
+            name="Other Tenant Source",
+            description="desc",
+            tenant_id=second_organization.tenant_id,
+        )
+    )
+
+    cloner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        cloner,
+        zone="roles",
+        action="create",
+        scope_type="explicit",  # NOT all — must not leak the other tenant's role
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(cloner, db_session) as client:
+        response = await client.post(
+            f"/api/v1/admin/roles/{other_tenant_source.id}/clone", json={"name": "Leaked"}
+        )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_clone_role_rejects_a_grant_the_cloner_does_not_hold(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    source = await repo.create(
+        Role.create_custom_role(
+            name="Over-Privileged Template",
+            description=None,
+            tenant_id=test_organization.tenant_id,
+        )
+    )
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=source.id, zone="roles", action="delete"))
+    await db_session.flush()
+
+    cloner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        cloner,
+        zone="roles",
+        action="create",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+    # cloner has NO roles:delete grant of their own.
+
+    async with _client_as(cloner, db_session) as client:
+        response = await client.post(
+            f"/api/v1/admin/roles/{source.id}/clone", json={"name": "Escalated Clone"}
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_assign_role_requires_roles_update_grant(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    grantless_user = await _create_grantless_user(db_session, test_organization)
+    target_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(grantless_user, db_session) as client:
+        response = await client.post(f"/api/v1/admin/roles/{target_role.id}/users/{target_user.id}")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_assign_role_persists_the_assignment(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    db_session.add(
+        RoleGrantModel(id=uuid4(), role_id=target_role.id, zone="catalog", action="read")
+    )
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=target_role.id, scope_type="own"))
+    await db_session.flush()
+
+    assigner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        assigner,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+    await _grant_role(
+        db_session,
+        assigner,
+        zone="catalog",
+        action="read",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+    target_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(assigner, db_session) as client:
+        response = await client.post(f"/api/v1/admin/roles/{target_role.id}/users/{target_user.id}")
+
+    assert response.status_code == 204
+
+    assigned_roles = await repo.get_user_roles(target_user.id)
+    assert any(r.id == target_role.id for r in assigned_roles)
+
+
+@pytest.mark.asyncio
+async def test_assign_role_404s_for_missing_role(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    assigner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        assigner,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+    target_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(assigner, db_session) as client:
+        response = await client.post(f"/api/v1/admin/roles/{uuid4()}/users/{target_user.id}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_assign_role_404s_for_missing_user(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    assigner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        assigner,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(assigner, db_session) as client:
+        response = await client.post(f"/api/v1/admin/roles/{target_role.id}/users/{uuid4()}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_assign_role_404s_for_a_different_tenants_target_user_without_all_scope(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    second_organization: OrganizationModel,
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    assigner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        assigner,
+        zone="roles",
+        action="update",
+        scope_type="explicit",  # NOT all — must not leak the other tenant's user
+        tenant_id=test_organization.tenant_id,
+    )
+    other_tenant_user = await _create_grantless_user(db_session, second_organization)
+
+    async with _client_as(assigner, db_session) as client:
+        response = await client.post(
+            f"/api/v1/admin/roles/{target_role.id}/users/{other_tenant_user.id}"
+        )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_assign_role_rejects_a_role_whose_grants_the_assigner_does_not_hold(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Over-Privileged Target", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    db_session.add(
+        RoleGrantModel(id=uuid4(), role_id=target_role.id, zone="roles", action="delete")
+    )
+    await db_session.flush()
+
+    assigner = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        assigner,
+        zone="roles",
+        action="update",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+    # assigner has NO roles:delete grant of their own.
+    target_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(assigner, db_session) as client:
+        response = await client.post(f"/api/v1/admin/roles/{target_role.id}/users/{target_user.id}")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_remove_role_requires_roles_update_grant(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    grantless_user = await _create_grantless_user(db_session, test_organization)
+    target_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(grantless_user, db_session) as client:
+        response = await client.delete(
+            f"/api/v1/admin/roles/{target_role.id}/users/{target_user.id}"
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_remove_role_removes_the_assignment(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    target_user = await _create_grantless_user(db_session, test_organization)
+    await repo.assign_role_to_user(target_user.id, target_role.id)
+
+    remover = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        remover,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(remover, db_session) as client:
+        response = await client.delete(
+            f"/api/v1/admin/roles/{target_role.id}/users/{target_user.id}"
+        )
+
+    assert response.status_code == 204
+
+    remaining_roles = await repo.get_user_roles(target_user.id)
+    assert all(r.id != target_role.id for r in remaining_roles)
+
+
+@pytest.mark.asyncio
+async def test_remove_role_404s_for_missing_user(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target_role = await repo.create(
+        Role.create_custom_role(
+            name="Target Role", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    remover = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        remover,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(remover, db_session) as client:
+        response = await client.delete(f"/api/v1/admin/roles/{target_role.id}/users/{uuid4()}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_delete_role_rejects_deleting_a_system_role(
     db_session: AsyncSession, test_organization: OrganizationModel
 ) -> None:

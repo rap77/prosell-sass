@@ -35,6 +35,18 @@ class CreateRoleRequest(BaseModel):
     scope: RoleScopeRequest | None = None
 
 
+class CloneRoleRequest(BaseModel):
+    """Body for POST /api/v1/admin/roles/{source_role_id}/clone.
+
+    Only the new profile's identity — grants/scope are never taken from
+    the request; they're copied from the source role (CloneRoleUseCase),
+    same discipline as `tenant_id` never coming from the client.
+    """
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+
+
 class UpdateRoleRequest(BaseModel):
     """Body for PATCH /api/v1/admin/roles/{role_id} — a full replace of
     the editable fields (same shape as create: the admin profile editor
