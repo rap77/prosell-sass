@@ -216,3 +216,80 @@ async def test_get_user_roles_with_grants_defaults_when_no_rows_exist(
     role = next(r for r in roles if r.id == role_id)
     assert role.grants == []
     assert role.scope is None
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_with_grants_populates_grants_and_scope(
+    db_session,
+    test_user: UserModel,
+    test_organization: OrganizationModel,
+) -> None:
+    role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
+    )
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=role_id, zone="catalog", action="read"))
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=role_id, scope_type="own"))
+    await db_session.flush()
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    role = await repo.get_by_id_with_grants(role_id)
+
+    assert role is not None
+    assert role.id == role_id
+    assert role.has_zone_action("catalog", "read") is True
+    assert isinstance(role.scope, OwnScope)
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_with_grants_returns_none_when_missing(db_session) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    assert await repo.get_by_id_with_grants(uuid4()) is None
+
+
+@pytest.mark.asyncio
+async def test_list_with_grants_scoped_to_tenant_includes_system_roles(
+    db_session,
+    test_user: UserModel,
+    test_organization: OrganizationModel,
+    second_organization: OrganizationModel,
+) -> None:
+    """Scoped to one tenant_id: that tenant's custom roles + every
+    system role (tenant_id IS NULL) — never another tenant's custom role."""
+    own_role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
+    )
+    other_role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, second_organization.tenant_id
+    )
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    roles = await repo.list_with_grants(tenant_id=test_organization.tenant_id)
+    role_ids = {r.id for r in roles}
+
+    assert own_role_id in role_ids
+    assert other_role_id not in role_ids
+    # System roles (tenant_id=None) are always visible regardless of filter.
+    assert any(r.is_system_role for r in roles)
+
+
+@pytest.mark.asyncio
+async def test_list_with_grants_with_none_tenant_returns_every_role(
+    db_session,
+    test_user: UserModel,
+    test_organization: OrganizationModel,
+    second_organization: OrganizationModel,
+) -> None:
+    """tenant_id=None means no filter at all — the AllScope case."""
+    own_role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, test_organization.tenant_id
+    )
+    other_role_id = await _create_and_assign_fresh_role(
+        db_session, test_user, second_organization.tenant_id
+    )
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    roles = await repo.list_with_grants(tenant_id=None)
+    role_ids = {r.id for r in roles}
+
+    assert own_role_id in role_ids
+    assert other_role_id in role_ids

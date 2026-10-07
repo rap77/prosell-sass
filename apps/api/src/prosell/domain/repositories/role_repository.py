@@ -99,6 +99,35 @@ class AbstractRoleRepository(Protocol):
         """
         ...
 
+    async def get_by_id_with_grants(self, role_id: UUID) -> Role | None:
+        """
+        Get a role by ID, with `grants`/`scope` populated — for the
+        admin profiles UI (bloque 3), which needs to show/edit the
+        current matrix, not just the role's name/metadata.
+
+        Args:
+            role_id: Role UUID
+
+        Returns:
+            Role entity (grants/scope populated) or None if not found
+        """
+        ...
+
+    async def list_with_grants(self, tenant_id: UUID | None) -> list[Role]:
+        """
+        List roles with `grants`/`scope` populated, for the admin
+        profiles UI. `tenant_id=None` means no filter (every role,
+        every tenant — the AllScope case); otherwise every system role
+        plus that tenant's own custom roles.
+
+        Args:
+            tenant_id: Tenant to scope custom roles to, or None for no filter
+
+        Returns:
+            List of role entities, grants/scope populated
+        """
+        ...
+
     async def get_user_roles_with_grants(self, user_id: UUID) -> list[Role]:
         """
         Get all roles for a user, with the new permission engine's

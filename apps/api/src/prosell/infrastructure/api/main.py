@@ -24,6 +24,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
 )
 from prosell.infrastructure.api.routers import (
     admin_organizations_router,
+    admin_roles_router,
     admin_router,
     auth_router,
     branch_router,
@@ -373,6 +374,12 @@ app.include_router(
     admin_organizations_router,
     prefix="/api/v1/admin/organizations",
     tags=["Admin", "Organizations"],
+)
+
+app.include_router(
+    admin_roles_router,
+    prefix="/api/v1/admin/roles",
+    tags=["Admin", "Roles"],
 )
 
 app.include_router(

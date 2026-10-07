@@ -1,0 +1,89 @@
+"""Admin roles (permission profiles) router — bloque 3, item 3.2.
+
+Read-only slice first (list + get-by-id); create/update/delete land in
+later items of the same bloque. Gated by the `roles` zone (seeded,
+20261006_0002) via `require_zone_action`, same pattern already used for
+`marketplace:publish` in product_router.py.
+"""
+
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from prosell.application.dto.role.response import RoleListResponse, RoleResponse
+from prosell.domain.entities.user import User
+from prosell.domain.repositories.role_repository import AbstractRoleRepository
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies_zone_action import (
+    get_effective_scope,
+    get_role_repository,
+    require_zone_action,
+)
+
+router = APIRouter()
+
+get_cookie_effective_scope = get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)
+EffectiveScope = Annotated[
+    AllScope | ExplicitOrgsScope | OwnScope, Depends(get_cookie_effective_scope)
+]
+
+require_roles_read_grant = require_zone_action(
+    "roles", "read", auth_dependency=get_current_auth_user_from_cookie
+)
+RolesReadUser = Annotated[User, Depends(require_roles_read_grant)]
+
+RoleRepo = Annotated[AbstractRoleRepository, Depends(get_role_repository)]
+
+
+@router.get(
+    "",
+    response_model=RoleListResponse,
+    summary="List permission profiles (roles)",
+)
+async def list_roles(
+    current_user: RolesReadUser,
+    effective_scope: EffectiveScope,
+    role_repo: RoleRepo,
+) -> RoleListResponse:
+    """
+    List every system role (template) plus the caller's own tenant's
+    custom profiles. An actor with AllScope sees every role across
+    every tenant — mirrors the same visibility rule already used for
+    org-scoped data elsewhere in the app.
+    """
+    tenant_id = None if isinstance(effective_scope, AllScope) else current_user.tenant_id
+    roles = await role_repo.list_with_grants(tenant_id=tenant_id)
+    items = [RoleResponse.from_entity(r) for r in roles]
+    return RoleListResponse(items=items, total=len(items))
+
+
+@router.get(
+    "/{role_id}",
+    response_model=RoleResponse,
+    summary="Get one permission profile (role)",
+)
+async def get_role(
+    role_id: UUID,
+    current_user: RolesReadUser,
+    effective_scope: EffectiveScope,
+    role_repo: RoleRepo,
+) -> RoleResponse:
+    """404s for a role in a different tenant than the caller's own,
+    unless the caller has AllScope — same cross-tenant-leak discipline
+    as the rest of the app (3 real leaks found and fixed this project,
+    per project.md § Deviations)."""
+    role = await role_repo.get_by_id_with_grants(role_id)
+    if role is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    visible = (
+        isinstance(effective_scope, AllScope)
+        or role.tenant_id is None
+        or role.tenant_id == current_user.tenant_id
+    )
+    if not visible:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    return RoleResponse.from_entity(role)

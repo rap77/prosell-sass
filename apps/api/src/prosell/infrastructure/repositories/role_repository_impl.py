@@ -128,6 +128,42 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
         models = result.scalars().all()
         return [self._to_entity_with_grants(model) for model in models]
 
+    async def get_by_id_with_grants(self, role_id: UUID) -> Role | None:
+        """Same as `get_by_id()`, with `grants`/`scope` populated — for
+        the admin profiles UI (bloque 3, item 3.2), which needs to show
+        and edit a role's current matrix, not just its name/metadata."""
+        stmt = (
+            select(RoleModel)
+            .where(RoleModel.id == role_id)
+            .options(
+                selectinload(RoleModel.grants),
+                selectinload(RoleModel.scope),
+                selectinload(RoleModel.organization_access),
+            )
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity_with_grants(model) if model else None
+
+    async def list_with_grants(self, tenant_id: UUID | None) -> list[Role]:
+        """List roles with `grants`/`scope` populated, for the admin
+        profiles UI. `tenant_id=None` means no filter at all (the
+        AllScope case — every role, every tenant); otherwise returns
+        every system role (`tenant_id IS NULL`) plus that tenant's own
+        custom roles, mirroring the `None if is_org_admin else
+        current_user.tenant_id` visibility pattern already used
+        elsewhere in the app for data scoping."""
+        stmt = select(RoleModel).options(
+            selectinload(RoleModel.grants),
+            selectinload(RoleModel.scope),
+            selectinload(RoleModel.organization_access),
+        )
+        if tenant_id is not None:
+            stmt = stmt.where((RoleModel.tenant_id.is_(None)) | (RoleModel.tenant_id == tenant_id))
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity_with_grants(model) for model in models]
+
     def _to_entity_with_grants(self, model: RoleModel) -> Role:
         """Same base mapping as `_to_entity()`, plus `grants`/`scope`
         populated from relationships the caller already eager-loaded."""
