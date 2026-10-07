@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                                                                  |
-| ------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)        |
-| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging |
-| 3      | UI de admin para perfiles                                                             | 🔴 Not started — próximo bloque                                         |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                          |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                          |
+| Bloque | Descripción                                                                           | Estado                                                                     |
+| ------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)           |
+| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging    |
+| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 2/7 ítems (3.0, 3.1), TDD estricto desde acá |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                             |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                             |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
@@ -684,6 +684,28 @@ inventar detalle de implementación que todavía no se decidió)_
   - Verificado: ruff + ruff-format + pyright reales (0 errores) sobre los
     5 archivos tocados; suite completa backend **2594 passed** (2579 + 15
     nuevos).
+- [x] 3.2a — **Prerequisito real encontrado al empezar 3.2, no scope
+      creep** (2026-10-07): `Role.role_type` seguía siendo no-opcional en
+      el dominio, y `create_custom_role()` todavía hardcodeaba
+      `role_type=RoleType.VIEWER` — exactamente el bug de §1.3(2) que la
+      migración `20261006_0001` relajó a nivel DB pero que el dominio
+      nunca terminó de adoptar. Como `viewer` ya es el `role_type` real
+      del rol de sistema Viewer, crear el PRIMER perfil personalizado
+      nuevo ya chocaba contra `ix_roles_role_type_unique_when_present`.
+      `rg` confirmó cero llamadores reales en `src/` — sin ripple de
+      producción. Fix bajo TDD estricto: 5 tests existentes afirmaban el
+      bug como comportamiento esperado (`test_role_entity.py` x3,
+      `test_role_repository.py` x1, `test_pydantic_validation.py` x1,
+      `test_role_based_permissions.py` x1 — 6 en total) — corregidos
+      primero para describir el comportamiento correcto (rojo real contra
+      el código viejo), recién ahí: `Role.role_type: RoleType | None`,
+      `create_custom_role()` usa `role_type=None`, `get_permissions()`
+      devuelve `set()` para `role_type=None` (nunca hereda VIEWER),
+      `role_repository_impl.py` arreglado en ambos sentidos (escritura +
+      lectura). Ripple real encontrado de paso en `get_vendedores.py`
+      (tocado en 3.0): el fallback de `role.value` ya no es seguro con
+      `role_type` opcional. Verificado: ruff+pyright reales (0 errores),
+      suite completa **2594 passed**.
 - [ ] 3.2 — Backend CRUD de perfiles: `GET/POST/PATCH/DELETE` sobre
       `roles`+`role_grants`, gateado por zona `roles` (create/read/
       update/delete, ya sembrada) + la guarda de zona×acción existente.
