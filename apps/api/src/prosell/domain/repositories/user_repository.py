@@ -225,3 +225,21 @@ class AbstractUserRepository(Protocol):
             Number of users
         """
         ...
+
+    async def list_by_role_id(self, role_id: UUID) -> list[User]:
+        """
+        List every user assigned a given role (`user_roles`), by the
+        new permission engine's role id — the reverse of
+        `AbstractRoleRepository.get_user_roles()` (user -> roles), for
+        the admin profiles UI's "Usuarios asignados" tab (bloque 3,
+        item 3.6). Unlike `get_users_by_tenant_and_role()`, this matches
+        ANY role (system or custom) by id, not a legacy `role_type`
+        string — a custom role has no `role_type` to match on.
+
+        Args:
+            role_id: Role UUID
+
+        Returns:
+            List of user entities
+        """
+        ...

@@ -98,6 +98,9 @@ class StubUserRepository(AbstractUserRepository):
     async def count_users_by_tenant_and_role(self, tenant_id: UUID, role: str) -> int:
         raise NotImplementedError
 
+    async def list_by_role_id(self, role_id: UUID) -> list[User]:
+        raise NotImplementedError
+
 
 def build_user() -> User:
     """Create a password-backed active user for tests."""

@@ -26,6 +26,7 @@ from prosell.infrastructure.api.routers import (
     admin_organizations_router,
     admin_roles_router,
     admin_router,
+    admin_users_router,
     auth_router,
     branch_router,
     category_inference_router,
@@ -380,6 +381,12 @@ app.include_router(
     admin_roles_router,
     prefix="/api/v1/admin/roles",
     tags=["Admin", "Roles"],
+)
+
+app.include_router(
+    admin_users_router,
+    prefix="/api/v1/admin/users",
+    tags=["Admin", "Users"],
 )
 
 app.include_router(

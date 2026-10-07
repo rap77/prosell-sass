@@ -15,6 +15,7 @@ from prosell.application.dto.role.request import (
     UpdateRoleRequest,
 )
 from prosell.application.dto.role.response import RoleListResponse, RoleResponse
+from prosell.application.dto.user import UserSummaryResponse
 from prosell.application.use_cases.role.assign_role_to_user import AssignRoleToUserUseCase
 from prosell.application.use_cases.role.clone_role import CloneRoleUseCase
 from prosell.application.use_cases.role.create_role import CreateRoleUseCase
@@ -166,6 +167,35 @@ async def get_role(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     return RoleResponse.from_entity(role)
+
+
+@router.get(
+    "/{role_id}/users",
+    response_model=list[UserSummaryResponse],
+    summary="List the users assigned a permission profile (role)",
+)
+async def list_role_users(
+    role_id: UUID,
+    current_user: RolesReadUser,
+    effective_scope: EffectiveScope,
+    role_repo: RoleRepo,
+    user_repo: UserRepo,
+) -> list[UserSummaryResponse]:
+    """Reverse of `get_role`'s grants/scope — who currently holds this
+    profile, for the admin profiles UI's "Usuarios asignados" tab
+    (bloque 3, item 3.6). Same 404 (not 403) discipline as `get_role`
+    for a role the caller can't see."""
+    role = await role_repo.get_by_id(role_id)
+    if role is None or not _is_visible(
+        role, effective_scope=effective_scope, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    users = await user_repo.list_by_role_id(role_id)
+    return [
+        UserSummaryResponse(id=u.id, email=u.email, full_name=u.full_name, tenant_id=u.tenant_id)
+        for u in users
+    ]
 
 
 @router.post(

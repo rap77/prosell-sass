@@ -274,3 +274,74 @@ def uuid4_unique() -> str:
     from uuid import uuid4
 
     return uuid4().hex[:8]
+
+
+@pytest.mark.asyncio
+async def test_list_by_role_id_returns_only_users_assigned_to_that_role(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    """Bloque 3, item 3.6 — the admin profiles UI's "Usuarios asignados"
+    tab needs the REVERSE of `get_user_roles()` (role -> users, not
+    user -> roles); no repo method covered that direction before this."""
+    from prosell.domain.entities.role import Role
+    from prosell.infrastructure.repositories.role_repository_impl import (
+        SqlAlchemyRoleRepository,
+    )
+
+    role_repo = SqlAlchemyRoleRepository(db_session)
+    role = await role_repo.create(
+        Role.create_custom_role(
+            name=f"Test role {uuid4_unique()}",
+            description=None,
+            tenant_id=test_organization.tenant_id,
+        )
+    )
+
+    repo = SqlAlchemyUserRepository(db_session)
+    assigned_user = await repo.create(
+        User.create(
+            email=f"assigned-{uuid4_unique()}@test.prosell.io",
+            password_hash="hashed-pw",
+            full_name="Assigned User",
+        )
+    )
+    unassigned_user = await repo.create(
+        User.create(
+            email=f"unassigned-{uuid4_unique()}@test.prosell.io",
+            password_hash="hashed-pw",
+            full_name="Unassigned User",
+        )
+    )
+
+    await role_repo.assign_role_to_user(assigned_user.id, role.id)
+
+    result = await repo.list_by_role_id(role.id)
+
+    assert [u.id for u in result] == [assigned_user.id]
+    assert all(u.id != unassigned_user.id for u in result)
+
+
+@pytest.mark.asyncio
+async def test_list_by_role_id_returns_empty_for_a_role_with_no_assignments(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    from prosell.domain.entities.role import Role
+    from prosell.infrastructure.repositories.role_repository_impl import (
+        SqlAlchemyRoleRepository,
+    )
+
+    role_repo = SqlAlchemyRoleRepository(db_session)
+    role = await role_repo.create(
+        Role.create_custom_role(
+            name=f"Lonely role {uuid4_unique()}",
+            description=None,
+            tenant_id=test_organization.tenant_id,
+        )
+    )
+
+    repo = SqlAlchemyUserRepository(db_session)
+    result = await repo.list_by_role_id(role.id)
+
+    assert result == []

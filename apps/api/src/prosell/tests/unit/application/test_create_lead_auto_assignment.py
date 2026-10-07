@@ -286,6 +286,10 @@ class StubUserRepository(AbstractUserRepository):
         del role
         return sum(1 for user in self.users.values() if user.tenant_id == tenant_id)
 
+    async def list_by_role_id(self, role_id: UUID) -> list[User]:
+        del role_id
+        raise NotImplementedError
+
 
 class StubProductRepository(AbstractProductRepository):
     def __init__(self, products: list[Product]) -> None:

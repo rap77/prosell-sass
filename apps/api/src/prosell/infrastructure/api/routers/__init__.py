@@ -5,6 +5,7 @@ from prosell.infrastructure.api.routers.admin_organizations_router import (
 )
 from prosell.infrastructure.api.routers.admin_roles_router import router as admin_roles_router
 from prosell.infrastructure.api.routers.admin_router import router as admin_router
+from prosell.infrastructure.api.routers.admin_users_router import router as admin_users_router
 from prosell.infrastructure.api.routers.auth_router import router as auth_router
 from prosell.infrastructure.api.routers.branch_router import router as branch_router
 from prosell.infrastructure.api.routers.category_router import router as category_router
@@ -38,6 +39,7 @@ __all__ = [
     "admin_organizations_router",
     "admin_roles_router",
     "admin_router",
+    "admin_users_router",
     "auth_router",
     "branch_router",
     "category_router",

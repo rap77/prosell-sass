@@ -288,6 +288,21 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         models = result.scalars().all()
         return [self._to_entity(model) for model in models]
 
+    async def list_by_role_id(self, role_id: UUID) -> list[User]:
+        """List every user assigned `role_id` (any role, system or
+        custom — matches by id, not the legacy `role_type` string
+        `get_users_by_tenant_and_role()` uses)."""
+        from prosell.infrastructure.models.role_model import UserRoleModel
+
+        stmt = (
+            select(UserModel)
+            .join(UserRoleModel, UserRoleModel.user_id == UserModel.id)
+            .where(UserRoleModel.role_id == role_id)
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
     async def count_users_by_tenant_and_role(
         self,
         tenant_id: UUID,
