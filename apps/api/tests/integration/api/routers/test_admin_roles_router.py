@@ -24,7 +24,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.domain.entities.role import Role
+from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.api.main import app
@@ -335,3 +335,218 @@ async def test_create_role_rejects_a_scope_broader_than_the_creators_own(
         )
 
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_role_requires_roles_update_grant(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target = await repo.create(
+        Role.create_custom_role(
+            name="Target", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    grantless_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(grantless_user, db_session) as client:
+        response = await client.patch(
+            f"/api/v1/admin/roles/{target.id}", json={"name": "Should Fail"}
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_role_replaces_name_and_grants(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target = await repo.create(
+        Role.create_custom_role(
+            name="Original", description="desc", tenant_id=test_organization.tenant_id
+        )
+    )
+    db_session.add(RoleGrantModel(id=uuid4(), role_id=target.id, zone="catalog", action="read"))
+    db_session.add(RoleScopeModel(id=uuid4(), role_id=target.id, scope_type="own"))
+    await db_session.flush()
+
+    editor = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        editor,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+    await _grant_role(
+        db_session,
+        editor,
+        zone="catalog",
+        action="update",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(editor, db_session) as client:
+        response = await client.patch(
+            f"/api/v1/admin/roles/{target.id}",
+            json={
+                "name": "Renamed",
+                "grants": [{"zone": "catalog", "action": "update"}],
+                "scope": {"scope_type": "own"},
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Renamed"
+    assert {"zone": "catalog", "action": "update"} in body["grants"]
+    assert {"zone": "catalog", "action": "read"} not in body["grants"]
+
+    persisted = await repo.get_by_id_with_grants(target.id)
+    assert persisted is not None
+    assert persisted.has_zone_action("catalog", "read") is False
+    assert persisted.has_zone_action("catalog", "update") is True
+
+
+@pytest.mark.asyncio
+async def test_update_role_404s_for_missing_role(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    editor = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        editor,
+        zone="roles",
+        action="update",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(editor, db_session) as client:
+        response = await client.patch(f"/api/v1/admin/roles/{uuid4()}", json={"name": "Nope"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_role_rejects_a_grant_the_editor_does_not_hold(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target = await repo.create(
+        Role.create_custom_role(
+            name="Target", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    editor = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        editor,
+        zone="roles",
+        action="update",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+    # editor has NO roles:delete grant of their own.
+
+    async with _client_as(editor, db_session) as client:
+        response = await client.patch(
+            f"/api/v1/admin/roles/{target.id}",
+            json={"name": "Escalated", "grants": [{"zone": "roles", "action": "delete"}]},
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_role_requires_roles_delete_grant(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target = await repo.create(
+        Role.create_custom_role(
+            name="Target", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    grantless_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(grantless_user, db_session) as client:
+        response = await client.delete(f"/api/v1/admin/roles/{target.id}")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_role_removes_a_custom_role(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    target = await repo.create(
+        Role.create_custom_role(
+            name="Target", description=None, tenant_id=test_organization.tenant_id
+        )
+    )
+    deleter = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        deleter,
+        zone="roles",
+        action="delete",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(deleter, db_session) as client:
+        response = await client.delete(f"/api/v1/admin/roles/{target.id}")
+
+    assert response.status_code == 204
+    assert await repo.get_by_id(target.id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_role_404s_for_missing_role(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    deleter = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        deleter,
+        zone="roles",
+        action="delete",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(deleter, db_session) as client:
+        response = await client.delete(f"/api/v1/admin/roles/{uuid4()}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_role_rejects_deleting_a_system_role(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    # The real super_admin system role — guaranteed to exist (seeded
+    # every container start) and definitely is_system_role=True.
+    repo = SqlAlchemyRoleRepository(db_session)
+    super_admin = await repo.get_by_type(RoleType.SUPER_ADMIN)
+    assert super_admin is not None
+
+    deleter = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        deleter,
+        zone="roles",
+        action="delete",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(deleter, db_session) as client:
+        response = await client.delete(f"/api/v1/admin/roles/{super_admin.id}")
+
+    assert response.status_code == 400

@@ -168,6 +168,87 @@ async def test_create_with_no_grants_or_scope_persists_cleanly(
 
 
 @pytest.mark.asyncio
+async def test_update_replaces_name_description_grants_and_scope(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    """update() is a full replace, same shape as create() — the admin
+    profile editor always sends the complete current state back, not a
+    partial diff (bloque 3, item 3.2's PATCH slice)."""
+    repo = SqlAlchemyRoleRepository(db_session)
+    role = Role.create_custom_role(
+        name="Original Name", description="Original", tenant_id=test_organization.tenant_id
+    )
+    role.grants = [RoleGrant(zone="catalog", action="read")]
+    role.scope = OwnScope()
+    created = await repo.create(role)
+
+    created.name = "Updated Name"
+    created.description = "Updated"
+    created.grants = [RoleGrant(zone="catalog", action="update")]
+    created.scope = AllScope()
+
+    updated = await repo.update(created)
+    fetched = await repo.get_by_id_with_grants(created.id)
+
+    assert updated.name == "Updated Name"
+    assert fetched is not None
+    assert fetched.name == "Updated Name"
+    assert fetched.description == "Updated"
+    # Old grant/scope rows must be gone, not just added-to.
+    assert fetched.has_zone_action("catalog", "read") is False
+    assert fetched.has_zone_action("catalog", "update") is True
+    assert isinstance(fetched.scope, AllScope)
+
+
+@pytest.mark.asyncio
+async def test_update_can_clear_grants_and_scope(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    role = Role.create_custom_role(
+        name="Has Grants", description=None, tenant_id=test_organization.tenant_id
+    )
+    role.grants = [RoleGrant(zone="catalog", action="read")]
+    role.scope = OwnScope()
+    created = await repo.create(role)
+
+    created.grants = []
+    created.scope = None
+    await repo.update(created)
+    fetched = await repo.get_by_id_with_grants(created.id)
+
+    assert fetched is not None
+    assert fetched.grants == []
+    assert fetched.scope is None
+
+
+@pytest.mark.asyncio
+async def test_delete_removes_the_role_and_its_grants_and_scope(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    role = Role.create_custom_role(
+        name="To Delete", description=None, tenant_id=test_organization.tenant_id
+    )
+    role.grants = [RoleGrant(zone="catalog", action="read")]
+    role.scope = OwnScope()
+    created = await repo.create(role)
+
+    await repo.delete(created.id)
+
+    assert await repo.get_by_id(created.id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_is_idempotent_for_a_missing_role(db_session) -> None:
+    repo = SqlAlchemyRoleRepository(db_session)
+    await repo.delete(uuid4())  # does not raise
+
+
+@pytest.mark.asyncio
 async def test_get_user_roles_with_grants_populates_grants_and_own_scope(
     db_session,
     test_user: UserModel,

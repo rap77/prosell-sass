@@ -1,8 +1,9 @@
 """SQLAlchemy implementation of Role repository."""
 
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -51,7 +52,66 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
             updated_at=role.updated_at,
         )
         self.session.add(model)
+        await self._replace_grants_and_scope(role)
+        await self.session.flush()
 
+        created = self._to_entity(model)
+        # Avoid touching model.grants/model.scope here — those are lazy
+        # relationships and would hit the same MissingGreenlet trap
+        # _to_entity_with_grants()'s selectinload() exists to avoid. We
+        # already know the values: they're what we just wrote above.
+        created.grants = list(role.grants)
+        created.scope = role.scope
+        return created
+
+    async def update(self, role: Role) -> Role:
+        """Full replace of a role's mutable fields — name, description,
+        grants, scope — same shape `create()` uses, since the admin
+        profile editor always sends the complete current state back,
+        not a partial diff (bloque 3, item 3.2's PATCH slice). Old
+        grant/scope rows are deleted outright, not diffed, before the
+        new set is written."""
+        stmt = select(RoleModel).where(RoleModel.id == role.id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one()
+
+        model.name = role.name
+        model.description = role.description
+        # Set explicitly, same reason create() sets created_at/updated_at
+        # explicitly: `updated_at` has a server-side `onupdate=now()`, and
+        # relying on it leaves the attribute EXPIRED after flush — reading
+        # it in _to_entity() below would trigger a lazy refresh query,
+        # which crashes with MissingGreenlet outside an awaited context.
+        model.updated_at = datetime.now(UTC)
+
+        await self.session.execute(delete(RoleGrantModel).where(RoleGrantModel.role_id == role.id))
+        await self.session.execute(delete(RoleScopeModel).where(RoleScopeModel.role_id == role.id))
+        await self.session.execute(
+            delete(RoleOrganizationAccessModel).where(
+                RoleOrganizationAccessModel.role_id == role.id
+            )
+        )
+        await self._replace_grants_and_scope(role)
+        await self.session.flush()
+
+        updated = self._to_entity(model)
+        updated.grants = list(role.grants)
+        updated.scope = role.scope
+        return updated
+
+    async def delete(self, role_id: UUID) -> None:
+        """Deletes the role row; `role_grants`/`role_scope`/
+        `role_organization_access`/`user_roles` all cascade via
+        `ondelete="CASCADE"` FKs — nothing orphaned left behind.
+        Idempotent: deleting a missing role is a silent no-op, same
+        contract as most other delete methods in this codebase."""
+        await self.session.execute(delete(RoleModel).where(RoleModel.id == role_id))
+        await self.session.flush()
+
+    async def _replace_grants_and_scope(self, role: Role) -> None:
+        """Writes `role.grants`/`role.scope` as fresh rows — caller is
+        responsible for having deleted any prior rows first (`update()`)
+        or knowing there are none yet (`create()`)."""
         for grant in role.grants:
             self.session.add(
                 RoleGrantModel(id=uuid4(), role_id=role.id, zone=grant.zone, action=grant.action)
@@ -68,17 +128,6 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
                             id=uuid4(), role_id=role.id, organization_id=org_id
                         )
                     )
-
-        await self.session.flush()
-
-        created = self._to_entity(model)
-        # Avoid touching model.grants/model.scope here — those are lazy
-        # relationships and would hit the same MissingGreenlet trap
-        # _to_entity_with_grants()'s selectinload() exists to avoid. We
-        # already know the values: they're what we just wrote above.
-        created.grants = list(role.grants)
-        created.scope = role.scope
-        return created
 
     async def get_by_id(self, role_id: UUID) -> Role | None:
         """Get role by ID."""

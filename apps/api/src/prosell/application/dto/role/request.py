@@ -33,3 +33,16 @@ class CreateRoleRequest(BaseModel):
     description: str | None = None
     grants: list[RoleGrantRequest] = Field(default_factory=list)
     scope: RoleScopeRequest | None = None
+
+
+class UpdateRoleRequest(BaseModel):
+    """Body for PATCH /api/v1/admin/roles/{role_id} — a full replace of
+    the editable fields (same shape as create: the admin profile editor
+    always sends the complete current state back, not a partial diff).
+    `role_type`/`is_system_role`/`tenant_id` are not editable here —
+    they're identity, not matrix."""
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    grants: list[RoleGrantRequest] = Field(default_factory=list)
+    scope: RoleScopeRequest | None = None

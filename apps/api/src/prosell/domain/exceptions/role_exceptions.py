@@ -41,3 +41,16 @@ class ScopeEscalationException(RoleDomainException):
                 "requested_scope": self.requested_scope_name,
             },
         )
+
+
+class CannotDeleteSystemRoleException(RoleDomainException):
+    """Raised when an actor tries to delete a system (template) role —
+    bloque 3, item 3.2's DELETE slice. System roles are deleted only by
+    removing them from the fixed `RoleType` set and re-migrating, never
+    through the admin profiles UI."""
+
+    def __init__(self, role_name: str) -> None:
+        super().__init__(
+            message=f"Cannot delete system role {role_name!r}",
+            details={"role_name": role_name},
+        )

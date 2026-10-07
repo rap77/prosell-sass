@@ -26,6 +26,29 @@ class AbstractRoleRepository(Protocol):
         """
         ...
 
+    async def update(self, role: Role) -> Role:
+        """
+        Full replace of a role's mutable fields — name, description,
+        grants, scope (bloque 3, item 3.2's PATCH slice).
+
+        Args:
+            role: Role entity with its id set and the desired end state
+
+        Returns:
+            Updated role
+        """
+        ...
+
+    async def delete(self, role_id: UUID) -> None:
+        """
+        Delete a role (bloque 3, item 3.2's DELETE slice). Idempotent —
+        deleting a missing role is a no-op, not an error.
+
+        Args:
+            role_id: Role UUID
+        """
+        ...
+
     async def get_by_id(self, role_id: UUID) -> Role | None:
         """
         Get role by ID.

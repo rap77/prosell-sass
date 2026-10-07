@@ -41,6 +41,9 @@ class _FakeRoleRepository:
         self.created = role
         return role
 
+    async def update(self, role: Role) -> Role:
+        raise NotImplementedError
+
     async def get_by_id(self, role_id: UUID) -> Role | None:
         raise NotImplementedError
 
@@ -63,6 +66,9 @@ class _FakeRoleRepository:
         raise NotImplementedError
 
     async def get_user_roles(self, user_id: UUID) -> list[Role]:
+        raise NotImplementedError
+
+    async def delete(self, role_id: UUID) -> None:
         raise NotImplementedError
 
 
