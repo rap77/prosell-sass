@@ -660,9 +660,30 @@ inventar detalle de implementación que todavía no se decidió)_
     ya verificado localmente vía la suite completa.
   - Commit + push: **pendiente** — regla 10, solo cuando el usuario lo
     pida explícitamente.
-- [ ] 3.1 — Extender `permission_escalation_guard.py` (o servicio nuevo
-      paralelo) con la regla de subconjunto de alcance confirmada arriba.
-      Tests unitarios de dominio, sin tocar routers todavía.
+- [x] 3.1 — Extender `permission_escalation_guard.py` con la regla de
+      subconjunto de alcance (2026-10-07). **Primer ítem con TDD estricto
+      en vivo** (rojo mostrado antes de implementar, confirmado con el
+      usuario tras el ítem 3.0): 15 tests escritos primero (10 de
+      `Scope.covers()` en `test_permission_scope.py`, 5 del guard nuevo en
+      `test_scope_escalation_guard.py`), corridos y confirmados en rojo
+      (`AttributeError: no attribute 'covers'` / `ImportError`), recién
+      ahí implementado lo mínimo para pasar.
+  - **Diseño**: `covers(other: Scope) -> bool` nuevo en el protocolo
+    `Scope` + las 3 clases concretas (mismo patrón Specification que
+    `permits()`, sin `if/elif` central) — `AllScope.covers()` siempre
+    `True`; `ExplicitOrgsScope.covers()` cubre `OwnScope` y
+    `ExplicitOrgsScope` cuyo set de orgs sea subconjunto del propio, nunca
+    `AllScope`; `OwnScope.covers()` siempre `False` (confirmado
+    explícitamente: no puede otorgar alcance a nadie, ni siquiera otro
+    `OwnScope`). `ensure_no_scope_escalation(granter_scope, requested_scope)`
+    nuevo en `permission_escalation_guard.py`, mismo archivo que la guarda
+    de zona×acción — llama a `granter_scope.covers(requested_scope)`, lanza
+    `ScopeEscalationException` nuevo (`role_exceptions.py`) si no cubre.
+  - Sin tocar routers todavía — puro dominio, sin DB, sin staging
+    aplicable (consistente con el propio alcance que el ítem ya preveía).
+  - Verificado: ruff + ruff-format + pyright reales (0 errores) sobre los
+    5 archivos tocados; suite completa backend **2594 passed** (2579 + 15
+    nuevos).
 - [ ] 3.2 — Backend CRUD de perfiles: `GET/POST/PATCH/DELETE` sobre
       `roles`+`role_grants`, gateado por zona `roles` (create/read/
       update/delete, ya sembrada) + la guarda de zona×acción existente.
