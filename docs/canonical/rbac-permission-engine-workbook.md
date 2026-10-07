@@ -933,17 +933,113 @@ inventar detalle de implementación que todavía no se decidió)_
     nuevos).
   - Commit + push: **pendiente** — regla 10, solo cuando el usuario lo
     pida explícitamente.
-- [ ] 3.5 — Frontend: listado + crear/clonar perfil, matriz de grants
-      agrupada por sección de UI — mapeo propuesto (confirmar al llegar):
-      Catálogo←`catalog`, Marketplace←`marketplace`,
-      Concesionarios←`organizations`, Configuración←`settings`,
-      Admin←`users`+`roles`+`analytics`. "Leads" no aparece todavía
-      (depende del Bloque 4).
-- [ ] 3.6 — Frontend: editor de alcance (organizaciones) + asignación de
-      usuarios a perfiles.
+- [x] 3.5 — Frontend: listado + crear/clonar perfil, matriz de grants
+      agrupada por sección de UI (2026-10-07).
+  - **Mapeo de zonas → secciones confirmado con el usuario al llegar**
+    (regla ya anotada: "confirmar al llegar"): Catálogo←`catalog`,
+    Marketplace←`marketplace`, Concesionarios←`organizations`,
+    Configuración←`settings`, Admin←`users`+`roles`+`analytics` — tal
+    cual, sin cambios. Verificado contra el seed real
+    (`20261006_0002_seed_system_role_grants.py`) que son exactamente
+    las 7 zonas existentes, sin huecos.
+  - **Mockup real revisado** (Open Design, proyecto
+    `prosell-rbac-profiles-admin`, archivo `profiles-admin.tsx`) — MCP
+    de `open-design` se reconectó a mitad de sesión; leído directo del
+    path local (`~/tools/open-design/.od/projects/.../profiles-admin.tsx`)
+    en vez de vía MCP. El mockup confirma el mismo mapeo exacto ya
+    aprobado y revela la arquitectura real de la pantalla: un único
+    panel de detalle con 3 tabs (Permisos/Alcance/Usuarios asignados)
+    y UN SOLO botón "Guardar cambios" al pie que aplica a Permisos+
+    Alcance juntos — coincide con el PATCH real del backend, que es
+    full-replace de `name`/`description`/`grants`/`scope` en una sola
+    llamada (item 3.2). "Usuarios asignados" NO pasa por ese PATCH —
+    assign/remove son sus propios endpoints, llamados al toque.
+  - **Decisión de arquitectura frontend (sin pedir permiso, de bajo
+    riesgo)**: `RoleDetailPanel` mantiene edición LOCAL de
+    `grants`/`scope` (no hay auto-save por checkbox) y comete los dos
+    juntos en un solo `PATCH` al click de "Guardar cambios" — mismo
+    patrón que el mockup. El padre (`page.tsx`) remonta el panel con
+    `key={role.id}` al cambiar de perfil seleccionado, evitando un
+    `useEffect` de sincronización de props→estado.
+  - **Gap real encontrado y resuelto sin pre-deshabilitar checkboxes**:
+    no existe ningún endpoint "whoami grants" que exponga los
+    grants/scope propios del actor en el frontend — a diferencia del
+    mockup (que simula un actor fijo para grisar opciones), la UI real
+    deja todos los checkboxes interactivos y confía en el 403 real del
+    backend (`ensure_no_grant_escalation`/`ensure_no_scope_escalation`,
+    ya verificado en 3.1-3.4) si el actor intenta otorgar algo que no
+    tiene — la guarda de seguridad real sigue intacta, solo cambia
+    dónde se muestra el error (al guardar, no al tipear). Documentado
+    como simplificación de UX deliberada, no de seguridad.
+  - Archivos nuevos: `lib/api/schemas/roles.ts`, `lib/api/roles.ts`
+    (hooks de React Query: list/get/create/update/delete/clone/assign/
+    remove/lookup-por-email/list-usuarios-del-rol),
+    `components/admin/roles/constants.ts` (ZONES/UI_SECTIONS/
+    SCOPE_LABEL, mismo mapeo), `RolesListPanel.tsx`,
+    `CreateRoleDialog.tsx`, `CloneRoleDialog.tsx`, `GrantsMatrixTab.tsx`,
+    `RoleDetailPanel.tsx`, `app/(admin)/admin/roles/page.tsx` — todos
+    con TDD estricto real (rojo mostrado antes de implementar cada
+    uno).
+  - Verificado: `pnpm typecheck` (0 errores), `pnpm exec eslint
+--max-warnings=0` sobre el proyecto completo (0 hallazgos), suite
+    completa frontend **1504 passed** (187 archivos).
+- [x] 3.6 — Frontend: editor de alcance (organizaciones) + asignación de
+      usuarios a perfiles (2026-10-07).
+  - `ScopeEditorTab.tsx` — radio own/explicit/all + checklist de
+    organizaciones para explicit, reusando `useOrganizations()` ya
+    existente (regla 11, mismo origen que `OrganizationPicker`) en vez
+    de un fetch nuevo. Mismo criterio de "sin pre-deshabilitar" que
+    Permisos (3.5) — ningún endpoint whoami-scope existe tampoco.
+  - **Segundo gap real encontrado, resuelto con el mismo criterio ya
+    usado en 3.5 (mínimo, reusa patrones, sin volver a interrogar)**:
+    no existía ningún endpoint para LISTAR los usuarios ya asignados a
+    un rol (`get_user_roles`/`get_user_roles_with_grants` van en la
+    dirección usuario→roles, no al revés) — sin eso, "Quitar" no tenía
+    sentido (nadie sabría a quién). Agregado bajo TDD estricto:
+    - `AbstractUserRepository.list_by_role_id(role_id)` nuevo +
+      impl SQLAlchemy (`user_roles` JOIN `users`, filtra por
+      `role_id` exacto — a diferencia de `get_users_by_tenant_and_role()`,
+      que matchea por `role_type` legacy y nunca funcionaría para un
+      rol custom sin `role_type`). 2 tests de integración nuevos.
+    - `GET /api/v1/admin/roles/{role_id}/users` nuevo en
+      `admin_roles_router.py`, gateado por `roles:read` (mismo grant
+      que `get_role`), mismo criterio de 404 cross-tenant. 4 tests
+      HTTP nuevos.
+    - `UserSummaryResponse` extraído a
+      `application/dto/user/response.py` (DTO compartido) — antes
+      vivía solo dentro de `admin_users_router.py` (ítem 3.6, lookup
+      por email); ahora lo usan los dos routers.
+    - Ripple real de pyright: 2 fakes de test
+      (`StubUserRepository` en `test_change_password.py` y
+      `test_create_lead_auto_assignment.py`) heredan
+      `AbstractUserRepository` por clase (no solo estructuralmente) —
+      pyright los marcó "abstract" al agregar el método nuevo al
+      Protocol. Arreglado agregando el stub en ambos.
+  - `AssignedUsersTab.tsx` — lista los usuarios asignados (con botón
+    "Quitar" por usuario) + busca por email exacto y ofrece "Asignar"
+    sobre el match encontrado (`GET /admin/users/by-email`, ya
+    existente desde el lookup de 3.6). Mismo criterio ya documentado:
+    sin búsqueda parcial por nombre, alcance deliberadamente acotado.
+  - Verificado: backend — `AbstractUserRepository`/
+    `SqlAlchemyUserRepository` + `admin_roles_router.py` +
+    `application/dto/user/` tocados; ruff + ruff-format + pyright
+    **completo del proyecto** (0 errores); suite completa backend
+    **2663 passed** (2657 + 6 nuevos: 2 repo + 4 HTTP). Frontend —
+    `pnpm typecheck` (0 errores), `pnpm exec eslint --max-warnings=0`
+    sobre el proyecto completo (0 hallazgos), suite completa frontend
+    **1504 passed**.
+  - **No verificado en navegador real** — esta sesión no tenía el stack
+    dev (API+DB+web) levantado con una sesión de login real; la
+    cobertura es TDD completa (unit + componente, cada click/submit/
+    toggle simulado vía Testing Library) pero no una revisión visual
+    en vivo. Pendiente si el usuario quiere confirmarlo antes de dar
+    por cerrado el Bloque 3 del todo.
+  - Commit + push: **pendiente** — regla 10, solo cuando el usuario lo
+    pida explícitamente.
 
-_(cada ítem con test de regresión real + verificación en staging antes de
-marcar ✅, mismas reglas de ejecución de arriba)_
+**Bloque 3 completo: 7/7 ítems — backend Y frontend.** Después de este
+bloque: Bloque 4 (zona Leads/CRM + catálogo público/landing) y Bloque 5
+(UI de gestión de assignments de Facebook) — ninguno arrancado.
 
 ## Bloque 4 — Zona Leads/CRM + catálogo público/landing (§7 del diagnóstico)
 
