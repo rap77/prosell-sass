@@ -251,7 +251,12 @@ class TestRoleEntity:
         )
 
         assert isinstance(role.id, UUID)
-        assert role.role_type == RoleType.VIEWER  # Default to minimal
+        # role_type=None distinguishes custom from the 6 fixed system
+        # roles (migration 20261006_0001) — a custom role must NOT reuse
+        # a real RoleType value (e.g. VIEWER), or creating it would
+        # collide with that system role's row under the partial unique
+        # index on role_type.
+        assert role.role_type is None
         assert role.name == "Custom Moderator"
         assert role.description == "Can moderate user content"
         assert role.is_system_role is False
@@ -267,7 +272,10 @@ class TestRoleEntity:
         assert Permission.VEHICLE_DELETE in perms
 
     def test_get_permissions_custom_role(self) -> None:
-        """Test get_permissions() for custom role (defaults to VIEWER)."""
+        """A fresh custom role starts with ZERO legacy permissions — it
+        has no RoleType to look up in ROLE_PERMISSIONS, and must not
+        silently inherit VIEWER's. Grants come from the new engine
+        (role_grants / has_zone_action), not this legacy dict."""
         role = Role.create_custom_role(
             name="Custom",
             description="Custom role",
@@ -275,8 +283,7 @@ class TestRoleEntity:
         )
         perms = role.get_permissions()
 
-        # VIEWER has 2 permissions (VEHICLE_READ, ANALYTICS_VIEW)
-        assert len(perms) == 2
+        assert perms == set()
 
     def test_has_permission_system_role(self) -> None:
         """Test has_permission() for system role."""
@@ -287,16 +294,16 @@ class TestRoleEntity:
         assert role.has_permission(Permission.USER_DELETE) is False
 
     def test_has_permission_custom_role(self) -> None:
-        """Test has_permission() for custom role with minimal permissions."""
+        """A fresh custom role (role_type=None) has no legacy permission
+        by default — same reasoning as test_get_permissions_custom_role."""
         role = Role.create_custom_role(
             name="Custom",
             description="Custom",
             tenant_id=uuid4(),
         )
 
-        # Custom roles use RoleType.VIEWER which has VEHICLE_READ and ANALYTICS_VIEW
-        assert role.has_permission(Permission.VEHICLE_READ) is True
-        assert role.has_permission(Permission.ANALYTICS_VIEW) is True
+        assert role.has_permission(Permission.VEHICLE_READ) is False
+        assert role.has_permission(Permission.ANALYTICS_VIEW) is False
 
 
 class TestRoleZoneActionGrants:

@@ -474,9 +474,11 @@ def require_permission(permission: Permission) -> Callable[..., Awaitable[User]]
         # Fetch user roles with permissions
         user_roles = await role_repository.get_user_roles(current_user.id)
 
-        # Check if any role has the required permission
+        # Check if any role has the required permission. A custom role
+        # (role_type=None) has no legacy permission to look up.
         has_permission = any(
-            permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in user_roles
+            role.role_type is not None and permission in ROLE_PERMISSIONS.get(role.role_type, set())
+            for role in user_roles
         )
 
         if not has_permission:

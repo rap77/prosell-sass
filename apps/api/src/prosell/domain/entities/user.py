@@ -260,8 +260,13 @@ class User(DomainModel):
         # Normalize to list for unified handling
         roles_to_check = [role_type] if isinstance(role_type, str) else role_type
 
-        # Compare with role_type.value since role_type is a StrEnum
-        return any(any(role.role_type.value == r for r in roles_to_check) for role in self.roles)
+        # Compare with role_type.value since role_type is a StrEnum. A
+        # custom role (role_type=None) has no fixed name to match.
+        return any(
+            any(role.role_type.value == r for r in roles_to_check)
+            for role in self.roles
+            if role.role_type is not None
+        )
 
     def has_permission(self, permission: Permission) -> bool:
         """Check if any of the user's roles grants the given permission.
@@ -270,7 +275,8 @@ class User(DomainModel):
         `require_permission` FastAPI dependency which raises 403 outright.
         """
         return any(
-            permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in self.roles or []
+            role.role_type is not None and permission in ROLE_PERMISSIONS.get(role.role_type, set())
+            for role in self.roles or []
         )
 
     def suspend(self) -> None:

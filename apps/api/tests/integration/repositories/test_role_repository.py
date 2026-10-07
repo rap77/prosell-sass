@@ -1,21 +1,22 @@
 """Regression: a custom tenant-scoped role round-trips through the repo.
 
-`Role.create_custom_role(...)` returns a `Role` with `role_type=RoleType.VIEWER`
-by default — a real, fully-built domain entity. Persisting it must round-trip
-the `role_type` enum back to `RoleType.VIEWER` (not a bare string), and
+`Role.create_custom_role(...)` returns a `Role` with `role_type=None` —
+migration `20261006_0001` relaxed `roles.role_type` to nullable so a
+custom role never collides with a real `RoleType` (e.g. VIEWER)'s row
+under the partial unique index. Persisting it must round-trip `None`
+(not a stray string like `"None"`, and not silently defaulting back to
+VIEWER — that was the actual bug, fixed alongside this test), and
 `tenant_id` must survive the trip so multi-tenant filtering keeps working.
 
 The conftest's `system_roles` fixture proves system roles persist OK, but
-it never tests the `tenant_id` field on a custom role, and `_to_entity`
-uses `Role.model_validate(model, from_attributes=True)` which depends on
-Pydantic coercing the str back into the `RoleType` StrEnum.
+it never tests the `tenant_id` field on a custom role.
 """
 
 from uuid import UUID, uuid4
 
 import pytest
 
-from prosell.domain.entities.role import Role, RoleType
+from prosell.domain.entities.role import Role
 from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.role_model import (
@@ -67,9 +68,10 @@ async def test_create_custom_role_with_tenant_roundtrips(
 
     assert fetched is not None
     assert fetched.id == role.id
-    # role_type must come back as the enum, not a bare string
-    assert fetched.role_type == RoleType.VIEWER
-    assert isinstance(fetched.role_type, RoleType)
+    # role_type must round-trip as None — no hardcoded fallback to a
+    # real RoleType (that was the bug: it would collide with that
+    # system role's row under the partial unique index).
+    assert fetched.role_type is None
     # tenant_id must round-trip for multi-tenant isolation
     assert fetched.tenant_id == test_organization.tenant_id
     assert fetched.name == role.name

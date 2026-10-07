@@ -237,7 +237,7 @@ class StubUserRepository(AbstractUserRepository):
         user = self.users.get(user_id)
         if user is None or not user.roles:
             return []
-        return [role.role_type.value for role in user.roles]
+        return [role.role_type.value for role in user.roles if role.role_type is not None]
 
     async def email_exists(self, email: str) -> bool:
         return any(user.email == email for user in self.users.values())

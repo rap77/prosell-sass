@@ -787,17 +787,20 @@ class TestRoleEscalationBlocked:
                 f"MANAGER unexpectedly has super_admin permission: {perm}"
             )
 
-    def test_custom_role_defaults_to_viewer_permissions(self) -> None:
-        """Custom roles start with VIEWER permissions (minimal) — no escalation."""
+    def test_custom_role_has_no_legacy_permissions_by_default(self) -> None:
+        """Custom roles have role_type=None (migration 20261006_0001 —
+        distinguishes them from the 6 fixed RoleType values) and start
+        with ZERO legacy permissions, not VIEWER's — no escalation via a
+        silently-inherited default. Real grants come from the new engine
+        (role_grants / has_zone_action), not this legacy dict."""
         tenant_id = uuid4()
         custom_role = Role.create_custom_role(
             name="Custom Role",
             description="Test custom role",
             tenant_id=tenant_id,
         )
-        assert custom_role.role_type == RoleType.VIEWER
-        viewer_perms = _perms_for(RoleType.VIEWER)
-        assert custom_role.get_permissions() == viewer_perms
+        assert custom_role.role_type is None
+        assert custom_role.get_permissions() == set()
 
     def test_user_with_sales_agent_role_cannot_satisfy_admin_role_check(self) -> None:
         """User.has_role('admin') returns False for a sales_agent user."""

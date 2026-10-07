@@ -137,8 +137,14 @@ class Role(DomainModel):
 
     # Required fields
     id: UUID
-    role_type: RoleType
     name: str = Field(..., min_length=1)
+
+    # `role_type` is None for custom (non-system) roles — migration
+    # `20261006_0001` relaxed the DB column to nullable so a custom role
+    # never collides with a real `RoleType`'s row under the partial
+    # unique index. `is_system_role` is what actually distinguishes
+    # built-in from custom, not the presence of a type.
+    role_type: RoleType | None = None
 
     # Optional fields with defaults
     description: str | None = None
@@ -182,7 +188,7 @@ class Role(DomainModel):
 
         return cls(
             id=uuid4(),
-            role_type=RoleType.VIEWER,  # Default to minimal permissions
+            role_type=None,  # Custom roles have no fixed RoleType — see class docstring.
             name=name,
             description=description,
             is_system_role=False,
@@ -192,7 +198,15 @@ class Role(DomainModel):
         )
 
     def get_permissions(self) -> set[Permission]:
-        """Get permissions for this role."""
+        """Get permissions for this role.
+
+        A custom role (`role_type=None`) has no legacy permission —
+        it has no `RoleType` to look up, and must not silently inherit
+        another role's set. Its real permissions come from the new
+        engine (`grants` / `has_zone_action()`), not this dict.
+        """
+        if self.role_type is None:
+            return set()
         return ROLE_PERMISSIONS.get(self.role_type, set())
 
     def has_permission(self, permission: Permission) -> bool:

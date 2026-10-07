@@ -23,7 +23,7 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
         """Create a new role."""
         model = RoleModel(
             id=role.id,
-            role_type=role.role_type.value,
+            role_type=role.role_type.value if role.role_type is not None else None,
             name=role.name,
             description=role.description,
             is_system_role=role.is_system_role,
@@ -165,7 +165,7 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
         """
         return Role(
             id=model.id,
-            role_type=RoleType(model.role_type) if model.role_type else RoleType.VIEWER,
+            role_type=RoleType(model.role_type) if model.role_type else None,
             name=model.name,
             description=model.description,
             is_system_role=model.is_system_role,

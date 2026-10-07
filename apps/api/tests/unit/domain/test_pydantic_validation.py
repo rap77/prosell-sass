@@ -185,14 +185,18 @@ class TestRolePydanticValidation:
                 name="Test Role",
             )
 
-    def test_role_rejects_none_role_type(self) -> None:
-        """Test that Role() rejects None for role_type."""
-        with pytest.raises(ValidationError):
-            Role(
-                id=uuid4(),
-                role_type=None,  # type: ignore[arg-type]
-                name="Test Role",
-            )
+    def test_role_accepts_none_role_type_for_custom_roles(self) -> None:
+        """role_type=None is valid — it's how a custom (non-system) role
+        is distinguished from the 6 fixed RoleType values (migration
+        20261006_0001 relaxed the DB column to nullable for exactly this).
+        `is_system_role` is the real discriminator, not the presence of
+        a type."""
+        role = Role(
+            id=uuid4(),
+            role_type=None,
+            name="Test Role",
+        )
+        assert role.role_type is None
 
     def test_role_has_default_name_from_type(self) -> None:
         """Test that system role generates name from role_type."""
