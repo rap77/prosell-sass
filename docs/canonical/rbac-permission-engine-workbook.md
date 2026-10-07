@@ -747,6 +747,48 @@ inventar detalle de implementación que todavía no se decidió)_
     staging; llega vía el deploy normal al pushear.
   - Verificado: ruff + pyright **completo del proyecto** (0 errores);
     suite completa backend **2603 passed** (2594 + 9 nuevos).
+  - **Porción de escritura — `POST /admin/roles` hecho (2026-10-07)**:
+    - [x] `repo.create()` extendido para persistir `grants`/`scope`
+          atómicamente con la fila (antes solo insertaba `roles`; mis
+          propios tests de 3.2 ya habían tenido que insertar
+          `RoleGrantModel`/`RoleScopeModel` a mano como workaround). TDD:
+          2 tests nuevos en `test_role_repository.py`, rojo real
+          (`AssertionError: assert False is True`, no `AttributeError`,
+          porque el método ya existía — solo le faltaba comportamiento).
+    - [x] `CreateRoleUseCase` nuevo (`application/use_cases/role/create_role.py`):
+          arma el alcance efectivo del creador y la UNIÓN de grants de
+          todos sus roles (vía `get_user_roles_with_grants`), corre
+          `ensure_no_grant_escalation` + `ensure_no_scope_escalation`
+          (las dos guardas de 3.1/Bloque 2) ANTES de persistir, crea el
+          `Role` con `create_custom_role()`. `tenant_id` nunca viene del
+          request — siempre del actor autenticado (mismo criterio IDOR
+          que `CreateOrganizationRequest`). TDD: 4 tests con repo fake
+          (in-memory), rojo real (`ModuleNotFoundError`) antes de
+          implementar.
+    - [x] `POST /api/v1/admin/roles` en el router — gateado por zona
+          `roles` acción `create` (solo `super_admin` la tiene hoy en el
+          seed real; `admin` no, confirmado — la guarda de
+          escalación es defensa en profundidad para cuando eso cambie).
+          Devuelve 201 + el perfil creado, o 403 si el actor pide un
+          grant/alcance que él mismo no tiene.
+    - **Bug real encontrado por el propio test HTTP, no por mí
+      solo**: el helper `_client_as()` de la sesión anterior (3.2 de
+      lectura) nunca seteaba `tenant_id` en el `User` de dominio
+      fabricado para el override de auth — quedaba siempre `None`. Los
+      GET no lo necesitaban de verdad (atajados por la rama `AllScope`),
+      así que el bug quedó latente; el POST sí lo usa explícitamente
+      (`if current_user.tenant_id is None: 400`) y lo destapó (3 tests
+      fallando con 400 en vez de 201/403/403). Arreglado pasando el
+      `UserModel` completo (no solo `.id`) al helper.
+    - 5 tests HTTP nuevos (403 sin grant, 201 con grants/scope reales
+      persistidos, 403 escalando un grant que el creador no tiene, 403
+      escalando a un alcance más amplio que el propio).
+    - Verificado: ruff + pyright **completo del proyecto otra vez** (0
+      errores — atrapó un `RoleGrant` "no hashable" real para el
+      analizador estático, pese a ser hashable en runtime por
+      `frozen=True`; resuelto deduplicando por tupla `(zone, action)` en
+      vez de hashear el objeto); suite completa backend **2613 passed**
+      (2603 + 10 nuevos).
 - [ ] 3.3 — Backend: clonar plantilla + editar alcance (`role_scope`/
       `role_organization_access`), usando la guarda de 3.1.
 - [ ] 3.4 — Backend: asignar/desasignar usuarios a un perfil
