@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                                                                     |
-| ------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)           |
-| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging    |
-| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 2/7 ítems (3.0, 3.1), TDD estricto desde acá |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                             |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                             |
+| Bloque | Descripción                                                                           | Estado                                                                                         |
+| ------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                               |
+| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging                        |
+| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 2/7 ítems (3.0, 3.1) + prerequisito 3.2a, TDD estricto desde acá |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                                 |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                 |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
