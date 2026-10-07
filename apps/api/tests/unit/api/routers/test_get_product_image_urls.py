@@ -27,6 +27,7 @@ from httpx import ASGITransport, AsyncClient
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User
+from prosell.domain.value_objects.permission_scope import AllScope
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
@@ -34,6 +35,7 @@ from prosell.infrastructure.api.dependencies import (
     get_spaces_service,
 )
 from prosell.infrastructure.api.main import app
+from prosell.infrastructure.api.routers.product_router import get_cookie_effective_scope
 
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 TEST_OTHER_TENANT_ID = UUID("99999999-9999-9999-9999-999999999999")
@@ -608,6 +610,14 @@ class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
         admin_user = _make_org_admin_user()
 
         app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+        # `admin_user` is a purely in-memory User/Role (no real DB row) —
+        # the new permission engine's effective_scope resolves via a REAL
+        # get_role_repository() DB query keyed by current_user.id, which
+        # finds nothing for a never-persisted id and silently defaults to
+        # OwnScope — this class exists specifically to exercise the
+        # org-admin relaxation path, so it must see real AllScope (a real
+        # empty-images regression caught while migrating product_router.py).
+        app.dependency_overrides[get_cookie_effective_scope] = lambda: AllScope()
         try:
             with (
                 patch(
@@ -624,6 +634,7 @@ class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
                 response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
         finally:
             app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
+            app.dependency_overrides.pop(get_cookie_effective_scope, None)
 
         assert response.status_code == status.HTTP_200_OK, response.text
         body = response.json()
@@ -642,6 +653,14 @@ class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
         admin_user = _make_org_admin_user()
 
         app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+        # `admin_user` is a purely in-memory User/Role (no real DB row) —
+        # the new permission engine's effective_scope resolves via a REAL
+        # get_role_repository() DB query keyed by current_user.id, which
+        # finds nothing for a never-persisted id and silently defaults to
+        # OwnScope — this class exists specifically to exercise the
+        # org-admin relaxation path, so it must see real AllScope (a real
+        # empty-images regression caught while migrating product_router.py).
+        app.dependency_overrides[get_cookie_effective_scope] = lambda: AllScope()
         try:
             with (
                 patch(
@@ -656,6 +675,7 @@ class TestGetProductImageUrlsOrgAdminLegacyTenantValidation:
                 response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
         finally:
             app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
+            app.dependency_overrides.pop(get_cookie_effective_scope, None)
 
         assert response.status_code == status.HTTP_200_OK, response.text
         body = response.json()

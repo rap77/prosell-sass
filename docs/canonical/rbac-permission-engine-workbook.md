@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                                                                              |
-| ------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                    |
-| 2      | Motor central Zona × Acción × Alcance                                                 | 🟡 Casi completo — falta migrar routers reales a `require_zone_action` (deliberado) |
-| 3      | UI de admin para perfiles                                                             | 🔴 Not started                                                                      |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                      |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                      |
+| Bloque | Descripción                                                                           | Estado                                                                  |
+| ------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)        |
+| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging |
+| 3      | UI de admin para perfiles                                                             | 🔴 Not started — próximo bloque                                         |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                          |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                          |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
@@ -395,27 +395,127 @@ AllScope)`), mismo alias nombrado `get_cookie_effective_scope` +
       2 requests reales (`GET /admin/organizations`,
       `GET /admin/organizations/{id}/verticals`, ambos 200 con cookie
       real).
-- [ ] `product_router.py` — 0/41, el grande:
-  - 0/27 alcance inline (`is_org_admin`/`can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)`,
-    líneas 311, 340(no, esta es marketplace), 487, 1276, 1327, 1455, 1594,
-    1751, 1984, 2074, 2105, 2134, 2162, 2191, 2215, 2243, 2277, 2309,
-    2492, 2521, 2601, 2668, 2839, 2915, 2978 y más — re-grepear
-    `has_permission\(Permission\.ORG_ADMIN_VIEW_ALL\)` al retomar, no
-    confiar en esta lista si el archivo cambió).
-  - 0/14 acción vía helper `_require_marketplace_publish(current_user)`
-    (líneas 1828, 1860, 1891, 1922, 1953, 2010, 2040, 2071, 2102, 2131,
-    2159, 2188, 2212, 2240 — mismo aviso, re-grepear).
+- [x] `product_router.py` — 38/38 migrados (re-verificado al retomar: 24
+      alcance inline + 14 acción vía helper, no 27+14=41 como decía la
+      estimación original — mismo patrón ya varias veces documentado de
+      re-grepear en vez de confiar en un conteo viejo). Desglose real:
+  - **14 de acción** (`_require_marketplace_publish(current_user)`,
+    helper borrado): `batch_submit_products`, `batch_reserve_products`,
+    `batch_pause_products`, `batch_resume_products`,
+    `batch_mark_sold_products`, `batch_approve_products`,
+    `batch_reject_products`, `approve_product`, `reject_product`,
+    `publish_product`, `pause_product`, `resume_product`,
+    `reserve_product`, `mark_product_sold`. Patrón: alias nombrado
+    `MarketplacePublishUser = Annotated[User,
+Depends(require_marketplace_publish_grant)]` reemplaza el tipo de
+    `current_user` en la firma (no un parámetro nuevo — `require_zone_action`
+    devuelve el mismo `User` real tras validar), cero cambios en el
+    cuerpo salvo borrar la llamada al helper viejo.
+  - **24 de alcance**, de las cuales:
+    - **1 helper compartido** `_check_org_scope_permission` (usado por
+      5 endpoints: `export_catalog_client_format`, `list_products`,
+      `get_category_filter_values`, `get_product_price_range`,
+      `get_featured_products`) — cambió de derivar `can_view_all_orgs`
+      internamente de `current_user` a recibir `effective_scope` como
+      parámetro nuevo; los 5 llamadores ahora pasan `effective_scope`
+      (cada uno con su propio `effective_scope: EffectiveScope` agregado
+      a la firma del endpoint).
+    - **7 dentro de las mismas 14 funciones de marketplace** (mismo
+      endpoint necesita AMBOS: gate de acción + alcance) —
+      `approve_product`, `reject_product`, `publish_product`,
+      `pause_product`, `resume_product`, `reserve_product`,
+      `mark_product_sold`.
+    - **16 standalone**, cada uno en su propio endpoint:
+      `create_product`, `get_product`, `get_product_image_urls`,
+      `batch_product_cover_urls`, `update_product`,
+      `delete_product_image`, `submit_product_for_approval`,
+      `get_available_transitions`, `get_product_audit_logs`,
+      `delete_product`, `archive_product`, `bulk_upload_preview`,
+      `bulk_upload_with_images`, `set_product_brokers`,
+      `set_product_ownership`, `get_product_ownership`.
   - `_require_super_admin`/`_require_matching_version` en el mismo
     archivo son OTRO mecanismo (role-based / version-based) — **NO
-    tocar, fuera de alcance**.
-- [ ] **Confirmado fuera de alcance** (verificado, no son `Permission`-based):
+    tocados, confirmado fuera de alcance**.
+  - **9 archivos de test rotos y arreglados** (mismo patrón ya
+    documentado en `admin_organizations_router.py`, pero con una
+    variante nueva encontrada acá — ver abajo):
+    - `tests/integration/api/routers/test_product_router_export_client_format.py`
+      (4 tests, `assert 403 == 200`) — el fixture `_auth_user`/
+      `_non_admin_user` fabricaba un `User`/`Role` SOLO en memoria (`id`
+      aleatorio, nunca insertado en la DB real). El chequeo viejo leía
+      `current_user.roles` directo (en memoria, sin DB) — funcionaba. El
+      motor nuevo resuelve `effective_scope` vía una query REAL a
+      `get_user_roles_with_grants(current_user.id)` — con un id que no
+      existe en ninguna tabla, siempre da `OwnScope` sin importar qué rol
+      reclame el objeto Python. Fix real: `_auth_user`/`_non_admin_user`
+      ahora insertan un `UserModel`+`UserRoleModel` real contra el rol
+      REAL ya sembrado (`20261006_0002`), no solo un objeto en memoria.
+    - `tests/unit/api/routers/test_delete_product_image.py`,
+      `test_update_product_thumbnail_cdn_purge.py`,
+      `test_list_products_status_validation.py` (7 tests,
+      `AttributeError: 'coroutine' object has no attribute 'all'`) —
+      estos SÍ mockean `db` con `AsyncMock()` puro (sin spec de sesión
+      real), y la query real de `get_role_repository` revienta contra el
+      mock. Fix: override directo de `get_cookie_effective_scope`
+      (alias nombrado de `product_router.py`) a un `OwnScope()` fijo —
+      bypasea la DB por completo, consistente con que estos tests no
+      prueban nada de alcance cross-org.
+    - `tests/unit/api/routers/test_product_router_image_signing.py`
+      (2 tests, mismo síntoma que el grupo anterior) — mismo fix.
+    - `tests/unit/api/routers/test_get_product_image_urls.py` (1 test,
+      `assert [] == [legacy_key]` — NO era un crash, el chequeo devolvía
+      200 pero con la lista vacía) — `_make_org_admin_user()` fabrica un
+      `User`/`Role` ADMIN solo en memoria con un `id` fijo nunca
+      persistido; el motor nuevo lo resuelve a `OwnScope` (no admin), así
+      que la relajación cross-tenant para claves legacy de bulk-upload
+      nunca se activaba — dato filtrado, lista vacía en vez de error.
+      Fix: override directo de `get_cookie_effective_scope` a
+      `AllScope()` en los 2 tests de esa clase (la clase existe
+      específicamente para probar esa relajación — con `OwnScope` nunca
+      se ejercita el código real que dice probar).
+    - `tests/integration/api/test_batch_review_api.py` (2 tests,
+      `assert 200 == 403`, el inverso del primer grupo) —
+      `_user_with_permission(test_user, has_marketplace_publish=False)`
+      reusaba el `id` de `test_user`, que **siempre** tiene un rol
+      SUPER_ADMIN REAL sembrado en la DB (fixture de
+      `tests/integration/conftest.py`) — el chequeo viejo leía el rol
+      "sales_agent" fabricado en memoria y lo respetaba; el motor nuevo
+      ignora esa fabricación y encuentra el SUPER_ADMIN real, dando 200
+      en vez de 403. Fix: usar el fixture real `seller_user` (ya
+      existente en `tests/integration/api/conftest.py`, un usuario
+      SEPARADO con un rol SALES_AGENT REALMENTE sembrado) en vez de
+      `_user_with_permission`, para los 2 tests que de verdad necesitan
+      que el caller NO sea admin.
+  - **Lección general, reconfirmada 3 veces esta sesión en 3 formas
+    distintas**: cualquier test que fabrique un `User`/`Role` SOLO EN
+    MEMORIA (sin fila real en `users`/`user_roles`) para simular un rol
+    específico deja de funcionar con el motor nuevo — `effective_scope`
+    SIEMPRE resuelve vía una query real a la DB por `current_user.id`,
+    nunca lee el atributo `.roles` del objeto Python. El fix es o bien
+    (a) usar un fixture que persiste un usuario+rol real
+    (`admin_user`/`seller_user`/patrón `_persist_user_with_role` nuevo
+    en el archivo de export), o (b) si el test no mockea la DB con algo
+    `spec=AsyncSession`-compatible real, overridear directamente el
+    alias `get_cookie_effective_scope` del router con un `OwnScope()`/
+    `AllScope()` fijo.
+  - Verificado: ruff + pyright real (0 errores en los 8 archivos
+    tocados), suite completa backend (2573 passed), y 4 requests reales
+    contra staging con cookie real (`GET /products`, `GET
+/products/price-range`, `GET /products/featured`, `GET
+/products/export-client-format.zip` con y sin `all_organizations=true`
+    — 404 de catálogo vacío en staging, NO 403, confirmando que
+    `AllScope` se resuelve bien para el admin real).
+- [x] **Confirmado fuera de alcance** (verificado, no son `Permission`-based):
       `_require_migration_admin` (`fb_credential_migration_router.py`,
       usa `has_role(RoleType.SUPER_ADMIN)`) y `_require_platform_admin`
-      (`category_router.py`, mismo mecanismo). No migrar estos.
-- [ ] Después de migrar los 3 archivos: correr `rg -n "has_permission\(Permission\.(ORG_ADMIN_VIEW_ALL|MARKETPLACE_PUBLISH)\)|require_permission\(Permission\.ORG_CREATE\)" src/`
-      sobre TODO `src/` para confirmar 0 resultados antes de dar este
-      ítem por terminado — esa es la prueba real de "migración completa",
-      no contar manualmente.
+      (`category_router.py`, mismo mecanismo). No se migraron.
+- [x] Grep final de 0 resultados reales sobre TODO `src/` —
+      `rg -n "has_permission\(Permission\.(ORG_ADMIN_VIEW_ALL|MARKETPLACE_PUBLISH)\)|require_permission\(Permission\.ORG_CREATE\)" src/`
+      da solo 2 matches, ambos docstrings/comentarios históricos (uno en
+      `dependencies.py` citando el patrón viejo como ejemplo de uso de
+      `require_permission`, otro en `dependencies_zone_action.py`
+      explicando qué reemplaza `get_effective_scope`) — cero código real
+      restante. **Block 2 (motor de permisos) queda 100% completo.**
 - [x] Migrar los 6 roles fijos actuales a perfiles-plantilla (2026-10-06) —
       migración de datos `20261006_0002`, siembra `role_grants`/`role_scope`
       para los 6 roles `RoleType` traduciendo `ROLE_PERMISSIONS` 1:1. Mismas

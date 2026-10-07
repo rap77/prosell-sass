@@ -54,14 +54,25 @@ async def _client_for(user: User, db_session) -> AsyncClient:
 
 @pytest.mark.asyncio
 async def test_batch_approve_requires_marketplace_publish_permission(
-    test_user,
+    seller_user,
     db_session,
 ):
-    """Should return 403 without MARKETPLACE_PUBLISH permission."""
-    # User without permission (sales_agent doesn't have MARKETPLACE_PUBLISH)
-    sales_user = _user_with_permission(test_user, has_marketplace_publish=False)
+    """Should return 403 without MARKETPLACE_PUBLISH permission.
 
-    async with await _client_for(sales_user, db_session) as client:
+    `seller_user` (not `_user_with_permission(test_user, ...)`): the new
+    Zone x Action x Scope engine's `require_zone_action()` resolves grants
+    via a REAL `get_user_roles_with_grants()` DB query keyed by
+    `current_user.id` — it ignores whatever role_type an in-memory `User`
+    object claims. `_user_with_permission` reused `test_user.id`, which
+    always has a REAL seeded SUPER_ADMIN role assignment (per
+    `tests/integration/conftest.py`'s `test_user` fixture), so the fabricated
+    "sales_agent" claim was silently overridden by the real DB row — a real
+    200-instead-of-403 regression caught while migrating product_router.py.
+    `seller_user` is a SEPARATE real user with a REAL SALES_AGENT role
+    assignment in the DB (`test_seller_user`), so this test now proves
+    what it always claimed to.
+    """
+    async with await _client_for(seller_user, db_session) as client:
         response = await client.post(
             "/api/v1/products/batch/approve",
             json={"product_ids": [str(uuid4())]},
@@ -73,13 +84,14 @@ async def test_batch_approve_requires_marketplace_publish_permission(
 
 @pytest.mark.asyncio
 async def test_batch_reject_requires_marketplace_publish_permission(
-    test_user,
+    seller_user,
     db_session,
 ):
-    """Should return 403 without MARKETPLACE_PUBLISH permission."""
-    sales_user = _user_with_permission(test_user, has_marketplace_publish=False)
-
-    async with await _client_for(sales_user, db_session) as client:
+    """Should return 403 without MARKETPLACE_PUBLISH permission (see
+    `test_batch_approve_requires_marketplace_publish_permission` for why
+    this uses the real `seller_user` fixture instead of
+    `_user_with_permission`)."""
+    async with await _client_for(seller_user, db_session) as client:
         response = await client.post(
             "/api/v1/products/batch/reject",
             json={

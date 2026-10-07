@@ -29,6 +29,7 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from tests.integration._constants import TEST_DB_URL
@@ -48,6 +49,8 @@ from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+from prosell.infrastructure.models.user_model import UserModel
 
 # FR8.1/FR9.1 — required in every mode. Every call below that doesn't
 # test their absence merges this in.
@@ -181,17 +184,65 @@ def _make_product(
     )
 
 
-def _auth_user(org: OrganizationModel) -> User:
+async def _persist_user_with_role(
+    session: AsyncSession,
+    org: OrganizationModel,
+    role_type: RoleType,
+    *,
+    user_id: UUID,
+    email: str,
+    full_name: str,
+) -> RoleModel:
+    """Insert a real `UserModel` + `UserRoleModel` row so the new Zone x
+    Action x Scope engine's `get_user_roles_with_grants()` (a REAL DB query
+    keyed by `current_user.id`) finds a real role assignment. A purely
+    in-memory `User`/`Role` pair (never inserted anywhere) always resolves
+    to the `OwnScope` default regardless of the role_type claimed in the
+    Python object — confirmed after a real 403-instead-of-200 failure
+    while migrating product_router.py to the new permission engine.
+    """
+    role_result = await session.execute(
+        select(RoleModel).where(RoleModel.role_type == role_type.value)
+    )
+    role_model = role_result.scalar_one()
+
+    session.add(
+        UserModel(
+            id=user_id,
+            email=email,
+            full_name=full_name,
+            tenant_id=org.tenant_id,
+            status="active",
+            email_verified=True,
+        )
+    )
+    await session.flush()
+    session.add(UserRoleModel(id=uuid4(), user_id=user_id, role_id=role_model.id))
+    await session.flush()
+    return role_model
+
+
+async def _auth_user(session: AsyncSession, org: OrganizationModel) -> User:
+    user_id = uuid4()
+    email = f"export-test-{user_id.hex[:12]}@example.com"
+    role_model = await _persist_user_with_role(
+        session,
+        org,
+        RoleType.SUPER_ADMIN,
+        user_id=user_id,
+        email=email,
+        full_name="Export Test User",
+    )
     role = Role(
-        id=uuid4(),
+        id=role_model.id,
         role_type=RoleType.SUPER_ADMIN,
-        name="Super Admin",
+        name=role_model.name,
         is_system_role=True,
         tenant_id=None,
     )
     return User(
-        id=uuid4(),
-        email=f"export-test-{uuid4().hex[:6]}@example.com",
+        id=user_id,
+        email=email,
         full_name="Export Test User",
         tenant_id=org.tenant_id,
         status=UserStatus.ACTIVE,
@@ -200,18 +251,28 @@ def _auth_user(org: OrganizationModel) -> User:
     )
 
 
-def _non_admin_user(org: OrganizationModel) -> User:
+async def _non_admin_user(session: AsyncSession, org: OrganizationModel) -> User:
     """A caller without ORG_ADMIN_VIEW_ALL (sales_agent), for the 403 path."""
+    user_id = uuid4()
+    email = f"export-test-nonadmin-{user_id.hex[:12]}@example.com"
+    role_model = await _persist_user_with_role(
+        session,
+        org,
+        RoleType.SALES_AGENT,
+        user_id=user_id,
+        email=email,
+        full_name="Non-Admin Export Test User",
+    )
     role = Role(
-        id=uuid4(),
+        id=role_model.id,
         role_type=RoleType.SALES_AGENT,
-        name="Sales Agent",
+        name=role_model.name,
         is_system_role=True,
         tenant_id=org.tenant_id,
     )
     return User(
-        id=uuid4(),
-        email=f"export-test-nonadmin-{uuid4().hex[:6]}@example.com",
+        id=user_id,
+        email=email,
         full_name="Non-Admin Export Test User",
         tenant_id=org.tenant_id,
         status=UserStatus.ACTIVE,
@@ -266,7 +327,7 @@ class TestExportClientFormatContract:
         )
         shared_session.add(product)
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -290,7 +351,7 @@ class TestExportClientFormatStatusCodes:
 
     async def test_empty_catalog_returns_404(self, shared_session: AsyncSession) -> None:
         org = await _create_org(shared_session)
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -310,7 +371,7 @@ class TestExportClientFormatStatusCodes:
         )
         shared_session.add(draft_product)
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -333,7 +394,7 @@ class TestExportClientFormatStatusCodes:
                 )
             )
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -375,7 +436,7 @@ class TestExportClientFormatTenantIsolation:
         shared_session.add(product_b)
         await shared_session.flush()
 
-        _authenticate_as(_auth_user(org_a))
+        _authenticate_as(await _auth_user(shared_session, org_a))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -416,7 +477,7 @@ class TestExportClientFormatCrossOrgPermission:
         shared_session.add(target_product)
         await shared_session.flush()
 
-        _authenticate_as(_auth_user(own_org))
+        _authenticate_as(await _auth_user(shared_session, own_org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -435,7 +496,7 @@ class TestExportClientFormatCrossOrgPermission:
         """FR1.3, FR4.3."""
         own_org = await _create_org(shared_session, code="AA")
         other_org = await _create_org(shared_session, code="BB")
-        _authenticate_as(_non_admin_user(own_org))
+        _authenticate_as(await _non_admin_user(shared_session, own_org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -453,7 +514,7 @@ class TestExportClientFormatCrossOrgPermission:
         yields the ordinary empty-catalog 404.
         """
         own_org = await _create_org(shared_session, code="AA")
-        _authenticate_as(_auth_user(own_org))
+        _authenticate_as(await _auth_user(shared_session, own_org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -478,7 +539,7 @@ class TestExportClientFormatCrossOrgPermission:
             )
         )
         await shared_session.flush()
-        _authenticate_as(_auth_user(own_org))
+        _authenticate_as(await _auth_user(shared_session, own_org))
 
         with caplog.at_level("INFO"):
             async with AsyncClient(
@@ -508,7 +569,7 @@ class TestExportClientFormatCrossOrgPermission:
             _make_product(tenant_id=org.tenant_id, organization_id=org.id, category_id=category.id)
         )
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         with caplog.at_level("INFO"):
             async with AsyncClient(
@@ -536,7 +597,7 @@ class TestExportClientFormatAllOrganizations:
         with otherwise-valid required parameters.
         """
         org = await _create_org(shared_session)
-        _authenticate_as(_non_admin_user(org))
+        _authenticate_as(await _non_admin_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -568,7 +629,7 @@ class TestExportClientFormatAllOrganizations:
             )
         )
         await shared_session.flush()
-        _authenticate_as(_auth_user(org_a))
+        _authenticate_as(await _auth_user(shared_session, org_a))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -591,7 +652,7 @@ class TestExportClientFormatRequiredParams:
 
     async def test_missing_base_folder_returns_422(self, shared_session: AsyncSession) -> None:
         org = await _create_org(shared_session)
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -605,7 +666,7 @@ class TestExportClientFormatRequiredParams:
         self, shared_session: AsyncSession
     ) -> None:
         org = await _create_org(shared_session)
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -708,7 +769,7 @@ class TestExportClientFormatInternalCodeRequired:
         )
         shared_session.add(product)
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -750,7 +811,7 @@ class TestExportClientFormatInternalCodeRequired:
         )
         shared_session.add(product)
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async def _export_once() -> tuple[str, list[str]]:
             async with AsyncClient(
@@ -817,7 +878,7 @@ class TestExportClientFormatInternalCodeRequired:
         shared_session.add(product_a)
         shared_session.add(product_b)
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
@@ -927,7 +988,7 @@ class TestExportClientFormatInternalCodeRequired:
         product.attributes["internal_code"] = pinned_code
         shared_session.add(product)
         await shared_session.flush()
-        _authenticate_as(_auth_user(org))
+        _authenticate_as(await _auth_user(shared_session, org))
 
         # Spy on BOTH backfill-scaffolding repository methods. Each
         # spy records the call (so the assertion can name the offender)

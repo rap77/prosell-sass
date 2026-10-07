@@ -107,7 +107,6 @@ from prosell.application.use_cases.product.set_product_ownership import (
 )
 from prosell.application.use_cases.product.update_product import UpdateProductUseCase
 from prosell.domain.entities.product import Product
-from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import (
@@ -132,12 +131,15 @@ from prosell.domain.services.csv_product_parser import (
     CSVProductParser,
 )
 from prosell.domain.services.storage_keys import extract_storage_key_from_value
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_cdn_invalidator,
     get_current_auth_user_from_cookie,
+    get_effective_scope,
     get_spaces_service,
     get_task_dispatcher,
+    require_zone_action,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
@@ -171,6 +173,22 @@ logger = logging.getLogger(__name__)
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
+
+# Named module-level aliases so tests can override these exact dependencies
+# via `app.dependency_overrides` — same reasoning as org_router.py's
+# `get_cookie_effective_scope`.
+get_cookie_effective_scope = get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)
+EffectiveScope = Annotated[
+    AllScope | ExplicitOrgsScope | OwnScope, Depends(get_cookie_effective_scope)
+]
+
+require_marketplace_publish_grant = require_zone_action(
+    "marketplace", "publish", auth_dependency=get_current_auth_user_from_cookie
+)
+# Swaps in for `CurrentUser` on endpoints gated by the marketplace:publish
+# grant — `require_zone_action`'s `_check` returns the same real `User`
+# after validating, so this is a drop-in replacement, not an extra param.
+MarketplacePublishUser = Annotated[User, Depends(require_marketplace_publish_grant)]
 
 
 _KNOWN_KEY_PREFIXES = ("orgs/", "vehicles/")
@@ -276,6 +294,7 @@ def _merged_image_url_candidates(product: Product) -> list[str]:
 def _check_org_scope_permission(
     current_user: User,
     organization_id: UUID | None,
+    effective_scope: AllScope | ExplicitOrgsScope | OwnScope,
     *,
     all_organizations: bool = False,
     organization_ids: list[UUID] | None = None,
@@ -308,7 +327,7 @@ def _check_org_scope_permission(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    can_view_all_orgs = isinstance(effective_scope, AllScope)
     if all_organizations and not can_view_all_orgs:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -333,15 +352,6 @@ def _check_org_scope_permission(
             detail="Cannot filter products by another organization's organization_id",
         )
     return current_user.tenant_id, can_view_all_orgs
-
-
-def _require_marketplace_publish(current_user: User) -> None:
-    """Require permission for actions that publish or moderate products."""
-    if not current_user.has_permission(Permission.MARKETPLACE_PUBLISH):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Marketplace publish permission required",
-        )
 
 
 def _require_super_admin(current_user: User) -> None:
@@ -470,6 +480,7 @@ async def create_product(
     request: CreateProductRequest,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Create a new product.
@@ -484,7 +495,7 @@ async def create_product(
     # orgs; regular users always create in their own org. The chosen
     # organization_id is validated against the database below to prevent
     # IDOR — the client claim is only honored if the org actually exists.
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     if is_org_admin and request.organization_id is not None:
         # Defense in depth: never trust an org id from the client without
         # verifying it exists. tenant_id and organization_id share the same
@@ -799,6 +810,7 @@ async def export_catalog_client_format(
     spaces: SpacesService,
     base_folder: str,
     facebook_groups_fallback: str,
+    effective_scope: EffectiveScope,
     organization_id: UUID | None = None,
     all_organizations: bool = False,
     organization_ids: list[UUID] | None = Query(default=None),
@@ -845,6 +857,7 @@ async def export_catalog_client_format(
     owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(
         current_user,
         organization_id,
+        effective_scope,
         all_organizations=all_organizations,
         organization_ids=organization_ids,
     )
@@ -933,6 +946,7 @@ async def list_products(
     request: Request,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
     organization_id: UUID | None = None,
     organization_ids: list[UUID] | None = Query(default=None),
     category_id: UUID | None = None,
@@ -977,7 +991,7 @@ async def list_products(
       are rejected with 422. Range keys accept `<name>_min`/`<name>_max`.
     """
     tenant_id, can_view_all_orgs = _check_org_scope_permission(
-        current_user, organization_id, organization_ids=organization_ids
+        current_user, organization_id, effective_scope, organization_ids=organization_ids
     )
 
     effective_tenant = None if can_view_all_orgs else tenant_id
@@ -1137,6 +1151,7 @@ async def get_category_filter_values(
     category_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
     organization_id: UUID | None = None,
 ) -> CategoryFilterValuesResponse:
     """Return DISTINCT values for `select` attributes without static `options`.
@@ -1153,7 +1168,9 @@ async def get_category_filter_values(
     entries to bound response size; any key whose result was truncated
     appears in the response's `truncated` list.
     """
-    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
+    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(
+        current_user, organization_id, effective_scope
+    )
     tenant_id = (
         organization_id if organization_id is not None and can_view_all_orgs else owner_tenant_id
     )
@@ -1197,6 +1214,7 @@ async def get_category_filter_values(
 async def get_product_price_range(
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
     organization_id: UUID | None = None,
     organization_ids: list[UUID] | None = Query(default=None),
     category_id: UUID | None = None,
@@ -1214,7 +1232,7 @@ async def get_product_price_range(
     Same tenant/organization scoping as `GET /products`.
     """
     tenant_id, can_view_all_orgs = _check_org_scope_permission(
-        current_user, organization_id, organization_ids=organization_ids
+        current_user, organization_id, effective_scope, organization_ids=organization_ids
     )
     effective_tenant = None if can_view_all_orgs else tenant_id
 
@@ -1239,11 +1257,14 @@ async def get_product_price_range(
 async def get_featured_products(
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
     organization_id: UUID | None = None,
     limit: int = Query(default=10, ge=1, le=50),
 ) -> list[ProductResponse]:
     """Get featured products."""
-    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(current_user, organization_id)
+    owner_tenant_id, can_view_all_orgs = _check_org_scope_permission(
+        current_user, organization_id, effective_scope
+    )
     tenant_id = (
         organization_id if organization_id is not None and can_view_all_orgs else owner_tenant_id
     )
@@ -1259,6 +1280,7 @@ async def get_product(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
     internal: bool = False,
 ) -> ProductResponse:
     """Get a product by ID.
@@ -1273,7 +1295,7 @@ async def get_product(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     # ponytail: admins can view products from any org
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
@@ -1305,6 +1327,7 @@ async def get_product_image_urls(
     current_user: CurrentUser,
     db: DbSession,
     spaces: SpacesService,
+    effective_scope: EffectiveScope,
 ) -> ProductImageUrlsResponse:
     """Get signed URLs for product images.
 
@@ -1324,7 +1347,7 @@ async def get_product_image_urls(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     # ponytail: admins can view products from any org
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
 
@@ -1404,6 +1427,7 @@ async def batch_product_cover_urls(
     current_user: CurrentUser,
     db: DbSession,
     spaces: SpacesService,
+    effective_scope: EffectiveScope,
 ) -> BatchProductCoverUrlsResponse:
     """Sign one cover URL per requested product (FR1, NFR1.1, NFR1.2).
 
@@ -1452,7 +1476,7 @@ async def batch_product_cover_urls(
         current_user.tenant_id,
     )
 
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     product_repo = SqlAlchemyProductRepository(db)
     org_repo = SqlAlchemyOrganizationRepository(db)
 
@@ -1570,6 +1594,7 @@ async def update_product(
     spaces: SpacesService,
     cdn_invalidator: Annotated[ICdnInvalidator, Depends(get_cdn_invalidator)],
     task_dispatcher: Annotated[ITaskDispatcher, Depends(get_task_dispatcher)],
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Update a product.
@@ -1591,7 +1616,7 @@ async def update_product(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     # ponytail: admins can edit products from any org
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     product_repo = SqlAlchemyProductRepository(db)
 
     # Fetch product first to get its tenant_id for validation
@@ -1716,6 +1741,7 @@ async def delete_product_image(
     spaces: SpacesService,
     cdn_invalidator: Annotated[ICdnInvalidator, Depends(get_cdn_invalidator)],
     task_dispatcher: Annotated[ITaskDispatcher, Depends(get_task_dispatcher)],
+    effective_scope: EffectiveScope,
 ) -> DeleteProductImageResponse:
     """Remove one image from a product's gallery and invalidate its CDN cache.
 
@@ -1748,7 +1774,7 @@ async def delete_product_image(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     product_repo = SqlAlchemyProductRepository(db)
     org_repo = SqlAlchemyOrganizationRepository(db)
 
@@ -1815,7 +1841,7 @@ async def delete_product_image(
 @router.post("/batch/submit", response_model=BatchSubmitResponse)
 async def batch_submit_products(
     request: BatchSubmitRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchSubmitResponse:
     """
@@ -1825,8 +1851,6 @@ async def batch_submit_products(
     Transitions draft/rejected products to pending status.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     # Regular users can only access their own tenant
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
@@ -1847,7 +1871,7 @@ async def batch_submit_products(
 @router.post("/batch/reserve", response_model=BatchAvailabilityResponse)
 async def batch_reserve_products(
     request: BatchAvailabilityRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchAvailabilityResponse:
     """
@@ -1857,8 +1881,6 @@ async def batch_reserve_products(
     Transitions published products to reserved status.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
@@ -1878,7 +1900,7 @@ async def batch_reserve_products(
 @router.post("/batch/pause", response_model=BatchAvailabilityResponse)
 async def batch_pause_products(
     request: BatchAvailabilityRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchAvailabilityResponse:
     """
@@ -1888,8 +1910,6 @@ async def batch_pause_products(
     Transitions published products to paused status.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
@@ -1909,7 +1929,7 @@ async def batch_pause_products(
 @router.post("/batch/resume", response_model=BatchAvailabilityResponse)
 async def batch_resume_products(
     request: BatchAvailabilityRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchAvailabilityResponse:
     """
@@ -1919,8 +1939,6 @@ async def batch_resume_products(
     Transitions reserved/paused products back to published status.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
@@ -1940,7 +1958,7 @@ async def batch_resume_products(
 @router.post("/batch/sold", response_model=BatchAvailabilityResponse)
 async def batch_mark_sold_products(
     request: BatchAvailabilityRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchAvailabilityResponse:
     """
@@ -1950,8 +1968,6 @@ async def batch_mark_sold_products(
     Transitions published/reserved products to sold status.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
@@ -1973,6 +1989,7 @@ async def submit_product_for_approval(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Submit product for approval.
@@ -1981,7 +1998,7 @@ async def submit_product_for_approval(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -1998,7 +2015,7 @@ async def submit_product_for_approval(
 @router.post("/batch/approve", response_model=BatchReviewResponse)
 async def batch_approve_products(
     request: BatchApproveRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchReviewResponse:
     """
@@ -2007,8 +2024,6 @@ async def batch_approve_products(
     Requires MARKETPLACE_PUBLISH permission.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
@@ -2028,7 +2043,7 @@ async def batch_approve_products(
 @router.post("/batch/reject", response_model=BatchReviewResponse)
 async def batch_reject_products(
     request: BatchRejectRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
 ) -> BatchReviewResponse:
     """
@@ -2037,8 +2052,6 @@ async def batch_reject_products(
     Requires MARKETPLACE_PUBLISH permission.
     Returns per-product results with counts.
     """
-    _require_marketplace_publish(current_user)
-
     # Super Admin can access all tenants (no tenant filter)
     tenant_id = None if current_user.has_role("super_admin") else current_user.tenant_id
 
@@ -2059,8 +2072,9 @@ async def batch_reject_products(
 @router.post("/{product_id}/approve", response_model=ProductResponse)
 async def approve_product(
     product_id: UUID,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Approve a product.
@@ -2068,10 +2082,9 @@ async def approve_product(
     Transitions product from PENDING → PUBLISHED.
     Requires MASTER or VERIFIER role.
     """
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     use_case = ApproveProductUseCase(repo)
@@ -2090,8 +2103,9 @@ async def approve_product(
 async def reject_product(
     product_id: UUID,
     request: RejectProductRequest,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Reject a product.
@@ -2099,10 +2113,9 @@ async def reject_product(
     Transitions product from PENDING → REJECTED.
     Requires MASTER or VERIFIER role.
     """
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2119,8 +2132,9 @@ async def reject_product(
 @router.post("/{product_id}/publish", response_model=ProductResponse)
 async def publish_product(
     product_id: UUID,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Publish product directly (skip approval).
@@ -2128,10 +2142,9 @@ async def publish_product(
     Transitions product from PENDING → PUBLISHED.
     Admin only - skips approval workflow.
     """
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2148,18 +2161,18 @@ async def publish_product(
 @router.post("/{product_id}/pause", response_model=ProductResponse)
 async def pause_product(
     product_id: UUID,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Pause a published product.
 
     Transitions product from PUBLISHED → PAUSED.
     """
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2177,18 +2190,18 @@ async def pause_product(
 @router.post("/{product_id}/resume", response_model=ProductResponse)
 async def resume_product(
     product_id: UUID,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Resume a paused product.
 
     Transitions product from PAUSED → PUBLISHED.
     """
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2205,14 +2218,14 @@ async def resume_product(
 @router.post("/{product_id}/reserve", response_model=ProductResponse)
 async def reserve_product(
     product_id: UUID,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """Reserve a published product and queue Facebook unpublish requests."""
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2229,18 +2242,18 @@ async def reserve_product(
 @router.post("/{product_id}/mark-sold", response_model=ProductResponse)
 async def mark_product_sold(
     product_id: UUID,
-    current_user: CurrentUser,
+    current_user: MarketplacePublishUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Mark product as sold.
 
     Transitions product from PUBLISHED/RESERVED → SOLD.
     """
-    _require_marketplace_publish(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2263,6 +2276,7 @@ async def get_available_transitions(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> list[AvailableTransitionResponse]:
     """
     List the reverse (undo) transitions valid from this product's current
@@ -2274,7 +2288,7 @@ async def get_available_transitions(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
     if not product:
@@ -2291,6 +2305,7 @@ async def get_product_audit_logs(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> list[ProductAuditLogResponse]:
     """
     Status-change history for a product (newest first). Powers the
@@ -2306,7 +2321,7 @@ async def get_product_audit_logs(
             detail="super_admin or admin role required",
         )
 
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     if current_user.tenant_id is None and not is_org_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
@@ -2476,6 +2491,7 @@ async def delete_product(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> None:
     """
     Hard-delete a product and cascade to vehicle.
@@ -2489,7 +2505,7 @@ async def delete_product(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     # ponytail: admins can delete products from any org
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     tenant_id = None if is_org_admin else current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
@@ -2506,6 +2522,7 @@ async def archive_product(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> ProductResponse:
     """
     Archive a product (soft delete).
@@ -2518,7 +2535,7 @@ async def archive_product(
     _require_super_admin(current_user)
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, None if is_org_admin else current_user.tenant_id)
@@ -2539,6 +2556,7 @@ async def bulk_upload_preview(
     csv_file: Annotated[
         UploadFile, File(description="CSV file (semicolon-delimited, client format)")
     ],
+    effective_scope: EffectiveScope,
     images_zip: Annotated[UploadFile | None, File(description="ZIP with images (optional)")] = None,
 ) -> BulkUploadPreviewResponse:
     """
@@ -2598,7 +2616,7 @@ async def bulk_upload_preview(
             zip_bytes = None
 
     # Execute preview use case
-    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    can_view_all_orgs = isinstance(effective_scope, AllScope)
     use_case = BulkUploadPreviewUseCase(
         SqlAlchemyOrganizationRepository(db),
         SqlAlchemyProductRepository(db),
@@ -2629,6 +2647,7 @@ async def bulk_upload_with_images(
         UploadFile, File(description="CSV file (semicolon-delimited, client format)")
     ],
     category_id: Annotated[UUID, Form(description="Category ID for vehicles")],
+    effective_scope: EffectiveScope,
     images_zip: Annotated[
         UploadFile | None, File(description="Optional ZIP file with vehicle images")
     ] = None,
@@ -2665,7 +2684,7 @@ async def bulk_upload_with_images(
     # super-admin CSV migration flow permission checked elsewhere
     # (_check_org_scope_permission). ponytail: if organization_id is None,
     # the use case resolves from CSV org codes instead.
-    can_view_all_orgs = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    can_view_all_orgs = isinstance(effective_scope, AllScope)
     if organization_id is not None:
         org_repo = SqlAlchemyOrganizationRepository(db)
         # Organization.id == Organization.tenant_id by domain invariant, so
@@ -2826,6 +2845,7 @@ async def set_product_brokers(
     request: SetBrokersRequest,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> BrokersResponse:
     """Set broker shares for a product, replacing any existing broker rows.
 
@@ -2836,7 +2856,7 @@ async def set_product_brokers(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=403, detail="No tenant context")
 
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     product_repo = SqlAlchemyProductRepository(db)
     product = await product_repo.get_by_id(
         product_id, None if is_org_admin else current_user.tenant_id
@@ -2892,6 +2912,7 @@ async def set_product_ownership(
     request: SetOwnershipRequest,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> OwnershipResponse:
     """Deprecated alias for PUT /products/{id}/brokers.
 
@@ -2912,7 +2933,7 @@ async def set_product_ownership(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=403, detail="No tenant context")
 
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     product_repo = SqlAlchemyProductRepository(db)
     product = await product_repo.get_by_id(
         product_id, None if is_org_admin else current_user.tenant_id
@@ -2966,6 +2987,7 @@ async def get_product_ownership(
     product_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    effective_scope: EffectiveScope,
 ) -> OwnershipResponse:
     """Get ownership for a product.
 
@@ -2975,7 +2997,7 @@ async def get_product_ownership(
         raise HTTPException(status_code=403, detail="No tenant context")
 
     # ponytail: admins can view products from any org
-    is_org_admin = current_user.has_permission(Permission.ORG_ADMIN_VIEW_ALL)
+    is_org_admin = isinstance(effective_scope, AllScope)
     product_repo = SqlAlchemyProductRepository(db)
     product = await product_repo.get_by_id(
         product_id, None if is_org_admin else current_user.tenant_id

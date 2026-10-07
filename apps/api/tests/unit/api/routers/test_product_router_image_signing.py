@@ -28,12 +28,14 @@ from prosell.application.use_cases.product.list_products import (
 )
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.user import User
+from prosell.domain.value_objects.permission_scope import OwnScope
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
 )
 from prosell.infrastructure.api.main import app
+from prosell.infrastructure.api.routers.product_router import get_cookie_effective_scope
 from prosell.infrastructure.database.session import get_async_session
 
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
@@ -94,6 +96,13 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
 
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: user
     app.dependency_overrides[get_async_session] = override_session
+    # The new Zone x Action x Scope engine's effective_scope resolves via a
+    # REAL get_role_repository() DB query — this fixture's `db` is a plain
+    # AsyncMock with no real role/grant rows behind it, so bypass that
+    # query entirely. This test only asserts the image_urls bare-key
+    # contract (product fetching is separately mocked per-test below);
+    # it doesn't exercise cross-org scope at all, so OwnScope is fine.
+    app.dependency_overrides[get_cookie_effective_scope] = lambda: OwnScope()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -101,6 +110,7 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
 
     app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
     app.dependency_overrides.pop(get_async_session, None)
+    app.dependency_overrides.pop(get_cookie_effective_scope, None)
 
 
 def _assert_bare_key(url: str) -> None:

@@ -29,6 +29,7 @@ from prosell.domain.entities.product import Product
 from prosell.domain.entities.user import User
 from prosell.domain.ports.i_cdn_invalidator import ICdnInvalidator
 from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
+from prosell.domain.value_objects.permission_scope import OwnScope
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
@@ -39,6 +40,7 @@ from prosell.infrastructure.api.dependencies import (
     get_task_dispatcher,
 )
 from prosell.infrastructure.api.main import app
+from prosell.infrastructure.api.routers.product_router import get_cookie_effective_scope
 
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 TEST_USER_ID = UUID("22222222-2222-2222-2222-222222222222")
@@ -110,6 +112,11 @@ async def async_client_with_mocks() -> AsyncGenerator[_MocksFixture]:
         yield AsyncMock()
 
     app.dependency_overrides[get_async_session] = _session_stub
+    # Bypass the new permission engine's real get_role_repository() DB
+    # query — the session above is a plain AsyncMock with no real
+    # role/grant rows behind it, and these tests aren't about cross-org
+    # scope.
+    app.dependency_overrides[get_cookie_effective_scope] = lambda: OwnScope()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -120,6 +127,7 @@ async def async_client_with_mocks() -> AsyncGenerator[_MocksFixture]:
     app.dependency_overrides.pop(get_cdn_invalidator, None)
     app.dependency_overrides.pop(get_task_dispatcher, None)
     app.dependency_overrides.pop(get_async_session, None)
+    app.dependency_overrides.pop(get_cookie_effective_scope, None)
 
 
 class TestUpdateProductPurgesSupersededThumbnail:
