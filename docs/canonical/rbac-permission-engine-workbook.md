@@ -706,9 +706,47 @@ inventar detalle de implementación que todavía no se decidió)_
       (tocado en 3.0): el fallback de `role.value` ya no es seguro con
       `role_type` opcional. Verificado: ruff+pyright reales (0 errores),
       suite completa **2594 passed**.
-- [ ] 3.2 — Backend CRUD de perfiles: `GET/POST/PATCH/DELETE` sobre
-      `roles`+`role_grants`, gateado por zona `roles` (create/read/
-      update/delete, ya sembrada) + la guarda de zona×acción existente.
+- [~] 3.2 — Backend CRUD de perfiles, gateado por zona `roles` + la guarda
+  de zona×acción existente. **Porción de lectura hecha (2026-10-07),
+  escritura (POST/PATCH/DELETE) pendiente**:
+  - [x] Repositorio: `get_by_id_with_grants(role_id)` +
+        `list_with_grants(tenant_id)` nuevos en `AbstractRoleRepository`/
+        `SqlAlchemyRoleRepository` — mismo patrón `selectinload()` que
+        `get_user_roles_with_grants()` (evita el bug ya documentado de
+        `MissingGreenlet`). `tenant_id=None` = sin filtro (caso
+        `AllScope`); si no, roles de sistema (`tenant_id IS NULL`) +
+        los del tenant del actor. TDD: 4 tests nuevos en
+        `test_role_repository.py`, rojo real (`AttributeError`) antes
+        de implementar.
+  - [x] DTOs nuevos (`application/dto/role/response.py`):
+        `RoleResponse`/`RoleGrantResponse`/`RoleScopeResponse`/
+        `RoleListResponse`.
+  - [x] Router nuevo `admin_roles_router.py` →
+        `GET /api/v1/admin/roles` (listado) y
+        `GET /api/v1/admin/roles/{id}` (detalle), montado en
+        `/api/v1/admin/roles`. Mismo alias `require_zone_action`/
+        `EffectiveScope` que `product_router.py` (zona `roles`, acción
+        `read`, auth por cookie). `get_role` devuelve 404 (no 403) para
+        un rol de otro tenant sin `AllScope` — mismo criterio de no
+        filtrar existencia cross-tenant ya aplicado en otros endpoints.
+  - **TDD real, con un hallazgo propio de la sesión**: el fixture
+    compartido `test_user` siempre trae un rol `super_admin` REAL
+    sembrado (confirmado en su propio docstring) — reusarlo para probar
+    "usuario sin grants" pasaba por la razón equivocada (`AllScope` del
+    super_admin, no ausencia de grants). 2 de 5 tests HTTP fallaron en
+    el primer run real (`200` en vez de `403`/`404`) — arreglado con un
+    helper `_create_grantless_user()` nuevo, usuario fresco sin ningún
+    rol asignado. Mismo patrón de gotcha ya documentado para
+    `product_router.py` en el ítem 3.0, ahora confirmado también acá.
+  - 5 tests HTTP de integración reales (`test_admin_roles_router.py`,
+    Postgres real vía `db_session`, sin mocks) — 403 sin grant, 200 con
+    `AllScope` (incluye roles de sistema + custom), 200 con grants/scope
+    reales en el detalle, 404 inexistente, 404 cross-tenant sin
+    `AllScope`.
+  - Sin migración de DB en este ítem — nada que aplicar a mano en
+    staging; llega vía el deploy normal al pushear.
+  - Verificado: ruff + pyright **completo del proyecto** (0 errores);
+    suite completa backend **2603 passed** (2594 + 9 nuevos).
 - [ ] 3.3 — Backend: clonar plantilla + editar alcance (`role_scope`/
       `role_organization_access`), usando la guarda de 3.1.
 - [ ] 3.4 — Backend: asignar/desasignar usuarios a un perfil
