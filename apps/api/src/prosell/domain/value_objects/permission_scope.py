@@ -31,12 +31,23 @@ class Scope(Protocol):
         given the acting role's own `actor_organization_id`."""
         ...
 
+    def covers(self, other: "Scope") -> bool:
+        """Whether a holder of THIS scope may grant `other` to someone
+        else — the anti-escalation rule for alcance (bloque 3, item 3.1).
+        Strict subset: a granter can only hand out a scope <= its own."""
+        ...
+
 
 class OwnScope(ValueObject):
     """Only the actor's own organization is visible."""
 
     def permits(self, *, organization_id: UUID, actor_organization_id: UUID) -> bool:
         return organization_id == actor_organization_id
+
+    def covers(self, other: "Scope") -> bool:  # noqa: ARG002 — Protocol signature
+        # Confirmed with the user: an OwnScope holder cannot grant ANY
+        # scope to anyone else, not even another OwnScope.
+        return False
 
 
 class AllScope(ValueObject):
@@ -48,6 +59,10 @@ class AllScope(ValueObject):
         organization_id: UUID,  # noqa: ARG002 — required by the Scope protocol, unused here
         actor_organization_id: UUID,  # noqa: ARG002 — same
     ) -> bool:
+        return True
+
+    def covers(self, other: "Scope") -> bool:  # noqa: ARG002 — Protocol signature
+        # AllScope is the ceiling — it covers every other scope.
         return True
 
 
@@ -64,3 +79,12 @@ class ExplicitOrgsScope(ValueObject):
         actor_organization_id: UUID,  # noqa: ARG002 — required by the Scope protocol, unused here
     ) -> bool:
         return organization_id in self.organization_ids
+
+    def covers(self, other: "Scope") -> bool:
+        if isinstance(other, OwnScope):
+            return True
+        if isinstance(other, ExplicitOrgsScope):
+            return other.organization_ids <= self.organization_ids
+        # AllScope (or anything else unknown) is never covered by an
+        # explicit, bounded org set.
+        return False

@@ -18,7 +18,11 @@ against. Left as an open question for the next workbook item
 from collections.abc import Iterable
 
 from prosell.domain.entities.role import Role
-from prosell.domain.exceptions.role_exceptions import PermissionEscalationException
+from prosell.domain.exceptions.role_exceptions import (
+    PermissionEscalationException,
+    ScopeEscalationException,
+)
+from prosell.domain.value_objects.permission_scope import Scope
 from prosell.domain.value_objects.role_grant import RoleGrant
 
 
@@ -28,3 +32,11 @@ def ensure_no_grant_escalation(*, granter: Role, requested_grants: Iterable[Role
     escalated = [g for g in requested_grants if not granter.has_zone_action(g.zone, g.action)]
     if escalated:
         raise PermissionEscalationException([f"{g.zone}:{g.action}" for g in escalated])
+
+
+def ensure_no_scope_escalation(*, granter_scope: Scope, requested_scope: Scope) -> None:
+    """Raise `ScopeEscalationException` if `requested_scope` is not <=
+    `granter_scope` (bloque 3, item 3.1 — the alcance axis the zone x
+    action guard above deliberately leaves unresolved)."""
+    if not granter_scope.covers(requested_scope):
+        raise ScopeEscalationException(granter_scope=granter_scope, requested_scope=requested_scope)
