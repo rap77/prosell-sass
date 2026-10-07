@@ -80,11 +80,12 @@ async def _create_grantless_user(
 
 
 @asynccontextmanager
-async def _client_as(user_id, db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+async def _client_as(user: UserModel, db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     domain_user = User(
-        id=user_id,
+        id=user.id,
         email="roles-test@test.local",
         full_name="Roles Test User",
+        tenant_id=user.tenant_id,
         status=UserStatus.ACTIVE,
         email_verified=True,
         roles=[],  # irrelevant — the new engine resolves grants from the DB by id
@@ -109,7 +110,7 @@ async def test_list_roles_requires_roles_read_grant(
     """A user with zero grants gets 403, not a crash or an empty list."""
     grantless_user = await _create_grantless_user(db_session, test_organization)
 
-    async with _client_as(grantless_user.id, db_session) as client:
+    async with _client_as(grantless_user, db_session) as client:
         response = await client.get("/api/v1/admin/roles")
         assert response.status_code == 403
 
@@ -129,7 +130,7 @@ async def test_list_roles_with_all_scope_includes_system_and_custom_roles(
         tenant_id=test_organization.tenant_id,
     )
 
-    async with _client_as(test_user.id, db_session) as client:
+    async with _client_as(test_user, db_session) as client:
         response = await client.get("/api/v1/admin/roles")
 
     assert response.status_code == 200
@@ -165,7 +166,7 @@ async def test_get_role_by_id_returns_grants_and_scope(
         tenant_id=test_organization.tenant_id,
     )
 
-    async with _client_as(test_user.id, db_session) as client:
+    async with _client_as(test_user, db_session) as client:
         response = await client.get(f"/api/v1/admin/roles/{target_role.id}")
 
     assert response.status_code == 200
@@ -190,7 +191,7 @@ async def test_get_role_by_id_404s_for_missing_role(
         tenant_id=test_organization.tenant_id,
     )
 
-    async with _client_as(test_user.id, db_session) as client:
+    async with _client_as(test_user, db_session) as client:
         response = await client.get(f"/api/v1/admin/roles/{uuid4()}")
 
     assert response.status_code == 404
@@ -224,7 +225,113 @@ async def test_get_role_by_id_404s_for_a_different_tenants_role_without_all_scop
         tenant_id=test_organization.tenant_id,
     )
 
-    async with _client_as(grantless_user.id, db_session) as client:
+    async with _client_as(grantless_user, db_session) as client:
         response = await client.get(f"/api/v1/admin/roles/{other_tenant_role.id}")
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_role_requires_roles_create_grant(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    grantless_user = await _create_grantless_user(db_session, test_organization)
+
+    async with _client_as(grantless_user, db_session) as client:
+        response = await client.post("/api/v1/admin/roles", json={"name": "Should Fail"})
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_create_role_persists_requested_grants_and_scope(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    creator = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        creator,
+        zone="roles",
+        action="create",
+        scope_type="all",
+        tenant_id=test_organization.tenant_id,
+    )
+    # Also needs catalog:read itself to be allowed to grant it to the new role.
+    await _grant_role(
+        db_session,
+        creator,
+        zone="catalog",
+        action="read",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(creator, db_session) as client:
+        response = await client.post(
+            "/api/v1/admin/roles",
+            json={
+                "name": "New Profile",
+                "description": "Created via API",
+                "grants": [{"zone": "catalog", "action": "read"}],
+                "scope": {"scope_type": "own"},
+            },
+        )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["name"] == "New Profile"
+    assert body["tenant_id"] == str(test_organization.tenant_id)
+    assert {"zone": "catalog", "action": "read"} in body["grants"]
+    assert body["scope"]["scope_type"] == "own"
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    persisted = await repo.get_by_id_with_grants(body["id"])
+    assert persisted is not None
+    assert persisted.has_zone_action("catalog", "read") is True
+
+
+@pytest.mark.asyncio
+async def test_create_role_rejects_a_grant_the_creator_does_not_hold(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    creator = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        creator,
+        zone="roles",
+        action="create",
+        scope_type="own",
+        tenant_id=test_organization.tenant_id,
+    )
+    # creator has NO roles:delete grant of their own.
+
+    async with _client_as(creator, db_session) as client:
+        response = await client.post(
+            "/api/v1/admin/roles",
+            json={"name": "Escalated", "grants": [{"zone": "roles", "action": "delete"}]},
+        )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_create_role_rejects_a_scope_broader_than_the_creators_own(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
+    creator = await _create_grantless_user(db_session, test_organization)
+    await _grant_role(
+        db_session,
+        creator,
+        zone="roles",
+        action="create",
+        scope_type="own",  # creator only has OwnScope
+        tenant_id=test_organization.tenant_id,
+    )
+
+    async with _client_as(creator, db_session) as client:
+        response = await client.post(
+            "/api/v1/admin/roles",
+            json={"name": "Escalated Scope", "scope": {"scope_type": "all"}},
+        )
+
+    assert response.status_code == 403

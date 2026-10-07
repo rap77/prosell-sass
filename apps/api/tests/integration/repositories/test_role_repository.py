@@ -18,6 +18,7 @@ import pytest
 
 from prosell.domain.entities.role import Role
 from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
+from prosell.domain.value_objects.role_grant import RoleGrant
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.role_model import (
     RoleGrantModel,
@@ -117,6 +118,53 @@ async def test_role_get_by_id_does_not_filter_by_tenant(
     fetched = await repo.get_by_id(created.id)
     assert fetched is not None
     assert fetched.tenant_id == other_org.tenant_id
+
+
+@pytest.mark.asyncio
+async def test_create_persists_initial_grants_and_scope(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    """create() must persist grants/scope atomically with the role row —
+    creating a profile and its initial matrix is one logical operation
+    for the admin UI (bloque 3, item 3.2's write slice), not two."""
+    role = Role.create_custom_role(
+        name=f"Custom With Grants {uuid4().hex[:6]}",
+        description="Has grants from the start",
+        tenant_id=test_organization.tenant_id,
+    )
+    role.grants = [RoleGrant(zone="catalog", action="read")]
+    role.scope = OwnScope()
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    created = await repo.create(role)
+    fetched = await repo.get_by_id_with_grants(created.id)
+
+    assert fetched is not None
+    assert fetched.has_zone_action("catalog", "read") is True
+    assert isinstance(fetched.scope, OwnScope)
+
+
+@pytest.mark.asyncio
+async def test_create_with_no_grants_or_scope_persists_cleanly(
+    db_session,
+    test_organization: OrganizationModel,
+) -> None:
+    """The common case (no initial matrix yet) must not crash or write
+    spurious rows."""
+    repo = SqlAlchemyRoleRepository(db_session)
+    role = Role.create_custom_role(
+        name=f"Bare Custom {uuid4().hex[:6]}",
+        description=None,
+        tenant_id=test_organization.tenant_id,
+    )
+
+    created = await repo.create(role)
+    fetched = await repo.get_by_id_with_grants(created.id)
+
+    assert fetched is not None
+    assert fetched.grants == []
+    assert fetched.scope is None
 
 
 @pytest.mark.asyncio

@@ -10,7 +10,23 @@ from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.repositories.role_repository import AbstractRoleRepository
 from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.domain.value_objects.role_grant import RoleGrant
-from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+from prosell.infrastructure.models.role_model import (
+    RoleGrantModel,
+    RoleModel,
+    RoleOrganizationAccessModel,
+    RoleScopeModel,
+    UserRoleModel,
+)
+
+
+def _scope_type_of(scope: OwnScope | AllScope | ExplicitOrgsScope) -> str:
+    """Inverse of `_build_scope()` — the domain Scope's row value for
+    `role_scope.scope_type`."""
+    if isinstance(scope, OwnScope):
+        return "own"
+    if isinstance(scope, AllScope):
+        return "all"
+    return "explicit"
 
 
 class SqlAlchemyRoleRepository(AbstractRoleRepository):
@@ -20,7 +36,10 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
         self.session = session
 
     async def create(self, role: Role) -> Role:
-        """Create a new role."""
+        """Create a new role, persisting its initial `grants`/`scope`
+        atomically with the row — the admin profiles UI (bloque 3, item
+        3.2) creates a profile and its starting matrix as one logical
+        operation, not two."""
         model = RoleModel(
             id=role.id,
             role_type=role.role_type.value if role.role_type is not None else None,
@@ -32,8 +51,34 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
             updated_at=role.updated_at,
         )
         self.session.add(model)
+
+        for grant in role.grants:
+            self.session.add(
+                RoleGrantModel(id=uuid4(), role_id=role.id, zone=grant.zone, action=grant.action)
+            )
+
+        if role.scope is not None:
+            self.session.add(
+                RoleScopeModel(id=uuid4(), role_id=role.id, scope_type=_scope_type_of(role.scope))
+            )
+            if isinstance(role.scope, ExplicitOrgsScope):
+                for org_id in role.scope.organization_ids:
+                    self.session.add(
+                        RoleOrganizationAccessModel(
+                            id=uuid4(), role_id=role.id, organization_id=org_id
+                        )
+                    )
+
         await self.session.flush()
-        return self._to_entity(model)
+
+        created = self._to_entity(model)
+        # Avoid touching model.grants/model.scope here — those are lazy
+        # relationships and would hit the same MissingGreenlet trap
+        # _to_entity_with_grants()'s selectinload() exists to avoid. We
+        # already know the values: they're what we just wrote above.
+        created.grants = list(role.grants)
+        created.scope = role.scope
+        return created
 
     async def get_by_id(self, role_id: UUID) -> Role | None:
         """Get role by ID."""

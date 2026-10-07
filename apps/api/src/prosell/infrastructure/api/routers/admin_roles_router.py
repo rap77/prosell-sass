@@ -1,9 +1,7 @@
 """Admin roles (permission profiles) router — bloque 3, item 3.2.
 
-Read-only slice first (list + get-by-id); create/update/delete land in
-later items of the same bloque. Gated by the `roles` zone (seeded,
-20261006_0002) via `require_zone_action`, same pattern already used for
-`marketplace:publish` in product_router.py.
+Gated by the `roles` zone (seeded, 20261006_0002) via `require_zone_action`,
+same pattern already used for `marketplace:publish` in product_router.py.
 """
 
 from typing import Annotated
@@ -11,8 +9,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from prosell.application.dto.role.request import CreateRoleRequest
 from prosell.application.dto.role.response import RoleListResponse, RoleResponse
+from prosell.application.use_cases.role.create_role import CreateRoleUseCase
 from prosell.domain.entities.user import User
+from prosell.domain.exceptions.role_exceptions import (
+    PermissionEscalationException,
+    ScopeEscalationException,
+)
 from prosell.domain.repositories.role_repository import AbstractRoleRepository
 from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
@@ -34,7 +38,16 @@ require_roles_read_grant = require_zone_action(
 )
 RolesReadUser = Annotated[User, Depends(require_roles_read_grant)]
 
+require_roles_create_grant = require_zone_action(
+    "roles", "create", auth_dependency=get_current_auth_user_from_cookie
+)
+RolesCreateUser = Annotated[User, Depends(require_roles_create_grant)]
+
 RoleRepo = Annotated[AbstractRoleRepository, Depends(get_role_repository)]
+
+
+def get_create_role_use_case(role_repo: RoleRepo) -> CreateRoleUseCase:
+    return CreateRoleUseCase(role_repo)
 
 
 @router.get(
@@ -87,3 +100,36 @@ async def get_role(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     return RoleResponse.from_entity(role)
+
+
+@router.post(
+    "",
+    response_model=RoleResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a custom permission profile (role)",
+)
+async def create_role(
+    request: CreateRoleRequest,
+    current_user: RolesCreateUser,
+    effective_scope: EffectiveScope,
+    use_case: Annotated[CreateRoleUseCase, Depends(get_create_role_use_case)],
+) -> RoleResponse:
+    """`tenant_id` always comes from `current_user`, never the request
+    body (IDOR prevention). Rejects with 403 if the requested
+    grants/scope exceed what the caller itself holds — nobody grants
+    what they don't have (bloque 2 + item 3.1 anti-escalation guards)."""
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
+    try:
+        return await use_case.execute(
+            request,
+            tenant_id=current_user.tenant_id,
+            granter_id=current_user.id,
+            granter_scope=effective_scope,
+        )
+    except (PermissionEscalationException, ScopeEscalationException) as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e

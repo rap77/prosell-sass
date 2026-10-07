@@ -26,10 +26,13 @@ fi
 
 is_reviewable_file() {
   local file_path="$1"
+  local file_basename
   local pattern
   local included=false
   local -a include_patterns=()
   local -a exclude_patterns=()
+
+  file_basename="$(basename -- "$file_path")"
 
   IFS=',' read -r -a include_patterns <<< "$FILE_PATTERNS"
   for pattern in "${include_patterns[@]}"; do
@@ -41,9 +44,18 @@ is_reviewable_file() {
 
   [[ "$included" == true ]] || return 1
 
+  # Patterns with no leading wildcard (e.g. "test_*.py", "conftest.py")
+  # only ever match a bare top-level filename against `$file_path`, never
+  # a nested one like "apps/api/tests/.../test_foo.py" — bash `[[ == ]]`
+  # glob matching anchors at the start of the string, and these patterns
+  # don't start with `*`/`**`. Checking the basename too fixes this for
+  # every nested test/config file without having to rewrite the patterns
+  # in .gga themselves.
   IFS=',' read -r -a exclude_patterns <<< "$EXCLUDE_PATTERNS"
   for pattern in "${exclude_patterns[@]}"; do
-    if [[ "$file_path" == $pattern ]] || [[ "$file_path" == "${pattern//\*\*/}"* ]]; then
+    if [[ "$file_path" == $pattern ]] ||
+      [[ "$file_basename" == $pattern ]] ||
+      [[ "$file_path" == "${pattern//\*\*/}"* ]]; then
       return 1
     fi
   done
