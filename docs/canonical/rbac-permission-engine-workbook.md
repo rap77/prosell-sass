@@ -828,11 +828,111 @@ inventar detalle de implementación que todavía no se decidió)_
       real mostrado antes de implementar.
     - Verificado: ruff + pyright **completo del proyecto** (0 errores);
       suite completa backend **2631 passed** (2613 + 18 nuevos).
-- [ ] 3.3 — Backend: clonar plantilla + editar alcance (`role_scope`/
-      `role_organization_access`), usando la guarda de 3.1.
-- [ ] 3.4 — Backend: asignar/desasignar usuarios a un perfil
+- [x] 3.3 — Backend: clonar plantilla + editar alcance (`role_scope`/
+      `role_organization_access`), usando la guarda de 3.1 (2026-10-07).
+  - **Re-verificado antes de implementar (regla 1)**: "editar alcance" ya
+    estaba cubierto de hecho por el PATCH de 3.2 — `UpdateRoleUseCase`
+    ya hace un full-replace de `scope`/`role_organization_access`
+    corriendo `ensure_no_scope_escalation` (la guarda de 3.1). Verificado
+    leyendo `role_repository_impl.py::update()`/`_replace_grants_and_scope()`
+    y `update_role.py` antes de escribir una sola línea nueva — no había
+    nada de "editar alcance" genuino pendiente, solo "clonar plantilla".
+  - **Precedente real reusado (regla 11)**: mismo patrón de
+    `POST /{target}/schema/clone-from/{source}` ya existente en
+    `category_router.py` (`clone_category_schema`) — acá no hay un
+    "target" previo (se crea uno nuevo), así que la forma final es
+    `POST /api/v1/admin/roles/{source_role_id}/clone`.
+  - `CloneRoleRequest` nuevo (`application/dto/role/request.py`): solo
+    `name`/`description` — grants/scope NUNCA vienen del request, se
+    copian del rol origen (mismo criterio que `tenant_id` nunca viniendo
+    del cliente).
+  - `CloneRoleUseCase` nuevo (`application/use_cases/role/clone_role.py`):
+    corre las DOS guardas de anti-escalación (zona×acción + alcance)
+    contra los `grants`/`scope` del rol ORIGEN, no contra el request —
+    clonar una plantilla que el actor no puede cubrir del todo sigue
+    siendo escalación. El clon siempre es un perfil custom nuevo:
+    `is_system_role=False` y `role_type=None` aunque el origen sea un
+    rol de sistema (`create_custom_role()`), nunca hereda esa identidad.
+  - `POST /api/v1/admin/roles/{role_id}/clone` en el router — gateado
+    por zona `roles` acción `create` (clonar es crear). `role_id` es el
+    origen: mismo criterio de 404 (`_is_visible()`) que `get_role` para
+    no filtrar existencia cross-tenant. 201 + el perfil creado, o 403 si
+    el origen tiene grants/scope que el actor no tiene.
+  - TDD estricto real, sin bugs nuevos encontrados esta vez (a
+    diferencia de los ítems anteriores de 3.2): 4 tests unitarios con
+    repo fake (clona grants/scope bajo el nombre pedido, rechaza grant
+    no cubierto, rechaza alcance no cubierto, usa el nombre del request
+    y no el del origen — rojo real `ImportError` antes de implementar) +
+    5 tests HTTP de integración (403 sin grant, 201 con grants/scope
+    copiados y persistidos, 404 origen inexistente, 404 origen de otro
+    tenant sin `AllScope`, 403 escalando un grant del origen que el
+    clonador no tiene — rojo real 404 por ruta inexistente antes de
+    registrar el endpoint).
+  - Sin migración de DB — reusa `repo.create()` ya existente, nada que
+    aplicar a mano en staging; llega vía el deploy normal al pushear.
+  - Verificado: ruff + ruff-format + pyright **completo del proyecto**
+    (0 errores); suite completa backend **2640 passed** (2631 + 9
+    nuevos).
+  - Commit + push: **pendiente** — regla 10, solo cuando el usuario lo
+    pida explícitamente.
+- [x] 3.4 — Backend: asignar/desasignar usuarios a un perfil
       (`user_roles`), misma guarda aplicada (nadie asigna lo que no
-      tiene).
+      tiene) (2026-10-07).
+  - **Verificado antes de implementar**: `AbstractRoleRepository`/
+    `SqlAlchemyRoleRepository` ya tenían `assign_role_to_user()`/
+    `remove_role_from_user()` desde antes del Bloque 3 (idempotentes:
+    asignar dos veces o desasignar algo inexistente es no-op) — su
+    único llamador real era `accept_organization_invitation.py`
+    (asigna el rol `admin` al aceptar una invitación). No existía
+    ningún endpoint admin-facing que los expusiera.
+  - **Decisión de diseño — zona×acción de gating (judgment call, sin
+    contradecir nada previo)**: no se agregó una acción nueva
+    (`roles:assign`) a la migración de seed — se reusó `roles:update`.
+    Motivo: 3.6 (frontend) ya agrupa "editor de alcance" + "asignación
+    de usuarios a perfiles" en la MISMA pantalla del editor de perfil,
+    así que el mismo grant que habilita editar la matriz habilita
+    gestionar sus miembros. Agregar una acción nueva hubiera significado
+    otra migración + decidir qué roles de sistema la reciben por
+    defecto — complejidad no pedida para lo que el ítem necesita.
+  - `AssignRoleToUserUseCase` nuevo
+    (`application/use_cases/role/assign_role_to_user.py`): misma
+    composición de guardas que `CreateRoleUseCase`/`CloneRoleUseCase`,
+    pero corridas contra los `grants`/`scope` del ROL A ASIGNAR (no del
+    request) — asignar un rol le da a ese usuario ese mismo poder, así
+    que asignar un perfil que el actor no puede cubrir es escalación
+    igual que crearlo o clonarlo.
+  - `RemoveRoleFromUserUseCase` nuevo
+    (`application/use_cases/role/remove_role_from_user.py`): sin
+    guarda — desasignar solo quita poder, nunca lo otorga, mismo
+    criterio ya usado en `DeleteRoleUseCase`.
+  - `POST /api/v1/admin/roles/{role_id}/users/{user_id}` (asignar, 204)
+    y `DELETE /api/v1/admin/roles/{role_id}/users/{user_id}`
+    (desasignar, 204) en el router — gateados por `roles:update`. Dos
+    chequeos de visibilidad antes de ejecutar: el rol (`_is_visible()`,
+    ya existente) y el usuario destino (`_is_user_visible()` nuevo,
+    mismo criterio de no-leak cross-tenant aplicado al lado del
+    usuario en vez del rol). `AbstractUserRepository.get_by_id()` ya
+    existía, reusado tal cual.
+  - TDD estricto real: rojo mostrado en ambas capas (`ModuleNotFoundError`
+    en los 4 tests unitarios antes de escribir los use cases;
+    `404` por ruta inexistente en los 9 tests HTTP antes de registrar
+    los endpoints), implementación mínima recién después. Sin bugs
+    nuevos encontrados esta vez.
+  - 4 tests unitarios con repo fake (asigna cuando el granter cubre
+    grants+scope del rol, rechaza grant no cubierto, rechaza alcance no
+    cubierto; 1 test de remove sin guarda) + 9 tests HTTP de integración
+    (403 sin grant en cada endpoint, 204 + persistencia real verificada
+    vía `get_user_roles()`, 404 rol inexistente, 404 usuario
+    inexistente, 404 usuario de otro tenant sin `AllScope`, 403
+    escalando un grant del rol que el asignador no tiene).
+  - Sin migración de DB — reusa `assign_role_to_user()`/
+    `remove_role_from_user()` ya existentes; nada que aplicar a mano en
+    staging.
+  - Verificado: ruff + ruff-format + pyright **completo del proyecto**
+    (0 errores); suite completa backend **2653 passed** (2640 + 13
+    nuevos).
+  - Commit + push: **pendiente** — regla 10, solo cuando el usuario lo
+    pida explícitamente.
 - [ ] 3.5 — Frontend: listado + crear/clonar perfil, matriz de grants
       agrupada por sección de UI — mapeo propuesto (confirmar al llegar):
       Catálogo←`catalog`, Marketplace←`marketplace`,
