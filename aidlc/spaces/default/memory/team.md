@@ -48,16 +48,35 @@ lógica ya verificada en vivo, mismo criterio ya aplicado en intents previos
 
 ## Testing Posture
 
-- **Methodology**: test-after
-- **Ordering**: implementar cada capa aplicable (backend: normalización de
-  VIN/dominio de categoría/casos de uso de import y migración; frontend:
-  `VinDecodeField`, `category-schema-editor`, formularios de vehículo) y
-  luego escribir y correr los tests de esa capa, sin backfillear cobertura en
-  código pre-existente no tocado por el cambio.
+- **Methodology**: TDD estricto (red-green-refactor) — reemplaza test-after
+  como default de equipo, confirmado directamente por el usuario (2026-10-07),
+  sin pasar por la entrevista formal de practices-discovery (org.md § Testing
+  Posture autoriza explícitamente que el equipo afirme una postura más
+  estricta que el default en team.md). Aplica a TODO trabajo futuro del
+  proyecto, incluidos los intents que corren vía `/aidlc` — no es una
+  especialización acotada a un track puntual (ver `project.md` § Testing
+  Posture para la corrección previa, más acotada, que esta reemplaza como
+  baseline general).
+- **Ordering**: por cada unidad de comportamiento nueva o modificada —
+  (1) escribir el test que describe el comportamiento, (2) correrlo y
+  confirmar que falla por la razón correcta (nunca un error de sintaxis/
+  import — eso no cuenta como rojo válido), (3) escribir el código mínimo
+  para que pase, (4) correrlo y confirmar verde, (5) refactorizar si hace
+  falta, con la suite en verde como red de seguridad. El rojo debe mostrarse
+  explícitamente antes de escribir la implementación — no alcanza con
+  escribir el test después y que "hubiera fallado".
 - Piso de cobertura asimétrico ya aceptado (40% frontend, sin piso enforced en
-  backend) — no forzar simetría, per baseline.
+  backend) — no forzar simetría, per baseline. Sigue vigente: TDD estricto es
+  una regla de ORDEN (test antes que código), no reemplaza el piso de
+  cobertura ya acordado.
 - CI corre la suite completa en cada push/PR; pre-push local corre
   `pytest -q` (asimetría ya aceptada: no corre Vitest en pre-push).
+
+**Nota de alcance (2026-10-07)**: trabajo ya completado antes de esta
+confirmación (ej. Bloques 1-2 del motor RBAC, y el ítem 3.0 — fusión
+`vendedor`→`sales_agent`) se hizo test-after y NO se reescribe
+retroactivamente para simular TDD — el ciclo estricto rige desde el momento
+de esta confirmación en adelante, no hacia atrás.
 
 **Sin especialización de metodología, ordering ni piso general de
 cobertura** — el marco general (`classic`/`feature` → piso de 80% de

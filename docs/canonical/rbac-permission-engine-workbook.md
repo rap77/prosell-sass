@@ -584,7 +584,104 @@ inventar detalle de implementación que todavía no se decidió)_
 
 ## Bloque 3 — UI de admin de perfiles
 
-- [ ] _(sin desglosar todavía — depende de cómo cierre el Bloque 2)_
+**Decisiones confirmadas con el usuario (2026-10-06), antes de desglosar
+(regla 11 — no reinventar al implementar)**:
+
+1. **Anti-escalación de ALCANCE** (zona×acción ya la tenía — ver
+   `permission_escalation_guard.py` de Bloque 2; alcance quedó
+   explícitamente sin resolver ahí): **subconjunto estricto**. El actor
+   solo puede otorgar un alcance ⊆ el propio — `AllScope` otorga
+   cualquiera; `ExplicitOrgsScope` solo otorga `OwnScope` o
+   `ExplicitOrgsScope` con organizaciones ⊆ las propias; `OwnScope` no
+   puede otorgar alcance a nadie (no puede crear/editar perfiles con
+   alcance). Mismo principio que la guarda de zona×acción, extendido a
+   alcance.
+2. **Rol `vendedor`** (7mo rol de sistema real, separado de
+   `RoleType.SALES_AGENT`, cero permisos por el bug ya documentado en
+   Bloque 2/§1.6 del diagnóstico): **fusionar con `sales_agent` ahora**,
+   como primer ítem de este bloque (bug fix chico e independiente,
+   mismo criterio que el Bloque 1).
+
+**Desglose (slices verticales, no backend-todo-luego-frontend-todo)**:
+
+- [x] 3.0 — Fusionar `vendedor` → `sales_agent` (2026-10-07). Migración
+      `20261007_0001` (`_do_upgrade`/`_do_downgrade`, patrón testeable ya
+      establecido en `20260917_0001_migrate_legacy_vehicle_catalog.py`):
+      reasigna cada `user_roles` de `vendedor` a `sales_agent` (dedupe si
+      el usuario ya tenía ambos), crea `sales_agent` con sus grants/scope
+      reales si faltara en el entorno (no garantizado — `init_data.py`
+      solo siembra 4 de 6 roles), borra la fila `vendedor` vacía.
+      `downgrade()` recrea el shell vacío, documentado como no-reversible
+      para las asignaciones puntuales (quién tenía `vendedor` deja de ser
+      reconstruible una vez fusionado).
+  - **Re-verificado antes de implementar (regla 1)**: `rg` amplio sobre
+    "vendedor" trae decenas de matches — casi todos son terminología de
+    dominio (`vendedor_id` en leads/appointments), sin relación con el
+    bug. El bug real es acotado a 3 archivos:
+    `scripts/init_data.py` (seed), `get_vendedores.py` (filtro
+    `role="vendedor"` literal), `vendedor_router.py` (el endpoint). Es
+    una feature REAL y viva (`GET /api/v1/vendedores`, consumida por
+    `LeadReassignModal.tsx` — dropdown de reasignación de leads), no
+    código muerto — se arregló (filtro ahora usa
+    `RoleType.SALES_AGENT.value`), no se borró.
+  - **Gap real encontrado por el propio usuario, no por mí**: escribí la
+    migración, la verifiqué a mano con `psql`, y la di por "lista" sin
+    test automatizado. El usuario preguntó "¿esto fue con TDD?" — fui a
+    buscar precedente, encontré que SÍ existe (`test_migrate_legacy_vehicle_catalog.py`,
+    patrón `_do_upgrade`/`_do_downgrade` testeable), refactoricé la
+    migración a ese patrón, y escribí
+    `tests/integration/alembic/test_merge_vendedor_role_into_sales_agent.py`
+    (6 tests: no-op sin `vendedor`, reasignación simple, dedupe de doble
+    asignación, creación de `sales_agent` si falta, downgrade recrea
+    shell, downgrade idempotente). **2 de los 6 fallaron en el primer
+    run** — mi test asumía DB limpia, pero `prosell-test-pg` (contenedor
+    persistente compartido) ya tenía un `sales_agent` real sembrado.
+    Arreglado reusando el rol existente en vez de asumir su ausencia.
+  - **Consecuencia de esa pregunta**: el usuario confirmó TDD estricto
+    (rojo-verde-refactor visible) para el resto del Bloque 3, y después
+    lo amplió a TODO el proyecto — ver `team.md` § Testing Posture
+    (`Methodology: TDD estricto`, reemplaza `test-after` como default de
+    equipo, 2026-10-07). El ítem 3.0 en sí se hizo test-after, antes de
+    esa confirmación — no se reescribió retroactivamente.
+  - Verificado: ruff + pyright reales (0 errores) sobre los 4 archivos
+    tocados; suite completa backend **2579 passed** (2573 + 6 nuevos);
+    migración probada upgrade→downgrade→upgrade contra Postgres real
+    (`prosell-test-pg`) con datos de prueba simulando el merge y el caso
+    de usuario duplicado, limpiados después. **Aplicada en staging real**
+    (`prosell-staging-db`, con confirmación explícita del usuario — el
+    harness bloqueó el intento inicial por "shared resource" y pidió esa
+    confirmación): `vendedor` desapareció, quedaron los 6 roles reales
+    (`admin`, `manager`, `sales_agent`, `sales_user`, `super_admin`,
+    `viewer`), grants de `sales_agent` intactos (4, los esperados),
+    `alembic_version` avanzó a `20261007_0001`. El fix de código
+    (`get_vendedores.py`/`vendedor_router.py`) no está "vivo" en el
+    contenedor de staging todavía — ese servicio corre de imagen built,
+    sin mount de fuente; llega con el commit+push normal (deploy-on-merge),
+    ya verificado localmente vía la suite completa.
+  - Commit + push: **pendiente** — regla 10, solo cuando el usuario lo
+    pida explícitamente.
+- [ ] 3.1 — Extender `permission_escalation_guard.py` (o servicio nuevo
+      paralelo) con la regla de subconjunto de alcance confirmada arriba.
+      Tests unitarios de dominio, sin tocar routers todavía.
+- [ ] 3.2 — Backend CRUD de perfiles: `GET/POST/PATCH/DELETE` sobre
+      `roles`+`role_grants`, gateado por zona `roles` (create/read/
+      update/delete, ya sembrada) + la guarda de zona×acción existente.
+- [ ] 3.3 — Backend: clonar plantilla + editar alcance (`role_scope`/
+      `role_organization_access`), usando la guarda de 3.1.
+- [ ] 3.4 — Backend: asignar/desasignar usuarios a un perfil
+      (`user_roles`), misma guarda aplicada (nadie asigna lo que no
+      tiene).
+- [ ] 3.5 — Frontend: listado + crear/clonar perfil, matriz de grants
+      agrupada por sección de UI — mapeo propuesto (confirmar al llegar):
+      Catálogo←`catalog`, Marketplace←`marketplace`,
+      Concesionarios←`organizations`, Configuración←`settings`,
+      Admin←`users`+`roles`+`analytics`. "Leads" no aparece todavía
+      (depende del Bloque 4).
+- [ ] 3.6 — Frontend: editor de alcance (organizaciones) + asignación de
+      usuarios a perfiles.
+
+_(cada ítem con test de regresión real + verificación en staging antes de
+marcar ✅, mismas reglas de ejecución de arriba)_
 
 ## Bloque 4 — Zona Leads/CRM + catálogo público/landing (§7 del diagnóstico)
 
