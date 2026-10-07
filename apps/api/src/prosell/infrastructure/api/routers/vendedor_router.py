@@ -1,5 +1,7 @@
 """Vendedor router for ProSell SaaS API."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,14 +22,14 @@ router = APIRouter()
 
 
 def get_user_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyUserRepository:
     """Get user repository instance."""
     return SqlAlchemyUserRepository(session)
 
 
 def get_get_vendedores_use_case(
-    user_repo: SqlAlchemyUserRepository = Depends(get_user_repository),
+    user_repo: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
 ) -> GetVendedoresUseCase:
     """Get GetVendedoresUseCase instance."""
     return GetVendedoresUseCase(user_repository=user_repo)
@@ -44,15 +46,15 @@ def get_get_vendedores_use_case(
     summary="List all vendedores (salespersons) in the organization",
 )
 async def list_vendedores(
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[GetVendedoresUseCase, Depends(get_get_vendedores_use_case)],
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    use_case: GetVendedoresUseCase = Depends(get_get_vendedores_use_case),
 ) -> VendedorListResponse:
     """
     List all vendedores in the current user's organization.
 
-    Only returns users with the 'vendedor' role. Requires authentication.
+    Only returns users with the sales_agent role. Requires authentication.
 
     Args:
         skip: Number of records to skip (pagination)

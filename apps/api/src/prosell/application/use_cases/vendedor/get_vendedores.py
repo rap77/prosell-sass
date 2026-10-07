@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from prosell.application.dto.vendedor import VendedorListResponse, VendedorResponse
+from prosell.domain.entities.role import RoleType
 from prosell.domain.exceptions.org_exceptions import OrgDomainException
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
@@ -11,8 +12,10 @@ class GetVendedoresUseCase:
     """
     Get all vendedores (salespersons) in an organization.
 
-    This use case retrieves all users with the 'vendedor' role
-    within a tenant (organization).
+    This use case retrieves all users with the `RoleType.SALES_AGENT` role
+    within a tenant (organization). "Vendedor" is the user-facing Spanish
+    name for that role, not a separate `role_type` value — see migration
+    `20261007_0001` for why (the two used to diverge, as a real bug).
     """
 
     def __init__(self, user_repository: AbstractUserRepository) -> None:
@@ -47,10 +50,10 @@ class GetVendedoresUseCase:
         if not tenant_id:
             raise OrgDomainException("Tenant ID is required")
 
-        # Get all users with 'vendedor' role in this tenant
+        # Get all users with the sales_agent role in this tenant
         users = await self._user_repository.get_users_by_tenant_and_role(
             tenant_id=tenant_id,
-            role="vendedor",
+            role=RoleType.SALES_AGENT.value,
             skip=skip,
             limit=limit,
         )
@@ -58,7 +61,7 @@ class GetVendedoresUseCase:
         # Get total count
         total = await self._user_repository.count_users_by_tenant_and_role(
             tenant_id=tenant_id,
-            role="vendedor",
+            role=RoleType.SALES_AGENT.value,
         )
 
         # Transform to DTOs
@@ -71,7 +74,7 @@ class GetVendedoresUseCase:
                 email=user.email,
                 role=user.roles[0].role_type.value
                 if user.roles and len(user.roles) > 0
-                else "vendedor",
+                else RoleType.SALES_AGENT.value,
                 created_at=user.created_at.isoformat(),
                 updated_at=user.updated_at.isoformat(),
             )
