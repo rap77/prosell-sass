@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                                                                                         |
-| ------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                               |
-| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging                        |
-| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 2/7 ítems (3.0, 3.1) + prerequisito 3.2a, TDD estricto desde acá |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                                 |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                 |
+| Bloque | Descripción                                                                           | Estado                                                                                              |
+| ------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                                    |
+| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging                             |
+| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 3/7 ítems (3.0, 3.1, 3.2) + prerequisito 3.2a, TDD estricto desde acá |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                                      |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                      |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
@@ -706,9 +706,9 @@ inventar detalle de implementación que todavía no se decidió)_
       (tocado en 3.0): el fallback de `role.value` ya no es seguro con
       `role_type` opcional. Verificado: ruff+pyright reales (0 errores),
       suite completa **2594 passed**.
-- [~] 3.2 — Backend CRUD de perfiles, gateado por zona `roles` + la guarda
-  de zona×acción existente. **Porción de lectura hecha (2026-10-07),
-  escritura (POST/PATCH/DELETE) pendiente**:
+- [x] 3.2 — Backend CRUD de perfiles, gateado por zona `roles` + la guarda
+      de zona×acción existente. **Porción de lectura hecha (2026-10-07),
+      escritura (POST/PATCH/DELETE) pendiente**:
   - [x] Repositorio: `get_by_id_with_grants(role_id)` +
         `list_with_grants(tenant_id)` nuevos en `AbstractRoleRepository`/
         `SqlAlchemyRoleRepository` — mismo patrón `selectinload()` que
@@ -789,6 +789,45 @@ inventar detalle de implementación que todavía no se decidió)_
       `frozen=True`; resuelto deduplicando por tupla `(zone, action)` en
       vez de hashear el objeto); suite completa backend **2613 passed**
       (2603 + 10 nuevos).
+  - **Porción PATCH/DELETE hecha (2026-10-07) — ítem 3.2 100% completo**:
+    - [x] `repo.update()` nuevo — reemplazo total (name/description/
+          grants/scope), borra filas viejas de `role_grants`/`role_scope`/
+          `role_organization_access` antes de escribir las nuevas (no
+          diffea). Reusa el helper `_replace_grants_and_scope()`
+          extraído de `create()` (DRY real, regla 11). **Bug real de
+          `MissingGreenlet` encontrado por el propio test** (no
+          anticipado): `model.updated_at` queda "expired" tras el flush
+          por el `onupdate=now()` del lado del server — leerlo en
+          `_to_entity()` dispara un refresh lazy que crashea fuera de
+          contexto async. Mismo patrón que el bug ya documentado en
+          Block 2, ahora en un sitio nuevo. Arreglado seteando
+          `model.updated_at` explícito, igual que `create()` ya hace con
+          `created_at`/`updated_at`.
+    - [x] `repo.delete()` nuevo — borra solo la fila `roles`; cascada
+          real vía `ondelete="CASCADE"` en las FK de `role_grants`/
+          `role_scope`/`role_organization_access`/`user_roles` (nada
+          huérfano). Idempotente (borrar un rol inexistente no lanza).
+    - [x] `UpdateRoleUseCase` — mismo patrón que `CreateRoleUseCase`
+          (unión de grants del actor + las dos guardas de
+          anti-escalación), preserva `id`/`tenant_id`/`role_type`/
+          `is_system_role` del rol existente, nunca los toma del
+          request.
+    - [x] `DeleteRoleUseCase` — nueva excepción de dominio
+          `CannotDeleteSystemRoleException`: un rol de sistema
+          (`is_system_role=True`) nunca se puede borrar por este camino.
+          Sin chequeo de anti-escalación (borrar es revocar poder, nunca
+          otorgarlo).
+    - [x] `PATCH /api/v1/admin/roles/{id}` y
+          `DELETE /api/v1/admin/roles/{id}` en el router — mismo
+          criterio de 404 (`_is_visible()`, factorizado de `get_role`)
+          para no filtrar existencia cross-tenant; 400 (no 403) al
+          intentar borrar un rol de sistema — no es una falla de
+          autorización, es simplemente un target inválido para este
+          endpoint.
+    - 18 tests nuevos (4 repo + 6 use case + 8 HTTP), todos con rojo
+      real mostrado antes de implementar.
+    - Verificado: ruff + pyright **completo del proyecto** (0 errores);
+      suite completa backend **2631 passed** (2613 + 18 nuevos).
 - [ ] 3.3 — Backend: clonar plantilla + editar alcance (`role_scope`/
       `role_organization_access`), usando la guarda de 3.1.
 - [ ] 3.4 — Backend: asignar/desasignar usuarios a un perfil
