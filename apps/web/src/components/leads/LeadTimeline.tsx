@@ -60,7 +60,7 @@ function TimelineRow({
     >
       <div className="flex flex-col items-center" aria-hidden="true">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ps-elevated border border-ps-border-default">
-          <Icon className="h-4 w-4 text-ps-text-tertiary" />
+          <Icon className="h-4 w-4 text-ps-tertiary" />
         </div>
         {!isLast && <div className="mt-1 w-px grow bg-ps-border-subtle" />}
       </div>
@@ -68,7 +68,7 @@ function TimelineRow({
       <div className="pb-6 min-w-0 flex-1">
         <time
           dateTime={item.created_at}
-          className="block text-xs text-ps-text-tertiary mb-2"
+          className="block text-xs text-ps-tertiary mb-2"
         >
           {formatTimestamp(item.created_at)}
         </time>
@@ -79,17 +79,14 @@ function TimelineRow({
             data-testid="audit-entry"
           >
             <LeadStatusBadge status={item.entry.old_status} />
-            <span
-              className="text-xs text-ps-text-tertiary"
-              aria-label="changed to"
-            >
+            <span className="text-xs text-ps-tertiary" aria-label="changed to">
               →
             </span>
             <LeadStatusBadge status={item.entry.new_status} />
           </div>
         ) : (
           <div data-testid="activity-entry">
-            <span className="mb-1 inline-block text-[11px] font-semibold uppercase tracking-wide text-ps-text-tertiary">
+            <span className="mb-1 inline-block text-[11px] font-semibold uppercase tracking-wide text-ps-tertiary">
               {item.entry.type === LeadActivityType.CALL ? "Llamada" : "Nota"}
             </span>
             <p className="m-0 text-sm text-ps-text-primary">
@@ -122,7 +119,7 @@ export function LeadTimeline({
   if (isLoading) {
     return (
       <div
-        className={`flex items-center gap-2 py-4 text-ps-text-tertiary ${className}`}
+        className={`flex items-center gap-2 py-4 text-ps-tertiary ${className}`}
       >
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         <span className="text-sm">Cargando actividad...</span>
@@ -146,7 +143,7 @@ export function LeadTimeline({
   if (items.length === 0) {
     return (
       <div
-        className={`rounded-lg border border-dashed border-ps-border-default p-6 text-center text-sm text-ps-text-tertiary ${className}`}
+        className={`rounded-lg border border-dashed border-ps-border-default p-6 text-center text-sm text-ps-tertiary ${className}`}
       >
         Sin actividad registrada todavía.
       </div>
