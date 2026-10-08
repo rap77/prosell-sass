@@ -12,6 +12,7 @@ class NotificationType(StrEnum):
 
     LEAD_ASSIGNED = "lead_assigned"
     LEAD_STATUS_CHANGED = "lead_status_changed"
+    LEAD_STALE_NO_ACTIVITY = "lead_stale_no_activity"
     APPOINTMENT_SCHEDULED = "appointment_scheduled"
     APPOINTMENT_CANCELLED = "appointment_cancelled"
     SYSTEM = "system"

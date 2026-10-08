@@ -264,6 +264,68 @@ class TestGetLeadDetailsEndpoint:
 
 
 # =============================================================================
+# POST /api/v1/leads/{id}/activities — CRM roadmap Fase 4
+# =============================================================================
+
+
+class TestCreateLeadActivityEndpoint:
+    """Tests for POST /api/v1/leads/{id}/activities."""
+
+    @pytest.mark.asyncio
+    async def test_create_activity_returns_201(self, api_client_as_vendedor):
+        client, _user = api_client_as_vendedor
+
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={"buyer_name": "Activity Test Buyer"},
+        )
+        lead_id = create_resp.json()["id"]
+
+        response = await client.post(
+            f"/api/v1/leads/{lead_id}/activities",
+            json={"type": "note", "content": "Cliente pide fotos adicionales"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["lead_id"] == lead_id
+        assert data["type"] == "note"
+        assert data["content"] == "Cliente pide fotos adicionales"
+
+        # It should also show up in the lead's detail response.
+        detail_resp = await client.get(f"/api/v1/leads/{lead_id}")
+        assert len(detail_resp.json()["activities"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_create_activity_not_found_returns_404(self, api_client_as_vendedor):
+        client, _ = api_client_as_vendedor
+
+        response = await client.post(
+            f"/api/v1/leads/{uuid4()}/activities",
+            json={"type": "note", "content": "orphan"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_create_activity_empty_content_returns_422(self, api_client_as_vendedor):
+        client, _user = api_client_as_vendedor
+
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={"buyer_name": "Activity Validation Buyer"},
+        )
+        lead_id = create_resp.json()["id"]
+
+        response = await client.post(
+            f"/api/v1/leads/{lead_id}/activities",
+            json={"type": "note", "content": ""},
+        )
+
+        assert response.status_code == 422
+
+
+# =============================================================================
 # PUT /api/v1/leads/{id}/status
 # =============================================================================
 

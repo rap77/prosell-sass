@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from prosell.application.dto.lead.response import (
+    LeadActivityResponse,
     LeadAuditLogResponse,
     LeadDetailResponse,
     LeadResponse,
@@ -46,8 +47,13 @@ class GetLeadDetailsUseCase:
             tenant_id=tenant_id,
             limit=audit_log_limit,
         )
+        activities = await self.lead_repository.get_activities(
+            lead_id=lead_id,
+            tenant_id=tenant_id,
+        )
 
         return LeadDetailResponse(
             lead=LeadResponse.from_entity(lead, product=product),
             audit_logs=[LeadAuditLogResponse.from_entity(log) for log in audit_logs],
+            activities=[LeadActivityResponse.from_entity(a) for a in activities],
         )

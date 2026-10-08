@@ -8,11 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.lead.request import (
     AssignLeadRequest,
+    CreateLeadActivityRequest,
     CreateLeadRequest,
     ListLeadsRequest,
     UpdateLeadStatusRequest,
 )
 from prosell.application.dto.lead.response import (
+    LeadActivityResponse,
     LeadDetailResponse,
     LeadListResponse,
     LeadResponse,
@@ -20,6 +22,7 @@ from prosell.application.dto.lead.response import (
 )
 from prosell.application.use_cases.lead.assign_lead import AssignLeadToVendedorUseCase
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
+from prosell.application.use_cases.lead.create_lead_activity import CreateLeadActivityUseCase
 from prosell.application.use_cases.lead.get_lead_details import GetLeadDetailsUseCase
 from prosell.application.use_cases.lead.get_team_metrics import GetTeamMetricsUseCase
 from prosell.application.use_cases.lead.list_leads import ListLeadsUseCase
@@ -137,6 +140,13 @@ async def get_duplicate_detector(
 ) -> LeadDuplicateDetector:
     """Get LeadDuplicateDetector instance."""
     return LeadDuplicateDetector(lead_repo)
+
+
+async def get_create_lead_activity_use_case(
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+) -> CreateLeadActivityUseCase:
+    """Get CreateLeadActivity use case instance."""
+    return CreateLeadActivityUseCase(lead_repo)
 
 
 # =============================================================================
@@ -278,6 +288,45 @@ async def get_lead_details(
         return await use_case.execute(
             lead_id=lead_id,
             tenant_id=current_user.tenant_id,
+        )
+    except LeadNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from None
+
+
+@router.post(
+    "/{lead_id}/activities",
+    response_model=LeadActivityResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Log a manual activity (note/call) on a lead",
+)
+async def create_lead_activity(
+    lead_id: UUID,
+    request: CreateLeadActivityRequest,
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[CreateLeadActivityUseCase, Depends(get_create_lead_activity_use_case)],
+) -> LeadActivityResponse:
+    """
+    Log a manual timeline entry (note or call) on a lead.
+
+    CRM roadmap Fase 4 ("Twenty concept: Activities") — distinct from
+    the automatic LeadAuditLog, which only records status transitions.
+
+    Returns 404 if lead does not exist or belongs to a different tenant.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
+    try:
+        return await use_case.execute(
+            lead_id=lead_id,
+            request=request,
+            tenant_id=current_user.tenant_id,
+            created_by_user_id=current_user.id,
         )
     except LeadNotFoundException as e:
         raise HTTPException(

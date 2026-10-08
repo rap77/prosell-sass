@@ -1,9 +1,11 @@
 """AbstractLeadRepository interface."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivity
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 
 
@@ -96,6 +98,25 @@ class AbstractLeadRepository(ABC):
         pass
 
     @abstractmethod
+    async def create_activity(self, activity: LeadActivity) -> LeadActivity:
+        """Create a manual activity entry (note/call) for a lead.
+
+        Raises LeadNotFoundException if the lead doesn't exist in the
+        tenant — CRM roadmap Fase 4 ("Activities").
+        """
+        pass
+
+    @abstractmethod
+    async def get_activities(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[LeadActivity]:
+        """Get manual activity entries for a lead, newest first."""
+        pass
+
+    @abstractmethod
     async def find_by_email(
         self,
         tenant_id: UUID,
@@ -144,6 +165,26 @@ class AbstractLeadRepository(ABC):
         status: LeadStatus | None = None,
     ) -> int:
         """Count active leads assigned to a vendedor."""
+        pass
+
+    @abstractmethod
+    async def list_stale(
+        self,
+        before: datetime,
+        exclude_statuses: list[LeadStatus],
+    ) -> list[Lead]:
+        """List leads (across every tenant) not updated since `before`,
+        excluding any in `exclude_statuses` (e.g. LOST — terminal leads
+        don't need a "no activity" nudge). CRM roadmap Fase 5
+        ("Automations" — the stale-lead cron). A platform-wide sweep, not
+        tenant-scoped, since the cron runs once for the whole system."""
+        pass
+
+    @abstractmethod
+    async def touch(self, lead_id: UUID, tenant_id: UUID) -> None:
+        """Bump `updated_at` to now without any other change — resets the
+        staleness clock after a stale-lead notification is sent, so the
+        next cron run doesn't re-notify for the same inactivity window."""
         pass
 
     @abstractmethod

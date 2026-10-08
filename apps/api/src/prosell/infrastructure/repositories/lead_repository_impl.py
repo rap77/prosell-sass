@@ -8,12 +8,17 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivity, LeadActivityType
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 from prosell.domain.exceptions import LeadNotFoundException
 from prosell.domain.exceptions.lead_exceptions import LeadStateTransitionException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.value_objects.lead_source import LeadSource
-from prosell.infrastructure.models.lead_model import LeadAuditLogModel, LeadModel
+from prosell.infrastructure.models.lead_model import (
+    LeadActivityModel,
+    LeadAuditLogModel,
+    LeadModel,
+)
 from prosell.infrastructure.models.product_model import ProductModel
 
 
@@ -235,6 +240,63 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
 
         return [self._audit_log_to_entity(model) for model in models]  # type: ignore[arg-type]
 
+    async def create_activity(self, activity: LeadActivity) -> LeadActivity:
+        """Create a manual activity entry (note/call) for a lead."""
+        # Verify lead exists in tenant
+        stmt = select(LeadModel).where(
+            LeadModel.id == activity.lead_id,
+            LeadModel.tenant_id == activity.tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        if not result.scalar_one_or_none():
+            raise LeadNotFoundException(f"Lead not found: {activity.lead_id}")
+
+        model = LeadActivityModel(
+            id=activity.id,
+            tenant_id=activity.tenant_id,
+            lead_id=activity.lead_id,
+            type=activity.type.value,
+            content=activity.content,
+            created_by_user_id=activity.created_by_user_id,
+            created_at=activity.created_at,
+        )
+        self.session.add(model)
+        await self.session.flush()
+
+        return self._activity_to_entity(model)
+
+    async def get_activities(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[LeadActivity]:
+        """Get activity entries for a lead, newest first."""
+        # Verify lead exists in tenant
+        stmt = select(LeadModel).where(
+            LeadModel.id == lead_id,
+            LeadModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        if not result.scalar_one_or_none():
+            raise LeadNotFoundException(f"Lead not found: {lead_id}")
+
+        # Fetch activities — join to lead to enforce tenant isolation defensively
+        stmt_activities = (
+            select(LeadActivityModel)
+            .join(LeadModel, LeadActivityModel.lead_id == LeadModel.id)
+            .where(
+                LeadActivityModel.lead_id == lead_id,
+                LeadModel.tenant_id == tenant_id,
+            )
+            .order_by(LeadActivityModel.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt_activities)
+        models = result.scalars().all()
+
+        return [self._activity_to_entity(model) for model in models]
+
     async def list_by_vendedor(
         self,
         tenant_id: UUID,
@@ -416,6 +478,47 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             reason=model.reason,
             created_at=model.created_at,
         )
+
+    def _activity_to_entity(self, model: LeadActivityModel) -> LeadActivity:
+        """Convert activity ORM model to domain entity."""
+        return LeadActivity(
+            id=model.id,
+            lead_id=model.lead_id,
+            tenant_id=model.tenant_id,
+            type=LeadActivityType(model.type),
+            content=model.content,
+            created_by_user_id=model.created_by_user_id,
+            created_at=model.created_at,
+        )
+
+    async def list_stale(
+        self,
+        before: datetime,
+        exclude_statuses: list[LeadStatus],
+    ) -> list[Lead]:
+        """List leads (any tenant) not updated since `before`, excluding
+        `exclude_statuses`."""
+        excluded_values = [s.value for s in exclude_statuses]
+        stmt = select(LeadModel).where(
+            LeadModel.updated_at < before,
+            LeadModel.status.notin_(excluded_values),
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
+    async def touch(self, lead_id: UUID, tenant_id: UUID) -> None:
+        """Bump `updated_at` to now, resetting the staleness clock."""
+        stmt = select(LeadModel).where(
+            LeadModel.id == lead_id,
+            LeadModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            raise LeadNotFoundException(f"Lead not found: {lead_id}")
+        model.updated_at = datetime.now(UTC)
+        await self.session.flush()
 
     async def find_by_email(
         self,

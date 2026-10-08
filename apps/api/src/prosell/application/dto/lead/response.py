@@ -3,14 +3,14 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
-
 from prosell.application.dto.product.response import ProductSummaryForLead
+from prosell.domain.base import DomainModel, Field
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivity, LeadActivityType
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 
 
-class LeadResponse(BaseModel):
+class LeadResponse(DomainModel):
     """DTO for a single lead with embedded product data."""
 
     id: UUID
@@ -28,8 +28,6 @@ class LeadResponse(BaseModel):
 
     # Product data (replaces legacy vehicle field)
     product: ProductSummaryForLead | None = None
-
-    model_config = {"from_attributes": True}
 
     @classmethod
     def from_entity(
@@ -54,7 +52,7 @@ class LeadResponse(BaseModel):
         )
 
 
-class LeadAuditLogResponse(BaseModel):
+class LeadAuditLogResponse(DomainModel):
     """DTO for a single audit log entry."""
 
     id: UUID
@@ -64,8 +62,6 @@ class LeadAuditLogResponse(BaseModel):
     changed_by_user_id: UUID | None
     reason: str | None
     created_at: datetime
-
-    model_config = {"from_attributes": True}
 
     @classmethod
     def from_entity(cls, log: LeadAuditLog) -> "LeadAuditLogResponse":
@@ -80,14 +76,37 @@ class LeadAuditLogResponse(BaseModel):
         )
 
 
-class LeadDetailResponse(BaseModel):
-    """DTO for lead details with audit history."""
+class LeadActivityResponse(DomainModel):
+    """DTO for a single manual activity entry (note/call)."""
+
+    id: UUID
+    lead_id: UUID
+    type: LeadActivityType
+    content: str
+    created_by_user_id: UUID | None
+    created_at: datetime
+
+    @classmethod
+    def from_entity(cls, activity: LeadActivity) -> "LeadActivityResponse":
+        return cls(
+            id=activity.id,
+            lead_id=activity.lead_id,
+            type=activity.type,
+            content=activity.content,
+            created_by_user_id=activity.created_by_user_id,
+            created_at=activity.created_at,
+        )
+
+
+class LeadDetailResponse(DomainModel):
+    """DTO for lead details with audit history and manual activity log."""
 
     lead: LeadResponse
     audit_logs: list[LeadAuditLogResponse]
+    activities: list[LeadActivityResponse] = Field(default_factory=list)
 
 
-class LeadListResponse(BaseModel):
+class LeadListResponse(DomainModel):
     """DTO for paginated list of leads."""
 
     items: list[LeadResponse]
@@ -96,7 +115,7 @@ class LeadListResponse(BaseModel):
     offset: int
 
 
-class VendedorMetricsBreakdown(BaseModel):
+class VendedorMetricsBreakdown(DomainModel):
     """DTO for vendedor-specific metrics breakdown."""
 
     vendedor_id: UUID
@@ -106,7 +125,7 @@ class VendedorMetricsBreakdown(BaseModel):
     conversion_rate: float
 
 
-class TeamMetricsResponse(BaseModel):
+class TeamMetricsResponse(DomainModel):
     """DTO for team lead metrics."""
 
     total_leads: int

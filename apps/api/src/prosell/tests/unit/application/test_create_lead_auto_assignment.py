@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from prosell.application.dto.lead.request import CreateLeadRequest
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivity
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.product_audit_log import ProductAuditLog
@@ -125,6 +126,25 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         limit: int = 50,
     ) -> list[LeadAuditLog]:
+        del lead_id, tenant_id, limit
+        return []
+
+    async def create_activity(self, activity: LeadActivity) -> LeadActivity:
+        raise NotImplementedError
+
+    async def list_stale(self, before, exclude_statuses) -> list[Lead]:
+        del before, exclude_statuses
+        return []
+
+    async def touch(self, lead_id: UUID, tenant_id: UUID) -> None:
+        del lead_id, tenant_id
+
+    async def get_activities(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[LeadActivity]:
         del lead_id, tenant_id, limit
         return []
 

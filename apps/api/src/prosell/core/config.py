@@ -156,6 +156,23 @@ class Settings(BaseSettings):
             return None
         return _dt.now(zone).utcoffset()
 
+    # Cron expression for the daily stale-leads notification sweep (CRM
+    # roadmap Fase 5 — "Automations"). Default 09:00 UTC daily. Interpreted
+    # in UTC — unlike prune_sold_galleries_cron, this task has no separate
+    # timezone setting (not asked for; add one the same way if it's ever
+    # needed).
+    notify_stale_leads_cron: str = Field(
+        default="0 9 * * *",
+        description="Cron for the daily stale-leads notification sweep (UTC).",
+    )
+    stale_lead_days: int = Field(
+        default=3,
+        ge=1,
+        description="Days without activity (status change or a logged "
+        "note/call) before a lead's vendedor gets a 'no seguimiento' "
+        "in-app notification.",
+    )
+
     # =============================================================================
     # JWT (RSA Keys)
     # =============================================================================

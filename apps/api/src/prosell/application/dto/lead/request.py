@@ -4,6 +4,7 @@ from uuid import UUID
 
 from prosell.domain.base import DomainModel, EmailStr, Field
 from prosell.domain.entities.lead import LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivityType
 from prosell.domain.value_objects.lead_source import LeadSource
 
 
@@ -41,3 +42,13 @@ class AssignLeadRequest(DomainModel):
     """DTO for assigning a lead to a vendedor."""
 
     vendedor_id: UUID | None = Field(..., description="New vendedor ID (null to unassign)")
+
+
+class CreateLeadActivityRequest(DomainModel):
+    """DTO for logging a manual activity entry (note/call) on a lead.
+
+    CRM roadmap Fase 4 ("Twenty concept: Activities").
+    """
+
+    type: LeadActivityType
+    content: str = Field(..., min_length=1, max_length=2000)

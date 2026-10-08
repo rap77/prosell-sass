@@ -24,11 +24,15 @@ async def main() -> None:
     # scheduler.startup() so LabelScheduleSource sees the @broker.task(
     # schedule=...) labels at scan time. The _ = ... assignment is a no-op
     # at runtime; it silences pyright's "not accessed" warning.
+    from prosell.infrastructure.tasks.use_cases.notify_stale_leads_task import (
+        notify_stale_leads_task,
+    )
     from prosell.infrastructure.tasks.use_cases.prune_sold_galleries_task import (
         prune_sold_galleries_task,
     )
 
     _ = prune_sold_galleries_task
+    _ = notify_stale_leads_task
 
     scheduler = TaskiqScheduler(
         broker=broker,

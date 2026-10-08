@@ -6,8 +6,10 @@ Uses real test database — requires test DB to be running on port 5433.
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import update
 
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivity, LeadActivityType
 from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
 )
@@ -230,6 +232,173 @@ class TestLeadRepositoryUpdateStatus:
                 tenant_id=tenant_id,
                 new_status=LeadStatus.APPOINTMENT_SET,  # Can't skip from NEW
             )
+
+
+class TestLeadRepositoryActivities:
+    """Tests for create_activity()/get_activities() — CRM roadmap Fase 4."""
+
+    @pytest.mark.asyncio
+    async def test_create_activity_is_retrievable(self, db_session, test_organization, test_user):
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+        lead = make_lead(tenant_id=tenant_id)
+        await repo.create(lead)
+
+        activity = LeadActivity.create(
+            lead_id=lead.id,
+            tenant_id=tenant_id,
+            activity_type=LeadActivityType.NOTE,
+            content="Cliente pide fotos adicionales",
+            created_by_user_id=test_user.id,
+        )
+        created = await repo.create_activity(activity)
+
+        assert created.id == activity.id
+        assert created.content == "Cliente pide fotos adicionales"
+
+        fetched = await repo.get_activities(lead.id, tenant_id)
+        assert len(fetched) == 1
+        assert fetched[0].content == "Cliente pide fotos adicionales"
+        assert fetched[0].type == LeadActivityType.NOTE
+
+    @pytest.mark.asyncio
+    async def test_get_activities_orders_newest_first(
+        self, db_session, test_organization, test_user
+    ):
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+        lead = make_lead(tenant_id=tenant_id)
+        await repo.create(lead)
+
+        first = LeadActivity.create(
+            lead_id=lead.id,
+            tenant_id=tenant_id,
+            activity_type=LeadActivityType.CALL,
+            content="Primera llamada",
+            created_by_user_id=test_user.id,
+        )
+        await repo.create_activity(first)
+        second = LeadActivity.create(
+            lead_id=lead.id,
+            tenant_id=tenant_id,
+            activity_type=LeadActivityType.NOTE,
+            content="Nota de seguimiento",
+            created_by_user_id=test_user.id,
+        )
+        await repo.create_activity(second)
+
+        activities = await repo.get_activities(lead.id, tenant_id)
+
+        assert len(activities) == 2
+        assert activities[0].content == "Nota de seguimiento"
+        assert activities[1].content == "Primera llamada"
+
+    @pytest.mark.asyncio
+    async def test_create_activity_raises_for_missing_lead(
+        self, db_session, test_organization, test_user
+    ):
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+
+        activity = LeadActivity.create(
+            lead_id=uuid4(),
+            tenant_id=tenant_id,
+            activity_type=LeadActivityType.NOTE,
+            content="orphan",
+            created_by_user_id=test_user.id,
+        )
+
+        with pytest.raises(LeadNotFoundException):
+            await repo.create_activity(activity)
+
+    @pytest.mark.asyncio
+    async def test_get_activities_raises_for_missing_lead(self, db_session, test_organization):
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+
+        with pytest.raises(LeadNotFoundException):
+            await repo.get_activities(uuid4(), tenant_id)
+
+
+class TestLeadRepositoryStaleness:
+    """Tests for list_stale()/touch() — CRM roadmap Fase 5 (Automations)."""
+
+    @pytest.mark.asyncio
+    async def test_list_stale_returns_leads_older_than_cutoff(self, db_session, test_organization):
+        from datetime import UTC, datetime, timedelta
+
+        from prosell.infrastructure.models.lead_model import LeadModel
+
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+        stale_lead = make_lead(tenant_id=tenant_id)
+        fresh_lead = make_lead(tenant_id=tenant_id)
+        await repo.create(stale_lead)
+        await repo.create(fresh_lead)
+
+        # Backdate the stale lead's updated_at directly (bypasses the
+        # server-side onupdate trigger, which would otherwise always set "now").
+        await db_session.execute(
+            update(LeadModel)
+            .where(LeadModel.id == stale_lead.id)
+            .values(updated_at=datetime.now(UTC) - timedelta(days=5))
+        )
+        await db_session.flush()
+
+        cutoff = datetime.now(UTC) - timedelta(days=3)
+        stale = await repo.list_stale(before=cutoff, exclude_statuses=[LeadStatus.LOST])
+
+        stale_ids = {lead.id for lead in stale}
+        assert stale_lead.id in stale_ids
+        assert fresh_lead.id not in stale_ids
+
+    @pytest.mark.asyncio
+    async def test_list_stale_excludes_given_statuses(self, db_session, test_organization):
+        from datetime import UTC, datetime, timedelta
+
+        from prosell.infrastructure.models.lead_model import LeadModel
+
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+        lost_lead = make_lead(tenant_id=tenant_id)
+        await repo.create(lost_lead)
+        await repo.update_status(
+            lead_id=lost_lead.id, tenant_id=tenant_id, new_status=LeadStatus.LOST
+        )
+        await db_session.execute(
+            update(LeadModel)
+            .where(LeadModel.id == lost_lead.id)
+            .values(updated_at=datetime.now(UTC) - timedelta(days=5))
+        )
+        await db_session.flush()
+
+        cutoff = datetime.now(UTC) - timedelta(days=3)
+        stale = await repo.list_stale(before=cutoff, exclude_statuses=[LeadStatus.LOST])
+
+        assert lost_lead.id not in {lead.id for lead in stale}
+
+    @pytest.mark.asyncio
+    async def test_touch_resets_the_staleness_clock(self, db_session, test_organization):
+        from datetime import UTC, datetime, timedelta
+
+        from prosell.infrastructure.models.lead_model import LeadModel
+
+        repo = SqlAlchemyLeadRepository(db_session)
+        tenant_id = test_organization.tenant_id
+        lead = make_lead(tenant_id=tenant_id)
+        await repo.create(lead)
+        await db_session.execute(
+            update(LeadModel)
+            .where(LeadModel.id == lead.id)
+            .values(updated_at=datetime.now(UTC) - timedelta(days=5))
+        )
+        await db_session.flush()
+
+        await repo.touch(lead.id, tenant_id)
+
+        cutoff = datetime.now(UTC) - timedelta(days=3)
+        stale = await repo.list_stale(before=cutoff, exclude_statuses=[LeadStatus.LOST])
+        assert lead.id not in {lead_.id for lead_ in stale}
 
 
 class TestLeadRepositoryList:

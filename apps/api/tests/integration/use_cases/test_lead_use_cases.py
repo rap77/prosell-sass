@@ -6,21 +6,26 @@ These tests use a real DB session and real repositories — no mocks for storage
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import update
 
 from prosell.application.dto.lead.request import (
+    CreateLeadActivityRequest,
     CreateLeadRequest,
     ListLeadsRequest,
     UpdateLeadStatusRequest,
 )
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
+from prosell.application.use_cases.lead.create_lead_activity import CreateLeadActivityUseCase
 from prosell.application.use_cases.lead.get_lead_details import GetLeadDetailsUseCase
 from prosell.application.use_cases.lead.list_leads import ListLeadsUseCase
 from prosell.application.use_cases.lead.update_lead_status import UpdateLeadStatusUseCase
 from prosell.domain.entities.lead import LeadStatus
+from prosell.domain.entities.lead_activity import LeadActivityType
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.exceptions.lead_exceptions import (
     DuplicateLeadException,
+    LeadNotFoundException,
 )
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 
@@ -218,6 +223,141 @@ class TestUpdateLeadStatusUseCaseIntegration:
         details = await detail_uc.execute(lead_resp.id, tenant_id)
         assert len(details.audit_logs) >= 1
         assert details.audit_logs[0].changed_by_user_id == user_id
+
+
+# =============================================================================
+# CreateLeadActivityUseCase integration tests — CRM roadmap Fase 4
+# =============================================================================
+
+
+class TestCreateLeadActivityUseCase:
+    @pytest.mark.asyncio
+    async def test_creates_activity_and_appears_in_lead_details(
+        self, db_session, test_organization, test_user
+    ):
+        repo = SqlAlchemyLeadRepository(db_session)
+        create_uc = CreateLeadUseCase(repo)
+        activity_uc = CreateLeadActivityUseCase(repo)
+        detail_uc = GetLeadDetailsUseCase(repo)
+        tenant_id = test_organization.tenant_id
+
+        lead_resp = await create_uc.execute(
+            CreateLeadRequest(buyer_name="Activity Test"),
+            tenant_id,
+        )
+
+        created = await activity_uc.execute(
+            lead_resp.id,
+            CreateLeadActivityRequest(type=LeadActivityType.NOTE, content="Cliente pide fotos"),
+            tenant_id,
+            created_by_user_id=test_user.id,
+        )
+        assert created.content == "Cliente pide fotos"
+        assert created.type == LeadActivityType.NOTE
+
+        details = await detail_uc.execute(lead_resp.id, tenant_id)
+        assert len(details.activities) == 1
+        assert details.activities[0].content == "Cliente pide fotos"
+
+    @pytest.mark.asyncio
+    async def test_raises_for_missing_lead(self, db_session, test_organization, test_user):
+        repo = SqlAlchemyLeadRepository(db_session)
+        activity_uc = CreateLeadActivityUseCase(repo)
+        tenant_id = test_organization.tenant_id
+
+        with pytest.raises(LeadNotFoundException):
+            await activity_uc.execute(
+                uuid4(),
+                CreateLeadActivityRequest(type=LeadActivityType.CALL, content="orphan"),
+                tenant_id,
+                created_by_user_id=test_user.id,
+            )
+
+
+# =============================================================================
+# NotifyStaleLeadsUseCase integration tests — CRM roadmap Fase 5
+# =============================================================================
+
+
+class TestNotifyStaleLeadsUseCase:
+    @pytest.mark.asyncio
+    async def test_notifies_the_assigned_vendedor_for_a_stale_lead(
+        self, db_session, test_organization, test_user
+    ):
+        from datetime import UTC, datetime, timedelta
+
+        from prosell.application.use_cases.lead.notify_stale_leads import (
+            NotifyStaleLeadsUseCase,
+        )
+        from prosell.domain.entities.notification import NotificationType
+        from prosell.infrastructure.models.lead_model import LeadModel
+        from prosell.infrastructure.repositories.notification_repository_impl import (
+            SqlAlchemyNotificationRepository,
+        )
+
+        lead_repo = SqlAlchemyLeadRepository(db_session)
+        notification_repo = SqlAlchemyNotificationRepository(db_session)
+        create_uc = CreateLeadUseCase(lead_repo)
+        use_case = NotifyStaleLeadsUseCase(lead_repo, notification_repo)
+        tenant_id = test_organization.tenant_id
+
+        lead_resp = await create_uc.execute(
+            CreateLeadRequest(buyer_name="Stale Lead", vendedor_id=test_user.id),
+            tenant_id,
+        )
+        await db_session.execute(
+            update(LeadModel)
+            .where(LeadModel.id == lead_resp.id)
+            .values(updated_at=datetime.now(UTC) - timedelta(days=5))
+        )
+        await db_session.flush()
+
+        notified_count = await use_case.execute(stale_after_days=3)
+
+        assert notified_count >= 1
+        notifications = await notification_repo.list_for_user(test_user.id, tenant_id)
+        stale_notifications = [
+            n
+            for n in notifications
+            if n.notification_type == NotificationType.LEAD_STALE_NO_ACTIVITY
+        ]
+        assert len(stale_notifications) == 1
+        assert stale_notifications[0].resource_id == lead_resp.id
+
+    @pytest.mark.asyncio
+    async def test_does_not_renotify_after_touch(self, db_session, test_organization, test_user):
+        from datetime import UTC, datetime, timedelta
+
+        from prosell.application.use_cases.lead.notify_stale_leads import (
+            NotifyStaleLeadsUseCase,
+        )
+        from prosell.infrastructure.models.lead_model import LeadModel
+        from prosell.infrastructure.repositories.notification_repository_impl import (
+            SqlAlchemyNotificationRepository,
+        )
+
+        lead_repo = SqlAlchemyLeadRepository(db_session)
+        notification_repo = SqlAlchemyNotificationRepository(db_session)
+        create_uc = CreateLeadUseCase(lead_repo)
+        use_case = NotifyStaleLeadsUseCase(lead_repo, notification_repo)
+        tenant_id = test_organization.tenant_id
+
+        lead_resp = await create_uc.execute(
+            CreateLeadRequest(buyer_name="Stale Lead 2", vendedor_id=test_user.id),
+            tenant_id,
+        )
+        await db_session.execute(
+            update(LeadModel)
+            .where(LeadModel.id == lead_resp.id)
+            .values(updated_at=datetime.now(UTC) - timedelta(days=5))
+        )
+        await db_session.flush()
+
+        first_run = await use_case.execute(stale_after_days=3)
+        second_run = await use_case.execute(stale_after_days=3)
+
+        assert first_run >= 1
+        assert second_run == 0
 
 
 # =============================================================================
