@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usePushNotifications } from "@/lib/push/usePushNotifications";
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -52,6 +53,7 @@ export function NotificationBell() {
   const { data, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const push = usePushNotifications();
 
   const unreadCount = data?.unread_count ?? 0;
   const notifications = data?.items ?? [];
@@ -81,7 +83,7 @@ export function NotificationBell() {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-ps-error text-[10px] font-bold text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -97,7 +99,7 @@ export function NotificationBell() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+              className="h-auto p-0 text-xs text-ps-tertiary hover:text-ps-text-primary"
               onClick={handleMarkAllRead}
               disabled={markAllRead.isPending}
             >
@@ -106,14 +108,28 @@ export function NotificationBell() {
           )}
         </div>
 
+        {push.permission === "default" && (
+          <div className="px-2 pb-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => push.enable()}
+              disabled={push.isEnabling}
+            >
+              Activar notificaciones push
+            </Button>
+          </div>
+        )}
+
         <DropdownMenuSeparator />
 
         {isLoading ? (
-          <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="px-4 py-6 text-center text-sm text-ps-tertiary">
             Cargando...
           </div>
         ) : notifications.length === 0 ? (
-          <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="px-4 py-6 text-center text-sm text-ps-tertiary">
             No tenés notificaciones
           </div>
         ) : (
@@ -126,7 +142,7 @@ export function NotificationBell() {
               >
                 <div className="flex w-full items-start gap-2">
                   {!notification.is_read && (
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-ps-cyan" />
                   )}
                   <div
                     className={notification.is_read ? "pl-4 w-full" : "w-full"}
@@ -134,10 +150,10 @@ export function NotificationBell() {
                     <p className="text-sm font-medium leading-tight">
                       {notification.title}
                     </p>
-                    <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                    <p className="text-xs text-ps-tertiary leading-snug mt-0.5">
                       {notification.body}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-[10px] text-ps-tertiary mt-1">
                       {timeAgo(notification.created_at)}
                     </p>
                   </div>

@@ -30,6 +30,12 @@ vi.mock("@/lib/api/notificationsApi", () => ({
   }),
 }));
 
+const mockUsePushNotifications = vi.fn();
+const mockEnablePush = vi.fn();
+vi.mock("@/lib/push/usePushNotifications", () => ({
+  usePushNotifications: () => mockUsePushNotifications(),
+}));
+
 const STALE_LEAD_NOTIFICATION = {
   id: "notif-1",
   notification_type: "lead_stale_no_activity",
@@ -48,6 +54,11 @@ describe("NotificationBell", () => {
     mockUseNotifications.mockReturnValue({
       data: { items: [STALE_LEAD_NOTIFICATION], unread_count: 1 },
       isLoading: false,
+    });
+    mockUsePushNotifications.mockReturnValue({
+      permission: "unsupported",
+      enable: mockEnablePush,
+      isEnabling: false,
     });
   });
 
@@ -72,5 +83,49 @@ describe("NotificationBell", () => {
 
     expect(mockMarkRead).toHaveBeenCalledWith("notif-1");
     expect(mockPush).toHaveBeenCalledWith("/vendedor/leads/lead-1");
+  });
+
+  it("does not show the push opt-in banner when unsupported", async () => {
+    const user = userEvent.setup();
+    render(<NotificationBell />);
+
+    await user.click(screen.getByRole("button", { name: /notificaciones/i }));
+
+    expect(
+      screen.queryByText(/activar notificaciones push/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the push opt-in banner and calls enable() on click when permission is default", async () => {
+    mockUsePushNotifications.mockReturnValue({
+      permission: "default",
+      enable: mockEnablePush,
+      isEnabling: false,
+    });
+    const user = userEvent.setup();
+    render(<NotificationBell />);
+
+    await user.click(screen.getByRole("button", { name: "Notificaciones" }));
+    await user.click(
+      screen.getByRole("button", { name: /activar notificaciones push/i }),
+    );
+
+    expect(mockEnablePush).toHaveBeenCalled();
+  });
+
+  it("does not show the push opt-in banner when permission is already granted", async () => {
+    mockUsePushNotifications.mockReturnValue({
+      permission: "granted",
+      enable: mockEnablePush,
+      isEnabling: false,
+    });
+    const user = userEvent.setup();
+    render(<NotificationBell />);
+
+    await user.click(screen.getByRole("button", { name: /notificaciones/i }));
+
+    expect(
+      screen.queryByText(/activar notificaciones push/i),
+    ).not.toBeInTheDocument();
   });
 });
