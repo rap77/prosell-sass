@@ -1,7 +1,69 @@
 # ProSell CRM Roadmap
 
-**Fecha**: 2026-07-11
+**Fecha**: 2026-07-11 — **Fases 1-5: COMPLETAS (verificado 2026-10-07)**
 **Objetivo**: CRM vertical para dealers de vehículos con flujo WhatsApp-first
+
+> **Nota de cierre (2026-10-07)**: este roadmap se dio por "no implementado"
+> en una sesión posterior, pero verificación real contra el código mostró
+> que las Fases 1-3 ya estaban construidas y conectadas (público `/p/[slug]`
+>
+> - WhatsApp share, captura de leads, vista tabla `LeadList.tsx` + Kanban
+>   real con `@dnd-kit/core` en `pipeline/page.tsx`). Esta sesión cerró lo que
+>   genuinamente faltaba:
+>
+> * **Fase 4 (Activities)**: `LeadActivity` (nota/llamada) nuevo — entidad,
+>   migración `lead_activities`, repo, `POST/GET /leads/{id}/activities`,
+>   embebido en `LeadDetailResponse`; frontend: `LeadTimeline.tsx` (merge
+>   cronológico de status-changes + activities), `AddLeadActivityForm.tsx`.
+> * **Fase 5 (Automations)**: `NotifyStaleLeadsUseCase` + `AbstractLeadRepository.list_stale()`/`touch()`
+>   (idempotente: notificar resetea el reloj de staleness, mismo criterio que
+>   `PruneSoldProductImagesUseCase`) + `notify_stale_leads_task.py` (Taskiq,
+>   cron diario vía `settings.notify_stale_leads_cron`). Canal de notificación:
+>   **in-app únicamente** (reusa `Notification`/`notification_router.py` ya
+>   existente) — push y WhatsApp Business API quedaron deliberadamente
+>   diferidos (ninguno de los dos tiene infra en este proyecto todavía;
+>   agregarlos es una decisión de infra/costo separada, no de código).
+> * **Historial de notificaciones**: `NotificationBell.tsx` ya renderizaba
+>   cualquier tipo de notificación genéricamente y ya enrutaba clicks de
+>   `resource_type: "lead"` a `/vendedor/leads/{id}` — verificado con test
+>   nuevo, cero cambios de código necesarios.
+> * **Panel de preferencias de notificaciones** (`settings/notifications/page.tsx`):
+>   sigue siendo un placeholder de solo-frontend ("las preferencias se
+>   guardan localmente... integración con el backend próximamente") — fuera
+>   de alcance de esta sesión; wirearlo de verdad requiere una entidad nueva
+>   de preferencias persistidas por usuario, no parte de "notificar leads
+>   sin actividad".
+>
+> Todo bajo TDD estricto real (rojo mostrado antes de cada implementación).
+> Suite completa: backend 2684 passed, frontend 1517 passed.
+
+## Deuda técnica pendiente (confirmada por el usuario, 2026-10-07)
+
+**Push notifications y WhatsApp Business API/Twilio para Fase 5 —
+el usuario confirmó explícitamente que SÍ los quiere**, no es un "tal vez
+algún día": quedó diferido en esta sesión solo porque ninguno de los dos
+tiene infraestructura en el proyecto todavía (cuenta, credenciales, costo
+mensual), no porque no se necesite. Para la próxima sesión que lo tome:
+
+- **Punto de integración ya preparado**: `NotifyStaleLeadsUseCase` (y
+  `CreateLeadUseCase`, que ya emite `LEAD_ASSIGNED`) solo llaman a
+  `AbstractNotificationRepository.create()` — hoy eso persiste una fila
+  in-app. Agregar push/WhatsApp es una nueva responsabilidad de
+  **entrega** (delivery), no de negocio: el use case no debería cambiar,
+  solo necesita un puerto nuevo (ej. `INotificationDeliveryService` o
+  extender el repo) que la capa de infraestructura implemente.
+- **WhatsApp Business API / Twilio**: requiere decidir proveedor (Twilio
+  vs. Meta WhatsApp Business directo), dar de alta cuenta + credenciales,
+  y aceptar el costo mensual recurrente — decisión de producto/infra que
+  el usuario debe tomar explícitamente (proveedor, presupuesto), no algo
+  para elegir en silencio en una sesión de código.
+- **Push notifications**: no hay ningún servicio de push (web push / FCM)
+  en `infrastructure/services/` hoy — hay que elegir e integrar uno desde
+  cero.
+- **Alcance sugerido para cuando se tome**: empezar por el canal que ya
+  tiene mayor valor para el flujo WhatsApp-first del proyecto (WhatsApp
+  Business API), dado que la Fase 1 ya comparte productos por WhatsApp
+  (`wa.me` links) — push queda como canal secundario.
 
 ---
 
@@ -45,13 +107,13 @@
 
 ## Git Branches
 
-| Fase | Branch                      | Status     |
-| ---- | --------------------------- | ---------- |
-| 1    | `feat/phase-1-mvp-whatsapp` | 🎯 NEXT    |
-| 2    | `feat/phase-2-lead-capture` | ⏳ Pending |
-| 3    | `feat/phase-3-crm-basic`    | ⏳ Pending |
-| 4    | `feat/phase-4-pipelines`    | ⏳ Pending |
-| 5    | `feat/phase-5-workflows`    | ⏳ Pending |
+| Fase | Branch                      | Status                                    |
+| ---- | --------------------------- | ----------------------------------------- |
+| 1    | `feat/phase-1-mvp-whatsapp` | ✅ Done (verificado 2026-10-07)           |
+| 2    | `feat/phase-2-lead-capture` | ✅ Done (verificado 2026-10-07)           |
+| 3    | `feat/phase-3-crm-basic`    | ✅ Done (verificado 2026-10-07)           |
+| 4    | `feat/phase-4-pipelines`    | ✅ Done (Activities, cerrado 2026-10-07)  |
+| 5    | `feat/phase-5-workflows`    | ✅ Done (in-app only, cerrado 2026-10-07) |
 
 ---
 
@@ -322,12 +384,21 @@ class Lead(Base):
 
 ---
 
-## FASE 4: Pipelines ($49/mes)
+## FASE 4: Pipelines ($49/mes) — ✅ COMPLETA (2026-10-07)
 
 **Branch**: `feat/phase-4-pipelines`
 **Duración**: 4-6 semanas
 **Precio**: $49/mes
 **Twenty concepts**: Pipelines, Activities
+
+**Nota de implementación real**: "Pipelines" (stages de `Lead.status`,
+máquina de estados) ya existía desde la Fase 2/3. Lo que esta fase cerró
+fue específicamente **Activities**: `LeadActivity` (nota/llamada manual),
+distinto de `LeadAuditLog` (que solo registra transiciones de estado
+automáticas). El timeline de UI mergea ambas fuentes en un solo feed
+cronológico (`LeadTimeline.tsx`), tal como muestra el mockup de abajo —
+el drag&drop del Kanban que cambia estado ya estaba implementado con
+`@dnd-kit/core` real en `pipeline/page.tsx`.
 
 ### Backend
 
@@ -386,12 +457,21 @@ class LeadActivity(Base):
 
 ---
 
-## FASE 5: Workflows ($99/mes)
+## FASE 5: Workflows ($99/mes) — ✅ COMPLETA, in-app only (2026-10-07)
 
 **Branch**: `feat/phase-5-workflows`
 **Duración**: 6-8 semanas
 **Precio**: $99/mes
 **Twenty concepts**: Automations (hardcoded primero)
+
+**Nota de implementación real**: Trigger 1 (lead sin actividad) implementado
+como `NotifyStaleLeadsUseCase` + `notify_stale_leads_task.py` (Taskiq, cron
+diario). Canal **in-app únicamente** — push y WhatsApp Business API/Twilio
+quedaron deliberadamente diferidos: ninguno de los dos tiene infraestructura
+en este proyecto hoy, y agregarla es una decisión de costo/infra que el
+usuario debe tomar explícitamente, no algo para resolver en silencio.
+Trigger 2 (nuevo lead → notificar) ya existía desde la Fase 2
+(`CreateLeadUseCase` ya crea una `Notification` al asignar).
 
 ### Triggers Hardcodeados
 
