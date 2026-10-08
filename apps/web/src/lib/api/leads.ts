@@ -14,6 +14,8 @@ import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
 import { extractErrorMessage } from "./extractErrorMessage";
 import {
   LeadStatus,
+  LeadActivityType,
+  LeadActivityEntrySchema,
   BackendLeadResponseSchema,
   BackendLeadListResponseSchema,
   BackendLeadDetailResponseSchema,
@@ -27,7 +29,25 @@ import {
   type LeadDuplicatesResponse,
 } from "@/lib/api/schemas/leads";
 
-export { LeadStatus };
+export { LeadStatus, LeadActivityType };
+
+/**
+ * Manual timeline entry (note/call) on a lead — CRM roadmap Fase 4
+ * ("Twenty concept: Activities"). Mirrors LeadAuditLogEntry.
+ */
+export interface LeadActivityEntry {
+  id: string;
+  lead_id: string;
+  type: LeadActivityType;
+  content: string;
+  created_by_user_id: string | null;
+  created_at: string;
+}
+
+export interface CreateLeadActivityRequest {
+  type: LeadActivityType;
+  content: string;
+}
 
 /**
  * Audit log entry for a lead status change.
@@ -281,6 +301,51 @@ export function useLeadAuditTrail(
   });
 }
 
+/**
+ * useLeadActivities — derives manual activity entries from the shared
+ * lead-detail query. No extra HTTP request — reuses the cache entry
+ * from useLead/useLeadAuditTrail (same queryKey).
+ */
+export function useLeadActivities(
+  leadId: string | undefined,
+): UseQueryResult<LeadActivityEntry[], Error> {
+  return useQuery({
+    queryKey: ["lead-detail", leadId],
+    queryFn: () => (leadId ? fetchLeadDetail(leadId) : null),
+    select: (data) => data?.activities ?? [],
+    enabled: !!leadId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useCreateLeadActivity(leadId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: CreateLeadActivityRequest) => {
+      const res = await fetchWithAuth(`/api/v1/leads/${leadId}/activities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to log activity"));
+      }
+
+      return LeadActivityEntrySchema.parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
+      toast.success("Actividad registrada");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al registrar la actividad");
+    },
+  });
+}
+
 export function useUpdateLeadStatus(leadId: string) {
   const queryClient = useQueryClient();
 
@@ -302,7 +367,7 @@ export function useUpdateLeadStatus(leadId: string) {
       const data = BackendLeadResponseSchema.parse(await res.json());
       return transformLead(data);
     },
-    onSuccess: (updatedLead) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       toast.success("Lead status updated successfully");
@@ -332,7 +397,7 @@ export function useReassignLead(leadId: string) {
       const data = BackendLeadResponseSchema.parse(await res.json());
       return transformLead(data);
     },
-    onSuccess: (updatedLead) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       toast.success("Lead reassigned successfully");

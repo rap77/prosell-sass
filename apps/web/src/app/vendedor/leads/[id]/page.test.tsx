@@ -5,7 +5,13 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { useRouter } from "next/navigation";
-import { useLead, useLeadDuplicates, useLeadAuditTrail } from "@/lib/api/leads";
+import {
+  useLead,
+  useLeadDuplicates,
+  useLeadAuditTrail,
+  useLeadActivities,
+  useCreateLeadActivity,
+} from "@/lib/api/leads";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -17,6 +23,8 @@ vi.mock("@/lib/api/leads", () => ({
   useLead: vi.fn(),
   useLeadDuplicates: vi.fn(),
   useLeadAuditTrail: vi.fn(),
+  useLeadActivities: vi.fn(),
+  useCreateLeadActivity: vi.fn(),
   useUpdateLeadStatus: vi.fn(),
   LeadStatus: {
     NEW: "new",
@@ -74,6 +82,16 @@ describe("LeadDetails Page", () => {
       data: [],
       isLoading: false,
       error: null,
+    });
+    // Default: no activities
+    (useLeadActivities as Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    (useCreateLeadActivity as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
     });
   });
 

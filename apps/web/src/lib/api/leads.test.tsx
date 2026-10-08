@@ -9,8 +9,11 @@ import {
   useLead,
   useUpdateLeadStatus,
   useReassignLead,
+  useLeadActivities,
+  useCreateLeadActivity,
   LeadStatus,
 } from "./leads";
+import { LeadActivityType } from "./schemas/leads";
 import { toast } from "sonner";
 
 // Mock fetch
@@ -332,6 +335,103 @@ describe("useReassignLead", () => {
     try {
       await result.current.mutateAsync({ vendedor_id: "vendedor-2" });
     } catch (error) {
+      // Expected error
+    }
+
+    expect(toast.error).toHaveBeenCalledWith("Lead not found");
+  });
+});
+
+describe("useLeadActivities", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("derives activities from the shared lead-detail query", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        lead: mockLeadResponse,
+        audit_logs: [],
+        activities: [
+          {
+            id: "activity-1",
+            lead_id: "lead-1",
+            type: LeadActivityType.NOTE,
+            content: "Cliente pide fotos",
+            created_by_user_id: "user-1",
+            created_at: "2026-04-28T12:00:00Z",
+          },
+        ],
+      }),
+    });
+
+    const { result } = renderHook(() => useLeadActivities("lead-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].content).toBe("Cliente pide fotos");
+  });
+});
+
+describe("useCreateLeadActivity", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("POSTs the activity and shows a success toast", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: "activity-1",
+        lead_id: "lead-1",
+        type: LeadActivityType.CALL,
+        content: "Primera llamada",
+        created_by_user_id: "user-1",
+        created_at: "2026-04-28T12:00:00Z",
+      }),
+    });
+
+    const { result } = renderHook(() => useCreateLeadActivity("lead-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.mutateAsync({
+      type: LeadActivityType.CALL,
+      content: "Primera llamada",
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/v1/leads/lead-1/activities",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: expect.stringContaining('"content":"Primera llamada"'),
+      }),
+    );
+    expect(toast.success).toHaveBeenCalled();
+  });
+
+  it("shows an error toast on failure", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ detail: "Lead not found" }),
+    });
+
+    const { result } = renderHook(() => useCreateLeadActivity("lead-1"), {
+      wrapper: createWrapper(),
+    });
+
+    try {
+      await result.current.mutateAsync({
+        type: LeadActivityType.NOTE,
+        content: "orphan",
+      });
+    } catch {
       // Expected error
     }
 

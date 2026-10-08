@@ -68,9 +68,26 @@ const LeadAuditLogEntrySchema = z.looseObject({
   created_at: z.string(),
 });
 
+/** CRM roadmap Fase 4 ("Twenty concept: Activities") — a manual note/call
+ * entry, distinct from the audit log (which only records status changes). */
+export enum LeadActivityType {
+  NOTE = "note",
+  CALL = "call",
+}
+
+export const LeadActivityEntrySchema = z.looseObject({
+  id: z.string(),
+  lead_id: z.string(),
+  type: z.enum(LeadActivityType),
+  content: z.string(),
+  created_by_user_id: z.string().nullable(),
+  created_at: z.string(),
+});
+
 export const BackendLeadDetailResponseSchema = z.object({
   lead: BackendLeadResponseSchema,
   audit_logs: z.array(LeadAuditLogEntrySchema),
+  activities: z.array(LeadActivityEntrySchema).default([]),
 });
 
 const VendedorMetricsBreakdownSchema = z.looseObject({

@@ -13,10 +13,16 @@
 
 import { useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { useLead, useLeadDuplicates, useLeadAuditTrail } from "@/lib/api/leads";
+import {
+  useLead,
+  useLeadDuplicates,
+  useLeadAuditTrail,
+  useLeadActivities,
+} from "@/lib/api/leads";
 import { LeadStatusDropdown } from "@/components/leads/LeadStatusDropdown";
 import { DuplicateWarning } from "@/components/leads/DuplicateWarning";
-import { LeadAuditTrail } from "@/components/leads/LeadAuditTrail";
+import { LeadTimeline } from "@/components/leads/LeadTimeline";
+import { AddLeadActivityForm } from "@/components/leads/AddLeadActivityForm";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
 import {
   ArrowLeft,
@@ -105,6 +111,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
     isLoading: isAuditLoading,
     error: auditError,
   } = useLeadAuditTrail(id);
+  const { data: activities = [] } = useLeadActivities(id);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -113,7 +120,6 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
       <div className="flex items-center justify-center gap-2.5 p-20 text-ps-text-secondary">
         <Loader2 size={20} strokeWidth={2} className="animate-spin" />
         <span className="text-sm">Cargando lead...</span>
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -310,9 +316,11 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
 
         {/* Right — audit trail */}
         <div>
-          <DetailCard title="Historial de estados">
-            <LeadAuditTrail
+          <DetailCard title="Actividad">
+            <AddLeadActivityForm leadId={lead.id} />
+            <LeadTimeline
               auditLogs={auditLogs}
+              activities={activities}
               isLoading={isAuditLoading}
               error={auditError}
             />
@@ -328,8 +336,6 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
         leadId={lead.id}
         vehicleId={lead.product?.id || null}
       />
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
