@@ -1,21 +1,30 @@
 # ProSell CRM Roadmap
 
-**Fecha**: 2026-07-11 — **Fases 1-5: COMPLETAS (verificado 2026-10-07)**
+**Fecha**: 2026-07-11 — **Fases 1-5: núcleo implementado (verificado 2026-10-07/08) — ver gaps reales abajo, NO están 100% completas**
 **Objetivo**: CRM vertical para dealers de vehículos con flujo WhatsApp-first
 
-> **Nota de cierre (2026-10-07)**: este roadmap se dio por "no implementado"
-> en una sesión posterior, pero verificación real contra el código mostró
-> que las Fases 1-3 ya estaban construidas y conectadas (público `/p/[slug]`
+> **Nota de cierre (2026-10-07, corregida 2026-10-08)**: este roadmap se dio
+> por "no implementado" en una sesión posterior, pero verificación real
+> contra el código mostró que las Fases 1-3 ya estaban construidas y
+> conectadas (público `/p/[slug]` + WhatsApp share, captura de leads, vista
+> tabla `LeadList.tsx` + Kanban real con `@dnd-kit/core` en
+> `pipeline/page.tsx`). La sesión del 2026-10-07 cerró el núcleo nuevo de
+> Fase 4/5, pero una re-verificación del 2026-10-08 (a pedido del usuario,
+> contra el checklist "Tareas" original de cada fase, no solo el titular)
+> encontró que la etiqueta "✅ COMPLETA" en los headers de Fase 4 y 5 era
+> **incorrecta** — quedaban ítems reales sin construir. Ver "Tareas" de cada
+> fase abajo para el detalle tilde-por-tilde, y "Deuda técnica pendiente"
+> para la evaluación de cada gap.
 >
-> - WhatsApp share, captura de leads, vista tabla `LeadList.tsx` + Kanban
->   real con `@dnd-kit/core` en `pipeline/page.tsx`). Esta sesión cerró lo que
->   genuinamente faltaba:
+> **Lo que sí se cerró genuinamente el 2026-10-07**:
 >
-> * **Fase 4 (Activities)**: `LeadActivity` (nota/llamada) nuevo — entidad,
->   migración `lead_activities`, repo, `POST/GET /leads/{id}/activities`,
->   embebido en `LeadDetailResponse`; frontend: `LeadTimeline.tsx` (merge
->   cronológico de status-changes + activities), `AddLeadActivityForm.tsx`.
-> * **Fase 5 (Automations)**: `NotifyStaleLeadsUseCase` + `AbstractLeadRepository.list_stale()`/`touch()`
+> - **Fase 4 (Activities)**: `LeadActivity` (nota/llamada) nuevo — entidad,
+>   migración `lead_activities`, repo (create+get, sin update/delete — a
+>   propósito, mismo diseño inmutable/append-only que `LeadAuditLog`),
+>   `POST/GET /leads/{id}/activities`, embebido en `LeadDetailResponse`;
+>   frontend: `LeadTimeline.tsx` (merge cronológico de status-changes +
+>   activities), `AddLeadActivityForm.tsx`.
+> - **Fase 5 (Automations)**: `NotifyStaleLeadsUseCase` + `AbstractLeadRepository.list_stale()`/`touch()`
 >   (idempotente: notificar resetea el reloj de staleness, mismo criterio que
 >   `PruneSoldProductImagesUseCase`) + `notify_stale_leads_task.py` (Taskiq,
 >   cron diario vía `settings.notify_stale_leads_cron`). Canal de notificación:
@@ -23,40 +32,53 @@
 >   existente) — push y WhatsApp Business API quedaron deliberadamente
 >   diferidos (ninguno de los dos tiene infra en este proyecto todavía;
 >   agregarlos es una decisión de infra/costo separada, no de código).
-> * **Historial de notificaciones**: `NotificationBell.tsx` ya renderizaba
->   cualquier tipo de notificación genéricamente y ya enrutaba clicks de
->   `resource_type: "lead"` a `/vendedor/leads/{id}` — verificado con test
->   nuevo, cero cambios de código necesarios.
-> * **Panel de preferencias de notificaciones** (`settings/notifications/page.tsx`):
->   sigue siendo un placeholder de solo-frontend ("las preferencias se
->   guardan localmente... integración con el backend próximamente") — fuera
->   de alcance de esta sesión; wirearlo de verdad requiere una entidad nueva
->   de preferencias persistidas por usuario, no parte de "notificar leads
->   sin actividad".
+> - `NotificationBell.tsx` ya renderizaba cualquier tipo de notificación
+>   genéricamente y ya enrutaba clicks de `resource_type: "lead"` a
+>   `/vendedor/leads/{id}` — verificado con test nuevo, cero cambios de
+>   código necesarios. **Esto es la campanita, NO el historial de
+>   notificaciones** (ver gap abajo — se habían confundido como la misma
+>   cosa en la nota original del 2026-10-07).
 >
 > Todo bajo TDD estricto real (rojo mostrado antes de cada implementación).
-> Suite completa: backend 2684 passed, frontend 1517 passed.
+> Suite completa al cierre de esa sesión: backend 2684 passed, frontend
+> 1517 passed.
 
 ## Deuda técnica pendiente (confirmada por el usuario, 2026-10-07)
 
-**Push notifications y WhatsApp Business API/Twilio para Fase 5 —
-el usuario confirmó explícitamente que SÍ los quiere**, no es un "tal vez
-algún día": quedó diferido en esta sesión solo porque ninguno de los dos
-tiene infraestructura en el proyecto todavía (cuenta, credenciales, costo
-mensual), no porque no se necesite. Para la próxima sesión que lo tome:
+**Gaps nuevos encontrados en la re-verificación del 2026-10-08** (checklist
+"Tareas" original vs. código real, no solo el titular de la fase) — con
+evaluación de si conviene arreglarlos de una vez o dejarlos como deuda:
 
-- **Punto de integración ya preparado**: `NotifyStaleLeadsUseCase` (y
-  `CreateLeadUseCase`, que ya emite `LEAD_ASSIGNED`) solo llaman a
-  `AbstractNotificationRepository.create()` — hoy eso persiste una fila
-  in-app. Agregar push/WhatsApp es una nueva responsabilidad de
-  **entrega** (delivery), no de negocio: el use case no debería cambiar,
-  solo necesita un puerto nuevo (ej. `INotificationDeliveryService` o
-  extender el repo) que la capa de infraestructura implemente.
-- **WhatsApp Business API / Twilio**: requiere decidir proveedor (Twilio
-  vs. Meta WhatsApp Business directo), dar de alta cuenta + credenciales,
-  y aceptar el costo mensual recurrente — decisión de producto/infra que
-  el usuario debe tomar explícitamente (proveedor, presupuesto), no algo
-  para elegir en silencio en una sesión de código.
+| Gap                                                | Tamaño real                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Veredicto                                                                                                                                                                  |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase 4: "Notificaciones de recordatorio" (citas)   | **Chico, acotado** — `send_appointment_reminder()` YA existe en `i_email_service.py`/`email/service.py`, con template real (`appointment_reminder.html`); lo único que falta es UN cron task que lo dispare (mismo molde exacto que `notify_stale_leads_task.py`: buscar citas confirmadas en una ventana próxima, llamar al método que ya existe). Cero decisiones de diseño nuevas.                                                                                                                                                                                                                                                                                                                                                           | **Arreglar de una vez** — es cerrar un cable suelto, no construir una feature.                                                                                             |
+| Fase 5: "Historial de notificaciones enviadas"     | **Chico-mediano** — `GET /notifications` ya existe pero devuelve fijo "los últimos 20", sin paginación. Falta: `limit`/`offset` en el repo+endpoint, y una página frontend que liste con paginación (reusa `NotificationResponse`, sin entidad nueva).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | **Arreglar de una vez** — sin ambigüedad de diseño, es trabajo mecánico.                                                                                                   |
+| Fase 5: "Panel de configuración de notificaciones" | **Mediano-grande, con decisiones de producto reales sin resolver** — el placeholder (`(seller)/settings/notifications/page.tsx`) ya define 4 categorías (`lead-assigned`, `appointment-reminders`, `publication-status`, `pipeline-updates`) pero es 100% `useState` local, cero persistencia. Conectarlo de verdad exige: entidad nueva de preferencias por usuario, decidir si desactivar un tipo IMPIDE que `AbstractNotificationRepository.create()` cree la fila o solo la oculta en UI, y mapear las 4 categorías de la UI contra los `NotificationType` reales del backend (hoy son 2: `LEAD_ASSIGNED`, `LEAD_STALE_NO_ACTIVITY` — "publication-status"/"pipeline-updates" de la UI no tienen tipo de notificación real detrás todavía). | **Dejar como deuda documentada** (no un "próximamente" vago) — necesita que el usuario decida granularidad y semántica antes de que tenga sentido escribir el primer test. |
+
+**Actualización 2026-10-08 — Push: CERRADO. WhatsApp: puerto genérico
+listo, proveedor real sigue siendo deuda confirmada.**
+
+- **Push**: construido de punta a punta (ver Fase 5 § Tareas arriba) —
+  Web Push real vía `pywebpush`, sin cuenta de terceros. Nada pendiente
+  de código; lo único que falta para que mande notificaciones de verdad
+  es generar un par de llaves VAPID reales (`vapid_private_key`/
+  `vapid_public_key` en settings, hoy vacías = no-op seguro) y que un
+  usuario real haga click en "Activar notificaciones push".
+- **WhatsApp Business API / Twilio — el usuario confirmó explícitamente
+  que SÍ lo quiere**, no es un "tal vez algún día". El puerto
+  (`AbstractWhatsAppNotificationService`) y su wiring en el dispatcher ya
+  existen — agregar el proveedor real es escribir UN adapter nuevo
+  (reemplazar `LoggingWhatsAppNotificationService`), no tocar use cases
+  ni arquitectura. Lo que sigue bloqueado, y no es código:
+  - Decidir proveedor (Twilio vs. Meta WhatsApp Business Cloud API
+    directo) — decisión de producto/presupuesto del usuario.
+  - Verificación de negocio en Meta + número de teléfono dedicado +
+    aprobación de template de mensaje — trámites externos, días reales.
+  - Aceptar el costo mensual/por-mensaje recurrente.
+  - Resolver de dónde sale el número de WhatsApp del destinatario —
+    `User` no tiene campo de teléfono hoy; quien construya el adapter
+    real necesita decidir esto primero (documentado en el docstring de
+    `logging_whatsapp_notification_service.py`).
 - **Push notifications**: no hay ningún servicio de push (web push / FCM)
   en `infrastructure/services/` hoy — hay que elegir e integrar uno desde
   cero.
@@ -384,7 +406,7 @@ class Lead(Base):
 
 ---
 
-## FASE 4: Pipelines ($49/mes) — ✅ COMPLETA (2026-10-07)
+## FASE 4: Pipelines ($49/mes) — parcial, ver "Tareas" (corregido 2026-10-08)
 
 **Branch**: `feat/phase-4-pipelines`
 **Duración**: 4-6 semanas
@@ -448,16 +470,23 @@ class LeadActivity(Base):
 
 ### Tareas
 
-- [ ] Backend: Modelo `LeadActivity`
-- [ ] Backend: CRUD de actividades
-- [ ] Frontend: Detalle de lead con timeline
-- [ ] Frontend: Agregar nota/llamada/cita
-- [ ] Frontend: Drag & drop en kanban cambia estado
-- [ ] Frontend: Notificaciones de recordatorio
+- [x] Backend: Modelo `LeadActivity`
+- [x] Backend: CRUD de actividades (create+get — sin update/delete, a
+      propósito: `LeadActivity` es inmutable/append-only, mismo diseño que
+      `LeadAuditLog`; no es un gap, es la decisión de diseño)
+- [x] Frontend: Detalle de lead con timeline
+- [x] Frontend: Agregar nota/llamada/cita (nota/llamada nuevo esta sesión;
+      "cita" ya existía antes vía modal `AppointmentForm`)
+- [x] Frontend: Drag & drop en kanban cambia estado (ya existía de Fase 3)
+- [ ] Frontend: Notificaciones de recordatorio — **gap real, no construido**.
+      `send_appointment_reminder()` ya existe en el servicio de email con
+      template real; falta un cron task que lo dispare (mismo molde que
+      `notify_stale_leads_task.py`). Ver "Deuda técnica pendiente" — veredicto:
+      arreglar de una vez, no dejar como deuda.
 
 ---
 
-## FASE 5: Workflows ($99/mes) — ✅ COMPLETA, in-app only (2026-10-07)
+## FASE 5: Workflows ($99/mes) — parcial, ver "Tareas" (corregido 2026-10-08)
 
 **Branch**: `feat/phase-5-workflows`
 **Duración**: 6-8 semanas
@@ -495,11 +524,46 @@ async def on_lead_created(lead: Lead):
 
 ### Tareas
 
-- [ ] Backend: Cron job para leads sin actividad
-- [ ] Backend: Notificación push al dealer
-- [ ] Backend: Notificación WhatsApp (Twilio/WhatsApp Business API)
-- [ ] Frontend: Panel de configuración de notificaciones
-- [ ] Frontend: Historial de notificaciones enviadas
+- [x] Backend: Cron job para leads sin actividad (`notify_stale_leads_task.py`,
+      canal in-app únicamente)
+- [x] Backend: Notificación push al dealer (2026-10-08, TDD). Web Push real
+      (VAPID, vía `pywebpush`) — sin cuenta de terceros, gratis a cualquier
+      escala. `DeliveringNotificationRepository` (decorator sobre
+      `AbstractNotificationRepository`) + `NotificationDeliveryDispatcher`
+      fan-out: `CreateLeadUseCase` y `NotifyStaleLeadsUseCase` siguen
+      llamando `notification_repository.create()` exactamente como antes,
+      sin saber que ahora también entrega por push — el único cambio real
+      fue swapear qué repositorio concreto se construye en los 2 call
+      sites (`lead_router.py`, `notify_stale_leads_task.py`), vía
+      `notification_delivery_factory.py`. `push_subscriptions` (migración
+      nueva) + `POST/DELETE /api/v1/push/subscribe` +
+      `GET /api/v1/push/vapid-public-key`. Frontend: `usePushNotifications()`
+      (`useSyncExternalStore`, mismo patrón que `useIsMobile.ts` — sin
+      evento nativo de `Notification.permission`, se notifica manualmente
+      tras `enable()`), service worker (`public/sw.js`) y botón "Activar
+      notificaciones push" en `NotificationBell.tsx` (solo visible si el
+      permiso del navegador todavía no se pidió).
+- [x] Backend: Notificación WhatsApp — **puerto genérico listo
+      (2026-10-08), SIN proveedor real todavía** (decisión explícita del
+      usuario: "dejalo genérico"). `AbstractWhatsAppNotificationService` +
+      `LoggingWhatsAppNotificationService` (no-op, mismo patrón que
+      `LoggingSender` del email) ya está wireado en el mismo dispatcher
+      que push — agregar Twilio o Meta Cloud API el día que se decida
+      proveedor es escribir UN adapter nuevo, cero cambios en use cases
+      o en el resto de la arquitectura. Sigue bloqueado por lo de siempre:
+      verificación de negocio en Meta, número dedicado, aprobación de
+      template, costo recurrente — ningún código resuelve eso. Ver "Deuda
+      técnica pendiente".
+- [ ] Frontend: Panel de configuración de notificaciones — **gap real,
+      sigue pendiente**. El placeholder (`(seller)/settings/notifications/page.tsx`)
+      existe pero es 100% `useState` local, sin persistencia. Veredicto: dejar
+      como deuda documentada — necesita decisiones de producto (granularidad,
+      semántica de "desactivado") antes de poder escribir el primer test.
+- [ ] Frontend: Historial de notificaciones enviadas — **gap real, sigue
+      pendiente, no es lo mismo que la campanita (`NotificationBell.tsx`)**.
+      `GET /notifications` ya existe pero devuelve fijo los últimos 20, sin
+      paginación. Veredicto: arreglar de una vez, es trabajo mecánico sin
+      decisiones de diseño pendientes.
 
 ---
 
