@@ -29,14 +29,14 @@ async def notify_stale_leads_task() -> dict[str, int]:
     from prosell.infrastructure.repositories.lead_repository_impl import (
         SqlAlchemyLeadRepository,
     )
-    from prosell.infrastructure.repositories.notification_repository_impl import (
-        SqlAlchemyNotificationRepository,
+    from prosell.infrastructure.repositories.notification_delivery_factory import (
+        build_delivering_notification_repository,
     )
 
     async with async_session_maker() as session:
         use_case = NotifyStaleLeadsUseCase(
             SqlAlchemyLeadRepository(session),
-            SqlAlchemyNotificationRepository(session),
+            build_delivering_notification_repository(session),
         )
         leads_notified = await use_case.execute(stale_after_days=settings.stale_lead_days)
         await session.commit()

@@ -173,6 +173,22 @@ class Settings(BaseSettings):
         "in-app notification.",
     )
 
+    # Web Push (VAPID) — CRM roadmap Fase 5 delivery channel. Empty by
+    # default so push delivery fails safe (no-op, same fallback shape as
+    # USE_MOCK_EMAIL for the email port) until keys are generated and set.
+    vapid_private_key: str = Field(
+        default="",
+        description="VAPID private key for Web Push (empty disables push delivery).",
+    )
+    vapid_public_key: str = Field(
+        default="",
+        description="VAPID public key, served to the frontend for PushManager.subscribe().",
+    )
+    vapid_subject: str = Field(
+        default="mailto:admin@prosell.saas",
+        description="VAPID claims 'sub' - a contact URI for push services to reach the sender.",
+    )
+
     # =============================================================================
     # JWT (RSA Keys)
     # =============================================================================

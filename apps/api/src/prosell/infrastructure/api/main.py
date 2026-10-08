@@ -45,6 +45,7 @@ from prosell.infrastructure.api.routers import (
     org_verticals_router,
     product_router,
     publisher_router,
+    push_router,
     team_router,
     user_branch_router,
     user_router,
@@ -363,6 +364,12 @@ app.include_router(
     publisher_router,
     prefix="/api/v1",
     tags=["Publisher"],
+)
+
+app.include_router(
+    push_router,
+    prefix="/api/v1",
+    tags=["Push Notifications"],
 )
 
 app.include_router(

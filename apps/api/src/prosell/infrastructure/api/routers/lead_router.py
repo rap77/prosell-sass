@@ -50,8 +50,8 @@ from prosell.infrastructure.repositories.lead_repository_impl import (
     LeadWithProduct,
     SqlAlchemyLeadRepository,
 )
-from prosell.infrastructure.repositories.notification_repository_impl import (
-    SqlAlchemyNotificationRepository,
+from prosell.infrastructure.repositories.notification_delivery_factory import (
+    build_delivering_notification_repository,
 )
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 from prosell.infrastructure.repositories.team_repository_impl import (
@@ -95,7 +95,7 @@ async def get_create_lead_use_case(
         team_repository=SqlAlchemyTeamRepository(session),
         team_member_repository=SqlAlchemyTeamMemberRepository(session),
         assignment_engine=_shared_assignment_engine,
-        notification_repository=SqlAlchemyNotificationRepository(session),
+        notification_repository=build_delivering_notification_repository(session),
     )
 
 

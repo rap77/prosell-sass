@@ -42,6 +42,7 @@ from prosell.infrastructure.models.product_image_model import ProductImageModel
 from prosell.infrastructure.models.product_model import ProductAuditLogModel, ProductModel
 from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
 from prosell.infrastructure.models.publication_model import PublicationModel
+from prosell.infrastructure.models.push_subscription_model import PushSubscriptionModel
 from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
 from prosell.infrastructure.models.session_model import SessionModel
 from prosell.infrastructure.models.team_model import (
@@ -85,6 +86,7 @@ __all__ = [
     "ProductModel",
     "ProductOwnershipModel",
     "PublicationModel",
+    "PushSubscriptionModel",
     "RoleModel",
     "SessionModel",
     "TeamInvitationModel",

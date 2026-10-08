@@ -29,6 +29,7 @@ from prosell.infrastructure.api.routers.product_router import (
 )
 from prosell.infrastructure.api.routers.product_router import router as product_router
 from prosell.infrastructure.api.routers.publisher_router import router as publisher_router
+from prosell.infrastructure.api.routers.push_router import router as push_router
 from prosell.infrastructure.api.routers.team_router import router as team_router
 from prosell.infrastructure.api.routers.user_branch_router import router as user_branch_router
 from prosell.infrastructure.api.routers.user_router import router as user_router
@@ -57,6 +58,7 @@ __all__ = [
     "org_verticals_router",
     "product_router",
     "publisher_router",
+    "push_router",
     "team_router",
     "user_branch_router",
     "user_router",
