@@ -69,13 +69,13 @@
 
 ## Estado general
 
-| Bloque | Descripción                                                                           | Estado                                                                                              |
-| ------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                                    |
-| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — 57/57 call sites migrados, verificado en staging                             |
-| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 3/7 ítems (3.0, 3.1, 3.2) + prerequisito 3.2a, TDD estricto desde acá |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                                      |
-| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                      |
+| Bloque | Descripción                                                                           | Estado                                                                                                                                                                                             |
+| ------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                                                                                                                                   |
+| 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — ver nota de reconciliación 53 vs 57 abajo; patrón viejo verificado en CERO sobre todo `src/` (re-confirmado 2026-10-08), eso es la prueba de completitud real, no el conteo |
+| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 3/7 ítems (3.0, 3.1, 3.2) + prerequisito 3.2a, TDD estricto desde acá                                                                                                |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                                                                                                                                     |
+| 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                                                                                                                     |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
 1 (sin dependencias) → 2 (todo lo demás depende de esto) → 3 (sin UI el motor
@@ -233,11 +233,23 @@ no es usable) → 4 y 5 (prioridad de negocio, en paralelo entre sí).
         se llama directo con su firma real, así que su fake repo necesitó
         implementar el Protocol completo de verdad. Suite completa: 2573
         passed. Verificado en staging real (reinicio + login).
-  - [~] **EN CURSO — el número real es 57, no 32** (corregido dos veces al
-    reverificar archivo por archivo — ver "Estado exacto" abajo).
-    2/57 migrados (`org_router.py`). Los 2 patrones de migración ya
-    están resueltos y probados — lo que queda es mecánico, archivo
-    por archivo, con la misma verificación de siempre.
+  - [x] **Nota de reconciliación (2026-10-08, auditoría checklist-vs-código
+        a pedido del usuario)**: la estimación inicial de "57" (vs. los 32 del
+        primer grep) nunca se corrigió en el header de la tabla de "Estado
+        general" ni acá arriba, aunque el desglose archivo-por-archivo real
+        (abajo: `org_router.py` 2 + `org_verticals_router.py` 1 +
+        `admin_organizations_router.py` 12 + `product_router.py` 38 = **53**)
+        sí se fue corrigiendo en cada archivo a medida que se re-grepeaba
+        (mismo patrón ya documentado varias veces en este mismo workbook: "el
+        conteo original siempre hay que re-grepearlo"). La discrepancia 57 vs
+        53 es puramente de contabilidad del número, no de seguridad — la
+        prueba real de completitud no es ningún conteo, es el grep final
+        exhaustivo de la línea 512 (`rg` del patrón viejo sobre TODO `src/` →
+        0 matches reales), **re-corrido y confirmado de nuevo el 2026-10-08**:
+        mismo resultado, cero call sites reales con el patrón viejo en todo el
+        código. El motor nuevo está en efecto en el 100% de los lugares que
+        importan, independientemente de si el número correcto histórico era
+        53 o 57.
 
 ### Estado EXACTO de la migración de call sites (bloque 2, último ítem) — leer esto primero al retomar
 
