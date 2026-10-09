@@ -10,6 +10,7 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
@@ -399,6 +400,8 @@ class TestUpdateLeadStatusEndpoint:
     async def test_update_status_tenant_isolation(self, db_session, test_organization):
         """Should not update lead from different tenant."""
         from prosell.infrastructure.models.organization_model import OrganizationModel
+        from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+        from prosell.infrastructure.models.user_model import UserModel
 
         # Create second tenant
         tenant2_id = uuid4()
@@ -413,8 +416,25 @@ class TestUpdateLeadStatusEndpoint:
         db_session.add(org2)
         await db_session.flush()
 
-        # Create lead in tenant1
-        user_t1 = make_user_entity(RoleType.SALES_AGENT, test_organization.tenant_id)
+        # Create a real user in tenant1 with SALES_AGENT role
+        sales_agent_role = await db_session.execute(
+            select(RoleModel).where(RoleModel.role_type == "sales_agent", RoleModel.is_system_role)
+        )
+        sales_agent_role = sales_agent_role.scalar_one()
+
+        user_t1 = UserModel(
+            id=uuid4(),
+            email=f"t1-{uuid4().hex[:6]}@test.com",
+            full_name="Tenant1 User",
+            tenant_id=test_organization.tenant_id,
+            status="active",
+            email_verified=True,
+            password_hash="hash",
+        )
+        db_session.add(user_t1)
+        await db_session.flush()
+        db_session.add(UserRoleModel(id=uuid4(), user_id=user_t1.id, role_id=sales_agent_role.id))
+        await db_session.flush()
 
         async def override_session() -> AsyncGenerator:
             yield db_session
@@ -436,8 +456,21 @@ class TestUpdateLeadStatusEndpoint:
             assert create_resp.status_code == 201
             lead_id = create_resp.json()["id"]
 
-        # Try to update from tenant2
-        user_t2 = make_user_entity(RoleType.SALES_AGENT, tenant2_id)
+        # Create a real user in tenant2 with SALES_AGENT role
+        user_t2 = UserModel(
+            id=uuid4(),
+            email=f"t2-{uuid4().hex[:6]}@test.com",
+            full_name="Tenant2 User",
+            tenant_id=tenant2_id,
+            status="active",
+            email_verified=True,
+            password_hash="hash",
+        )
+        db_session.add(user_t2)
+        await db_session.flush()
+        db_session.add(UserRoleModel(id=uuid4(), user_id=user_t2.id, role_id=sales_agent_role.id))
+        await db_session.flush()
+
         app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: user_t2
 
         async with AsyncClient(

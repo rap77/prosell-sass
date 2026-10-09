@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 
 
 class AbstractAppointmentRepository(ABC):
@@ -33,6 +34,9 @@ class AbstractAppointmentRepository(ABC):
         self,
         appointment_id: UUID,
         tenant_id: UUID,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Appointment | None:
         """Get appointment by ID with tenant isolation.
 
@@ -105,6 +109,9 @@ class AbstractAppointmentRepository(ABC):
         appointment_id: UUID,
         tenant_id: UUID,
         new_status: AppointmentStatus,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Appointment:
         """Update appointment status.
 

@@ -1051,11 +1051,51 @@ inventar detalle de implementación que todavía no se decidió)_
 
 **Bloque 3 completo: 7/7 ítems — backend Y frontend.** Después de este
 bloque: Bloque 4 (zona Leads/CRM + catálogo público/landing) y Bloque 5
-(UI de gestión de assignments de Facebook) — ninguno arrancado.
+(UI de gestión de assignments de Facebook) — Bloque 4 en progreso.
 
 ## Bloque 4 — Zona Leads/CRM + catálogo público/landing (§7 del diagnóstico)
 
-- [ ] _(sin desglosar todavía)_
+- [x] 4.0 — Migración de grants para zonas `leads` y `appointments` (2026-10-08).
+      Migración `20261008_0003` — añade grants CRUD para `leads` y
+      `appointments` a los 4 roles de sistema existentes en la BD de test
+      (`super_admin`, `admin`, `manager`, `sales_agent`; `sales_user` y
+      `viewer` no existen en el contenedor compartido, se saltan por diseño
+      como en `20261006_0002`). Scope por defecto: `super_admin`/`admin`=`all`,
+      `manager`/`sales_agent`=`own` (consistente con seed `20261006_0002`).
+      Verificado: upgrade contra `prosell-test-pg` (Postgres 17 real), 30 grants
+      insertados, downgrade simétrico probado.
+- [x] 4.1 — Backend: `lead_router.py` wireado a `require_zone_action` (2026-10-08).
+      Endpoints: `POST /leads` → `leads:create`, `GET /leads` → `leads:read`,
+      `GET /leads/metrics` → `leads:read`, `GET /leads/{id}` → `leads:read`,
+      `POST /leads/{id}/activities` → `leads:update`,
+      `PUT /leads/{id}/status` → `leads:update`,
+      `PUT /leads/{id}/assign` → `leads:update`,
+      `GET /leads/{id}/duplicates` → `leads:read`.
+      Check `tenant_id` restaurado en cada endpoint (regla 6 — GGA hallazgos
+      preexistentes). TDD: test `test_update_status_tenant_isolation` arreglado
+      para usar usuario real con rol persistido (antes fabricaba entidad sin
+      grants en BD). Suite completa backend: 2710 passed.
+- [x] 4.2 — Backend: `appointment_router.py` wireado a `require_zone_action`
+      (2026-10-08). Endpoints: `POST /appointments` → `appointments:create`,
+      `GET /appointments` → `appointments:read`,
+      `GET /appointments/{id}` → `appointments:read`,
+      `PUT /appointments/{id}` → `appointments:update`,
+      `PUT /appointments/{id}/status` → `appointments:update`.
+      Check `tenant_id` restaurado. Suite completa backend: 2710 passed.
+- [x] 4.3 — Tests de regresión cross-tenant + enforcement real de ROLE_SCOPE
+      (2026-10-08). `OwnScope` filtra `Lead.vendedor_id == current_user.id`;
+      las citas heredan ese alcance mediante su `lead` asociado. `ExplicitOrgsScope`
+      solo permite el tenant autenticado cuando este está incluido explícitamente,
+      sin ampliar el límite de tenant. Las firmas de repositorios, use cases,
+      routers y dobles de prueba propagan `actor_id` de forma coherente para las
+      operaciones de leads, duplicados y citas, incluida la creación de una cita.
+      Validado: Ruff sobre los archivos backend tocados sin hallazgos, Pyright
+      `0 errors`, y pytest focalizado `72 passed` (repositorios, casos de uso y
+      rutas de leads/citas).
+- [ ] 4.4 — Verificar en staging real (pendiente).
+- [ ] 4.5 — Frontend: listado/creación leads, listado/creación appointments
+      (pendiente — requiere stack dev levantado).
+- [ ] 4.6 — Catálogo público/landing (§7 diagnóstico) — no arrancado.
 
 ## Bloque 5 — UI de gestión de assignments FB
 

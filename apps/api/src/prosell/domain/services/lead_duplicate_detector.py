@@ -14,6 +14,11 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.value_objects.permission_scope import (
+    AllScope,
+    ExplicitOrgsScope,
+    OwnScope,
+)
 
 
 @dataclass
@@ -50,6 +55,8 @@ class LeadDuplicateDetector:
         phone: str | None = None,
         tenant_id: UUID | None = None,
         exclude_lead_id: UUID | None = None,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[DuplicateMatch]:
         """
         Find potential duplicate leads.
@@ -59,6 +66,8 @@ class LeadDuplicateDetector:
             phone: Buyer phone to match (will be normalized)
             tenant_id: Tenant context for filtering (required)
             exclude_lead_id: Exclude this lead from results (useful for updates)
+            scope: User's effective ROLE_SCOPE (enforces own vs all visibility)
+            actor_id: Authenticated user ID for OwnScope evaluation
 
         Returns:
             List of DuplicateMatch objects, sorted by confidence
@@ -78,6 +87,8 @@ class LeadDuplicateDetector:
             email_matches = await self.lead_repository.find_by_email(
                 tenant_id=tenant_id,
                 email=email,
+                scope=scope,
+                actor_id=actor_id,
             )
             for lead in email_matches:
                 if exclude_lead_id and lead.id == exclude_lead_id:
@@ -99,6 +110,8 @@ class LeadDuplicateDetector:
                 phone_matches = await self.lead_repository.find_by_phone(
                     tenant_id=tenant_id,
                     phone=normalized_phone,
+                    scope=scope,
+                    actor_id=actor_id,
                 )
                 for lead in phone_matches:
                     if exclude_lead_id and lead.id == exclude_lead_id:
@@ -122,6 +135,8 @@ class LeadDuplicateDetector:
                     tenant_id=tenant_id,
                     email=email,
                     phone=normalized_phone,
+                    scope=scope,
+                    actor_id=actor_id,
                 )
                 for lead in combined_matches:
                     if exclude_lead_id and lead.id == exclude_lead_id:
@@ -179,6 +194,8 @@ class LeadDuplicateDetector:
         phone: str | None = None,
         tenant_id: UUID | None = None,
         exclude_lead_id: UUID | None = None,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> bool:
         """
         Check if any duplicates exist.
@@ -190,6 +207,8 @@ class LeadDuplicateDetector:
             phone: Buyer phone to match
             tenant_id: Tenant context for filtering (required)
             exclude_lead_id: Exclude this lead from results
+            scope: User's effective ROLE_SCOPE (enforces own vs all visibility)
+            actor_id: Authenticated user ID for OwnScope evaluation
 
         Returns:
             True if duplicates exist, False otherwise
@@ -199,5 +218,7 @@ class LeadDuplicateDetector:
             phone=phone,
             tenant_id=tenant_id,
             exclude_lead_id=exclude_lead_id,
+            scope=scope,
+            actor_id=actor_id,
         )
         return len(duplicates) > 0

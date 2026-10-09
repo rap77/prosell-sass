@@ -10,6 +10,11 @@ from prosell.application.dto.lead.response import (
 )
 from prosell.domain.exceptions.lead_exceptions import LeadNotFoundException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.value_objects.permission_scope import (
+    AllScope,
+    ExplicitOrgsScope,
+    OwnScope,
+)
 
 
 class GetLeadDetailsUseCase:
@@ -18,6 +23,7 @@ class GetLeadDetailsUseCase:
 
     Business rules:
     - Lead must exist and belong to the caller's tenant
+    - ROLE_SCOPE is enforced: own-scoped users can only access their assigned leads
     - Audit logs are returned in descending chronological order (most recent first)
     - Product data is included if lead has an associated product
     """
@@ -29,11 +35,15 @@ class GetLeadDetailsUseCase:
         self,
         lead_id: UUID,
         tenant_id: UUID,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
         audit_log_limit: int = 50,
     ) -> LeadDetailResponse:
         lead = await self.lead_repository.get_by_id(
             lead_id,
             tenant_id,
+            scope=scope,
+            actor_id=actor_id,
         )
 
         if not lead:
@@ -45,11 +55,15 @@ class GetLeadDetailsUseCase:
         audit_logs = await self.lead_repository.get_audit_logs(
             lead_id=lead_id,
             tenant_id=tenant_id,
+            scope=scope,
+            actor_id=actor_id,
             limit=audit_log_limit,
         )
         activities = await self.lead_repository.get_activities(
             lead_id=lead_id,
             tenant_id=tenant_id,
+            scope=scope,
+            actor_id=actor_id,
         )
 
         return LeadDetailResponse(

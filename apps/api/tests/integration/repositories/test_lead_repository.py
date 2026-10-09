@@ -14,6 +14,7 @@ from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
 )
 from prosell.domain.value_objects.lead_source import LeadSource
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 
 # =============================================================================
@@ -114,6 +115,61 @@ class TestLeadRepositoryGetById:
         found = await repo.get_by_id(uuid4(), tenant_id)
 
         assert found is None
+
+    @pytest.mark.asyncio
+    async def test_own_scope_hides_lead_assigned_to_another_sales_agent(
+        self, db_session, test_organization, test_user
+    ):
+        """OwnScope exposes only leads assigned to the acting sales agent."""
+        repo = SqlAlchemyLeadRepository(db_session)
+        lead = make_lead(tenant_id=test_organization.tenant_id, vendedor_id=test_user.id)
+        await repo.create(lead)
+
+        hidden = await repo.get_by_id(
+            lead.id,
+            test_organization.tenant_id,
+            scope=OwnScope(),
+            actor_id=uuid4(),
+        )
+
+        assert hidden is None
+
+    @pytest.mark.asyncio
+    async def test_all_scope_can_read_any_tenant_lead(
+        self, db_session, test_organization, test_user
+    ):
+        """AllScope retains tenant-wide visibility regardless of assignment."""
+        repo = SqlAlchemyLeadRepository(db_session)
+        lead = make_lead(tenant_id=test_organization.tenant_id, vendedor_id=test_user.id)
+        await repo.create(lead)
+
+        visible = await repo.get_by_id(
+            lead.id,
+            test_organization.tenant_id,
+            scope=AllScope(),
+            actor_id=uuid4(),
+        )
+
+        assert visible is not None
+        assert visible.id == lead.id
+
+    @pytest.mark.asyncio
+    async def test_explicit_org_scope_requires_the_current_tenant_to_be_granted(
+        self, db_session, test_organization, test_user
+    ):
+        """ExplicitOrgsScope never bypasses the tenant boundary."""
+        repo = SqlAlchemyLeadRepository(db_session)
+        lead = make_lead(tenant_id=test_organization.tenant_id, vendedor_id=test_user.id)
+        await repo.create(lead)
+
+        hidden = await repo.get_by_id(
+            lead.id,
+            test_organization.tenant_id,
+            scope=ExplicitOrgsScope(organization_ids=frozenset({uuid4()})),
+            actor_id=test_user.id,
+        )
+
+        assert hidden is None
 
 
 class TestLeadRepositoryDuplicateDetection:

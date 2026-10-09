@@ -37,9 +37,14 @@ from prosell.domain.exceptions.lead_exceptions import (
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.services.lead_assignment_rules_engine import LeadAssignmentRulesEngine
 from prosell.domain.services.lead_duplicate_detector import DuplicateMatch, LeadDuplicateDetector
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_user_repository,
+)
+from prosell.infrastructure.api.dependencies_zone_action import (
+    get_effective_scope,
+    require_zone_action,
 )
 from prosell.infrastructure.api.schemas.lead_schemas import (
     DuplicateMatchResponse,
@@ -65,6 +70,37 @@ router = APIRouter()
 # Shared assignment engine singleton — round-robin state must persist across requests
 # so that consecutive leads are distributed evenly across organizations.
 _shared_assignment_engine = LeadAssignmentRulesEngine()
+
+
+# =============================================================================
+# LEADS ZONE PERMISSION DEPENDENCIES
+# =============================================================================
+
+require_leads_create = require_zone_action(
+    "leads", "create", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_leads_read = require_zone_action(
+    "leads", "read", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_leads_update = require_zone_action(
+    "leads", "update", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_leads_delete = require_zone_action(
+    "leads", "delete", auth_dependency=get_current_auth_user_from_cookie
+)
+
+
+# Scope-aware dependencies (enforce ROLE_SCOPE: own vs all)
+require_leads_read_with_scope = require_zone_action(
+    "leads", "read", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_leads_update_with_scope = require_zone_action(
+    "leads", "update", auth_dependency=get_current_auth_user_from_cookie
+)
 
 
 # =============================================================================
@@ -162,13 +198,14 @@ async def get_create_lead_activity_use_case(
 )
 async def create_lead(
     request: CreateLeadRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_create)],
     use_case: Annotated[CreateLeadUseCase, Depends(get_create_lead_use_case)],
 ) -> LeadResponse:
     """
     Create a new lead manually.
 
     - Requires authentication (JWT or cookie).
+    - Requires leads:create permission.
     - tenant_id is extracted from the authenticated user — no spoofing.
     - Returns 409 if a duplicate lead is detected (same buyer + vehicle within 24h).
     """
@@ -195,7 +232,11 @@ async def create_lead(
     summary="List leads (role-based)",
 )
 async def list_leads(
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_read_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[ListLeadsUseCase, Depends(get_list_leads_use_case)],
     limit: Annotated[int, Query(ge=1, le=500)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -207,8 +248,9 @@ async def list_leads(
     """
     List leads with pagination and role-based filtering.
 
-    - SALES_AGENT: sees only leads assigned to themselves.
-    - MANAGER / ADMIN / SUPER_ADMIN: sees all leads in the tenant.
+    - Requires leads:read permission.
+    - Enforces ROLE_SCOPE: own-scoped users see only their assigned leads.
+    - MANAGER / ADMIN / SUPER_ADMIN (AllScope): see all leads in the tenant.
     - vendedor_id filter allows managers to filter by specific vendedor.
     - tenant_id is always derived from the JWT — no cross-tenant access.
     """
@@ -223,7 +265,11 @@ async def list_leads(
         status=lead_status,
         vendedor_id=vendedor_id,
     )
-    return await use_case.execute(user=current_user, request=list_request)
+    return await use_case.execute(
+        user=current_user,
+        request=list_request,
+        scope=effective_scope,
+    )
 
 
 @router.get(
@@ -232,7 +278,11 @@ async def list_leads(
     summary="Get team lead metrics",
 )
 async def get_team_metrics(
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_read_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[GetTeamMetricsUseCase, Depends(get_team_metrics_use_case)],
 ) -> TeamMetricsResponse:
     """
@@ -255,6 +305,7 @@ async def get_team_metrics(
         return await use_case.execute(
             tenant_id=current_user.tenant_id,
             user=current_user,
+            scope=effective_scope,
         )
     except PermissionError as e:
         raise HTTPException(
@@ -270,13 +321,19 @@ async def get_team_metrics(
 )
 async def get_lead_details(
     lead_id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_read_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[GetLeadDetailsUseCase, Depends(get_lead_details_use_case)],
 ) -> LeadDetailResponse:
     """
     Get a single lead with its full audit log history.
 
-    - Returns 404 if lead does not exist or belongs to a different tenant.
+    - Requires leads:read permission.
+    - Enforces ROLE_SCOPE: own-scoped users can only access their assigned leads.
+    - Returns 404 if lead does not exist or belongs to a different tenant/scope.
     - Audit logs are ordered from most recent to oldest.
     """
     if current_user.tenant_id is None:
@@ -288,6 +345,8 @@ async def get_lead_details(
         return await use_case.execute(
             lead_id=lead_id,
             tenant_id=current_user.tenant_id,
+            scope=effective_scope,
+            actor_id=current_user.id,
         )
     except LeadNotFoundException as e:
         raise HTTPException(
@@ -305,7 +364,11 @@ async def get_lead_details(
 async def create_lead_activity(
     lead_id: UUID,
     request: CreateLeadActivityRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_update_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[CreateLeadActivityUseCase, Depends(get_create_lead_activity_use_case)],
 ) -> LeadActivityResponse:
     """
@@ -314,7 +377,9 @@ async def create_lead_activity(
     CRM roadmap Fase 4 ("Twenty concept: Activities") — distinct from
     the automatic LeadAuditLog, which only records status transitions.
 
-    Returns 404 if lead does not exist or belongs to a different tenant.
+    - Requires leads:update permission.
+    - Enforces ROLE_SCOPE: own-scoped users can only add activities to their assigned leads.
+    - Returns 404 if lead does not exist or belongs to a different tenant/scope.
     """
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -327,6 +392,8 @@ async def create_lead_activity(
             request=request,
             tenant_id=current_user.tenant_id,
             created_by_user_id=current_user.id,
+            scope=effective_scope,
+            actor_id=current_user.id,
         )
     except LeadNotFoundException as e:
         raise HTTPException(
@@ -343,7 +410,11 @@ async def create_lead_activity(
 async def update_lead_status(
     lead_id: UUID,
     request: UpdateLeadStatusRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_update_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[UpdateLeadStatusUseCase, Depends(get_update_lead_status_use_case)],
 ) -> LeadResponse:
     """
@@ -356,7 +427,9 @@ async def update_lead_status(
     - appointment_set → lost
     - lost → (terminal, no further transitions)
 
-    Returns 404 if lead not found, 422 if transition is invalid.
+    - Requires leads:update permission.
+    - Enforces ROLE_SCOPE: own-scoped users can only update their assigned leads.
+    - Returns 404 if lead not found, 422 if transition is invalid.
     """
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -369,6 +442,8 @@ async def update_lead_status(
             request=request,
             tenant_id=current_user.tenant_id,
             changed_by_user_id=current_user.id,
+            scope=effective_scope,
+            actor_id=current_user.id,
         )
     except LeadNotFoundException as e:
         raise HTTPException(
@@ -390,17 +465,22 @@ async def update_lead_status(
 async def assign_lead(
     lead_id: UUID,
     request: AssignLeadRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_update_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[AssignLeadToVendedorUseCase, Depends(get_assign_lead_use_case)],
 ) -> LeadResponse:
     """
     Assign or reassign a lead to a vendedor.
 
-    - Managers can reassign leads to any vendedor in their tenant.
+    - Requires leads:update permission.
+    - Enforces ROLE_SCOPE: own-scoped users cannot reassign leads outside their scope.
+    - Managers (AllScope) can reassign leads to any vendedor in their tenant.
     - Setting vendedor_id to null unassigns the lead.
-    - Lead must exist and belong to the tenant.
+    - Lead must exist and belong to the tenant/scope.
     - Returns 404 if lead not found.
-    - Returns 403 if user has no tenant_id.
     """
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -412,6 +492,8 @@ async def assign_lead(
             lead_id=lead_id,
             request=request,
             tenant_id=current_user.tenant_id,
+            scope=effective_scope,
+            actor_id=current_user.id,
         )
     except LeadNotFoundException as e:
         raise HTTPException(
@@ -427,7 +509,11 @@ async def assign_lead(
 )
 async def get_lead_duplicates(
     lead_id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_leads_read_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
     detector: Annotated[LeadDuplicateDetector, Depends(get_duplicate_detector)],
 ) -> DuplicatesResponse:
@@ -438,8 +524,10 @@ async def get_lead_duplicates(
     excluding the lead itself. Useful for displaying duplicate warnings
     in the lead detail view without re-running detection on creation.
 
+    - Requires leads:read permission.
+    - Enforces ROLE_SCOPE: own-scoped users can only probe duplicates for their accessible leads.
     - Returns empty list if no duplicates found.
-    - Returns 404 if lead does not belong to the current tenant.
+    - Returns 404 if lead does not belong to the current tenant/scope.
     """
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -448,7 +536,12 @@ async def get_lead_duplicates(
         )
 
     # Fetch the lead to extract contact fields
-    lead_result = await lead_repo.get_by_id(lead_id=lead_id, tenant_id=current_user.tenant_id)
+    lead_result = await lead_repo.get_by_id(
+        lead_id=lead_id,
+        tenant_id=current_user.tenant_id,
+        scope=effective_scope,
+        actor_id=current_user.id,
+    )
     if not lead_result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -462,6 +555,8 @@ async def get_lead_duplicates(
         phone=lead.buyer_phone,
         tenant_id=current_user.tenant_id,
         exclude_lead_id=lead_id,
+        scope=effective_scope,
+        actor_id=current_user.id,
     )
 
     return DuplicatesResponse(

@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -124,6 +124,7 @@ class RoleGrantModel(Base):
     """
 
     __tablename__ = "role_grants"
+    __table_args__ = (UniqueConstraint("role_id", "zone", "action"),)
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     role_id: Mapped[UUID] = mapped_column(

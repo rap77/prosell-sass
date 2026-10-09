@@ -17,6 +17,7 @@ from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.application.use_cases.appointment.create_appointment import CreateAppointmentUseCase
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.exceptions import LeadNotFoundException
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
     AppointmentTimeValidationException,
@@ -122,9 +123,18 @@ class TestCreateAppointmentUseCase:
         assert response.status == AppointmentStatus.SCHEDULED
 
         # Verify lead status was updated to appointment_set
-        mock_lead_repository.get_by_id.assert_awaited_once_with(lead_id, tenant_id)
+        mock_lead_repository.get_by_id.assert_awaited_once_with(
+            lead_id,
+            tenant_id,
+            scope=None,
+            actor_id=None,
+        )
         mock_lead_repository.update_status.assert_awaited_once_with(
-            lead_id=lead_id, tenant_id=tenant_id, new_status=LeadStatus.APPOINTMENT_SET
+            lead_id=sample_lead.id,
+            tenant_id=tenant_id,
+            new_status=LeadStatus.APPOINTMENT_SET,
+            scope=None,
+            actor_id=None,
         )
 
         # Verify appointment repository methods were called
@@ -321,10 +331,11 @@ class TestCreateAppointmentUseCase:
             scheduled_at=scheduled_at,
         )
 
-        # Should succeed but NOT update lead status
-        response = await create_appointment_use_case.execute(request, tenant_id)
+        # A missing lead cannot be authorized for appointment creation.
+        with pytest.raises(LeadNotFoundException):
+            await create_appointment_use_case.execute(request, tenant_id)
 
-        assert isinstance(response, AppointmentResponse)
+        mock_appointment_repository.create.assert_not_awaited()
         mock_lead_repository.update_status.assert_not_awaited()
 
     @pytest.mark.asyncio

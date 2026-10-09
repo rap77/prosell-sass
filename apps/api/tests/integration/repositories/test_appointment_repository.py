@@ -18,6 +18,7 @@ from prosell.domain.entities.appointment import Appointment
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
 )
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.models.lead_model import LeadModel
 from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.repositories.appointment_repository_impl import (
@@ -34,7 +35,12 @@ def _next_weekday_business_hour() -> datetime:
     return base
 
 
-async def _create_prereqs(db_session, tenant_id: UUID, category_id: UUID) -> tuple[UUID, UUID]:
+async def _create_prereqs(
+    db_session,
+    tenant_id: UUID,
+    category_id: UUID,
+    vendedor_id: UUID | None = None,
+) -> tuple[UUID, UUID]:
     """Insert a lead + product so the appointment FKs are satisfied.
 
     Returns (lead_id, product_id).
@@ -44,6 +50,7 @@ async def _create_prereqs(db_session, tenant_id: UUID, category_id: UUID) -> tup
         tenant_id=tenant_id,
         buyer_name="Test Buyer",
         buyer_email=f"buyer-{uuid4().hex[:6]}@test.com",
+        vendedor_id=vendedor_id,
         source="manual",
         status="new",
     )
@@ -171,3 +178,100 @@ async def test_create_appointment_allows_non_overlap(
     created_second = await repo.create(second)
 
     assert created_second.id == second.id
+
+
+@pytest.mark.asyncio
+async def test_own_scope_hides_appointment_for_another_sales_agent(
+    db_session, test_organization, test_user, test_category
+) -> None:
+    """OwnScope follows the appointment lead's assigned sales agent."""
+    repo = SqlAlchemyAppointmentRepository(db_session)
+    tenant_id = test_organization.tenant_id
+    lead_id, product_id = await _create_prereqs(
+        db_session,
+        tenant_id,
+        test_category.id,
+        vendedor_id=test_user.id,
+    )
+    appointment = Appointment.create(
+        lead_id=lead_id,
+        user_id=test_user.id,
+        product_id=product_id,
+        tenant_id=tenant_id,
+        scheduled_at=_next_weekday_business_hour(),
+    )
+    await repo.create(appointment)
+
+    hidden = await repo.get_by_id(
+        appointment.id,
+        tenant_id,
+        scope=OwnScope(),
+        actor_id=uuid4(),
+    )
+
+    assert hidden is None
+
+
+@pytest.mark.asyncio
+async def test_all_scope_can_read_any_tenant_appointment(
+    db_session, test_organization, test_user, test_category
+) -> None:
+    """AllScope retains tenant-wide appointment visibility."""
+    repo = SqlAlchemyAppointmentRepository(db_session)
+    tenant_id = test_organization.tenant_id
+    lead_id, product_id = await _create_prereqs(
+        db_session,
+        tenant_id,
+        test_category.id,
+        vendedor_id=test_user.id,
+    )
+    appointment = Appointment.create(
+        lead_id=lead_id,
+        user_id=test_user.id,
+        product_id=product_id,
+        tenant_id=tenant_id,
+        scheduled_at=_next_weekday_business_hour(),
+    )
+    await repo.create(appointment)
+
+    visible = await repo.get_by_id(
+        appointment.id,
+        tenant_id,
+        scope=AllScope(),
+        actor_id=uuid4(),
+    )
+
+    assert visible is not None
+    assert visible.id == appointment.id
+
+
+@pytest.mark.asyncio
+async def test_explicit_org_scope_hides_appointment_when_tenant_is_not_granted(
+    db_session, test_organization, test_user, test_category
+) -> None:
+    """ExplicitOrgsScope is constrained by the authenticated tenant."""
+    repo = SqlAlchemyAppointmentRepository(db_session)
+    tenant_id = test_organization.tenant_id
+    lead_id, product_id = await _create_prereqs(
+        db_session,
+        tenant_id,
+        test_category.id,
+        vendedor_id=test_user.id,
+    )
+    appointment = Appointment.create(
+        lead_id=lead_id,
+        user_id=test_user.id,
+        product_id=product_id,
+        tenant_id=tenant_id,
+        scheduled_at=_next_weekday_business_hour(),
+    )
+    await repo.create(appointment)
+
+    hidden = await repo.get_by_id(
+        appointment.id,
+        tenant_id,
+        scope=ExplicitOrgsScope(organization_ids=frozenset({uuid4()})),
+        actor_id=test_user.id,
+    )
+
+    assert hidden is None

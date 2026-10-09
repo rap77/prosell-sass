@@ -28,9 +28,14 @@ from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentTimeValidationException,
 )
 from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_email_service,
+)
+from prosell.infrastructure.api.dependencies_zone_action import (
+    get_effective_scope,
+    require_zone_action,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.appointment_repository_impl import (
@@ -41,6 +46,37 @@ from prosell.infrastructure.repositories.product_repository_impl import SqlAlche
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 
 router = APIRouter()
+
+
+# =============================================================================
+# APPOINTMENTS ZONE PERMISSION DEPENDENCIES
+# =============================================================================
+
+require_appointments_create_with_scope = require_zone_action(
+    "appointments", "create", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_appointments_read = require_zone_action(
+    "appointments", "read", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_appointments_update = require_zone_action(
+    "appointments", "update", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_appointments_delete = require_zone_action(
+    "appointments", "delete", auth_dependency=get_current_auth_user_from_cookie
+)
+
+
+# Scope-aware dependencies (enforce ROLE_SCOPE: own vs all)
+require_appointments_read_with_scope = require_zone_action(
+    "appointments", "read", auth_dependency=get_current_auth_user_from_cookie
+)
+
+require_appointments_update_with_scope = require_zone_action(
+    "appointments", "update", auth_dependency=get_current_auth_user_from_cookie
+)
 
 
 # =============================================================================
@@ -131,12 +167,17 @@ async def get_confirm_appointment_use_case(
 )
 async def create_appointment(
     request: CreateAppointmentRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_appointments_create_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     use_case: Annotated[CreateAppointmentUseCase, Depends(get_create_appointment_use_case)],
 ) -> AppointmentResponse:
     """
     Create a new appointment.
 
+    - Requires appointments:create permission.
     - Validates business hours (Mon-Fri 9am-6pm) — returns 422 if outside.
     - Checks for conflicts (1-hour window) — returns 409.
     - Updates lead status to "appointment_set" automatically.
@@ -146,9 +187,13 @@ async def create_appointment(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No organization associated with account.",
         )
-
     try:
-        return await use_case.execute(request=request, tenant_id=current_user.tenant_id)
+        return await use_case.execute(
+            request=request,
+            tenant_id=current_user.tenant_id,
+            scope=effective_scope,
+            actor_id=current_user.id,
+        )
     except AppointmentTimeValidationException as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -170,7 +215,11 @@ async def list_appointments(
     appointment_repo: Annotated[
         SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)
     ],
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_appointments_read_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     start_date: Annotated[
         datetime | None, Query(description="Start date filter (ISO 8601)")
     ] = None,
@@ -188,6 +237,8 @@ async def list_appointments(
     """
     List appointments for the authenticated tenant.
 
+    - Requires appointments:read permission.
+    - Enforces ROLE_SCOPE: own-scoped users see only their own organization's appointments.
     - `organization_id`: filter by the attending organization/user (maps to `user_id`).
     - `status`: filter by appointment status enum.
     - `start_date` / `end_date`: ISO 8601 date range filter.
@@ -206,6 +257,8 @@ async def list_appointments(
         status=status_filter,
         limit=limit,
         offset=offset,
+        scope=effective_scope,
+        actor_id=current_user.id,
     )
 
     items = [AppointmentResponse.from_entity(a) for a in appointments]
@@ -222,16 +275,25 @@ async def get_appointment(
     appointment_repo: Annotated[
         SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)
     ],
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_appointments_read_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
 ) -> AppointmentResponse:
-    """Get a single appointment by ID with tenant isolation."""
+    """Get a single appointment by ID with tenant and scope isolation."""
     if current_user.tenant_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No organization associated with account.",
         )
 
-    appointment = await appointment_repo.get_by_id(appointment_id, current_user.tenant_id)
+    appointment = await appointment_repo.get_by_id(
+        appointment_id=appointment_id,
+        tenant_id=current_user.tenant_id,
+        scope=effective_scope,
+        actor_id=current_user.id,
+    )
     if not appointment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -252,7 +314,11 @@ async def update_appointment(
     appointment_repo: Annotated[
         SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)
     ],
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_appointments_update_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
 ) -> AppointmentResponse:
     """Update appointment status and/or notes. Both fields are optional."""
     if current_user.tenant_id is None:
@@ -267,6 +333,8 @@ async def update_appointment(
             tenant_id=current_user.tenant_id,
             new_status=request.status,
             notes=request.notes,
+            scope=effective_scope,
+            actor_id=current_user.id,
         )
     except AppointmentNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from None
@@ -282,7 +350,11 @@ async def update_appointment(
 async def update_appointment_status(
     appointment_id: UUID,
     request: UpdateAppointmentStatusRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(require_appointments_update_with_scope)],
+    effective_scope: Annotated[
+        AllScope | ExplicitOrgsScope | OwnScope,
+        Depends(get_effective_scope(auth_dependency=get_current_auth_user_from_cookie)),
+    ],
     cancel_use_case: Annotated[CancelAppointmentUseCase, Depends(get_cancel_appointment_use_case)],
     confirm_use_case: Annotated[
         ConfirmAppointmentUseCase, Depends(get_confirm_appointment_use_case)
@@ -293,6 +365,8 @@ async def update_appointment_status(
     Only COMPLETED and CANCELLED are supported here.
     For other status updates use PUT /{id} with body.
 
+    - Requires appointments:update permission.
+    - Enforces ROLE_SCOPE: own-scoped users can only update their own organization's appointments.
     Body: { "new_status": "completed" | "cancelled" }
     """
     if current_user.tenant_id is None:
@@ -306,11 +380,15 @@ async def update_appointment_status(
             return await confirm_use_case.execute(
                 appointment_id=appointment_id,
                 tenant_id=current_user.tenant_id,
+                scope=effective_scope,
+                actor_id=current_user.id,
             )
         elif request.new_status == AppointmentStatus.CANCELLED:
             return await cancel_use_case.execute(
                 appointment_id=appointment_id,
                 tenant_id=current_user.tenant_id,
+                scope=effective_scope,
+                actor_id=current_user.id,
             )
         else:
             raise HTTPException(

@@ -167,6 +167,8 @@ class TestConfirmAppointmentUseCase:
             appointment_id=appointment_id,
             tenant_id=tenant_id,
             new_status=AppointmentStatus.COMPLETED,
+            scope=None,
+            actor_id=None,
         )
 
         # Verify email was sent to buyer

@@ -50,8 +50,14 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
 
     class MockCreateAppointmentUseCase:
         async def execute(
-            self, request: CreateAppointmentRequest, tenant_id: UUID
+            self,
+            request: CreateAppointmentRequest,
+            tenant_id: UUID,
+            *,
+            scope: object | None = None,
+            actor_id: UUID | None = None,
         ) -> AppointmentResponse:
+            del scope, actor_id
             if request.scheduled_at.weekday() >= 5:
                 raise AppointmentTimeValidationException(
                     "Appointments are only available Monday through Friday."

@@ -11,6 +11,11 @@ from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
+from prosell.domain.value_objects.permission_scope import (
+    AllScope,
+    ExplicitOrgsScope,
+    OwnScope,
+)
 
 
 @dataclass(frozen=True)
@@ -66,13 +71,18 @@ class GetTeamMetricsUseCase:
         self,
         tenant_id: UUID,
         user: User,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
     ) -> TeamMetricsResponse:
+        # If scope not provided, infer from user roles (backward compatibility)
+        if scope is None:
+            scope = AllScope() if self._is_manager(user) else OwnScope()
         """
         Get team lead metrics.
 
         Args:
             tenant_id: The tenant ID to filter by
             user: The authenticated user (for authorization)
+            scope: User's effective ROLE_SCOPE (only AllScope users should reach here)
 
         Returns:
             TeamMetricsResponse with aggregated metrics
@@ -91,8 +101,15 @@ class GetTeamMetricsUseCase:
         if user.tenant_id != tenant_id:
             raise PermissionError("tenant_id does not match the authenticated user's tenant")
 
-        # Get all leads for the tenant
-        leads, _ = await self.lead_repo.list_by_tenant(tenant_id)
+        # Get all leads for the tenant (managers have AllScope, so no additional filtering needed)
+        if isinstance(scope, AllScope):
+            leads, _ = await self.lead_repo.list_by_tenant(tenant_id)
+        else:
+            # Non-manager shouldn't reach here due to _is_manager check, but defensively:
+            leads, _ = await self.lead_repo.list_by_vendedor(
+                tenant_id=tenant_id,
+                vendedor_id=user.id,
+            )
 
         cutoff_time = datetime.now(UTC) - timedelta(days=1)
         tenant_counts = _compute_lead_counts(leads, cutoff_time)

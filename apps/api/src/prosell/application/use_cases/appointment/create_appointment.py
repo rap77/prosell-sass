@@ -7,14 +7,16 @@ from uuid import UUID, uuid4
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
-from prosell.domain.entities.lead import LeadStatus
+from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
     AppointmentTimeValidationException,
 )
+from prosell.domain.exceptions.lead_exceptions import LeadNotFoundException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 
 
 class CreateAppointmentUseCase:
@@ -41,6 +43,9 @@ class CreateAppointmentUseCase:
         self,
         request: CreateAppointmentRequest,
         tenant_id: UUID,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> AppointmentResponse:
         """
         Execute appointment creation.
@@ -66,14 +71,24 @@ class CreateAppointmentUseCase:
         # Validate business hours (weekday + 9am-6pm)
         Appointment._validate_business_hours(request.scheduled_at)
 
-        # 1. Get existing appointments for conflict detection
+        # 1. Verify the linked lead is visible before creating an appointment.
+        lead = await self.lead_repository.get_by_id(
+            request.lead_id,
+            tenant_id,
+            scope=scope,
+            actor_id=actor_id,
+        )
+        if lead is None:
+            raise LeadNotFoundException(f"Lead not found: {request.lead_id}")
+
+        # 2. Get existing appointments for conflict detection.
         existing_appointments = await self.appointment_repository.check_conflicts(
             user_id=request.user_id,
             scheduled_at=request.scheduled_at,
             tenant_id=tenant_id,
         )
 
-        # 2. Create a temporary appointment object for conflict detection
+        # 3. Create a temporary appointment object for conflict detection
         # (not persisted yet, just used for detection)
         temp_appointment = Appointment(
             id=uuid4(),  # Ephemeral — used only for conflict detection, not persisted
@@ -86,7 +101,7 @@ class CreateAppointmentUseCase:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        # 3. Check for conflicts using the conflict detector
+        # 4. Check for conflicts using the conflict detector
         conflicts = self.conflict_detector.detect_conflicts(temp_appointment, existing_appointments)
 
         if conflicts and not request.force:
@@ -97,7 +112,7 @@ class CreateAppointmentUseCase:
                 conflicts=conflicts,
             )
 
-        # 4. Create domain entity (validates business hours)
+        # 5. Create domain entity (validates business hours)
         # Note: We don't pass existing_appointments here since we already checked conflicts
         appointment = Appointment.create(
             lead_id=request.lead_id,
@@ -109,18 +124,26 @@ class CreateAppointmentUseCase:
             existing_appointments=None,  # Already checked via conflict detector
         )
 
-        # 5. Persist appointment
+        # 6. Persist appointment
         created = await self.appointment_repository.create(appointment)
 
-        # 6. Update lead status to "appointment_set" (A4.13 requirement)
+        # 7. Update lead status to "appointment_set" (A4.13 requirement)
         await self._update_lead_status(
-            lead_id=request.lead_id,
+            lead=lead,
             tenant_id=tenant_id,
+            scope=scope,
+            actor_id=actor_id,
         )
 
         return AppointmentResponse.from_entity(created)
 
-    async def _update_lead_status(self, lead_id: UUID, tenant_id: UUID) -> None:
+    async def _update_lead_status(
+        self,
+        lead: Lead,
+        tenant_id: UUID,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None,
+        actor_id: UUID | None,
+    ) -> None:
         """Update lead status to appointment_set after appointment creation.
 
         Gracefully skips the update if the state machine doesn't allow the transition
@@ -128,17 +151,15 @@ class CreateAppointmentUseCase:
         """
         from prosell.domain.exceptions.lead_exceptions import LeadStateTransitionException
 
-        lead = await self.lead_repository.get_by_id(lead_id, tenant_id)
-        if not lead:
-            return
-
         # Only update if not already appointment_set and the transition is valid
         if lead.status != LeadStatus.APPOINTMENT_SET and lead.can_transition_to(
             LeadStatus.APPOINTMENT_SET
         ):
             with suppress(LeadStateTransitionException):
                 await self.lead_repository.update_status(
-                    lead_id=lead_id,
+                    lead_id=lead.id,
                     tenant_id=tenant_id,
                     new_status=LeadStatus.APPOINTMENT_SET,
+                    scope=scope,
+                    actor_id=actor_id,
                 )

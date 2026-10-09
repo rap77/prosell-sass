@@ -1,11 +1,12 @@
 """SqlAlchemyLeadRepository implementation with product JOIN support."""
 
 from datetime import UTC, datetime, timedelta
-from typing import Any, NamedTuple
+from typing import NamedTuple
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_activity import LeadActivity, LeadActivityType
@@ -14,6 +15,7 @@ from prosell.domain.exceptions import LeadNotFoundException
 from prosell.domain.exceptions.lead_exceptions import LeadStateTransitionException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.value_objects.lead_source import LeadSource
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.models.lead_model import (
     LeadActivityModel,
     LeadAuditLogModel,
@@ -48,8 +50,13 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         *,
         include_product: bool = False,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Lead | None:
-        """Get lead by ID with tenant isolation and optional product JOIN."""
+        """Get lead by ID with tenant isolation and optional product JOIN.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         if include_product:
             # LEFT JOIN with products table - select both models
             stmt = (
@@ -58,6 +65,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
                 .where(
                     LeadModel.id == lead_id,
                     LeadModel.tenant_id == tenant_id,
+                    *self._visibility_conditions(scope, tenant_id, actor_id),
                 )
             )
             result = await self.session.execute(stmt)
@@ -71,6 +79,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             stmt_single = select(LeadModel).where(
                 LeadModel.id == lead_id,
                 LeadModel.tenant_id == tenant_id,
+                *self._visibility_conditions(scope, tenant_id, actor_id),
             )
             result = await self.session.execute(stmt_single)
             model = result.scalar_one_or_none()
@@ -169,12 +178,19 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         new_status: LeadStatus,
         changed_by_user_id: UUID | None = None,
         reason: str | None = None,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Lead:
-        """Update lead status and create audit log entry."""
+        """Update lead status and create audit log entry.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         # Fetch lead
         stmt = select(LeadModel).where(
             LeadModel.id == lead_id,
             LeadModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -213,12 +229,19 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         lead_id: UUID,
         tenant_id: UUID,
         limit: int = 50,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[LeadAuditLog]:
-        """Get audit log history for a lead."""
+        """Get audit log history for a lead.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         # Verify lead exists in tenant
         stmt = select(LeadModel).where(
             LeadModel.id == lead_id,
             LeadModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
         )
         result = await self.session.execute(stmt)
         if not result.scalar_one_or_none():
@@ -238,14 +261,24 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         result = await self.session.execute(stmt_audit)
         models = result.scalars().all()
 
-        return [self._audit_log_to_entity(model) for model in models]  # type: ignore[arg-type]
+        return [self._audit_log_to_entity(model) for model in models]
 
-    async def create_activity(self, activity: LeadActivity) -> LeadActivity:
-        """Create a manual activity entry (note/call) for a lead."""
+    async def create_activity(
+        self,
+        activity: LeadActivity,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
+    ) -> LeadActivity:
+        """Create a manual activity entry (note/call) for a lead.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         # Verify lead exists in tenant
         stmt = select(LeadModel).where(
             LeadModel.id == activity.lead_id,
             LeadModel.tenant_id == activity.tenant_id,
+            *self._visibility_conditions(scope, activity.tenant_id, actor_id),
         )
         result = await self.session.execute(stmt)
         if not result.scalar_one_or_none():
@@ -270,12 +303,19 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         lead_id: UUID,
         tenant_id: UUID,
         limit: int = 50,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[LeadActivity]:
-        """Get activity entries for a lead, newest first."""
+        """Get activity entries for a lead, newest first.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         # Verify lead exists in tenant
         stmt = select(LeadModel).where(
             LeadModel.id == lead_id,
             LeadModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
         )
         result = await self.session.execute(stmt)
         if not result.scalar_one_or_none():
@@ -393,12 +433,19 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         lead_id: UUID,
         tenant_id: UUID,
         new_vendedor_id: UUID | None,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Lead:
-        """Assign lead to a vendedor (or unassign if None)."""
+        """Assign lead to a vendedor (or unassign if None).
+
+        Enforces the scope in addition to tenant isolation.
+        """
         result = await self.session.execute(
             select(LeadModel).where(
                 LeadModel.id == lead_id,
                 LeadModel.tenant_id == tenant_id,
+                *self._visibility_conditions(scope, tenant_id, actor_id),
             )
         )
         model = result.scalar_one_or_none()
@@ -520,19 +567,48 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         model.updated_at = datetime.now(UTC)
         await self.session.flush()
 
+    @staticmethod
+    def _visibility_conditions(
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None,
+        tenant_id: UUID,
+        actor_id: UUID | None,
+    ) -> list[ColumnElement[bool]]:
+        """Build tenant-local predicates for RBAC visibility.
+
+        `OwnScope` follows the established CRM ownership field
+        (`Lead.vendedor_id`); organization scopes are evaluated against the
+        already-authenticated tenant and never widen it.
+        """
+        if scope is None:
+            return []
+        if not scope.permits(organization_id=tenant_id, actor_organization_id=tenant_id):
+            return [LeadModel.id.is_(None)]
+        if isinstance(scope, OwnScope):
+            if actor_id is not None:
+                return [LeadModel.vendedor_id == actor_id]
+            return [LeadModel.id.is_(None)]
+        return []
+
     async def find_by_email(
         self,
         tenant_id: UUID,
         email: str,
         within_hours: int = 24,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[Lead]:
-        """Find leads by buyer email (exact match) within time window."""
+        """Find leads by buyer email (exact match) within time window.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
             .where(LeadModel.tenant_id == tenant_id)
             .where(LeadModel.buyer_email == email)
             .where(LeadModel.created_at >= cutoff_time)
+            .where(*self._visibility_conditions(scope, tenant_id, actor_id))
             .order_by(LeadModel.created_at.desc())
         )
         result = await self.session.execute(stmt)
@@ -544,14 +620,21 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         phone: str,
         within_hours: int = 24,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[Lead]:
-        """Find leads by buyer phone (normalized match) within time window."""
+        """Find leads by buyer phone (normalized match) within time window.
+
+        Enforces the scope in addition to tenant isolation.
+        """
         cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
             .where(LeadModel.tenant_id == tenant_id)
             .where(LeadModel.buyer_phone == phone)
             .where(LeadModel.created_at >= cutoff_time)
+            .where(*self._visibility_conditions(scope, tenant_id, actor_id))
             .order_by(LeadModel.created_at.desc())
         )
         result = await self.session.execute(stmt)
@@ -564,9 +647,15 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         email: str | None = None,
         phone: str | None = None,
         within_hours: int = 24,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[Lead]:
-        """Find potential duplicate leads by email or phone within time window."""
-        conditions: list[Any] = []  # type: ignore[misc]  # SQLAlchemy column expressions lack a common sealed base
+        """Find potential duplicate leads by email or phone within time window.
+
+        Enforces the scope in addition to tenant isolation.
+        """
+        conditions: list[ColumnElement[bool]] = []
         if email:
             conditions.append(LeadModel.buyer_email == email)
         if phone:
@@ -581,6 +670,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             .where(LeadModel.tenant_id == tenant_id)
             .where(or_(*conditions))
             .where(LeadModel.created_at >= cutoff_time)
+            .where(*self._visibility_conditions(scope, tenant_id, actor_id))
             .order_by(LeadModel.created_at.desc())
         )
         result = await self.session.execute(stmt)

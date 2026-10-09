@@ -10,6 +10,7 @@ from prosell.domain.repositories.appointment_repository import AbstractAppointme
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 
 
 class CancelAppointmentUseCase:
@@ -40,10 +41,15 @@ class CancelAppointmentUseCase:
         self,
         appointment_id: UUID,
         tenant_id: UUID,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> AppointmentResponse:
         appointment = await self.appointment_repository.get_by_id(
             appointment_id=appointment_id,
             tenant_id=tenant_id,
+            scope=scope,
+            actor_id=actor_id,
         )
 
         if not appointment:
@@ -53,6 +59,8 @@ class CancelAppointmentUseCase:
             appointment_id=appointment_id,
             tenant_id=tenant_id,
             new_status=AppointmentStatus.CANCELLED,
+            scope=scope,
+            actor_id=actor_id,
         )
 
         lead = await self.lead_repository.get_by_id(

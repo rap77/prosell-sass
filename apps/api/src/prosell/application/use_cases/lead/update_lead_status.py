@@ -9,6 +9,11 @@ from prosell.domain.exceptions.lead_exceptions import (
     LeadStateTransitionException,
 )
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.value_objects.permission_scope import (
+    AllScope,
+    ExplicitOrgsScope,
+    OwnScope,
+)
 
 
 class UpdateLeadStatusUseCase:
@@ -17,7 +22,8 @@ class UpdateLeadStatusUseCase:
 
     Business rules:
     - Transition must be valid per LeadStatus.transitions()
-    - Lead must exist and belong to the caller's tenant
+    - Lead must exist and belong to the caller's tenant + scope
+    - ROLE_SCOPE is enforced: own-scoped users can only update their assigned leads
     - Audit log entry is created automatically by the repository
     """
 
@@ -30,6 +36,8 @@ class UpdateLeadStatusUseCase:
         request: UpdateLeadStatusRequest,
         tenant_id: UUID,
         changed_by_user_id: UUID | None = None,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> LeadResponse:
         """
         Execute status update.
@@ -39,16 +47,23 @@ class UpdateLeadStatusUseCase:
             request: UpdateLeadStatusRequest DTO
             tenant_id: Tenant context from JWT
             changed_by_user_id: User performing the update (for audit log)
+            scope: User's effective ROLE_SCOPE (enforces own vs all visibility)
+            actor_id: Authenticated user ID for OwnScope evaluation
 
         Returns:
             Updated LeadResponse DTO
 
         Raises:
-            LeadNotFoundException: If lead does not exist in tenant
+            LeadNotFoundException: If lead does not exist in tenant/scope
             LeadStateTransitionException: If transition is invalid
         """
-        # Validate lead exists
-        lead = await self.lead_repository.get_by_id(lead_id, tenant_id)
+        # Validate lead exists (with scope enforcement)
+        lead = await self.lead_repository.get_by_id(
+            lead_id,
+            tenant_id,
+            scope=scope,
+            actor_id=actor_id,
+        )
         if not lead:
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
 
@@ -66,6 +81,8 @@ class UpdateLeadStatusUseCase:
             new_status=request.new_status,
             changed_by_user_id=changed_by_user_id,
             reason=request.reason,
+            scope=scope,
+            actor_id=actor_id,
         )
 
         return LeadResponse.from_entity(updated)

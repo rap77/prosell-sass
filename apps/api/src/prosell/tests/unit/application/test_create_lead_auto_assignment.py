@@ -22,6 +22,7 @@ from prosell.domain.repositories.team_repository import (
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.services.lead_assignment_rules_engine import AssignmentStrategy
 from prosell.domain.value_objects.attribute_filter import AttributeFilter
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -40,8 +41,10 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         *,
         include_product: bool = False,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Lead | None:
-        del tenant_id, include_product
+        del tenant_id, include_product, scope, actor_id
         return self.leads.get(lead_id)
 
     async def get_many_by_ids(self, lead_ids: list[UUID], tenant_id: UUID) -> list[Lead]:
@@ -76,8 +79,11 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         new_status: LeadStatus,
         changed_by_user_id: UUID | None = None,
         reason: str | None = None,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Lead:
-        del tenant_id, changed_by_user_id, reason
+        del tenant_id, changed_by_user_id, reason, scope, actor_id
         lead = self.leads[lead_id]
         object.__setattr__(lead, "status", new_status)
         return lead
@@ -125,11 +131,21 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         lead_id: UUID,
         tenant_id: UUID,
         limit: int = 50,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[LeadAuditLog]:
-        del lead_id, tenant_id, limit
+        del lead_id, tenant_id, limit, scope, actor_id
         return []
 
-    async def create_activity(self, activity: LeadActivity) -> LeadActivity:
+    async def create_activity(
+        self,
+        activity: LeadActivity,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
+    ) -> LeadActivity:
+        del activity, scope, actor_id
         raise NotImplementedError
 
     async def list_stale(self, before, exclude_statuses) -> list[Lead]:
@@ -144,8 +160,11 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         lead_id: UUID,
         tenant_id: UUID,
         limit: int = 50,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[LeadActivity]:
-        del lead_id, tenant_id, limit
+        del lead_id, tenant_id, limit, scope, actor_id
         return []
 
     async def find_by_email(
@@ -153,8 +172,11 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         email: str,
         within_hours: int = 24,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[Lead]:
-        del tenant_id, within_hours
+        del tenant_id, within_hours, scope, actor_id
         return [lead for lead in self.leads.values() if lead.buyer_email == email]
 
     async def find_by_phone(
@@ -162,8 +184,11 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         phone: str,
         within_hours: int = 24,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[Lead]:
-        del tenant_id, within_hours
+        del tenant_id, within_hours, scope, actor_id
         return [lead for lead in self.leads.values() if lead.buyer_phone == phone]
 
     async def find_potential_duplicates(
@@ -172,8 +197,11 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         email: str | None = None,
         phone: str | None = None,
         within_hours: int = 24,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> list[Lead]:
-        del tenant_id, within_hours
+        del tenant_id, within_hours, scope, actor_id
         return [
             lead
             for lead in self.leads.values()
@@ -185,8 +213,11 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         lead_id: UUID,
         tenant_id: UUID,
         new_vendedor_id: UUID | None,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Lead:
-        del tenant_id
+        del tenant_id, scope, actor_id
         lead = self.leads[lead_id]
         object.__setattr__(lead, "vendedor_id", new_vendedor_id)
         return lead

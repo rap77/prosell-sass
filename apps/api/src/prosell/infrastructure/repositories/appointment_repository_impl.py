@@ -5,11 +5,14 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.exceptions import AppointmentConflictException, AppointmentNotFoundException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
+from prosell.domain.value_objects.permission_scope import AllScope, ExplicitOrgsScope, OwnScope
 from prosell.infrastructure.models.appointment_model import AppointmentModel
+from prosell.infrastructure.models.lead_model import LeadModel
 
 
 class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
@@ -38,12 +41,22 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(self, appointment_id: UUID, tenant_id: UUID) -> Appointment | None:
+    async def get_by_id(
+        self,
+        appointment_id: UUID,
+        tenant_id: UUID,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
+    ) -> Appointment | None:
         """Get appointment by ID with tenant isolation."""
         stmt = select(AppointmentModel).where(
             AppointmentModel.id == appointment_id,
             AppointmentModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
         )
+        if isinstance(scope, OwnScope):
+            stmt = stmt.join(LeadModel, AppointmentModel.lead_id == LeadModel.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
@@ -142,12 +155,18 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
         appointment_id: UUID,
         tenant_id: UUID,
         new_status: AppointmentStatus,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Appointment:
         """Update appointment status."""
         stmt = select(AppointmentModel).where(
             AppointmentModel.id == appointment_id,
             AppointmentModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
         )
+        if isinstance(scope, OwnScope):
+            stmt = stmt.join(LeadModel, AppointmentModel.lead_id == LeadModel.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
@@ -170,9 +189,15 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
         status: AppointmentStatus | None = None,
         limit: int = 50,
         offset: int = 0,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> tuple[list[Appointment], int]:
         """List all appointments for a tenant with optional filters."""
-        conditions = [AppointmentModel.tenant_id == tenant_id]
+        conditions = [
+            AppointmentModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
+        ]
 
         if user_id:
             conditions.append(AppointmentModel.user_id == user_id)
@@ -184,6 +209,8 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
             conditions.append(AppointmentModel.status == status.value)
 
         count_stmt = select(func.count(AppointmentModel.id)).where(*conditions)
+        if isinstance(scope, OwnScope):
+            count_stmt = count_stmt.join(LeadModel, AppointmentModel.lead_id == LeadModel.id)
         count_result = await self.session.execute(count_stmt)
         total = count_result.scalar() or 0
 
@@ -194,6 +221,8 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
             .limit(limit)
             .offset(offset)
         )
+        if isinstance(scope, OwnScope):
+            stmt = stmt.join(LeadModel, AppointmentModel.lead_id == LeadModel.id)
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
@@ -205,12 +234,18 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
         tenant_id: UUID,
         new_status: AppointmentStatus | None = None,
         notes: str | None = None,
+        *,
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None = None,
+        actor_id: UUID | None = None,
     ) -> Appointment:
         """Update appointment status and/or notes."""
         stmt = select(AppointmentModel).where(
             AppointmentModel.id == appointment_id,
             AppointmentModel.tenant_id == tenant_id,
+            *self._visibility_conditions(scope, tenant_id, actor_id),
         )
+        if isinstance(scope, OwnScope):
+            stmt = stmt.join(LeadModel, AppointmentModel.lead_id == LeadModel.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
@@ -254,6 +289,23 @@ class SqlAlchemyAppointmentRepository(AbstractAppointmentRepository):
         models = result.scalars().all()
 
         return [self._to_entity(model) for model in models]
+
+    @staticmethod
+    def _visibility_conditions(
+        scope: AllScope | ExplicitOrgsScope | OwnScope | None,
+        tenant_id: UUID,
+        actor_id: UUID | None,
+    ) -> list[ColumnElement[bool]]:
+        """Build visibility predicates without relaxing tenant isolation."""
+        if scope is None:
+            return []
+        if not scope.permits(organization_id=tenant_id, actor_organization_id=tenant_id):
+            return [AppointmentModel.id.is_(None)]
+        if isinstance(scope, OwnScope):
+            if actor_id is not None:
+                return [LeadModel.vendedor_id == actor_id]
+            return [AppointmentModel.id.is_(None)]
+        return []
 
     def _to_model(self, entity: Appointment) -> AppointmentModel:
         """Convert domain entity to SQLAlchemy model."""

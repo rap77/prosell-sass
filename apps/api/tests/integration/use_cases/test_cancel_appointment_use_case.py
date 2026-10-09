@@ -167,6 +167,8 @@ class TestCancelAppointmentUseCase:
             appointment_id=appointment_id,
             tenant_id=tenant_id,
             new_status=AppointmentStatus.CANCELLED,
+            scope=None,
+            actor_id=None,
         )
 
         # Verify email was sent to buyer

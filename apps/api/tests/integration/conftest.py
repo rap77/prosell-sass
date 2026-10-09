@@ -17,14 +17,67 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from prosell.domain.entities.role import RoleType
+from prosell.domain.entities.role import ROLE_PERMISSIONS, RoleType
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
-from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+from prosell.infrastructure.models.role_model import (
+    RoleGrantModel,
+    RoleModel,
+    RoleScopeModel,
+    UserRoleModel,
+)
 from prosell.infrastructure.models.user_model import UserModel
 
 # Single source of truth — keep in sync with apps/api/scripts/create_test_schema.py.
 from ._constants import TEST_DB_URL
+
+_BLOCK_4_GRANTS: dict[str, list[tuple[str, str]]] = {
+    "super_admin": [("leads", action) for action in ("create", "read", "update", "delete")]
+    + [("appointments", action) for action in ("create", "read", "update", "delete")],
+    "admin": [("leads", action) for action in ("create", "read", "update", "delete")]
+    + [("appointments", action) for action in ("create", "read", "update", "delete")],
+    "manager": [("leads", action) for action in ("create", "read", "update", "delete")]
+    + [("appointments", action) for action in ("create", "read", "update", "delete")],
+    "sales_agent": [("leads", action) for action in ("create", "read", "update")]
+    + [("appointments", action) for action in ("create", "read", "update")],
+}
+
+
+async def _seed_system_role_permissions(session: AsyncSession, roles: dict[str, RoleModel]) -> None:
+    """Mirror migrated grants and scopes for test databases built from metadata."""
+    for role in roles.values():
+        if role.role_type is None:
+            continue
+
+        legacy_grants = [
+            tuple(permission.value.split(":", maxsplit=1))
+            for permission in ROLE_PERMISSIONS[RoleType(role.role_type)]
+            if ":" in permission.value
+        ]
+        grants = legacy_grants + _BLOCK_4_GRANTS.get(role.role_type, [])
+        existing_grants = set(
+            (
+                await session.execute(
+                    select(RoleGrantModel.zone, RoleGrantModel.action).where(
+                        RoleGrantModel.role_id == role.id
+                    )
+                )
+            ).all()
+        )
+        session.add_all(
+            RoleGrantModel(id=uuid4(), role_id=role.id, zone=zone, action=action)
+            for zone, action in grants
+            if (zone, action) not in existing_grants
+        )
+
+        has_scope = await session.scalar(
+            select(RoleScopeModel.id).where(RoleScopeModel.role_id == role.id)
+        )
+        if has_scope is None:
+            scope_type = "all" if role.role_type in {"super_admin", "admin"} else "own"
+            session.add(RoleScopeModel(id=uuid4(), role_id=role.id, scope_type=scope_type))
+
+    await session.flush()
 
 
 def _db_available() -> bool:
@@ -155,6 +208,7 @@ async def system_roles(_session_engine: AsyncEngine) -> dict[str, RoleModel]:
             roles["ADMIN"] = existing_roles[RoleType.ADMIN.value]
 
         # Commit to persist these roles for the entire test session
+        await _seed_system_role_permissions(session, roles)
         await session.commit()
 
     return roles

@@ -13,6 +13,7 @@ from prosell.application.use_cases.appointment.create_appointment import CreateA
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.exceptions.appointment_exceptions import AppointmentConflictException
+from prosell.domain.exceptions.lead_exceptions import LeadNotFoundException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.services.appointment_conflict_detector import (
@@ -20,6 +21,7 @@ from prosell.domain.services.appointment_conflict_detector import (
     ConflictType,
 )
 from prosell.domain.value_objects.lead_source import LeadSource
+from prosell.domain.value_objects.permission_scope import OwnScope
 
 
 @pytest.fixture
@@ -129,6 +131,40 @@ class TestCreateAppointmentWithConflictDetection:
         assert isinstance(result, AppointmentResponse)
         mock_appointment_repo.create.assert_called_once()  # type: ignore[attr-defined]
         mock_lead_repo.update_status.assert_called_once()  # type: ignore[attr-defined]
+
+    @pytest.mark.asyncio
+    async def test_create_appointment_does_not_persist_an_inaccessible_lead(
+        self,
+        mock_appointment_repo: AbstractAppointmentRepository,
+        mock_lead_repo: AbstractLeadRepository,
+        conflict_detector: AppointmentConflictDetector,
+        base_time: datetime,
+    ) -> None:
+        """OwnScope denies appointment creation for a lead owned by another sales agent."""
+        tenant_id = UUID("11111111-1111-1111-1111-111111111111")
+        actor_id = UUID("22222222-2222-2222-2222-222222222222")
+        mock_lead_repo.get_by_id.return_value = None  # type: ignore[attr-defined]
+        use_case = CreateAppointmentUseCase(
+            appointment_repository=mock_appointment_repo,
+            lead_repository=mock_lead_repo,
+            conflict_detector=conflict_detector,
+        )
+        request = CreateAppointmentRequest(
+            lead_id=UUID("33333333-3333-3333-3333-333333333333"),
+            user_id=UUID("44444444-4444-4444-4444-444444444444"),
+            product_id=UUID("55555555-5555-5555-5555-555555555555"),
+            scheduled_at=base_time,
+        )
+
+        with pytest.raises(LeadNotFoundException):
+            await use_case.execute(
+                request,
+                tenant_id,
+                scope=OwnScope(),
+                actor_id=actor_id,
+            )
+
+        mock_appointment_repo.create.assert_not_called()  # type: ignore[attr-defined]
 
     @pytest.mark.asyncio
     async def test_create_appointment_with_conflicts_raises_exception(
