@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,20 +11,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prosell.application.dto.product import (
     ProductImageUrlResponse,
     ProductImageUrlsResponse,
+    PublicProductListItem,
+    PublicProductListResponse,
     PublicProductResponse,
 )
 from prosell.domain.entities.organization import Organization
+from prosell.domain.entities.product import Product
 from prosell.domain.ports.ido_spaces import IDOSpacesService
 from prosell.domain.repositories.organization_repository import (
     AbstractOrganizationRepository,
 )
+from prosell.domain.services.storage_keys import extract_storage_key_from_value
 from prosell.domain.value_objects.organization_contact import OrganizationContact
+from prosell.domain.value_objects.product_condition import ProductCondition
+from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_organization_repository,
     get_spaces_service,
 )
+from prosell.infrastructure.api.routers.product_router import (
+    _merged_image_url_candidates,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.repositories.product_repository_impl import (
+    SqlAlchemyProductRepository,
+)
 
 router = APIRouter()
 
@@ -199,3 +211,134 @@ async def get_public_product_image_urls(
         images=images,
         cover_image_key=cover_key,
     )
+
+
+async def _public_cover_url(product: Product, spaces: IDOSpacesService) -> str | None:
+    """Pick and sign ONE cover URL for a public catalog listing item.
+
+    Same selection rule as the internal batch endpoint: the thumbnail
+    derivative when present, the gallery-cover selection (`cover_image_key`)
+    when null, and the first merged gallery candidate as the last fallback
+    (legacy bulk-import products that only populate `image_urls`).
+
+    Defense in depth: the signed key MUST live under the product's own
+    tenant prefix — a corrupted cross-tenant key never gets signed here.
+    No admin relaxation: the public endpoint has no caller to relax for.
+    """
+    candidate_key: str | None = product.thumbnail_image_key
+    if not candidate_key:
+        candidate_key = product.cover_image_key
+    if not candidate_key:
+        merged = _merged_image_url_candidates(product)
+        candidate_key = merged[0] if merged else None
+    if not candidate_key:
+        return None
+
+    # Normalize once — raw values may be bare keys OR full URLs; the
+    # tenant-prefix check AND the CDN signer both need the bare key.
+    normalized_key = extract_storage_key_from_value(candidate_key)
+    if not normalized_key:
+        return None
+
+    valid_prefixes = (
+        f"orgs/{product.tenant_id}/",
+        f"vehicles/{product.tenant_id}/",
+    )
+    if not any(normalized_key.startswith(p) for p in valid_prefixes):
+        return None
+
+    return await spaces.generate_cdn_download_url(normalized_key, SIGNED_URL_EXPIRES_IN)
+
+
+@router.get("", response_model=PublicProductListResponse)
+async def list_public_products(
+    db: DbSession,
+    spaces: SpacesService,
+    category_id: UUID | None = None,
+    condition: str | None = None,
+    search: str | None = None,
+    min_price: int | None = None,
+    max_price: int | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=24, ge=1, le=100),
+) -> PublicProductListResponse:
+    """List PUBLISHED products from every tenant — the public catalog (4.6).
+
+    No authentication required, by design (§7 del diagnóstico): the public
+    visitor never passes through the internal RBAC — this is the same
+    separate mechanism as GET /{slug}, generalized to a listing.
+
+    Reuses the exact same query engine as the internal `list_products`
+    (`SqlAlchemyProductRepository.get_all`/`count`) with `tenant_id=None` —
+    the documented public mechanism, same as the slug lookup which never
+    tenant-checks. `status` is FORCED to PUBLISHED here so drafts, pending,
+    or archived products can never leak, regardless of the query params.
+
+    Filters: category_id, condition, search (title/description),
+    min_price/max_price (cents), skip/limit pagination. Location and
+    attr.* filters are not part of the shared engine's public surface
+    (v1 scope — §7's engine reference).
+
+    Each item carries one pre-signed cover URL routed through the
+    configured CDN. The DTO structurally cannot carry
+    tenant_id/organization_id (§4 sanitization from day one).
+    """
+    condition_enum = ProductCondition(condition) if condition else None
+
+    repo = SqlAlchemyProductRepository(db)
+    products = await repo.get_all(
+        tenant_id=None,  # public catalog: every tenant's published products (documented mechanism)
+        status=ProductStatus.PUBLISHED,
+        category_id=category_id,
+        condition=condition_enum,
+        search_query=search,
+        min_price_cents=min_price,
+        max_price_cents=max_price,
+        skip=skip,
+        limit=limit,
+    )
+    total = await repo.count(
+        tenant_id=None,
+        status=ProductStatus.PUBLISHED,
+        category_id=category_id,
+        condition=condition_enum,
+        search_query=search,
+        min_price_cents=min_price,
+        max_price_cents=max_price,
+    )
+
+    items: list[PublicProductListItem] = []
+    for product in products:
+        cover_url = await _public_cover_url(product, spaces)
+        items.append(
+            PublicProductListItem(
+                id=product.id,
+                category_id=product.category_id,
+                title=product.title,
+                slug=product.slug,
+                description=product.description,
+                price_cents=product.price_cents,
+                currency=product.currency,
+                condition=product.condition.value,
+                status=product.status.value,
+                attributes=product.attributes or {},
+                image_urls=product.image_urls or [],
+                cover_image_key=product.cover_image_key,
+                thumbnail_image_key=product.thumbnail_image_key,
+                location_city=product.location_city,
+                location_state=product.location_state,
+                location_zip=product.location_zip,
+                is_featured=product.is_featured,
+                published_to_marketplace=product.published_to_marketplace,
+                view_count=product.view_count,
+                favorite_count=product.favorite_count,
+                published_at=product.published_at,
+                created_at=product.created_at,
+                updated_at=product.updated_at,
+                version=product.version,
+                cover_url=cover_url,
+                expires_in=SIGNED_URL_EXPIRES_IN if cover_url else None,
+            )
+        )
+
+    return PublicProductListResponse(items=items, total=total, skip=skip, limit=limit)

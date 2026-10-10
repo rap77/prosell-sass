@@ -408,6 +408,40 @@ export function useReassignLead(leadId: string) {
   });
 }
 
+/**
+ * useCreateLead — manual lead creation (workbook bloque 4, ítem 4.5).
+ * POST /api/v1/leads is gated server-side by the `leads:create` zone action;
+ * the hook only posts the CreateLeadRequest payload and refreshes the list.
+ */
+export function useCreateLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: CreateLeadRequest) => {
+      const res = await fetchWithAuth("/api/v1/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to create lead"));
+      }
+
+      const data = BackendLeadResponseSchema.parse(await res.json());
+      return transformLead(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("Lead creado");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear el lead");
+    },
+  });
+}
+
 export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
   return useQuery({
     queryKey: ["team-metrics"],

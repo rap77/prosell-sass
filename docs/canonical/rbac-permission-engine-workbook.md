@@ -73,8 +73,8 @@
 | ------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                                                                                                                                   |
 | 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — ver nota de reconciliación 53 vs 57 abajo; patrón viejo verificado en CERO sobre todo `src/` (re-confirmado 2026-10-08), eso es la prueba de completitud real, no el conteo |
-| 3      | UI de admin para perfiles                                                             | 🟡 In Progress (2026-10-07) — 3/7 ítems (3.0, 3.1, 3.2) + prerequisito 3.2a, TDD estricto desde acá                                                                                                |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🔴 Not started                                                                                                                                                                                     |
+| 3      | UI de admin para perfiles                                                             | ✅ Done (2026-10-08) — 3.0-3.6 + prerequisito 3.2a, commits en `origin/main` (verificado 2026-10-09); las notas inline "commit + push pendiente" de esta sección quedaron viejas                   |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🟡 In Progress (2026-10-09) — 4.0-4.6 con código + tests verificados; pendiente commit+push (regla 10) y verificación en staging del bloque completo                                               |
 | 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                                                                                                                     |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
@@ -1092,10 +1092,78 @@ bloque: Bloque 4 (zona Leads/CRM + catálogo público/landing) y Bloque 5
       Validado: Ruff sobre los archivos backend tocados sin hallazgos, Pyright
       `0 errors`, y pytest focalizado `72 passed` (repositorios, casos de uso y
       rutas de leads/citas).
-- [ ] 4.4 — Verificar en staging real (pendiente).
-- [ ] 4.5 — Frontend: listado/creación leads, listado/creación appointments
-      (pendiente — requiere stack dev levantado).
-- [ ] 4.6 — Catálogo público/landing (§7 diagnóstico) — no arrancado.
+- [x] 4.4 — Verificar en staging real (2026-10-09). Push de `4c312912` a
+      `origin/main` con worktree limpio (los hooks de pre-push completos en
+      verde: prettier/ruff/pyright/sync test DB/pytest suite ~2717). CI
+      (`37931392696`) ✅ en ~4 min → Deploy Staging (`37931837885`) ✅
+      (deploy-on-merge vía self-hosted runner; el deploy de `24a3aaae` había
+      quedado skipped porque su CI falló). Verificación independiente contra
+      staging real (regla 5 — DB consultada directo, no el mensaje del
+      script): `alembic_version` = `20261008_0003`; **34 grants** de zonas
+      `leads`/`appointments` (30 esperados de la DB de test + 4 extra por
+      `sales_user`/`viewer`, que en staging SÍ existen — super_admin/admin/
+      manager: 4 acciones por zona, sales_agent: 3, sales_user/viewer: 1
+      read-only); contenedores api/web recreateados y healthy; smoke test
+      `GET /health` → 200.
+- [x] 4.5 — Frontend: listado/creación leads, listado/creación appointments
+      (2026-10-09). **Re-verificado el código real primero (regla 1)**: el
+      listado de leads YA existía (`LeadList` + `TeamLeadList`), el listado de
+      appointments YA existía (`branch/appointments/page.tsx` con
+      `CalendarView` + test), y la creación de appointments YA existía
+      (`AppointmentForm` + `useCreateAppointment` desde el detalle del lead).
+      El gap real era solo la **creación de leads**: `CreateLeadRequest` existía
+      en el cliente sin consumidor, sin hook y sin formulario. Implementado
+      con TDD estricto visible: `LeadCreateDialog.test.tsx` escrito primero
+      (5 tests), rojo confirmado conductual (5/5 fallan — "no accessible
+      roles", shell sin comportamiento, no ImportError), recién ahí
+      implementado `useCreateLead` (POST `/api/v1/leads`, parse
+      `BackendLeadResponseSchema`, invalida `["leads"]`, toasts centralizados
+      mandate Q6) + `LeadCreateDialog` (trigger + Dialog con buyer_name
+      requerido + email/teléfono/mensaje; product_id omitido en v1 — opcional
+      según contrato), verde 5/5. Integración: `<LeadCreateDialog />` en
+      `vendedor/leads/page.tsx`. Verificado: typecheck 0 errores, eslint
+      limpio sobre los 5 archivos tocados, suite completa vitest **193
+      archivos / 1532 tests passed**. No requiere stack dev para la suite
+      (vitest corre sin él). Commit: pendiente — regla 10.
+- [x] 4.6 — Catálogo público/landing (2026-10-09). **Re-verificado el código
+      real primero (regla 1)**: el diagnóstico (del 5) decía "no existe nada
+      de esto", pero `public_product_router.py` YA existía con
+      `GET /{slug}` individual + image-urls (10 tests propios). El gap real:
+      el **listado público** y la **landing con buscador/grilla**. - **Backend**: `GET /api/v1/public/products` — sin auth (§7: mecanismo
+      separado por diseño, igual que el slug), reusa el MISMO motor de
+      query (`get_all`/`count` con `tenant_id=None`, el mecanismo público
+      documentado), `status` FORZADO a `published` (drafts nunca leak),
+      filtros: category_id/condition/search/min_max_price (ubicación y
+      attr.* no están en el motor compartido — scope v1). DTO público
+      sanitizado desde el día uno: `PublicProductListItem` extiende
+      `_ProductPublicSafeResponse` (estructuralmente sin
+      tenant_id/organization_id — §4 aplicado acá, no después).
+      Cover firmada por ítem: thumbnail → cover_image_key → gallery
+      mergeada → tenant-prefix check → CDN signer (misma regla que el
+      batch interno). **Pregunta de producto abierta sin resolver** (§7):
+      el nombre público del dealer — v1 no lo incluye, anotado aparte. - **Frontend**: proxy BFF GET-only (`app/api/v1/public/products/route.ts`),
+      hook `usePublicProducts` (plain `fetch`, NO `fetchWithAuth` — el
+      visitante no tiene sesión), `PublicProductCard` (patrón de card del
+      catálogo interno, `Image unoptimized`), sección `LandingCatalog`
+      (buscador con debounce 300ms + condición + precio min/max + grilla)
+      integrada en `page.tsx` después del Hero. - **TDD estricto en ambos lados, rojo visible**: backend 5/5 tests
+      primero (404, rojo conductual) → implementación → verde; frontend
+      hook (`not implemented`) + sección (4/4 conductual) → verde. - **Hallazgos reales del ciclo**: (1) ruff atrapó un `F821` —
+      `ProductCondition` sin importar, oculto porque `condition=None`
+      nunca evalúa el ternario (un request con `?condition=` crashearía)
+      — corregido + test del filtro de condición agregado; (2) el valor
+      `condition='good'` del patrón viejo de tests es INVÁLIDO del enum
+      (`new/used/certified_pre_owned/refurbished/for_parts`) — el listado
+      público lo surfaceó con 422 (get_all valida la entidad con
+      `Product.model_validate`); los tests de /{slug} nunca lo vieron
+      porque no construyen entidades; (3) `@patch` del atributo del
+      módulo es INEFECTIVO para deps `Annotated[..., Depends(...)]`
+      (capturan el callable original al importar) — la vía efectiva es
+      `app.dependency_overrides`; (4) la DB de test compartida exige
+      checks relativos (slugs/tokens únicos), no absolutos de `total`. - Verificado: backend **16/16** + suite completa **2723 passed**;
+      frontend **7/7** + suite completa **1539 passed**; typecheck 0
+      errores; eslint limpio; pyright `0 errors`. Commit: pendiente —
+      regla 10; verificación en staging con el push del Bloque 4.
 
 ## Bloque 5 — UI de gestión de assignments FB
 

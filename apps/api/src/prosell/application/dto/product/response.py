@@ -198,3 +198,29 @@ class ProductListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class PublicProductListItem(_ProductPublicSafeResponse):
+    """One row of the public catalog listing (workbook bloque 4, ítem 4.6).
+
+    Extends `_ProductPublicSafeResponse` directly — NOT `ProductResponse` —
+    so it structurally cannot carry `tenant_id`/`organization_id`/`org_code`/
+    `org_color`/`fb_account_ids` (§4 sanitization applied from day one, not
+    after). Deliberately does NOT include the organization contact fields
+    either — cards link to `/p/[slug]`, where `PublicProductResponse` serves
+    the full contact flow. `cover_url` is the one pre-signed URL the card
+    consumes (thumbnail derivative when present, gallery-cover fallback
+    otherwise), same selection rule as the internal batch endpoint.
+    """
+
+    cover_url: str | None = None
+    expires_in: int | None = None
+
+
+class PublicProductListResponse(BaseModel):
+    """DTO for the public (unauthenticated) paginated catalog listing."""
+
+    items: list[PublicProductListItem]
+    total: int
+    skip: int
+    limit: int

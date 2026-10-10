@@ -10,6 +10,7 @@
 import { LandingStyles } from "@/components/landing/landing-styles";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingHero } from "@/components/landing/landing-hero";
+import { LandingCatalog } from "@/components/landing/landing-catalog";
 import { LandingProofStrip } from "@/components/landing/landing-proof-strip";
 import { LandingProblemSolution } from "@/components/landing/landing-problem-solution";
 import { LandingFeatures } from "@/components/landing/landing-features";
@@ -69,6 +70,7 @@ export default function HomePage() {
 
           <main>
             <LandingHero />
+            <LandingCatalog />
             <LandingProofStrip />
             <LandingProblemSolution />
             <LandingFeatures />

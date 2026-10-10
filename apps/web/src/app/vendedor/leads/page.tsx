@@ -7,7 +7,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { LeadList } from "@/components/leads";
+import { LeadList, LeadCreateDialog } from "@/components/leads";
 import { Plus } from "lucide-react";
 
 export default function VendedorLeadsPage() {
@@ -56,6 +56,7 @@ export default function VendedorLeadsPage() {
           </p>
         </div>
 
+        <LeadCreateDialog />
         <button
           type="button"
           onClick={() => router.push("/pipeline")}

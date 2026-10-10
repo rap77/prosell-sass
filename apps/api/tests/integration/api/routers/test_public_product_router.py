@@ -16,6 +16,7 @@ from sqlalchemy.pool import NullPool
 from tests.integration._constants import TEST_DB_URL
 
 from prosell.domain.value_objects.product_status import ProductStatus
+from prosell.infrastructure.api.dependencies import get_spaces_service
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.models.category_model import CategoryModel
@@ -415,3 +416,229 @@ class TestPublicProductRouter:
 
         # ponytail: slug = secret link, any product with slug is accessible
         assert response.status_code == 200
+
+
+async def _create_published_listing_product(
+    session: AsyncSession,
+    org: OrganizationModel,
+    cat: CategoryModel,
+    *,
+    title: str,
+    price_cents: int,
+    status_value: str = ProductStatus.PUBLISHED.value,
+    image_urls: list[str] | None = None,
+    cover_image_key: str | None = None,
+) -> ProductModel:
+    """Create one listing product with a unique slug for the shared DB."""
+    product = ProductModel(
+        id=uuid4(),
+        tenant_id=org.tenant_id,
+        organization_id=org.id,
+        category_id=cat.id,
+        title=title,
+        slug=f"listing-{title.lower().replace(' ', '-')}-{uuid4().hex[:6]}",
+        price_cents=price_cents,
+        currency="USD",
+        status=status_value,
+        published_to_marketplace=True,
+        image_urls=image_urls or [],
+        cover_image_key=cover_image_key,
+        location_city="Caracas",
+        # Valid ProductCondition enum value — this helper's products DO get
+        # validated as domain entities by the listing endpoint (get_all →
+        # Product.model_validate), unlike the /{slug} tests above which query
+        # the model directly. An invalid value ('good') would 422 the listing.
+        condition="used",
+        attributes={},
+    )
+    session.add(product)
+    await session.flush()
+    return product
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("setup_override")
+class TestPublicProductsListing:
+    """Test GET /api/v1/public/products — the public catalog listing (4.6).
+
+    The public catalog shows every tenant's PUBLISHED products, without
+    authentication, behind a DTO that structurally cannot carry
+    tenant_id/organization_id (§4 sanitization from day one).
+    """
+
+    async def test_listing_returns_published_only_sanitized(self, shared_session: AsyncSession):
+        """Published products from every tenant; drafts never; items carry
+        NO raw tenant/organization identifiers."""
+        org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
+
+        published_a = await _create_published_listing_product(
+            shared_session,
+            org,
+            cat,
+            title="Published Car A",
+            price_cents=2500000,
+            image_urls=["car-a.jpg", "car-b.jpg"],
+            cover_image_key="car-a.jpg",
+        )
+        published_b = await _create_published_listing_product(
+            shared_session, org, cat, title="Published Car B", price_cents=1800000
+        )
+        draft = await _create_published_listing_product(
+            shared_session,
+            org,
+            cat,
+            title="Hidden Draft",
+            price_cents=1000000,
+            status_value=ProductStatus.DRAFT.value,
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/public/products")
+
+        assert response.status_code == 200
+        data = response.json()
+        # ponytail: relative check, not absolute — the shared DB carries
+        # real published products from other tests/seed data
+        assert data["total"] >= 2
+        slugs = {item["slug"] for item in data["items"]}
+        assert published_a.slug in slugs
+        assert published_b.slug in slugs
+        assert draft.slug not in slugs
+        first = next(item for item in data["items"] if item["slug"] == published_a.slug)
+        # §4 sanitization: no raw tenant/organization identifiers on the public list
+        assert "tenant_id" not in first
+        assert "organization_id" not in first
+        assert "org_code" not in first
+
+    async def test_listing_includes_signed_cover_url(self, shared_session: AsyncSession):
+        """Each item with images carries one signed cover URL."""
+        mock_spaces = AsyncMock()
+        mock_spaces.generate_cdn_download_url.return_value = "https://cdn.example.com/signed"
+        # dependency_overrides, NOT @patch: the `SpacesService` Annotated alias
+        # captures the original callable at import time, so patching the module
+        # attribute never reaches the dependency — the real service signed
+        # instead of the mock (proven during 4.6's red/green cycle).
+        app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
+        try:
+            await self._assert_signed_cover(shared_session)
+        finally:
+            app.dependency_overrides.pop(get_spaces_service, None)
+
+    async def _assert_signed_cover(self, shared_session: AsyncSession) -> None:
+        org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
+
+        product = await _create_published_listing_product(
+            shared_session,
+            org,
+            cat,
+            title="Covered Car",
+            price_cents=2200000,
+            # Realistic storage key under the org's tenant prefix — the
+            # cover signer's tenant-prefix defense requires it (a bare
+            # key like "car-front.jpg" is correctly rejected).
+            image_urls=[f"orgs/{org.tenant_id}/car-front.jpg"],
+            cover_image_key=f"orgs/{org.tenant_id}/car-front.jpg",
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/public/products")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 1
+        items_by_slug = {item["slug"]: item for item in data["items"]}
+        assert items_by_slug[product.slug]["cover_url"] == "https://cdn.example.com/signed"
+
+    async def test_listing_search_filter(self, shared_session: AsyncSession):
+        """?search= narrows the listing by title/description match."""
+        org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
+
+        # Unique search token — the shared DB carries unrelated products,
+        # so the term must only match the product created here.
+        unique_token = uuid4().hex[:12]
+        matching = await _create_published_listing_product(
+            shared_session,
+            org,
+            cat,
+            title=f"Corolla {unique_token}",
+            price_cents=2000000,
+        )
+        await _create_published_listing_product(
+            shared_session, org, cat, title=f"Hilux {uuid4().hex[:12]}", price_cents=3000000
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(f"/api/v1/public/products?search={unique_token}")
+
+        assert response.status_code == 200
+        data = response.json()
+        slugs = {item["slug"] for item in data["items"]}
+        assert matching.slug in slugs
+        assert all(unique_token in item["title"] for item in data["items"])
+
+    async def test_listing_pagination(self, shared_session: AsyncSession):
+        """skip/limit paginate; total reflects the full published count."""
+        org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
+
+        for idx in range(3):
+            await _create_published_listing_product(
+                shared_session, org, cat, title=f"Paged Car {idx}", price_cents=1000000 + idx
+            )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/public/products?limit=2")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 2
+        # ponytail: relative check, not absolute — the shared DB carries
+        # real published products from other tests/seed data
+        assert data["total"] >= 3
+        assert data["limit"] == 2
+
+    async def test_listing_condition_filter(self, shared_session: AsyncSession):
+        """?condition= narrows the listing by the ProductCondition enum."""
+        org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
+
+        new_car = await _create_published_listing_product(
+            shared_session,
+            org,
+            cat,
+            title=f"New Car {uuid4().hex[:8]}",
+            price_cents=4000000,
+        )
+        # Override the helper's default condition for the used variant.
+        used_car = await _create_published_listing_product(
+            shared_session, org, cat, title=f"Used Car {uuid4().hex[:8]}", price_cents=1500000
+        )
+        used_car.condition = "new"
+        await shared_session.flush()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/public/products?condition=used")
+
+        assert response.status_code == 200
+        data = response.json()
+        slugs = {item["slug"] for item in data["items"]}
+        assert new_car.slug in slugs
+        assert used_car.slug not in slugs
+
+    async def test_listing_sanitized_on_every_item(self):
+        """No item in the listing ever carries raw tenant/organization
+        identifiers — even products created by other tests/seed data."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/public/products?limit=100")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) >= 1
+        for item in data["items"]:
+            assert "tenant_id" not in item
+            assert "organization_id" not in item
+            assert "org_code" not in item
+            assert item["status"] == ProductStatus.PUBLISHED.value
