@@ -1167,7 +1167,7 @@ bloque: Bloque 4 (zona Leads/CRM + catálogo público/landing) y Bloque 5
       pusheado a `origin/main` (2026-10-10). **Post-push**: su CI falló con
       un único test nuevo (`test_listing_sanitized_on_every_item`) que
       dependía de data preexistente (sin `shared_session`, `assert
-     len(items) >= 1`) — en CI la DB fresca tiene 0 productos publicados y
+ len(items) >= 1`) — en CI la DB fresca tiene 0 productos publicados y
       el rollback por-test de `shared_session` nunca expone filas de otros
       tests; local pasaba por data residual. Fix `b0b9bff6`: test
       self-sufficient (data propia vía helpers existentes, aserción sobre su
