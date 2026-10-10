@@ -628,15 +628,23 @@ class TestPublicProductsListing:
         assert new_car.slug in slugs
         assert used_car.slug not in slugs
 
-    async def test_listing_sanitized_on_every_item(self):
+    async def test_listing_sanitized_on_every_item(self, shared_session: AsyncSession):
         """No item in the listing ever carries raw tenant/organization
-        identifiers — even products created by other tests/seed data."""
+        identifiers — including this test's own published product. Creates
+        its own data because shared_session rolls back per test: other
+        tests' rows are never visible here, and a fresh CI DB has none."""
+        org = await _create_test_org(shared_session)
+        cat = await _create_test_category(shared_session, org.tenant_id)
+        own = await _create_published_listing_product(
+            shared_session, org, cat, title="Sanitized Every Item Car", price_cents=9900000
+        )
+
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/public/products?limit=100")
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) >= 1
+        assert own.slug in {item["slug"] for item in data["items"]}
         for item in data["items"]:
             assert "tenant_id" not in item
             assert "organization_id" not in item
