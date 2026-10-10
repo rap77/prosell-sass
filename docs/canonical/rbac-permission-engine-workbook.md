@@ -74,7 +74,7 @@
 | 1      | Fix leak público (`tenant_id`/`organization_id`)                                      | ✅ Done (deploy a staging via CI, prod sin promover a propósito)                                                                                                                                   |
 | 2      | Motor central Zona × Acción × Alcance                                                 | ✅ Done (2026-10-06) — ver nota de reconciliación 53 vs 57 abajo; patrón viejo verificado en CERO sobre todo `src/` (re-confirmado 2026-10-08), eso es la prueba de completitud real, no el conteo |
 | 3      | UI de admin para perfiles                                                             | ✅ Done (2026-10-08) — 3.0-3.6 + prerequisito 3.2a, commits en `origin/main` (verificado 2026-10-09); las notas inline "commit + push pendiente" de esta sección quedaron viejas                   |
-| 4      | Zona Leads/CRM + catálogo público/landing                                             | 🟡 In Progress (2026-10-09) — 4.0-4.6 con código + tests verificados; pendiente commit+push (regla 10) y verificación en staging del bloque completo                                               |
+| 4      | Zona Leads/CRM + catálogo público/landing                                             | ✅ Done (2026-10-10) — commits `4c312912` + `6b457765` + `b0b9bff6` en `origin/main`; CI verde, Deploy Staging desplegó 4.5+4.6, staging verificado (regla 5)                                      |
 | 5      | UI de gestión `product_fb_account_assignments` / `OrganizationMarketplaceAccessModel` | 🔴 Not started                                                                                                                                                                                     |
 
 Orden de ejecución y por qué: ver mensaje de la sesión 2026-10-05 — resumen:
@@ -1124,7 +1124,8 @@ bloque: Bloque 4 (zona Leads/CRM + catálogo público/landing) y Bloque 5
       `vendedor/leads/page.tsx`. Verificado: typecheck 0 errores, eslint
       limpio sobre los 5 archivos tocados, suite completa vitest **193
       archivos / 1532 tests passed**. No requiere stack dev para la suite
-      (vitest corre sin él). Commit: pendiente — regla 10.
+      (vitest corre sin él). Commit `6b457765` pusheado a `origin/main`
+      (2026-10-10, junto con 4.6).
 - [x] 4.6 — Catálogo público/landing (2026-10-09). **Re-verificado el código
       real primero (regla 1)**: el diagnóstico (del 5) decía "no existe nada
       de esto", pero `public_product_router.py` YA existía con
@@ -1162,8 +1163,19 @@ bloque: Bloque 4 (zona Leads/CRM + catálogo público/landing) y Bloque 5
       `app.dependency_overrides`; (4) la DB de test compartida exige
       checks relativos (slugs/tokens únicos), no absolutos de `total`. - Verificado: backend **16/16** + suite completa **2723 passed**;
       frontend **7/7** + suite completa **1539 passed**; typecheck 0
-      errores; eslint limpio; pyright `0 errors`. Commit: pendiente —
-      regla 10; verificación en staging con el push del Bloque 4.
+      errores; eslint limpio; pyright `0 errors`. Commit `6b457765`
+      pusheado a `origin/main` (2026-10-10). **Post-push**: su CI falló con
+      un único test nuevo (`test_listing_sanitized_on_every_item`) que
+      dependía de data preexistente (sin `shared_session`, `assert
+     len(items) >= 1`) — en CI la DB fresca tiene 0 productos publicados y
+      el rollback por-test de `shared_session` nunca expone filas de otros
+      tests; local pasaba por data residual. Fix `b0b9bff6`: test
+      self-sufficient (data propia vía helpers existentes, aserción sobre su
+      slug propio) — rojo reproducido idéntico contra DB fresca
+      (`create_test_schema.py`), luego verde (16/16 + suite completa 2723
+      sobre la misma DB fresca). CI + Deploy Staging ✅ sobre `b0b9bff6`;
+      smoke staging: `/health` 200 + `GET /api/v1/public/products` 200
+      (catálogo vacío, sin productos publicados aún — correcto por diseño).
 
 ## Bloque 5 — UI de gestión de assignments FB
 
